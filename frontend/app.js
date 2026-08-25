@@ -1233,6 +1233,9 @@ function renderDevisCard(d) {
   if (d.lignes && d.lignes.length > 0) {
     actions += `<button type="button" class="btn-sm" data-action="pdf-devis" data-id="${d.id}">Telecharger le PDF</button>`;
   }
+  if (d.token && d.statut !== "nouveau") {
+    actions += `<button type="button" class="btn-sm" data-action="copier-lien-devis" data-token="${escapeHtml(d.token)}">Copier le lien client</button>`;
+  }
   actions += `<button type="button" class="btn-sm" data-action="dupliquer-devis" data-id="${d.id}">Dupliquer</button>`;
   actions += `<button type="button" class="btn-sm btn-sm-danger" data-action="delete-devis" data-id="${d.id}">Supprimer</button>`;
 
@@ -1247,8 +1250,10 @@ function renderDevisCard(d) {
     </div>
     <div class="item-meta">
       ${montantTxt}${d.numero ? " · " + escapeHtml(d.numero) : ""}
+      ${d.remise_montant ? ` · Remise ${d.remise_pourcentage}%` : ""}
       ${isDue ? " · <strong>Relance due aujourd'hui</strong>" : ""}
       · Source : ${d.source === "site_vitrine" ? "Site vitrine" : "Manuel"}
+      ${d.statut === "signe" && d.nom_signataire ? ` · Accepte par ${escapeHtml(d.nom_signataire)}` : ""}
     </div>
     <div class="item-actions">${actions}</div>
   </div>`;
@@ -1294,6 +1299,10 @@ async function showDevisForm(devis, preselectClientId) {
             <label for="df-acompte">Acompte a la signature (%)</label>
             <input type="number" step="1" min="0" max="100" id="df-acompte" value="${isEdit ? devis.acompte_pourcentage : 30}">
           </div>
+          <div>
+            <label for="df-remise">Remise (%, optionnel)</label>
+            <input type="number" step="1" min="0" max="100" id="df-remise" placeholder="0" value="${isEdit && devis.remise_pourcentage ? devis.remise_pourcentage : ""}">
+          </div>
         </div>
         ${lignesEditorHtml("df-lignes", isEdit ? devis.lignes : null)}
         <label for="df-description" style="margin-top:14px;">Description / notes</label>
@@ -1318,11 +1327,13 @@ async function showDevisForm(devis, preselectClientId) {
     const titre = document.getElementById("df-titre").value;
     const description = document.getElementById("df-description").value;
 
+    const remiseRaw = document.getElementById("df-remise").value;
     const payload = {
       titre: emptyToNull(titre),
       description: emptyToNull(description),
       taux_tva: parseFloat(document.getElementById("df-taux-tva").value),
       acompte_pourcentage: parseFloat(document.getElementById("df-acompte").value) || 0,
+      remise_pourcentage: remiseRaw ? parseFloat(remiseRaw) : null,
       lignes: lireLignes("df-lignes"),
     };
     if (!isEdit) {
@@ -1368,7 +1379,7 @@ function setupDevisView() {
     } else if (btn.dataset.action === "envoyer-devis") {
       await withErrorToast(async () => {
         await Api.envoyerDevis(id);
-        showToast("Devis marque comme envoye. Le cycle de relance a demarre.");
+        showToast("Devis envoye. Copiez le lien client pour le transmettre (email, SMS...).");
         loadDevis();
         refreshBadges();
       });
@@ -1402,6 +1413,14 @@ function setupDevisView() {
       });
     } else if (btn.dataset.action === "pdf-devis") {
       await withErrorToast(() => ouvrirPdf(`/devis/${id}/pdf`));
+    } else if (btn.dataset.action === "copier-lien-devis") {
+      const url = `${window.location.origin}/devis-public.html?t=${btn.dataset.token}`;
+      try {
+        await navigator.clipboard.writeText(url);
+        showToast("Lien copie. Envoyez-le a votre client par email ou SMS.");
+      } catch (err) {
+        showToast(url, false);
+      }
     } else if (btn.dataset.action === "dupliquer-devis") {
       await withErrorToast(async () => {
         await Api.dupliquerDevis(id);

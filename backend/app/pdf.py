@@ -112,6 +112,7 @@ def generate_devis_pdf(devis: Devis, artisan: Artisan) -> bytes:
     montant_tva = round(montant_ht * devis.taux_tva / 100, 2)
     montant_ttc = round(montant_ht + montant_tva, 2)
     montant_acompte = round(montant_ttc * devis.acompte_pourcentage / 100, 2)
+    remise_montant = devis.remise_montant
 
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
@@ -152,7 +153,12 @@ def generate_devis_pdf(devis: Devis, artisan: Artisan) -> bytes:
     elements.append(_lignes_table(devis.lignes, styles))
     elements.append(Spacer(1, 16))
 
-    totaux_rows = [
+    totaux_rows = []
+    if remise_montant:
+        totaux_rows.append(["Sous-total HT", _euros(devis.montant_ht_brut)])
+        totaux_rows.append([f"Remise ({devis.remise_pourcentage:.0f}%)", "-" + _euros(remise_montant)])
+    ttc_row = len(totaux_rows) + 2  # index de la ligne "Total TTC" dans totaux_rows, pour la mettre en gras
+    totaux_rows += [
         ["Total HT", _euros(montant_ht)],
         [f"TVA ({devis.taux_tva:.0f}%)", _euros(montant_tva)],
         ["Total TTC", _euros(montant_ttc)],
@@ -164,10 +170,10 @@ def generate_devis_pdf(devis: Devis, artisan: Artisan) -> bytes:
         ("ALIGN", (0, 0), (-1, -1), "RIGHT"),
         ("TOPPADDING", (0, 0), (-1, -1), 4),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-        ("FONTNAME", (0, 2), (-1, 2), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 2), (-1, 2), 12),
-        ("LINEABOVE", (0, 2), (-1, 2), 1, PRIMARY_DARK),
-        ("TEXTCOLOR", (0, 2), (-1, 2), PRIMARY_DARK),
+        ("FONTNAME", (0, ttc_row), (-1, ttc_row), "Helvetica-Bold"),
+        ("FONTSIZE", (0, ttc_row), (-1, ttc_row), 12),
+        ("LINEABOVE", (0, ttc_row), (-1, ttc_row), 1, PRIMARY_DARK),
+        ("TEXTCOLOR", (0, ttc_row), (-1, ttc_row), PRIMARY_DARK),
     ]))
     elements.append(totaux_table)
     elements.append(Spacer(1, 22))

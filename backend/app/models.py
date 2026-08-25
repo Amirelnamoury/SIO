@@ -130,6 +130,7 @@ class Devis(Base):
     description = Column(Text, nullable=True)
     taux_tva = Column(MONTANT, default=10.0)  # 10 = renovation, 20 = neuf
     acompte_pourcentage = Column(MONTANT, default=30.0)
+    remise_pourcentage = Column(MONTANT, nullable=True)
 
     # nouveau -> envoye -> consulte -> relance_j3 -> relance_j7 -> relance_j15 -> signe / perdu / expire
     statut = Column(String, default="nouveau", index=True)
@@ -139,6 +140,12 @@ class Devis(Base):
     date_derniere_relance = Column(DateTime(timezone=True), nullable=True)
     nb_relances = Column(Integer, default=0)
     date_signature = Column(DateTime(timezone=True), nullable=True)
+    nom_signataire = Column(String, nullable=True)
+
+    # Jeton oppaque pour le lien public de consultation/signature (envoye au
+    # client par l'artisan). Genere a la creation, jamais expose autrement
+    # que dans ce lien : ne pas confondre avec l'id, sequentiel et devinable.
+    token = Column(String, unique=True, index=True, nullable=True)
 
     source = Column(String, default="manuel")  # manuel ou site_vitrine
 
@@ -150,10 +157,25 @@ class Devis(Base):
     factures = relationship("Facture", back_populates="devis")
 
     @property
-    def montant_ht(self):
+    def montant_ht_brut(self):
         if not self.lignes:
             return None
         return round(sum(l.quantite * l.prix_unitaire_ht for l in self.lignes), 2)
+
+    @property
+    def remise_montant(self):
+        brut = self.montant_ht_brut
+        if brut is None or not self.remise_pourcentage:
+            return None
+        return round(brut * self.remise_pourcentage / 100, 2)
+
+    @property
+    def montant_ht(self):
+        brut = self.montant_ht_brut
+        if brut is None:
+            return None
+        remise = self.remise_montant or 0
+        return round(brut - remise, 2)
 
     @property
     def montant_ttc(self):

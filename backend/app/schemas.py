@@ -252,6 +252,7 @@ class DevisCreate(BaseModel):
     description: Optional[str] = None
     taux_tva: float = 10.0
     acompte_pourcentage: float = 30.0
+    remise_pourcentage: Optional[float] = None
     lignes: list[LigneDevisIn] = []
 
     @field_validator("taux_tva")
@@ -261,12 +262,20 @@ class DevisCreate(BaseModel):
             raise ValueError("taux_tva doit etre 10 (renovation) ou 20 (neuf)")
         return v
 
+    @field_validator("remise_pourcentage")
+    @classmethod
+    def remise_valide(cls, v):
+        if v is not None and not (0 <= v <= 100):
+            raise ValueError("remise_pourcentage doit etre entre 0 et 100")
+        return v
+
 
 class DevisUpdate(BaseModel):
     titre: Optional[str] = None
     description: Optional[str] = None
     taux_tva: Optional[float] = None
     acompte_pourcentage: Optional[float] = None
+    remise_pourcentage: Optional[float] = None
     statut: Optional[str] = None
     lignes: Optional[list[LigneDevisIn]] = None  # si fourni, remplace toutes les lignes
 
@@ -275,6 +284,13 @@ class DevisUpdate(BaseModel):
     def statut_valide(cls, v):
         if v is not None and v not in DEVIS_STATUTS:
             raise ValueError(f"statut doit etre l'un de : {sorted(DEVIS_STATUTS)}")
+        return v
+
+    @field_validator("remise_pourcentage")
+    @classmethod
+    def remise_valide(cls, v):
+        if v is not None and not (0 <= v <= 100):
+            raise ValueError("remise_pourcentage doit etre entre 0 et 100")
         return v
 
 
@@ -290,6 +306,9 @@ class DevisOut(BaseModel):
     description: Optional[str] = None
     taux_tva: float
     acompte_pourcentage: float
+    remise_pourcentage: Optional[float] = None
+    montant_ht_brut: Optional[float] = None
+    remise_montant: Optional[float] = None
     montant_ht: Optional[float] = None
     montant_ttc: Optional[float] = None
     statut: str
@@ -297,10 +316,44 @@ class DevisOut(BaseModel):
     date_consultation: Optional[datetime] = None
     date_derniere_relance: Optional[datetime] = None
     date_signature: Optional[datetime] = None
+    nom_signataire: Optional[str] = None
     nb_relances: int
     source: str
+    token: Optional[str] = None
     created_at: datetime
     lignes: list[LigneDevisOut] = []
+
+
+class DevisAccepterIn(BaseModel):
+    nom_signataire: str
+
+
+class DevisPublicOut(BaseModel):
+    """Ce que voit le client sur le lien public du devis. Pas d'ids
+    internes, pas de donnees d'un autre artisan."""
+    model_config = ConfigDict(from_attributes=True)
+
+    numero: Optional[str] = None
+    titre: Optional[str] = None
+    description: Optional[str] = None
+    client_nom: str
+    taux_tva: float
+    acompte_pourcentage: float
+    remise_pourcentage: Optional[float] = None
+    montant_ht_brut: Optional[float] = None
+    remise_montant: Optional[float] = None
+    montant_ht: Optional[float] = None
+    montant_ttc: Optional[float] = None
+    statut: str
+    date_signature: Optional[datetime] = None
+    nom_signataire: Optional[str] = None
+    lignes: list[LigneDevisOut] = []
+    artisan_nom_entreprise: str
+    artisan_telephone: Optional[str] = None
+    artisan_email: str
+    artisan_adresse: Optional[str] = None
+    artisan_siret: Optional[str] = None
+    artisan_assurance_decennale_nom: Optional[str] = None
 
 
 # ---------- Facture ----------

@@ -1,0 +1,57 @@
+/* ===================== Page publique de consultation/signature de devis ===================== */
+.devis-public-body { background: var(--bg); min-height: 100vh; }
+
+.devis-public-wrap { max-width: 720px; margin: 0 auto; padding: 40px 20px 60px; }
+
+.devis-public-card {
+  background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border);
+  padding: 36px; box-shadow: 0 20px 60px rgba(15,23,42,0.08);
+}
+
+.devis-public-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
+.devis-public-artisan { font-weight: 800; font-size: 1.1rem; color: var(--primary); }
+
+.devis-public-card h1 { font-size: 1.5rem; margin: 18px 0 4px; }
+.devis-public-numero { color: var(--text-muted); font-weight: 500; font-size: 0.9rem; }
+
+.devis-public-banner {
+  border-radius: 10px; padding: 14px 16px; font-size: 0.92rem; margin-bottom: 18px;
+}
+.devis-public-banner.is-success { background: var(--success-bg); color: var(--success); }
+.devis-public-banner.is-muted { background: var(--bg); color: var(--text-muted); }
+
+.devis-public-table { width: 100%; border-collapse: collapse; margin: 22px 0 4px; font-size: 0.88rem; }
+.devis-public-table th {
+  text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em;
+  color: var(--text-muted); padding: 8px 10px; border-bottom: 1.5px solid var(--border);
+}
+.devis-public-table td { padding: 10px; border-bottom: 1px solid var(--border); }
+.devis-public-table th:not(:first-child), .devis-public-table td:not(:first-child) { text-align: right; }
+
+.devis-public-totaux { max-width: 320px; margin: 18px 0 0 auto; }
+.devis-public-total-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.9rem; }
+.devis-public-total-row.is-total { font-size: 1.15rem; font-weight: 800; color: var(--primary); border-top: 1.5px solid var(--border); margin-top: 4px; padding-top: 10px; }
+
+.devis-public-accept {
+  margin-top: 32px; padding-top: 28px; border-top: 1px solid var(--border);
+}
+.devis-public-accept h3 { margin: 0 0 4px; font-size: 1.05rem; }
+.devis-public-accept form { margin-top: 14px; }
+.devis-public-accept label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; }
+.devis-public-accept input {
+  width: 100%; padding: 11px 14px; border-radius: 9px; border: 1.5px solid var(--border);
+  font-size: 0.95rem; font-family: inherit; margin-bottom: 14px;
+}
+.devis-public-accept input:focus { outline: none; border-color: var(--accent); }
+
+.devis-public-mentions { margin-top: 28px; font-size: 0.76rem; color: var(--text-muted); line-height: 1.6; }
+
+.devis-public-footer { text-align: center; color: var(--text-muted); font-size: 0.8rem; margin-top: 20px; }
+.devis-public-footer strong { color: var(--primary); }
+
+@media (max-width: 640px) {
+  .devis-public-wrap { padding: 20px 14px 40px; }
+  .devis-public-card { padding: 22px; }
+  .devis-public-table { font-size: 0.8rem; }
+  .devis-public-table th, .devis-public-table td { padding: 7px 6px; }
+}

@@ -1,3 +1,4 @@
+import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -9,6 +10,10 @@ from app.deps import get_current_artisan, require_active_subscription
 from app.models import Artisan, Client, Devis, LigneDevis
 from app.pdf import generate_devis_pdf
 from app.schemas import DevisCreate, DevisOut, DevisUpdate
+
+
+def _nouveau_token() -> str:
+    return secrets.token_urlsafe(24)
 
 router = APIRouter(prefix="/devis", tags=["devis"])
 
@@ -46,10 +51,13 @@ def _to_out(devis: Devis) -> DevisOut:
         id=devis.id, artisan_id=devis.artisan_id, client_id=devis.client_id,
         client_nom=devis.client.nom, numero=devis.numero, titre=devis.titre,
         description=devis.description, taux_tva=devis.taux_tva,
-        acompte_pourcentage=devis.acompte_pourcentage, montant_ht=devis.montant_ht,
+        acompte_pourcentage=devis.acompte_pourcentage, remise_pourcentage=devis.remise_pourcentage,
+        montant_ht_brut=devis.montant_ht_brut, remise_montant=devis.remise_montant,
+        montant_ht=devis.montant_ht,
         montant_ttc=devis.montant_ttc, statut=devis.statut, date_envoi=devis.date_envoi,
         date_consultation=devis.date_consultation, date_derniere_relance=devis.date_derniere_relance,
-        date_signature=devis.date_signature, nb_relances=devis.nb_relances, source=devis.source,
+        date_signature=devis.date_signature, nom_signataire=devis.nom_signataire,
+        nb_relances=devis.nb_relances, source=devis.source, token=devis.token,
         created_at=devis.created_at, lignes=devis.lignes,
     )
 
@@ -119,7 +127,8 @@ def creer_devis(
     devis = Devis(
         artisan_id=artisan.id, client_id=client.id, statut="nouveau", source="manuel",
         titre=payload.titre, description=payload.description, taux_tva=payload.taux_tva,
-        acompte_pourcentage=payload.acompte_pourcentage, numero=numero,
+        acompte_pourcentage=payload.acompte_pourcentage, remise_pourcentage=payload.remise_pourcentage,
+        numero=numero, token=_nouveau_token(),
     )
     db.add(devis)
     db.flush()
@@ -145,7 +154,8 @@ def dupliquer_devis(
     copie = Devis(
         artisan_id=artisan.id, client_id=original.client_id, statut="nouveau", source="manuel",
         titre=original.titre, description=original.description, taux_tva=original.taux_tva,
-        acompte_pourcentage=original.acompte_pourcentage, numero=numero,
+        acompte_pourcentage=original.acompte_pourcentage, remise_pourcentage=original.remise_pourcentage,
+        numero=numero, token=_nouveau_token(),
     )
     db.add(copie)
     db.flush()
