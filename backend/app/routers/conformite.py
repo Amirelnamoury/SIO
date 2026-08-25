@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.deps import get_current_artisan
+from app.deps import require_active_subscription
 from app.models import Artisan, ConformiteItem
 from app.schemas import ConformiteCreate, ConformiteOut, ConformiteUpdate
 
@@ -42,7 +42,7 @@ def _get_item_or_404(db: Session, artisan: Artisan, item_id: int) -> ConformiteI
 @router.get("", response_model=list[ConformiteOut])
 def lister_conformite(
     db: Session = Depends(get_db),
-    artisan: Artisan = Depends(get_current_artisan),
+    artisan: Artisan = Depends(require_active_subscription),
 ):
     items = db.query(ConformiteItem).filter(ConformiteItem.artisan_id == artisan.id).all()
     return [_to_out(i) for i in items]
@@ -51,7 +51,7 @@ def lister_conformite(
 @router.get("/alertes", response_model=list[ConformiteOut])
 def alertes_conformite(
     db: Session = Depends(get_db),
-    artisan: Artisan = Depends(get_current_artisan),
+    artisan: Artisan = Depends(require_active_subscription),
 ):
     """Echeances dans moins de 30 jours (ou deja depassees)."""
     seuil = date.today() + timedelta(days=SEUIL_ALERTE_JOURS)
@@ -67,7 +67,7 @@ def alertes_conformite(
 def creer_conformite(
     payload: ConformiteCreate,
     db: Session = Depends(get_db),
-    artisan: Artisan = Depends(get_current_artisan),
+    artisan: Artisan = Depends(require_active_subscription),
 ):
     item = ConformiteItem(artisan_id=artisan.id, **payload.model_dump())
     db.add(item)
@@ -81,7 +81,7 @@ def modifier_conformite(
     item_id: int,
     payload: ConformiteUpdate,
     db: Session = Depends(get_db),
-    artisan: Artisan = Depends(get_current_artisan),
+    artisan: Artisan = Depends(require_active_subscription),
 ):
     item = _get_item_or_404(db, artisan, item_id)
     updates = payload.model_dump(exclude_unset=True)
@@ -96,7 +96,7 @@ def modifier_conformite(
 def supprimer_conformite(
     item_id: int,
     db: Session = Depends(get_db),
-    artisan: Artisan = Depends(get_current_artisan),
+    artisan: Artisan = Depends(require_active_subscription),
 ):
     item = _get_item_or_404(db, artisan, item_id)
     db.delete(item)

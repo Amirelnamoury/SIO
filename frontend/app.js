@@ -153,6 +153,40 @@ function setupAuthScreen() {
   });
 }
 
+// ===================== Fonctions payantes (abonnement) =====================
+function isSubscriptionActive() {
+  return currentArtisan && currentArtisan.subscription_status === "active";
+}
+
+function renderUpgradeCard(title, description) {
+  return `
+  <div class="upgrade-card">
+    <div class="upgrade-icon">&#128274;</div>
+    <h3>${escapeHtml(title)}</h3>
+    <p>${escapeHtml(description)}</p>
+    <button type="button" class="btn-primary" data-action="upgrade-subscription">S'abonner a Suite Artisan</button>
+  </div>`;
+}
+
+async function attemptUpgrade() {
+  try {
+    const data = await Api.checkoutSession();
+    window.location.href = data.checkout_url;
+  } catch (err) {
+    if (err.message.toLowerCase().includes("stripe")) {
+      showToast("Le paiement en ligne n'est pas encore active sur ce compte. Contactez l'administrateur pour activer votre abonnement.", true);
+    } else {
+      showToast(err.message, true);
+    }
+  }
+}
+
+document.addEventListener("click", (e) => {
+  if (e.target.closest('[data-action="upgrade-subscription"]')) {
+    attemptUpgrade();
+  }
+});
+
 // ===================== Coquille du tableau de bord =====================
 function enterDashboard() {
   document.getElementById("auth-screen").hidden = true;
@@ -172,20 +206,28 @@ function switchView(view) {
 }
 
 async function refreshBadges() {
-  try {
-    const [aRelancer, alertes] = await Promise.all([Api.devisARelancer(), Api.conformiteAlertes()]);
-    devisDueIds = new Set(aRelancer.map((d) => d.id));
+  // Les deux compteurs sont independants : la conformite est une fonction payante
+  // (402 si l'abonnement n'est pas actif), on ne veut pas que ca empeche le badge
+  // des relances (gratuit) de s'afficher. D'ou Promise.allSettled plutot que Promise.all.
+  const [relancerResult, alertesResult] = await Promise.allSettled([Api.devisARelancer(), Api.conformiteAlertes()]);
 
-    const badgeRelances = document.getElementById("badge-relances");
-    badgeRelances.textContent = aRelancer.length;
-    badgeRelances.hidden = aRelancer.length === 0;
+  const badgeRelances = document.getElementById("badge-relances");
+  if (relancerResult.status === "fulfilled") {
+    devisDueIds = new Set(relancerResult.value.map((d) => d.id));
+    badgeRelances.textContent = relancerResult.value.length;
+    badgeRelances.hidden = relancerResult.value.length === 0;
+  } else {
+    badgeRelances.hidden = true;
+    console.warn("Impossible de charger les relances a faire :", relancerResult.reason?.message);
+  }
 
-    const badgeAlertes = document.getElementById("badge-alertes");
-    badgeAlertes.textContent = alertes.length;
-    badgeAlertes.hidden = alertes.length === 0;
-  } catch (err) {
-    // les badges sont un bonus d'affichage, on ne bloque pas le reste si ca echoue
-    console.warn("Impossible de charger les compteurs :", err.message);
+  const badgeAlertes = document.getElementById("badge-alertes");
+  if (alertesResult.status === "fulfilled") {
+    badgeAlertes.textContent = alertesResult.value.length;
+    badgeAlertes.hidden = alertesResult.value.length === 0;
+  } else {
+    // 402 si pas abonne : pas d'alerte affichee, c'est attendu.
+    badgeAlertes.hidden = true;
   }
 }
 
@@ -199,8 +241,14 @@ function setupProfilPanel() {
       <div class="profil-row"><div class="label">Email</div><div class="value">${escapeHtml(currentArtisan.email)}</div></div>
       <div class="profil-row"><div class="label">Ville</div><div class="value">${escapeHtml(currentArtisan.ville || "-")}</div></div>
       <div class="profil-row"><div class="label">SIRET</div><div class="value">${escapeHtml(currentArtisan.siret || "-")}</div></div>
-      <div class="profil-row"><div class="label">Abonnement</div><div class="value">${escapeHtml(currentArtisan.subscription_status)}</div></div>
       <div class="profil-row"><div class="label">Lien public du formulaire de devis</div><div class="value" style="font-weight:400;font-size:0.82rem;">${escapeHtml(publicUrl)}</div></div>
+      <div class="profil-row">
+        <div class="label">Abonnement Suite Artisan</div>
+        <div class="value">
+          <span class="badge ${isSubscriptionActive() ? "badge-green" : "badge-gray"}">${isSubscriptionActive() ? "Actif" : "Inactif"}</span>
+        </div>
+        ${!isSubscriptionActive() ? '<button type="button" class="btn-primary" data-action="upgrade-subscription" style="margin-top:10px;width:100%;">S\'abonner</button>' : ""}
+      </div>
     `;
     document.getElementById("panel-profil").hidden = false;
   });
@@ -418,6 +466,21 @@ function setupDevisView() {
 // ===================== Chantiers =====================
 async function loadChantiers() {
   const list = document.getElementById("chantiers-list");
+  const newBtn = document.querySelector('[data-action="show-chantier-form"]');
+  const formContainer = document.getElementById("chantier-form-container");
+
+  if (!isSubscriptionActive()) {
+    newBtn.hidden = true;
+    formContainer.hidden = true;
+    formContainer.innerHTML = "";
+    list.innerHTML = renderUpgradeCard(
+      "Chantiers reserve aux abonnes",
+      "Le suivi de chantier (photos et notes avant/pendant/apres) fait partie de l'abonnement mensuel Suite Artisan."
+    );
+    return;
+  }
+  newBtn.hidden = false;
+
   list.innerHTML = '<div class="empty-state">Chargement...</div>';
   try {
     const chantiers = await Api.listChantiers();
@@ -591,6 +654,22 @@ function setupChantiersView() {
 async function loadConformite() {
   const list = document.getElementById("conformite-list");
   const banner = document.getElementById("conformite-alert-banner");
+  const newBtn = document.querySelector('[data-action="show-conformite-form"]');
+  const formContainer = document.getElementById("conformite-form-container");
+
+  if (!isSubscriptionActive()) {
+    newBtn.hidden = true;
+    formContainer.hidden = true;
+    formContainer.innerHTML = "";
+    banner.hidden = true;
+    list.innerHTML = renderUpgradeCard(
+      "Conformite reservee aux abonnes",
+      "Le suivi des echeances (assurance decennale, Qualibat, RGE) et les alertes automatiques font partie de l'abonnement mensuel Suite Artisan."
+    );
+    return;
+  }
+  newBtn.hidden = false;
+
   list.innerHTML = '<div class="empty-state">Chargement...</div>';
   try {
     const [items, alertes] = await Promise.all([Api.listConformite(), Api.conformiteAlertes()]);

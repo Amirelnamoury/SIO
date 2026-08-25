@@ -96,6 +96,9 @@ const Api = {
   conformiteAlertes: () => apiFetch("/conformite/alertes"),
   createConformite: (payload) => apiFetch("/conformite", { method: "POST", body: payload }),
   deleteConformite: (id) => apiFetch(`/conformite/${id}`, { method: "DELETE" }),
+
+  // ---------- Abonnement ----------
+  checkoutSession: () => apiFetch("/stripe/checkout-session", { method: "POST" }),
 };
 
 // Definie dans app.js : appelee quand le serveur renvoie 401 (token expire/invalide).

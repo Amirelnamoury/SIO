@@ -34,6 +34,22 @@ def get_current_artisan(
     return artisan
 
 
+def require_active_subscription(
+    artisan: Artisan = Depends(get_current_artisan),
+) -> Artisan:
+    """A utiliser sur les routes reservees aux 3 fonctions payantes de Suite
+    Artisan (relances automatiques, chantiers, conformite). La gestion des
+    devis reste gratuite : c'est la porte d'entree qui donne envie de
+    s'abonner, elle ne doit jamais etre verrouillee."""
+
+    if artisan.subscription_status != "active":
+        raise HTTPException(
+            status_code=status.HTTP_402_PAYMENT_REQUIRED,
+            detail="Cette fonctionnalite fait partie de l'abonnement Suite Artisan. Abonnez-vous pour la debloquer.",
+        )
+    return artisan
+
+
 def slugify(value: str) -> str:
     value = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode("ascii")
     value = re.sub(r"[^a-zA-Z0-9]+", "-", value).strip("-").lower()

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
-from app.deps import get_current_artisan
+from app.deps import require_active_subscription
 from app.models import Artisan, Chantier, ChantierNote
 from app.schemas import ChantierCreate, ChantierNoteCreate, ChantierNoteOut, ChantierOut, ChantierUpdate
 
@@ -24,7 +24,7 @@ def _get_chantier_or_404(db: Session, artisan: Artisan, chantier_id: int) -> Cha
 @router.get("", response_model=list[ChantierOut])
 def lister_chantiers(
     db: Session = Depends(get_db),
-    artisan: Artisan = Depends(get_current_artisan),
+    artisan: Artisan = Depends(require_active_subscription),
 ):
     return (
         db.query(Chantier)
@@ -39,7 +39,7 @@ def lister_chantiers(
 def creer_chantier(
     payload: ChantierCreate,
     db: Session = Depends(get_db),
-    artisan: Artisan = Depends(get_current_artisan),
+    artisan: Artisan = Depends(require_active_subscription),
 ):
     chantier = Chantier(artisan_id=artisan.id, **payload.model_dump())
     db.add(chantier)
@@ -52,7 +52,7 @@ def creer_chantier(
 def obtenir_chantier(
     chantier_id: int,
     db: Session = Depends(get_db),
-    artisan: Artisan = Depends(get_current_artisan),
+    artisan: Artisan = Depends(require_active_subscription),
 ):
     return _get_chantier_or_404(db, artisan, chantier_id)
 
@@ -62,7 +62,7 @@ def modifier_chantier(
     chantier_id: int,
     payload: ChantierUpdate,
     db: Session = Depends(get_db),
-    artisan: Artisan = Depends(get_current_artisan),
+    artisan: Artisan = Depends(require_active_subscription),
 ):
     chantier = _get_chantier_or_404(db, artisan, chantier_id)
     updates = payload.model_dump(exclude_unset=True)
@@ -77,7 +77,7 @@ def modifier_chantier(
 def supprimer_chantier(
     chantier_id: int,
     db: Session = Depends(get_db),
-    artisan: Artisan = Depends(get_current_artisan),
+    artisan: Artisan = Depends(require_active_subscription),
 ):
     chantier = _get_chantier_or_404(db, artisan, chantier_id)
     db.delete(chantier)
@@ -89,7 +89,7 @@ def ajouter_note(
     chantier_id: int,
     payload: ChantierNoteCreate,
     db: Session = Depends(get_db),
-    artisan: Artisan = Depends(get_current_artisan),
+    artisan: Artisan = Depends(require_active_subscription),
 ):
     """Ajoute une note/photo de compte-rendu (avant/pendant/apres) a un chantier."""
     chantier = _get_chantier_or_404(db, artisan, chantier_id)
