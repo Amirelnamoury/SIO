@@ -44,7 +44,7 @@ CHECKLIST_PREPARATION = [
 def _get_chantier_or_404(db: Session, artisan: Artisan, chantier_id: int) -> Chantier:
     chantier = (
         db.query(Chantier)
-        .options(joinedload(Chantier.notes), joinedload(Chantier.depenses), joinedload(Chantier.client), joinedload(Chantier.factures))
+        .options(joinedload(Chantier.notes), joinedload(Chantier.depenses), joinedload(Chantier.client), joinedload(Chantier.factures), joinedload(Chantier.taches))
         .filter(Chantier.id == chantier_id, Chantier.artisan_id == artisan.id)
         .first()
     )
@@ -61,8 +61,10 @@ def _to_out(chantier: Chantier) -> ChantierOut:
         date_fin_prevue=chantier.date_fin_prevue, budget=chantier.budget,
         total_depenses=chantier.total_depenses, marge_estimee=chantier.marge_estimee,
         montant_facture=chantier.montant_facture, montant_encaisse=chantier.montant_encaisse,
-        marge_reelle=chantier.marge_reelle,
+        marge_reelle=chantier.marge_reelle, progression=chantier.progression,
+        date_reception=chantier.date_reception, reserves=chantier.reserves,
         created_at=chantier.created_at, notes=chantier.notes, depenses=chantier.depenses,
+        taches=sorted(chantier.taches, key=lambda t: t.id),
     )
 
 
@@ -73,7 +75,7 @@ def lister_chantiers(
 ):
     chantiers = (
         db.query(Chantier)
-        .options(joinedload(Chantier.notes), joinedload(Chantier.depenses), joinedload(Chantier.client), joinedload(Chantier.factures))
+        .options(joinedload(Chantier.notes), joinedload(Chantier.depenses), joinedload(Chantier.client), joinedload(Chantier.factures), joinedload(Chantier.taches))
         .filter(Chantier.artisan_id == artisan.id)
         .order_by(Chantier.created_at.desc())
         .all()

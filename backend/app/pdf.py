@@ -343,11 +343,19 @@ def generate_chantier_report_pdf(chantier: Chantier, artisan: Artisan, photos: l
         _dash_row("Statut", CHANTIER_STATUT_LABELS.get(chantier.statut, chantier.statut), styles),
         _dash_row("Date de debut", chantier.date_debut.strftime("%d/%m/%Y") if chantier.date_debut else "-", styles),
         _dash_row("Fin prevue", chantier.date_fin_prevue.strftime("%d/%m/%Y") if chantier.date_fin_prevue else "-", styles),
+        _dash_row("Avancement", f"{chantier.progression}% des taches liees" if chantier.progression is not None else "-", styles),
     ]
     infos_table = Table(infos_rows, colWidths=[4 * cm, 13 * cm])
     infos_table.setStyle(TableStyle([("BOTTOMPADDING", (0, 0), (-1, -1), 4), ("TOPPADDING", (0, 0), (-1, -1), 4)]))
     elements.append(infos_table)
     elements.append(Spacer(1, 14))
+
+    if chantier.taches:
+        elements.append(Paragraph("Preparation et taches", styles["section"]))
+        for tache in sorted(chantier.taches, key=lambda t: t.id):
+            coche = "&#9745;" if tache.statut == "faite" else "&#9744;"
+            elements.append(Paragraph(f"{coche} {tache.titre}", styles["normal"]))
+        elements.append(Spacer(1, 14))
 
     elements.append(Paragraph("Avancement financier", styles["section"]))
     fin_rows = [
@@ -387,6 +395,17 @@ def generate_chantier_report_pdf(chantier: Chantier, artisan: Artisan, photos: l
                 elements.append(Paragraph(note.texte, styles["normal"]))
             elements.append(Spacer(1, 6))
         elements.append(Spacer(1, 8))
+
+    if chantier.date_reception:
+        elements.append(Paragraph("Reception", styles["section"]))
+        elements.append(Paragraph(f"Chantier receptionne le {chantier.date_reception.strftime('%d/%m/%Y')}.", styles["normal"]))
+        if chantier.reserves:
+            elements.append(Spacer(1, 4))
+            elements.append(Paragraph("<b>Reserves constatees :</b>", styles["small"]))
+            elements.append(Paragraph(chantier.reserves, styles["normal"]))
+        else:
+            elements.append(Paragraph("Aucune reserve constatee.", styles["small"]))
+        elements.append(Spacer(1, 14))
 
     if photos:
         elements.append(Paragraph("Photos", styles["section"]))

@@ -2287,6 +2287,56 @@ function rentabiliteHtml(c) {
     </div>`;
 }
 
+function progressionHtml(c) {
+  if (c.progression === null || c.progression === undefined) return "";
+  const couleur = c.progression >= 70 ? "var(--success)" : c.progression >= 40 ? "var(--warning)" : "var(--danger)";
+  return `
+    <div style="margin:10px 0;">
+      <div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:3px;"><span>Avancement</span><strong>${c.progression}%</strong></div>
+      <div class="sante-barre"><div class="remplissage" style="width:${c.progression}%;background:${couleur};"></div></div>
+    </div>`;
+}
+
+function checklistHtml(c) {
+  if (!c.taches || c.taches.length === 0) return "";
+  const items = c.taches.map((t) => {
+    const checked = t.statut === "faite";
+    return `<label class="checklist-item">
+      <input type="checkbox" data-action="toggle-tache-chantier" data-chantier-id="${c.id}" data-tache-id="${t.id}" ${checked ? "checked" : ""}>
+      <span style="${checked ? "text-decoration:line-through;color:var(--text-muted);" : ""}">${escapeHtml(t.titre)}</span>
+    </label>`;
+  }).join("");
+  return `<div class="dash-section" style="margin:12px 0;"><h3 style="font-size:0.88rem;">Preparation et taches</h3>${items}</div>`;
+}
+
+function receptionHtml(c) {
+  if (!c.date_reception) return "";
+  return `<div class="item-meta" style="margin:10px 0;">
+    <strong>Reception :</strong> ${fmtDate(c.date_reception)}
+    <div class="item-sub">${c.reserves ? "Reserves : " + escapeHtml(c.reserves) : "Aucune reserve constatee."}</div>
+  </div>`;
+}
+
+function showReceptionForm(chantierId, c) {
+  const container = document.getElementById(`reception-form-${chantierId}`);
+  if (!container) return;
+  const today = new Date().toISOString().slice(0, 10);
+  container.innerHTML = `
+    <div class="form-box" style="margin-top:12px;">
+      <h3 style="font-size:0.95rem;">Reception du chantier</h3>
+      <div class="form-grid">
+        <div><label for="recep-date-${chantierId}">Date de reception</label><input type="date" id="recep-date-${chantierId}" value="${c && c.date_reception ? c.date_reception : today}"></div>
+      </div>
+      <label for="recep-reserves-${chantierId}" style="margin-top:10px;">Reserves constatees (optionnel)</label>
+      <textarea id="recep-reserves-${chantierId}" placeholder="Ex: finition plinthes a reprendre dans la cuisine">${c && c.reserves ? escapeHtml(c.reserves) : ""}</textarea>
+      <p class="field-error" id="reception-error-${chantierId}" hidden></p>
+      <div class="form-actions">
+        <button type="button" class="btn-sm btn-sm-primary" data-action="submit-reception" data-id="${chantierId}">Enregistrer la reception</button>
+        <button type="button" class="btn-sm" data-action="cancel-reception-form" data-id="${chantierId}">Annuler</button>
+      </div>
+    </div>`;
+}
+
 function showCloturerForm(chantierId) {
   const container = document.getElementById(`cloturer-form-${chantierId}`);
   if (!container) return;
@@ -2756,12 +2806,12 @@ function renderDocumentCard(d) {
   </div>`;
 }
 
-function showDocumentForm() {
+function showDocumentForm(preselectChantierId) {
   const container = document.getElementById("document-form-container");
   container.innerHTML = "";
   Promise.all([ensureClientsCache(), Api.listChantiers().catch(() => [])]).then(([clients, chantiers]) => {
     const chantierOptions = chantiers
-      .map((c) => `<option value="${c.id}">${escapeHtml(c.titre)}</option>`)
+      .map((c) => `<option value="${c.id}" ${preselectChantierId && c.id === preselectChantierId ? "selected" : ""}>${escapeHtml(c.titre)}</option>`)
       .join("");
     container.innerHTML = `
       <div class="form-box">

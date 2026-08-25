@@ -74,7 +74,7 @@ def obtenir_dashboard(
 
     chantiers_bientot = (
         db.query(Chantier)
-        .options(joinedload(Chantier.notes), joinedload(Chantier.depenses), joinedload(Chantier.client), joinedload(Chantier.factures))
+        .options(joinedload(Chantier.notes), joinedload(Chantier.depenses), joinedload(Chantier.client), joinedload(Chantier.factures), joinedload(Chantier.taches))
         .filter(
             Chantier.artisan_id == artisan.id, Chantier.statut.in_(("a_preparer", "planifie")),
             Chantier.date_debut.isnot(None), Chantier.date_debut >= aujourdhui, Chantier.date_debut <= aujourdhui + timedelta(days=7),

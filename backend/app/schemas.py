@@ -597,6 +597,8 @@ class ChantierUpdate(BaseModel):
     date_debut: Optional[date] = None
     date_fin_prevue: Optional[date] = None
     budget: Optional[float] = None
+    date_reception: Optional[date] = None
+    reserves: Optional[str] = None
 
     @field_validator("statut")
     @classmethod
@@ -665,9 +667,13 @@ class ChantierOut(BaseModel):
     montant_facture: Optional[float] = None
     montant_encaisse: Optional[float] = None
     marge_reelle: Optional[float] = None
+    progression: Optional[int] = None
+    date_reception: Optional[date] = None
+    reserves: Optional[str] = None
     created_at: datetime
     notes: list[ChantierNoteOut] = []
     depenses: list[DepenseOut] = []
+    taches: "list[TacheOut]" = []
 
 
 # ---------- Workflows (devis signe -> chantier, chantier termine -> cloture) ----------
@@ -774,6 +780,9 @@ class TacheOut(BaseModel):
     echeance: Optional[date] = None
     statut: str
     created_at: datetime
+
+
+ChantierOut.model_rebuild()
 
 
 # ---------- Planning ----------

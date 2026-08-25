@@ -336,6 +336,10 @@ class Chantier(Base):
     date_fin_prevue = Column(Date, nullable=True)
     budget = Column(MONTANT, nullable=True)
 
+    # Reception : constatee reellement par l'artisan (jamais deduite automatiquement).
+    date_reception = Column(Date, nullable=True)
+    reserves = Column(Text, nullable=True)
+
     created_at = Column(DateTime(timezone=True), default=utcnow)
 
     artisan = relationship("Artisan", back_populates="chantiers")
@@ -384,6 +388,17 @@ class Chantier(Base):
         if facture is None:
             return None
         return round(facture - self.total_depenses, 2)
+
+    @property
+    def progression(self):
+        """Avancement reel du chantier = part des taches liees (checklist de
+        preparation + taches ajoutees ensuite) marquees faites. Jamais de
+        pourcentage invente : None tant qu'aucune tache n'est liee."""
+        taches = self.taches
+        if not taches:
+            return None
+        faites = sum(1 for t in taches if t.statut == "faite")
+        return round(faites / len(taches) * 100)
 
 
 class Depense(Base):
