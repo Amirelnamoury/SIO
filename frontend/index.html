@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Suite Artisan - Tableau de bord</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ===================== ECRAN CONNEXION / INSCRIPTION ===================== -->
+<div id="auth-screen" class="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">Suite Artisan</div>
+
+    <div class="auth-tabs">
+      <button type="button" class="auth-tab active" data-tab="login">Connexion</button>
+      <button type="button" class="auth-tab" data-tab="register">Inscription</button>
+    </div>
+
+    <p id="auth-error" class="auth-error" hidden></p>
+
+    <form id="login-form" class="auth-form">
+      <label for="login-email">Email</label>
+      <input type="email" id="login-email" required autocomplete="username">
+
+      <label for="login-password">Mot de passe</label>
+      <input type="password" id="login-password" required autocomplete="current-password">
+
+      <button type="submit" class="btn-primary">Se connecter</button>
+    </form>
+
+    <form id="register-form" class="auth-form" hidden>
+      <label for="reg-nom-entreprise">Nom de l'entreprise *</label>
+      <input type="text" id="reg-nom-entreprise" required>
+
+      <label for="reg-metier">Metier *</label>
+      <select id="reg-metier" required>
+        <option value="plombier">Plombier</option>
+        <option value="electricien">Electricien</option>
+        <option value="macon">Macon</option>
+        <option value="peintre">Peintre</option>
+        <option value="general">Autre (artisan du BTP)</option>
+      </select>
+
+      <label for="reg-email">Email *</label>
+      <input type="email" id="reg-email" required autocomplete="username">
+
+      <label for="reg-password">Mot de passe * (8 caracteres minimum)</label>
+      <input type="password" id="reg-password" required minlength="8" autocomplete="new-password">
+
+      <label for="reg-telephone">Telephone</label>
+      <input type="tel" id="reg-telephone">
+
+      <label for="reg-ville">Ville</label>
+      <input type="text" id="reg-ville">
+
+      <label for="reg-code-postal">Code postal</label>
+      <input type="text" id="reg-code-postal">
+
+      <label for="reg-siret">SIRET</label>
+      <input type="text" id="reg-siret">
+
+      <label for="reg-assurance">Assureur decennale</label>
+      <input type="text" id="reg-assurance" placeholder="Ex: AXA">
+
+      <button type="submit" class="btn-primary">Creer mon compte</button>
+    </form>
+  </div>
+</div>
+
+<!-- ===================== TABLEAU DE BORD ===================== -->
+<div id="dashboard-screen" class="dashboard-screen" hidden>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <span class="topbar-logo">Suite Artisan</span>
+    </div>
+    <div class="topbar-right">
+      <button type="button" id="btn-profil" class="btn-ghost-small">Mon profil</button>
+      <button type="button" id="btn-logout" class="btn-ghost-small">Deconnexion</button>
+    </div>
+  </header>
+
+  <nav class="tabbar">
+    <button type="button" class="tab-link active" data-view="devis">
+      Devis &amp; relances <span id="badge-relances" class="badge-count" hidden>0</span>
+    </button>
+    <button type="button" class="tab-link" data-view="chantiers">Chantiers</button>
+    <button type="button" class="tab-link" data-view="conformite">
+      Conformite <span id="badge-alertes" class="badge-count badge-alert" hidden>0</span>
+    </button>
+  </nav>
+
+  <main class="content">
+
+    <!-- ---------- Profil (panneau discret) ---------- -->
+    <div id="panel-profil" class="side-panel" hidden>
+      <div class="side-panel-box">
+        <button type="button" class="side-panel-close" data-action="close-profil">&times;</button>
+        <h3>Mon profil</h3>
+        <div id="profil-content"></div>
+      </div>
+    </div>
+
+    <!-- ---------- Section Devis & relances ---------- -->
+    <section id="view-devis" class="view">
+      <div class="view-header">
+        <h2>Devis &amp; relances</h2>
+        <button type="button" class="btn-primary" data-action="show-devis-form">+ Nouveau devis</button>
+      </div>
+
+      <div id="devis-form-container" hidden></div>
+
+      <div class="filters" id="devis-filters">
+        <button type="button" class="filter-chip active" data-statut="">Tous</button>
+        <button type="button" class="filter-chip" data-statut="nouveau">Nouvelles demandes</button>
+        <button type="button" class="filter-chip" data-statut="envoye">Envoyes</button>
+        <button type="button" class="filter-chip" data-statut="signe">Signes</button>
+        <button type="button" class="filter-chip" data-statut="perdu">Perdus</button>
+      </div>
+
+      <div id="devis-list" class="list"></div>
+    </section>
+
+    <!-- ---------- Section Chantiers ---------- -->
+    <section id="view-chantiers" class="view" hidden>
+      <div class="view-header">
+        <h2>Chantiers</h2>
+        <button type="button" class="btn-primary" data-action="show-chantier-form">+ Nouveau chantier</button>
+      </div>
+
+      <div id="chantier-form-container" hidden></div>
+
+      <div id="chantiers-list" class="list"></div>
+    </section>
+
+    <!-- ---------- Section Conformite ---------- -->
+    <section id="view-conformite" class="view" hidden>
+      <div class="view-header">
+        <h2>Conformite</h2>
+        <button type="button" class="btn-primary" data-action="show-conformite-form">+ Nouvel element</button>
+      </div>
+
+      <div id="conformite-alert-banner" class="alert-banner" hidden></div>
+
+      <div id="conformite-form-container" hidden></div>
+
+      <div id="conformite-list" class="list"></div>
+    </section>
+
+  </main>
+</div>
+
+<script src="api.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
