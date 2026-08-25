@@ -137,6 +137,10 @@ const Api = {
   deleteAvis: (id) => apiFetch(`/avis/${id}`, { method: "DELETE" }),
   demanderAvis: (clientId) => apiFetch(`/clients/${clientId}/demande-avis`, { method: "POST" }),
 
+  // ---------- Automatisation ----------
+  automationStatus: () => apiFetch("/automation/status"),
+  automationEmails: () => apiFetch("/automation/emails"),
+
   // ---------- Notifications ----------
   listNotifications: () => apiFetch("/notifications"),
 

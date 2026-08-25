@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Facture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="devis-public.css">
+</head>
+<body class="devis-public-body">
+
+<div class="devis-public-wrap">
+  <div id="facture-public-content" class="devis-public-card">
+    <div class="empty-state">Chargement de la facture...</div>
+  </div>
+  <p class="devis-public-footer">Facture geree via <strong>Suite Artisan</strong></p>
+</div>
+
+<script>
+const API_BASE = "http://localhost:8000";
+
+function escapeHtml(value) {
+  if (value === null || value === undefined) return "";
+  return String(value)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+function fmtEuro(n) {
+  if (n === null || n === undefined) return "-";
+  return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(n);
+}
+function fmtDate(iso) {
+  if (!iso) return "-";
+  return new Date(iso).toLocaleDateString("fr-FR");
+}
+
+const token = new URLSearchParams(window.location.search).get("t");
+const contentEl = document.getElementById("facture-public-content");
+
+const STATUT_LABELS = {
+  brouillon: "Brouillon", envoyee: "Envoyee", partiellement_payee: "Partiellement payee",
+  payee: "Payee", en_retard: "En retard", annulee: "Annulee",
+};
+const TYPE_LABELS = { standard: "Standard", acompte: "Acompte", situation: "Situation", finale: "Finale", avoir: "Avoir" };
+
+function lignesTableHtml(lignes) {
+  return `
+  <table class="devis-public-table">
+    <thead><tr><th>Description</th><th>Qte</th><th>Unite</th><th>PU HT</th><th>Total HT</th></tr></thead>
+    <tbody>
+      ${lignes.map((l) => `<tr>
+        <td>${escapeHtml(l.description)}</td>
+        <td>${l.quantite}</td>
+        <td>${escapeHtml(l.unite)}</td>
+        <td>${fmtEuro(l.prix_unitaire_ht)}</td>
+        <td>${fmtEuro(l.total_ht)}</td>
+      </tr>`).join("")}
+    </tbody>
+  </table>`;
+}
+
+function totauxHtml(f) {
+  const rows = [
+    ["Total HT", fmtEuro(f.montant_ht)],
+    [`TVA (${f.taux_tva}%)`, fmtEuro((f.montant_ttc || 0) - (f.montant_ht || 0))],
+    ["Total TTC", fmtEuro(f.montant_ttc)],
+    ["Deja regle", fmtEuro(f.montant_paye)],
+  ];
+  return `<div class="devis-public-totaux">
+    ${rows.map(([l, v]) => `<div class="devis-public-total-row ${l === "Total TTC" ? "is-total" : ""}"><span>${l}</span><strong>${v}</strong></div>`).join("")}
+    <div class="devis-public-total-row" style="margin-top:8px;padding-top:12px;border-top:1.5px dashed var(--border);">
+      <span>${f.montant_restant > 0 ? "Reste a payer" : "Solde"}</span>
+      <strong style="${f.montant_restant > 0 ? "color:var(--danger);" : "color:var(--success);"}">${fmtEuro(f.montant_restant)}</strong>
+    </div>
+  </div>`;
+}
+
+function paiementsHtml(paiements) {
+  if (!paiements.length) return "";
+  return `
+    <div style="margin-top:24px;">
+      <h3 style="font-size:0.95rem;margin:0 0 10px;">Paiements enregistres</h3>
+      ${paiements.map((p) => `<div class="dash-row"><span>${fmtDate(p.date_paiement)} &middot; ${escapeHtml(p.moyen)}</span><strong>${fmtEuro(p.montant)}</strong></div>`).join("")}
+    </div>`;
+}
+
+function renderFacture(f) {
+  const statutLabel = STATUT_LABELS[f.statut] || f.statut;
+  let statusBanner = "";
+  if (f.statut === "payee") {
+    statusBanner = `<div class="devis-public-banner is-success"><strong>Facture reglee</strong>. Merci !</div>`;
+  } else if (f.est_en_retard) {
+    statusBanner = `<div class="devis-public-banner" style="background:#fdecea;color:#b3261e;"><strong>Echeance depassee</strong>${f.date_echeance ? " (" + fmtDate(f.date_echeance) + ")" : ""}. Merci de regulariser des que possible.</div>`;
+  }
+
+  contentEl.innerHTML = `
+    <div class="devis-public-header">
+      <div>
+        <div class="devis-public-artisan">${escapeHtml(f.artisan_nom_entreprise)}</div>
+        <div class="section-hint" style="margin:2px 0 0;">
+          ${f.artisan_telephone ? escapeHtml(f.artisan_telephone) + " &middot; " : ""}${escapeHtml(f.artisan_email)}
+        </div>
+      </div>
+      <span class="badge ${f.statut === "payee" ? "badge-green" : (f.est_en_retard ? "badge-red" : "badge-gray")}">${statutLabel}</span>
+    </div>
+
+    ${statusBanner}
+
+    <h1>Facture ${escapeHtml(f.numero)}</h1>
+    <p class="section-hint">${TYPE_LABELS[f.type] || f.type} &middot; etablie pour ${escapeHtml(f.client_nom)}</p>
+
+    ${lignesTableHtml(f.lignes)}
+    ${totauxHtml(f)}
+    ${paiementsHtml(f.paiements)}
+
+    <p class="devis-public-mentions">
+      Facture emise le ${fmtDate(f.date_emission)}${f.date_echeance ? ", echeance le " + fmtDate(f.date_echeance) : ""}.
+      ${f.artisan_siret ? `SIRET : ${escapeHtml(f.artisan_siret)}.` : ""}
+    </p>
+  `;
+}
+
+async function load() {
+  if (!token) {
+    contentEl.innerHTML = '<div class="empty-state">Lien de facture invalide.</div>';
+    return;
+  }
+  try {
+    const res = await fetch(`${API_BASE}/pub/facture/${token}`);
+    if (!res.ok) {
+      contentEl.innerHTML = '<div class="empty-state">Cette facture est introuvable. Verifiez le lien recu.</div>';
+      return;
+    }
+    renderFacture(await res.json());
+  } catch (err) {
+    contentEl.innerHTML = '<div class="empty-state">Impossible de contacter le serveur. Verifiez votre connexion.</div>';
+  }
+}
+
+load();
+</script>
+</body>
+</html>

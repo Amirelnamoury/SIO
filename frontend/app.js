@@ -419,6 +419,7 @@ function switchView(view) {
     loadPrestations();
     loadConformite();
     loadEquipe();
+    loadAutomationStatus();
   }
 }
 
@@ -558,6 +559,26 @@ function setupAutomatisationForm() {
       submitBtn.disabled = false;
     }
   });
+}
+
+async function loadAutomationStatus() {
+  const box = document.getElementById("automation-status");
+  try {
+    const s = await Api.automationStatus();
+    const badge = s.email_configure
+      ? '<span class="badge badge-green">Actif</span>'
+      : '<span class="badge badge-orange">Non configure</span>';
+    const detail = s.email_configure
+      ? `Envoi reel des relances et notifications via ${escapeHtml(s.fournisseur)}.`
+      : `Les relances automatiques sont detectees mais pas envoyees : aucun fournisseur email n'est configure cote serveur (variable RESEND_API_KEY). En attendant, utilisez "Copier le lien client" pour les envoyer vous-meme.`;
+    box.innerHTML = `
+      <div class="dash-row"><span>Emails automatiques</span>${badge}</div>
+      <p class="section-hint" style="margin-top:4px;">${detail}</p>
+      ${s.derniere_execution ? `<p class="section-hint">Dernier passage : ${fmtDateTime(s.derniere_execution)} (${escapeHtml(s.derniere_execution_resume || "")}). Prochain vers ${fmtDateTime(s.prochaine_execution_estimee)}.</p>` : ""}
+    `;
+  } catch (err) {
+    box.innerHTML = "";
+  }
 }
 
 // ===================== Equipe =====================
@@ -1880,6 +1901,9 @@ function renderFactureCard(f) {
   if (isDue) {
     actions += `<button type="button" class="btn-sm btn-sm-primary" data-action="relancer-facture" data-id="${f.id}">Relancer</button>`;
   }
+  if (f.token && f.statut !== "brouillon") {
+    actions += `<button type="button" class="btn-sm" data-action="copier-lien-facture" data-token="${escapeHtml(f.token)}">Copier le lien client</button>`;
+  }
   actions += `<button type="button" class="btn-sm" data-action="pdf-facture" data-id="${f.id}">Telecharger le PDF</button>`;
   actions += `<button type="button" class="btn-sm btn-sm-danger" data-action="delete-facture" data-id="${f.id}">Supprimer</button>`;
 
@@ -2074,6 +2098,14 @@ function setupFacturesView() {
         showToast("Relance enregistree.");
         loadFactures();
       });
+    } else if (btn.dataset.action === "copier-lien-facture") {
+      const url = `${window.location.origin}/facture-public.html?t=${btn.dataset.token}`;
+      try {
+        await navigator.clipboard.writeText(url);
+        showToast("Lien copie. Envoyez-le a votre client par email ou SMS.");
+      } catch (err) {
+        showToast(url, false);
+      }
     }
   });
 }

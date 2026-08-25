@@ -540,9 +540,42 @@ class FactureOut(BaseModel):
     notes: Optional[str] = None
     date_derniere_relance: Optional[datetime] = None
     nb_relances: int = 0
+    token: Optional[str] = None
     created_at: datetime
     lignes: list[LigneFactureOut] = []
     paiements: list[PaiementOut] = []
+
+
+class PaiementPublicOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    montant: float
+    date_paiement: date
+    moyen: str
+
+
+class FacturePublicOut(BaseModel):
+    """Ce que voit le client sur le lien public de sa facture. Pas d'ids
+    internes, pas de donnees d'un autre artisan (meme principe que DevisPublicOut)."""
+    model_config = ConfigDict(from_attributes=True)
+
+    numero: str
+    type: str
+    client_nom: str
+    taux_tva: float
+    statut: str
+    montant_ht: float
+    montant_ttc: float
+    montant_paye: float
+    montant_restant: float
+    est_en_retard: bool
+    date_emission: date
+    date_echeance: Optional[date] = None
+    lignes: list[LigneFactureOut] = []
+    paiements: list[PaiementPublicOut] = []
+    artisan_nom_entreprise: str
+    artisan_telephone: Optional[str] = None
+    artisan_email: str
+    artisan_siret: Optional[str] = None
 
 
 # ---------- Chantiers ----------
@@ -986,3 +1019,29 @@ class NotificationOut(BaseModel):
     urgent: bool
     date: datetime
     view: str
+
+
+# ---------- Automatisation (emails + observabilite du scheduler) ----------
+
+class EmailLogOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    client_id: Optional[int] = None
+    devis_id: Optional[int] = None
+    facture_id: Optional[int] = None
+    type: str
+    destinataire: Optional[str] = None
+    objet: Optional[str] = None
+    statut: str
+    erreur: Optional[str] = None
+    created_at: datetime
+
+
+class AutomationStatutOut(BaseModel):
+    email_configure: bool
+    fournisseur: str
+    intervalle_minutes: int
+    derniere_execution: Optional[datetime] = None
+    derniere_execution_resume: Optional[str] = None
+    prochaine_execution_estimee: Optional[datetime] = None

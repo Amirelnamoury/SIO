@@ -1,9 +1,11 @@
+from datetime import timezone
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.deps import get_current_artisan
-from app.models import Artisan, Client, Devis, Facture, Chantier
+from app.models import Artisan, Client, Devis, EmailLog, Facture, Chantier
 from app.schemas import ClientCreate, ClientOut, ClientResume, ClientUpdate, TimelineEntry
 
 router = APIRouter(prefix="/clients", tags=["clients"])
@@ -159,5 +161,29 @@ def timeline_client(
     for c in chantiers_list:
         entries.append(TimelineEntry(date=c.created_at, type="chantier_cree", label=f"Chantier '{c.titre}' cree", reference_id=c.id))
 
-    entries.sort(key=lambda e: e.date)
+    # Historique reel des emails transactionnels (voir email_service.py) :
+    # montre honnetement ce qui a ete envoye, echoue, ou jamais tente faute
+    # de fournisseur configure - jamais un "envoye" qui ne serait pas reel.
+    EMAIL_TYPE_LABELS = {
+        "devis": "Devis envoye par email", "relance_devis": "Relance devis envoyee par email",
+        "facture": "Facture envoyee par email", "relance_facture": "Relance facture envoyee par email",
+        "paiement_recu": "Confirmation de paiement envoyee", "demande_avis": "Demande d'avis envoyee",
+    }
+    emails = db.query(EmailLog).filter(EmailLog.client_id == client.id).all()
+    for log in emails:
+        libelle_type = EMAIL_TYPE_LABELS.get(log.type, log.type)
+        if log.statut == "envoye":
+            label = libelle_type
+        elif log.statut == "echec":
+            label = f"{libelle_type} : echec d'envoi"
+        elif log.statut == "non_configure":
+            label = f"{libelle_type} : non envoye (fournisseur email non configure)"
+        else:
+            label = f"{libelle_type} : pas d'adresse email pour ce contact"
+        entries.append(TimelineEntry(date=log.created_at, type=f"email_{log.statut}", label=label, reference_id=log.devis_id or log.facture_id))
+
+    # SQLite ne conserve pas systematiquement l'info de fuseau horaire selon
+    # le chemin d'ecriture (defaut ORM vs mise a jour directe) : on normalise
+    # avant de trier pour ne jamais comparer un datetime naif a un aware.
+    entries.sort(key=lambda e: e.date if e.date.tzinfo is not None else e.date.replace(tzinfo=timezone.utc))
     return entries

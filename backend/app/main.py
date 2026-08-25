@@ -1,4 +1,5 @@
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,6 +28,7 @@ if settings.jwt_secret == _DEFAULT_JWT_SECRET:
         )
 from app.routers import (
     analytics,
+    automation,
     auth,
     avis,
     chantiers,
@@ -48,7 +50,17 @@ from app.routers import (
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Suite Artisan API", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    from app.scheduler import start_scheduler, stop_scheduler
+
+    start_scheduler()
+    yield
+    stop_scheduler()
+
+
+app = FastAPI(title="Suite Artisan API", version="0.1.0", lifespan=lifespan)
 
 _cors_origins = [o.strip() for o in settings.cors_origins.split(",")] if settings.cors_origins != "*" else ["*"]
 
@@ -82,6 +94,7 @@ app.include_router(avis.router)
 app.include_router(equipe.router)
 app.include_router(dashboard.router)
 app.include_router(notifications.router)
+app.include_router(automation.router)
 app.include_router(analytics.router)
 app.include_router(search.router)
 app.include_router(public.router)

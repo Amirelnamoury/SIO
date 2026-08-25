@@ -4,8 +4,15 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
-from app.models import Artisan, Avis, Client, Devis
-from app.schemas import AvisPublicIn, AvisPublicStatutOut, ClientPublicCreate, DevisAccepterIn, DevisPublicOut
+from app.models import Artisan, Avis, Client, Devis, Facture
+from app.schemas import (
+    AvisPublicIn,
+    AvisPublicStatutOut,
+    ClientPublicCreate,
+    DevisAccepterIn,
+    DevisPublicOut,
+    FacturePublicOut,
+)
 
 router = APIRouter(prefix="/pub", tags=["public"])
 
@@ -105,6 +112,30 @@ def accepter_devis_public(token: str, payload: DevisAccepterIn, db: Session = De
     db.commit()
     devis = _get_devis_public_or_404(db, token)
     return _to_public_out(devis)
+
+
+@router.get("/facture/{token}", response_model=FacturePublicOut)
+def voir_facture_public(token: str, db: Session = Depends(get_db)):
+    """Endpoint PUBLIC : ce que le client voit en ouvrant le lien de sa
+    facture (envoye par l'artisan ou par une relance automatique)."""
+    facture = (
+        db.query(Facture)
+        .options(joinedload(Facture.lignes), joinedload(Facture.paiements), joinedload(Facture.client), joinedload(Facture.artisan))
+        .filter(Facture.token == token)
+        .first()
+    )
+    if facture is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Facture introuvable")
+    return FacturePublicOut(
+        numero=facture.numero, type=facture.type, client_nom=facture.client.nom,
+        taux_tva=facture.taux_tva, statut=facture.statut, montant_ht=facture.montant_ht,
+        montant_ttc=facture.montant_ttc, montant_paye=facture.montant_paye,
+        montant_restant=facture.montant_restant, est_en_retard=facture.est_en_retard,
+        date_emission=facture.date_emission, date_echeance=facture.date_echeance,
+        lignes=facture.lignes, paiements=facture.paiements,
+        artisan_nom_entreprise=facture.artisan.nom_entreprise, artisan_telephone=facture.artisan.telephone,
+        artisan_email=facture.artisan.email, artisan_siret=facture.artisan.siret,
+    )
 
 
 def _get_client_avis_or_404(db: Session, token: str) -> Client:

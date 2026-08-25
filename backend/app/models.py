@@ -69,6 +69,7 @@ class Artisan(Base):
     clients = relationship("Client", back_populates="artisan", cascade="all, delete-orphan")
     avis = relationship("Avis", back_populates="artisan", cascade="all, delete-orphan")
     membres = relationship("Membre", back_populates="artisan", cascade="all, delete-orphan")
+    email_logs = relationship("EmailLog", back_populates="artisan", cascade="all, delete-orphan")
     devis = relationship("Devis", back_populates="artisan", cascade="all, delete-orphan")
     factures = relationship("Facture", back_populates="artisan", cascade="all, delete-orphan")
     chantiers = relationship("Chantier", back_populates="artisan", cascade="all, delete-orphan")
@@ -246,6 +247,10 @@ class Facture(Base):
 
     date_derniere_relance = Column(DateTime(timezone=True), nullable=True)
     nb_relances = Column(Integer, default=0)
+
+    # Jeton public de consultation (meme logique que Devis.token) : genere a
+    # la creation, permet au client d'ouvrir sa facture sans compte.
+    token = Column(String, unique=True, index=True, nullable=True)
 
     created_at = Column(DateTime(timezone=True), default=utcnow)
 
@@ -568,3 +573,56 @@ class Membre(Base):
     created_at = Column(DateTime(timezone=True), default=utcnow)
 
     artisan = relationship("Artisan", back_populates="membres")
+
+
+# statuts possibles d'un EmailLog :
+#   envoye          -> reellement transmis au fournisseur (Resend a accepte l'envoi)
+#   echec           -> le fournisseur est configure mais l'envoi a echoue (reseau, refus...)
+#   non_configure   -> pas de cle API : rien n'a ete envoye, on le dit clairement
+#   sans_destinataire -> le destinataire n'a pas d'email renseigne
+EMAIL_LOG_STATUTS = ["envoye", "echec", "non_configure", "sans_destinataire"]
+
+
+class EmailLog(Base):
+    """Trace de chaque email transactionnel tente (pas seulement les succes) :
+    c'est la base de l'historique de communication visible dans la timeline
+    client, et ca permet de ne jamais pretendre qu'un email est parti s'il
+    ne l'est pas reellement (voir EMAIL_LOG_STATUTS)."""
+
+    __tablename__ = "email_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    artisan_id = Column(Integer, ForeignKey("artisans.id"), nullable=False, index=True)
+    client_id = Column(Integer, ForeignKey("clients.id"), nullable=True, index=True)
+    devis_id = Column(Integer, ForeignKey("devis.id"), nullable=True, index=True)
+    facture_id = Column(Integer, ForeignKey("factures.id"), nullable=True, index=True)
+
+    type = Column(String, nullable=False)  # devis, relance_devis, facture, relance_facture, paiement_recu, demande_avis, conformite_alerte
+    destinataire = Column(String, nullable=True)
+    objet = Column(String, nullable=True)
+    statut = Column(String, nullable=False)  # voir EMAIL_LOG_STATUTS
+    erreur = Column(Text, nullable=True)
+    provider_id = Column(String, nullable=True)  # id renvoye par Resend, pour rapprochement/support
+
+    created_at = Column(DateTime(timezone=True), default=utcnow, index=True)
+
+    artisan = relationship("Artisan", back_populates="email_logs")
+
+
+class AutomationRun(Base):
+    """Un passage du planificateur d'automatisation (voir scheduler.py).
+    Sert a l'observabilite : on veut pouvoir repondre a "le job tourne-t-il
+    vraiment ?" sans regarder les logs serveur bruts."""
+
+    __tablename__ = "automation_runs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    started_at = Column(DateTime(timezone=True), default=utcnow)
+    finished_at = Column(DateTime(timezone=True), nullable=True)
+    nb_devis_relances = Column(Integer, default=0)
+    nb_factures_relancees = Column(Integer, default=0)
+    nb_alertes_conformite = Column(Integer, default=0)
+    nb_emails_envoyes = Column(Integer, default=0)
+    nb_emails_non_configures = Column(Integer, default=0)
+    nb_erreurs = Column(Integer, default=0)
+    erreur = Column(Text, nullable=True)  # erreur fatale eventuelle qui a interrompu le cycle

@@ -1,3 +1,4 @@
+import secrets
 from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 
@@ -6,11 +7,16 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
 from app.deps import get_current_artisan
+from app import email_service
 from app.models import Artisan, Client, Devis, Facture, LigneFacture, Paiement
 from app.pdf import generate_facture_pdf
 from app.schemas import FactureCreate, FactureOut, FactureUpdate, PaiementCreate, PaiementOut
 
 router = APIRouter(prefix="/factures", tags=["factures"])
+
+
+def _nouveau_token() -> str:
+    return secrets.token_urlsafe(24)
 
 
 def _get_facture_or_404(db: Session, artisan: Artisan, facture_id: int) -> Facture:
@@ -35,7 +41,7 @@ def _to_out(facture: Facture) -> FactureOut:
         date_emission=facture.date_emission, date_echeance=facture.date_echeance,
         date_envoi=facture.date_envoi, notes=facture.notes,
         date_derniere_relance=facture.date_derniere_relance, nb_relances=facture.nb_relances,
-        created_at=facture.created_at,
+        token=facture.token, created_at=facture.created_at,
         lignes=facture.lignes, paiements=facture.paiements,
     )
 
@@ -153,7 +159,7 @@ def creer_facture(
     facture = Facture(
         artisan_id=artisan.id, client_id=client.id, devis_id=payload.devis_id, chantier_id=payload.chantier_id,
         type=payload.type, taux_tva=payload.taux_tva, statut="brouillon", numero=numero,
-        date_echeance=payload.date_echeance, notes=payload.notes,
+        date_echeance=payload.date_echeance, notes=payload.notes, token=_nouveau_token(),
     )
     db.add(facture)
     db.flush()
@@ -189,7 +195,7 @@ def creer_facture_depuis_devis(
     facture = Facture(
         artisan_id=artisan.id, client_id=devis.client_id, devis_id=devis.id,
         type=type, taux_tva=devis.taux_tva, statut="brouillon", numero=numero,
-        date_echeance=date.today() + timedelta(days=30),
+        date_echeance=date.today() + timedelta(days=30), token=_nouveau_token(),
     )
     db.add(facture)
     db.flush()
@@ -276,10 +282,14 @@ def ajouter_paiement(
     artisan: Artisan = Depends(get_current_artisan),
 ):
     facture = _get_facture_or_404(db, artisan, facture_id)
-    db.add(Paiement(facture_id=facture.id, **payload.model_dump()))
+    paiement = Paiement(facture_id=facture.id, **payload.model_dump())
+    db.add(paiement)
     db.commit()
     facture = _get_facture_or_404(db, artisan, facture_id)
     _recalculer_statut(facture)
     db.commit()
     facture = _get_facture_or_404(db, artisan, facture_id)
+
+    email_service.send_paiement_recu(db, paiement, facture, artisan)
+
     return _to_out(facture)

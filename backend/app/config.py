@@ -29,6 +29,20 @@ class Settings(BaseSettings):
     # qui reste ouvert separement, voir main.py).
     cors_origins: str = "*"
 
+    # Emails transactionnels (devis, relances, factures...) via l'API HTTP de
+    # Resend (pas de SDK requis, juste httpx). Optionnel : si resend_api_key
+    # n'est pas defini, EmailService n'envoie rien mais journalise chaque
+    # tentative avec un statut "non_configure" clair (jamais de faux succes).
+    resend_api_key: str | None = None
+    resend_api_url: str = "https://api.resend.com/emails"
+    email_from: str = "onboarding@resend.dev"
+    email_from_nom: str = "Suite Artisan"
+
+    # Frequence du cycle d'automatisation (relances devis/factures, alertes
+    # conformite...). Tourne en tache de fond des le demarrage du serveur,
+    # independamment de toute connexion utilisateur.
+    automation_interval_minutes: int = 60
+
     class Config:
         env_file = ".env"
 
