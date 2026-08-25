@@ -168,15 +168,26 @@ def obtenir_dashboard(
     )
 
     # ---------- Presence en ligne (site vitrine livre par nous, pas de constructeur) ----------
-    nb_demandes_total = db.query(Client).filter(Client.artisan_id == artisan.id, Client.source == "site_vitrine").count()
-    nb_demandes_30j = (
-        db.query(Client)
-        .filter(Client.artisan_id == artisan.id, Client.source == "site_vitrine", Client.created_at >= il_y_a_30j)
-        .count()
+    clients_site = db.query(Client).filter(Client.artisan_id == artisan.id, Client.source == "site_vitrine").all()
+    nb_demandes_total = len(clients_site)
+    # SQLite ne conserve pas systematiquement le fuseau horaire selon le
+    # chemin d'ecriture : on normalise avant de comparer (meme pattern que
+    # clients.py/planning.py).
+    nb_demandes_30j = sum(
+        1 for c in clients_site
+        if (c.created_at if c.created_at.tzinfo is not None else c.created_at.replace(tzinfo=timezone.utc)) >= il_y_a_30j
     )
+    nb_clients_gagnes_site = sum(1 for c in clients_site if c.statut == "gagne")
+    ca_genere_site = round(sum(
+        float(p.montant) for c in clients_site for f in c.factures for p in f.paiements
+    ), 2)
+    taux_conversion_site = round(nb_clients_gagnes_site / nb_demandes_total * 100, 1) if nb_demandes_total else None
+
     presence_site = DashboardPresenceSite(
         statut=artisan.site_statut, url=artisan.site_url,
         nb_demandes_total=nb_demandes_total, nb_demandes_30j=nb_demandes_30j,
+        nb_clients_gagnes=nb_clients_gagnes_site, ca_genere=ca_genere_site,
+        taux_conversion=taux_conversion_site,
     )
 
     return DashboardOut(

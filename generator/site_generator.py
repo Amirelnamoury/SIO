@@ -34,6 +34,8 @@ Usage :
 
 from pathlib import Path
 
+import requests
+
 from themes import (
     GOOGLE_FONTS,
     get_hero_motif,
@@ -218,6 +220,13 @@ section.pourquoi { background: color-mix(in srgb, var(--background) 55%, white);
 .pourquoi-card { text-align: center; }
 .pourquoi-card .icon-badge { margin-left: auto; margin-right: auto; }
 
+/* ---------- Avis clients (uniquement des avis reels, choisis par l'artisan) ---------- */
+.avis-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 22px; }
+.avis-card { text-align: left; }
+.avis-stars { color: var(--accent); font-size: 0.95rem; margin-bottom: 10px; letter-spacing: 2px; }
+.avis-card p { font-style: italic; margin-bottom: 12px; }
+.avis-auteur { font-size: 0.85rem; font-weight: 700; opacity: 0.75; }
+
 /* ---------- Devis ---------- */
 section.devis { background: #fff; }
 .devis-box {
@@ -318,6 +327,8 @@ __STATS_SECTION__
     </div>
   </div>
 </section>
+
+__AVIS_SECTION__
 
 <section class="devis" id="devis">
   <div class="container">
@@ -443,6 +454,33 @@ def _pourquoi_card(icon_name: str, title: str, text: str) -> str:
     )
 
 
+def _avis_card(avis: dict) -> str:
+    note = avis.get("note", 5)
+    etoiles = "&#9733;" * note + "&#9734;" * (5 - note)
+    commentaire = avis.get("commentaire") or ""
+    auteur = avis.get("nom_auteur") or "Client"
+    return (
+        f'<div class="card avis-card"><div class="avis-stars">{etoiles}</div>'
+        f'<p>&laquo;&nbsp;{commentaire}&nbsp;&raquo;</p><div class="avis-auteur">{auteur}</div></div>'
+    )
+
+
+def _avis_section(avis_list: list) -> str:
+    """Section avis clients : n'apparait que si l'artisan a reellement des
+    avis a montrer (jamais de temoignages fictifs pour "faire joli")."""
+    if not avis_list:
+        return ""
+    cards = "\n      ".join(_avis_card(a) for a in avis_list)
+    return f'''<section id="avis">
+  <div class="container">
+    <h2>Ce que disent nos clients</h2>
+    <div class="avis-grid">
+      {cards}
+    </div>
+  </div>
+</section>'''
+
+
 def _stats_section(stats: list) -> str:
     if not stats:
         return ""
@@ -461,11 +499,32 @@ def _palette_swatches(palette: dict) -> str:
     return f'<div class="palette-swatches">{spans}</div>'
 
 
+def fetch_avis_publies(slug: str, api_base_url: str) -> list:
+    """Recupere les avis que l'artisan a reellement choisi de publier (voir
+    PATCH /avis/{id} cote SaaS). Renvoie [] silencieusement si l'API est
+    injoignable : un site sans section avis reste un site valide, jamais
+    d'avis invente pour compenser."""
+    try:
+        response = requests.get(f"{api_base_url.rstrip('/')}/pub/{slug}/avis", timeout=10)
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException:
+        return []
+
+
 def generate_site(artisan: dict, api_base_url: str, output_path: str | None = None) -> str:
     """Genere le HTML du mini-site pour un artisan. Ecrit le fichier si
-    output_path est fourni, et renvoie toujours le HTML en string."""
+    output_path est fourni, et renvoie toujours le HTML en string.
+
+    artisan["avis"] : liste optionnelle d'avis a afficher (chacun avec note/
+    commentaire/nom_auteur). Si absente, recupere automatiquement les avis
+    reellement publies par l'artisan via GET /pub/{slug}/avis - jamais de
+    temoignage fictif genere pour "faire joli"."""
 
     from datetime import date
+
+    if "avis" not in artisan:
+        artisan = {**artisan, "avis": fetch_avis_publies(artisan["slug"], api_base_url)}
 
     metier = artisan.get("metier", "general")
     theme = get_theme(metier)
@@ -520,6 +579,7 @@ def generate_site(artisan: dict, api_base_url: str, output_path: str | None = No
     html = html.replace("__STATS_SECTION__", _stats_section(artisan.get("stats")))
     html = html.replace("__SERVICES_CARDS__", services_cards)
     html = html.replace("__POURQUOI_CARDS__", pourquoi_cards)
+    html = html.replace("__AVIS_SECTION__", _avis_section(artisan.get("avis")))
     html = html.replace("__ADRESSE_LIGNE__", adresse_ligne)
     html = html.replace("__SIRET__", artisan.get("siret") or "en cours d'immatriculation")
     html = html.replace("__ASSURANCE_DECENNALE__", artisan.get("assurance_decennale_nom") or "nous consulter")

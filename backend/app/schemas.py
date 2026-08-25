@@ -961,6 +961,9 @@ class DashboardPresenceSite(BaseModel):
     url: Optional[str] = None
     nb_demandes_total: int
     nb_demandes_30j: int
+    nb_clients_gagnes: int = 0
+    ca_genere: float = 0.0
+    taux_conversion: Optional[float] = None  # None si aucune demande recue (rien a diviser honnetement)
 
 
 class DashboardOut(BaseModel):
@@ -1019,6 +1022,11 @@ class AnalyticsSource(BaseModel):
     ca: float
 
 
+class FunnelEtapeOut(BaseModel):
+    etape: str
+    nb: int
+
+
 class AnalyticsOut(BaseModel):
     ca_par_mois: list[AnalyticsMois]
     nb_devis_total: int
@@ -1031,6 +1039,7 @@ class AnalyticsOut(BaseModel):
     montant_impayes: float
     valeur_pipeline: float
     sources_acquisition: list[AnalyticsSource] = []
+    funnel_site: list[FunnelEtapeOut] = []
 
 
 # ---------- Catalogue de prestations ----------
@@ -1117,7 +1126,18 @@ class AvisOut(BaseModel):
     commentaire: Optional[str] = None
     nom_auteur: Optional[str] = None
     source: str
+    publie_site: bool = False
     created_at: datetime
+
+
+class AvisUpdate(BaseModel):
+    publie_site: bool
+
+
+class AvisPublicSiteOut(BaseModel):
+    note: int
+    commentaire: Optional[str] = None
+    nom_auteur: Optional[str] = None
 
 
 class DemandeAvisOut(BaseModel):

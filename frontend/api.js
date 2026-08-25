@@ -149,6 +149,7 @@ const Api = {
   // ---------- Avis clients ----------
   listAvis: () => apiFetch("/avis"),
   createAvis: (payload) => apiFetch("/avis", { method: "POST", body: payload }),
+  updateAvis: (id, payload) => apiFetch(`/avis/${id}`, { method: "PATCH", body: payload }),
   deleteAvis: (id) => apiFetch(`/avis/${id}`, { method: "DELETE" }),
   demanderAvis: (clientId) => apiFetch(`/clients/${clientId}/demande-avis`, { method: "POST" }),
 

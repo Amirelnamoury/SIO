@@ -990,6 +990,15 @@ async function loadStatistiques() {
       ? a.sources_acquisition.map((s) => `<div class="dash-row"><span>${escapeHtml(CLIENT_SOURCE_LABELS[s.source] || s.source)}</span><strong>${s.nb_clients} contact${s.nb_clients > 1 ? "s" : ""} · ${s.nb_gagnes} gagne${s.nb_gagnes > 1 ? "s" : ""} · ${fmtEuro(s.ca)}</strong></div>`).join("")
       : '<div class="dash-empty">Pas encore de contact enregistre.</div>';
 
+    const nbMax = a.funnel_site.length ? a.funnel_site[0].nb : 0;
+    const funnelHtml = a.funnel_site.length
+      ? a.funnel_site.map((e) => `
+        <div class="sante-sous-score" style="margin-bottom:10px;">
+          <div class="ligne"><span>${escapeHtml(e.etape)}</span><span class="valeur">${e.nb}</span></div>
+          <div class="sante-barre"><div class="remplissage" style="width:${nbMax ? Math.round(e.nb / nbMax * 100) : 0}%;background:var(--info);"></div></div>
+        </div>`).join("")
+      : "";
+
     container.innerHTML = `
       <div class="dash-grid">${statsHtml}</div>
       <div class="dash-section">
@@ -1000,6 +1009,7 @@ async function loadStatistiques() {
         <h3>Sources d'acquisition</h3>
         ${sourcesHtml}
       </div>
+      ${funnelHtml ? `<div class="dash-section"><h3>Entonnoir d'acquisition du site vitrine</h3>${funnelHtml}</div>` : ""}
     `;
   } catch (err) {
     container.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
@@ -1052,6 +1062,9 @@ function renderAvisCard(a) {
     </div>
     ${a.commentaire ? `<div class="item-meta">${escapeHtml(a.commentaire)}</div>` : ""}
     <div class="item-actions">
+      <button type="button" class="btn-sm ${a.publie_site ? "btn-sm-primary" : ""}" data-action="toggle-publie-site" data-id="${a.id}" data-publie="${a.publie_site ? "1" : "0"}">
+        ${a.publie_site ? "Publie sur le site ✓" : "Publier sur le site"}
+      </button>
       <button type="button" class="btn-sm btn-sm-danger" data-action="delete-avis" data-id="${a.id}">Supprimer</button>
     </div>
   </div>`;
@@ -1122,14 +1135,25 @@ function setupAvisView() {
     }
   });
   document.getElementById("avis-list").addEventListener("click", async (e) => {
-    const btn = e.target.closest('[data-action="delete-avis"]');
-    if (!btn) return;
-    if (!confirm("Supprimer cet avis ?")) return;
-    await withErrorToast(async () => {
-      await Api.deleteAvis(parseInt(btn.dataset.id, 10));
-      showToast("Avis supprime.");
-      loadAvis();
-    });
+    const deleteBtn = e.target.closest('[data-action="delete-avis"]');
+    if (deleteBtn) {
+      if (!confirm("Supprimer cet avis ?")) return;
+      await withErrorToast(async () => {
+        await Api.deleteAvis(parseInt(deleteBtn.dataset.id, 10));
+        showToast("Avis supprime.");
+        loadAvis();
+      });
+      return;
+    }
+    const publieBtn = e.target.closest('[data-action="toggle-publie-site"]');
+    if (publieBtn) {
+      const dejaPublie = publieBtn.dataset.publie === "1";
+      await withErrorToast(async () => {
+        await Api.updateAvis(parseInt(publieBtn.dataset.id, 10), { publie_site: !dejaPublie });
+        showToast(dejaPublie ? "Avis retire du site." : "Avis publie sur le site.");
+        loadAvis();
+      });
+    }
   });
 }
 
@@ -1294,6 +1318,10 @@ function renderPresenceSite(p) {
   }
   rows += `<div class="dash-row"><span>Demandes recues (30 derniers jours)</span><strong>${p.nb_demandes_30j}</strong></div>`;
   rows += `<div class="dash-row"><span>Demandes recues (total)</span><strong>${p.nb_demandes_total}</strong></div>`;
+  if (p.nb_demandes_total > 0) {
+    rows += `<div class="dash-row"><span>Devenues clients</span><strong>${p.nb_clients_gagnes}${p.taux_conversion !== null ? ` (${p.taux_conversion}%)` : ""}</strong></div>`;
+    rows += `<div class="dash-row"><span>CA reellement genere par le site</span><strong>${fmtEuro(p.ca_genere)}</strong></div>`;
+  }
   if (p.statut === "non_livre") {
     rows += `<div class="dash-empty">Votre site vitrine professionnel n'est pas encore livre. C'est nous qui le fabriquons et vous le connectons a votre compte : contactez-nous pour en discuter.</div>`;
   }

@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.database import get_db
 from app.deps import get_current_artisan
 from app.models import Artisan, Avis, Client
-from app.schemas import AvisCreate, AvisOut, DemandeAvisOut
+from app.schemas import AvisCreate, AvisOut, AvisUpdate, DemandeAvisOut
 
 router = APIRouter(tags=["avis"])
 
@@ -16,7 +16,7 @@ def _to_out(avis: Avis) -> AvisOut:
         id=avis.id, artisan_id=avis.artisan_id, client_id=avis.client_id,
         client_nom=avis.client.nom if avis.client else avis.nom_auteur,
         note=avis.note, commentaire=avis.commentaire, nom_auteur=avis.nom_auteur,
-        source=avis.source, created_at=avis.created_at,
+        source=avis.source, publie_site=avis.publie_site, created_at=avis.created_at,
     )
 
 
@@ -51,6 +51,25 @@ def creer_avis(
     db.add(avis)
     db.commit()
     avis = db.query(Avis).options(joinedload(Avis.client)).filter(Avis.id == avis.id).first()
+    return _to_out(avis)
+
+
+@router.patch("/avis/{avis_id}", response_model=AvisOut)
+def modifier_avis(
+    avis_id: int,
+    payload: AvisUpdate,
+    db: Session = Depends(get_db),
+    artisan: Artisan = Depends(get_current_artisan),
+):
+    """Publier/retirer un avis du site vitrine : c'est toujours un choix
+    explicite de l'artisan (jamais publie automatiquement, quelle que soit
+    la note)."""
+    avis = db.query(Avis).options(joinedload(Avis.client)).filter(Avis.id == avis_id, Avis.artisan_id == artisan.id).first()
+    if avis is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Avis introuvable")
+    avis.publie_site = payload.publie_site
+    db.commit()
+    db.refresh(avis)
     return _to_out(avis)
 
 

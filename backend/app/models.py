@@ -580,6 +580,11 @@ class Avis(Base):
     nom_auteur = Column(String, nullable=True)  # si pas de client lie, ou avis externe
     source = Column(String, default="manuel")  # manuel, lien_public
 
+    # L'artisan choisit explicitement quels avis apparaissent sur son site
+    # vitrine (voir GET /pub/{slug}/avis, consomme par generator/site_generator.py).
+    # Jamais publie par defaut : c'est une decision de l'artisan, pas la notre.
+    publie_site = Column(Boolean, default=False)
+
     created_at = Column(DateTime(timezone=True), default=utcnow)
 
     artisan = relationship("Artisan", back_populates="avis")

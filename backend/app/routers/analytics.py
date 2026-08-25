@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.database import get_db
 from app.deps import require_active_subscription
 from app.models import Artisan, Client, Devis, Facture, Paiement
-from app.schemas import AnalyticsMois, AnalyticsOut, AnalyticsSource
+from app.schemas import AnalyticsMois, AnalyticsOut, AnalyticsSource, FunnelEtapeOut
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
@@ -125,10 +125,33 @@ def obtenir_analytics(
         key=lambda s: s.ca, reverse=True,
     )
 
+    # ---------- Entonnoir d'acquisition du site vitrine ----------
+    # Uniquement des etapes reellement mesurables a partir de nos donnees
+    # (pas de "visiteurs" : on n'a pas de trafic web a mesurer ici).
+    clients_site_ids = [c.id for c in clients_tous if c.source == "site_vitrine"]
+    if clients_site_ids:
+        devis_site = db.query(Devis).filter(Devis.artisan_id == artisan.id, Devis.client_id.in_(clients_site_ids)).all()
+        nb_devis_envoyes = sum(1 for d in devis_site if d.statut not in ("nouveau",))
+        nb_devis_signes_site = sum(1 for d in devis_site if d.statut == "signe")
+        nb_factures_payees_site = (
+            db.query(Facture)
+            .filter(Facture.artisan_id == artisan.id, Facture.client_id.in_(clients_site_ids), Facture.statut == "payee")
+            .count()
+        )
+        funnel_site = [
+            FunnelEtapeOut(etape="Demandes recues", nb=len(clients_site_ids)),
+            FunnelEtapeOut(etape="Devis envoyes", nb=nb_devis_envoyes),
+            FunnelEtapeOut(etape="Devis signes", nb=nb_devis_signes_site),
+            FunnelEtapeOut(etape="Factures payees", nb=nb_factures_payees_site),
+        ]
+    else:
+        funnel_site = []
+
     return AnalyticsOut(
         ca_par_mois=ca_par_mois, nb_devis_total=devis_total, nb_devis_signes=devis_signes,
         taux_acceptation=taux_acceptation, panier_moyen=panier_moyen,
         delai_moyen_paiement_jours=delai_moyen, nb_clients_acquis=nb_clients_acquis,
         nb_clients_recurrents=nb_clients_recurrents, montant_impayes=montant_impayes,
         valeur_pipeline=valeur_pipeline, sources_acquisition=sources_acquisition,
+        funnel_site=funnel_site,
     )

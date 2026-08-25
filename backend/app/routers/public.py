@@ -10,6 +10,7 @@ from app.models import Artisan, Avis, Chantier, Client, Devis, Document, Facture
 from app.routers.clients import PORTAIL_VALIDITE_JOURS
 from app.schemas import (
     AvisPublicIn,
+    AvisPublicSiteOut,
     AvisPublicStatutOut,
     ClientPublicCreate,
     DevisAccepterIn,
@@ -83,6 +84,28 @@ def demande_devis(
     db.commit()
     db.refresh(client)
     return {"message": "Demande envoyee avec succes", "client_id": client.id}
+
+
+@router.get("/{slug}/avis", response_model=list[AvisPublicSiteOut])
+def avis_publies_pour_site(slug: str, db: Session = Depends(get_db)):
+    """Endpoint PUBLIC : avis que l'artisan a explicitement choisi de
+    publier sur son site vitrine (voir PATCH /avis/{id}). Consomme par
+    generator/site_generator.py au moment de fabriquer le site - jamais
+    d'avis invente, uniquement ceux reellement soumis et valides."""
+    artisan = db.query(Artisan).filter(Artisan.slug == slug).first()
+    if artisan is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Artisan introuvable")
+    avis_list = (
+        db.query(Avis)
+        .options(joinedload(Avis.client))
+        .filter(Avis.artisan_id == artisan.id, Avis.publie_site.is_(True))
+        .order_by(Avis.created_at.desc())
+        .all()
+    )
+    return [
+        AvisPublicSiteOut(note=a.note, commentaire=a.commentaire, nom_auteur=a.nom_auteur or (a.client.nom if a.client else None))
+        for a in avis_list
+    ]
 
 
 @router.get("/devis/{token}", response_model=DevisPublicOut)
