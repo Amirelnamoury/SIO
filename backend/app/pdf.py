@@ -353,8 +353,12 @@ def generate_chantier_report_pdf(chantier: Chantier, artisan: Artisan, photos: l
     if chantier.taches:
         elements.append(Paragraph("Preparation et taches", styles["section"]))
         for tache in sorted(chantier.taches, key=lambda t: t.id):
-            coche = "&#9745;" if tache.statut == "faite" else "&#9744;"
-            elements.append(Paragraph(f"{coche} {tache.titre}", styles["normal"]))
+            # Cases a cocher en ASCII : les glyphes Unicode ballot-box (9744/9745)
+            # n'existent pas dans Helvetica standard et rendent tous le meme carre.
+            if tache.statut == "faite":
+                elements.append(Paragraph(f'<font color="#15803d">[X] {tache.titre}</font>', styles["normal"]))
+            else:
+                elements.append(Paragraph(f"[ ] {tache.titre}", styles["normal"]))
         elements.append(Spacer(1, 14))
 
     elements.append(Paragraph("Avancement financier", styles["section"]))

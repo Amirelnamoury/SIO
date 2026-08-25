@@ -132,6 +132,10 @@ async function ensureClientsCache() {
   return clientsCache;
 }
 
+// Cache simple des chantiers charges, pour retrouver les donnees d'un
+// chantier (ex: pre-remplir le formulaire de reception) sans reinterroger.
+let chantiersCache = [];
+
 function clientOptionsHtml(selectedId) {
   return clientsCache
     .map((c) => `<option value="${c.id}" ${selectedId === c.id ? "selected" : ""}>${escapeHtml(c.nom)}</option>`)
@@ -2263,6 +2267,7 @@ async function loadChantiers() {
   list.innerHTML = skeletonCards();
   try {
     const chantiers = await Api.listChantiers();
+    chantiersCache = chantiers;
     if (chantiers.length === 0) {
       list.innerHTML = '<div class="empty-state">Aucun chantier pour le moment.</div>';
       return;
@@ -2392,19 +2397,25 @@ function renderChantierCard(c) {
       ${c.budget !== null ? ` · Budget : ${fmtEuro(c.budget)}` : ""}
       ${c.marge_estimee !== null ? ` · Marge estimee : ${fmtEuro(c.marge_estimee)}` : ""}
     </div>
+    ${progressionHtml(c)}
+    ${checklistHtml(c)}
     ${rentabiliteHtml(c)}
     ${depensesHtml ? `<div class="item-meta">${depensesHtml}</div>` : ""}
     <div class="notes-list">${notesHtml || '<div class="item-sub">Aucune note pour le moment.</div>'}</div>
+    ${receptionHtml(c)}
     <div class="item-actions">
       <button type="button" class="btn-sm btn-sm-primary" data-action="toggle-note-form" data-id="${c.id}">+ Ajouter une note</button>
       <button type="button" class="btn-sm" data-action="toggle-depense-form" data-id="${c.id}">+ Ajouter une depense</button>
+      <button type="button" class="btn-sm" data-action="chantier-document" data-id="${c.id}">+ Ajouter un document</button>
       ${!["termine", "facture", "paye"].includes(c.statut) ? `<button type="button" class="btn-sm" data-action="terminer-chantier" data-id="${c.id}">Marquer termine</button>` : ""}
+      ${["termine", "facture", "paye"].includes(c.statut) ? `<button type="button" class="btn-sm" data-action="toggle-reception-form" data-id="${c.id}">${c.date_reception ? "Modifier la reception" : "Enregistrer la reception"}</button>` : ""}
       ${c.statut === "termine" ? `<button type="button" class="btn-sm btn-sm-primary" data-action="toggle-cloturer-form" data-id="${c.id}">Cloturer le chantier</button>` : ""}
       <button type="button" class="btn-sm" data-action="rapport-chantier" data-id="${c.id}">Telecharger le rapport</button>
       <button type="button" class="btn-sm btn-sm-danger" data-action="delete-chantier" data-id="${c.id}">Supprimer</button>
     </div>
     <div id="note-form-${c.id}"></div>
     <div id="depense-form-${c.id}"></div>
+    <div id="reception-form-${c.id}"></div>
     <div id="cloturer-form-${c.id}"></div>
   </div>`;
 }
@@ -2525,9 +2536,44 @@ function setupChantiersView() {
   document.getElementById("chantiers-list").addEventListener("click", async (e) => {
     const btn = e.target.closest("[data-action]");
     if (!btn) return;
+
+    if (btn.dataset.action === "toggle-tache-chantier") {
+      const chantierId = parseInt(btn.dataset.chantierId, 10);
+      const tacheId = parseInt(btn.dataset.tacheId, 10);
+      const checked = btn.checked;
+      try {
+        await Api.updateTache(tacheId, { statut: checked ? "faite" : "a_faire" });
+        loadChantiers();
+      } catch (err) {
+        btn.checked = !checked;
+        showToast(err.message, true);
+      }
+      return;
+    }
+
     const id = parseInt(btn.dataset.id, 10);
 
-    if (btn.dataset.action === "toggle-note-form") {
+    if (btn.dataset.action === "chantier-document") {
+      switchView("documents");
+      setTimeout(() => showDocumentForm(id), 50);
+    } else if (btn.dataset.action === "toggle-reception-form") {
+      const chantier = chantiersCache.find((c) => c.id === id);
+      showReceptionForm(id, chantier);
+    } else if (btn.dataset.action === "cancel-reception-form") {
+      document.getElementById(`reception-form-${id}`).innerHTML = "";
+    } else if (btn.dataset.action === "submit-reception") {
+      const dateReception = document.getElementById(`recep-date-${id}`).value;
+      const reserves = document.getElementById(`recep-reserves-${id}`).value;
+      try {
+        await Api.updateChantier(id, { date_reception: emptyToNull(dateReception), reserves: emptyToNull(reserves) });
+        showToast("Reception enregistree.");
+        loadChantiers();
+      } catch (err) {
+        const errorBox = document.getElementById(`reception-error-${id}`);
+        errorBox.hidden = false;
+        errorBox.textContent = err.message;
+      }
+    } else if (btn.dataset.action === "toggle-note-form") {
       showNoteForm(id);
     } else if (btn.dataset.action === "cancel-note-form") {
       document.getElementById(`note-form-${id}`).innerHTML = "";
