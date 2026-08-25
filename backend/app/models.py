@@ -78,6 +78,8 @@ class Artisan(Base):
     evenements = relationship("Evenement", back_populates="artisan", cascade="all, delete-orphan")
     documents = relationship("Document", back_populates="artisan", cascade="all, delete-orphan")
     prestations = relationship("Prestation", back_populates="artisan", cascade="all, delete-orphan")
+    fournisseurs = relationship("Fournisseur", back_populates="artisan", cascade="all, delete-orphan")
+    contrats = relationship("Contrat", back_populates="artisan", cascade="all, delete-orphan")
 
 
 # Pipeline commercial : de la premiere demande jusqu'a la signature (ou la perte).
@@ -131,6 +133,7 @@ class Client(Base):
     chantiers = relationship("Chantier", back_populates="client")
     taches = relationship("Tache", back_populates="client")
     avis = relationship("Avis", back_populates="client", cascade="all, delete-orphan")
+    contrats = relationship("Contrat", back_populates="client", cascade="all, delete-orphan")
 
 
 class Devis(Base):
@@ -232,6 +235,7 @@ class Facture(Base):
     client_id = Column(Integer, ForeignKey("clients.id"), nullable=False, index=True)
     devis_id = Column(Integer, ForeignKey("devis.id"), nullable=True, index=True)
     chantier_id = Column(Integer, ForeignKey("chantiers.id"), nullable=True, index=True)
+    contrat_id = Column(Integer, ForeignKey("contrats.id"), nullable=True, index=True)
 
     numero = Column(String, nullable=False)
     type = Column(String, default="standard")
@@ -258,6 +262,7 @@ class Facture(Base):
     client = relationship("Client", back_populates="factures")
     devis = relationship("Devis", back_populates="factures")
     chantier = relationship("Chantier", back_populates="factures")
+    contrat = relationship("Contrat", back_populates="factures")
     lignes = relationship("LigneFacture", back_populates="facture", cascade="all, delete-orphan", order_by="LigneFacture.ordre")
     paiements = relationship("Paiement", back_populates="facture", cascade="all, delete-orphan")
 
@@ -408,12 +413,18 @@ class Depense(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     chantier_id = Column(Integer, ForeignKey("chantiers.id"), nullable=False, index=True)
+    fournisseur_id = Column(Integer, ForeignKey("fournisseurs.id"), nullable=True, index=True)
 
     libelle = Column(String, nullable=False)
     montant = Column(MONTANT, nullable=False)
     date_depense = Column(Date, default=date.today)
 
     chantier = relationship("Chantier", back_populates="depenses")
+    fournisseur = relationship("Fournisseur", back_populates="depenses")
+
+    @property
+    def fournisseur_nom(self):
+        return self.fournisseur.nom if self.fournisseur_id and self.fournisseur else None
 
 
 class ChantierNote(Base):
@@ -641,3 +652,67 @@ class AutomationRun(Base):
     nb_emails_non_configures = Column(Integer, default=0)
     nb_erreurs = Column(Integer, default=0)
     erreur = Column(Text, nullable=True)  # erreur fatale eventuelle qui a interrompu le cycle
+    nb_contrats_factures = Column(Integer, default=0)
+
+
+FOURNISSEUR_CATEGORIES = ["materiaux", "sous_traitance", "outillage", "autre"]
+
+
+class Fournisseur(Base):
+    """Une entreprise aupres de qui l'artisan achete (materiaux, sous-
+    traitance, outillage...) - distinct d'un Client (a qui on vend).
+    Un achat EST une Depense de chantier avec un fournisseur_id renseigne :
+    pas de deuxieme table pour la meme notion."""
+
+    __tablename__ = "fournisseurs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    artisan_id = Column(Integer, ForeignKey("artisans.id"), nullable=False, index=True)
+
+    nom = Column(String, nullable=False)
+    categorie = Column(String, default="autre")  # voir FOURNISSEUR_CATEGORIES
+    contact_nom = Column(String, nullable=True)
+    telephone = Column(String, nullable=True)
+    email = Column(String, nullable=True)
+    adresse = Column(String, nullable=True)
+    notes = Column(Text, nullable=True)
+
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+
+    artisan = relationship("Artisan", back_populates="fournisseurs")
+    depenses = relationship("Depense", back_populates="fournisseur")
+
+    @property
+    def total_achats(self):
+        return round(sum(float(d.montant or 0) for d in self.depenses), 2)
+
+
+CONTRAT_FREQUENCES = ["mensuel", "trimestriel", "annuel"]
+CONTRAT_STATUTS = ["actif", "suspendu", "resilie"]
+
+
+class Contrat(Base):
+    """Un contrat recurrent (entretien, maintenance...) : le planificateur
+    d'automatisation (scheduler.py) genere et envoie automatiquement une
+    facture a chaque echeance, sans intervention manuelle - meme logique
+    EVENT->WAIT->ACTION que les relances de devis/factures."""
+
+    __tablename__ = "contrats"
+
+    id = Column(Integer, primary_key=True, index=True)
+    artisan_id = Column(Integer, ForeignKey("artisans.id"), nullable=False, index=True)
+    client_id = Column(Integer, ForeignKey("clients.id"), nullable=False, index=True)
+
+    titre = Column(String, nullable=False)
+    montant_ht = Column(MONTANT, nullable=False)
+    taux_tva = Column(MONTANT, default=10.0)
+    frequence = Column(String, nullable=False)  # voir CONTRAT_FREQUENCES
+    statut = Column(String, default="actif")  # voir CONTRAT_STATUTS
+    prochaine_echeance = Column(Date, nullable=False)
+    derniere_generation = Column(Date, nullable=True)
+
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+
+    artisan = relationship("Artisan", back_populates="contrats")
+    client = relationship("Client", back_populates="contrats")
+    factures = relationship("Facture", back_populates="contrat")

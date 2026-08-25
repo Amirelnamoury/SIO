@@ -420,7 +420,7 @@ function switchView(view) {
   if (view === "prospects") loadClients();
   if (view === "clients") loadClientsDirectory();
   if (view === "devis") loadDevis();
-  if (view === "factures") loadFactures();
+  if (view === "factures") { loadFactures(); loadContrats(); }
   if (view === "chantiers") loadChantiers();
   if (view === "planning") loadPlanning();
   if (view === "taches") loadTaches();
@@ -431,6 +431,7 @@ function switchView(view) {
   if (view === "entreprise") {
     loadEntrepriseForm();
     loadPrestations();
+    loadFournisseurs();
     loadConformite();
     loadEquipe();
     loadAutomationStatus();
@@ -829,6 +830,127 @@ function setupPrestationsView() {
       await Api.deletePrestation(parseInt(btn.dataset.id, 10));
       showToast("Prestation supprimee.");
       loadPrestations();
+    });
+  });
+}
+
+// ===================== Fournisseurs =====================
+const FOURNISSEUR_CATEGORIE_LABELS = { materiaux: "Materiaux", sous_traitance: "Sous-traitance", outillage: "Outillage", autre: "Autre" };
+let fournisseursCache = [];
+async function ensureFournisseursCache() {
+  try {
+    fournisseursCache = await Api.listFournisseurs();
+  } catch (err) {
+    fournisseursCache = [];
+  }
+  return fournisseursCache;
+}
+
+async function loadFournisseurs() {
+  const list = document.getElementById("fournisseurs-list");
+  list.innerHTML = skeletonCards();
+  try {
+    const fournisseurs = await Api.listFournisseurs();
+    fournisseursCache = fournisseurs;
+    if (fournisseurs.length === 0) {
+      list.innerHTML = '<div class="empty-state">Aucun fournisseur pour le moment. Ajoutez vos fournisseurs de materiaux, sous-traitants ou loueurs pour les retrouver lors de la saisie de vos depenses de chantier.</div>';
+      return;
+    }
+    list.innerHTML = fournisseurs.map(renderFournisseurCard).join("");
+  } catch (err) {
+    list.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function renderFournisseurCard(f) {
+  const contact = [f.contact_nom, f.telephone, f.email].filter(Boolean).map(escapeHtml).join(" · ");
+  return `
+  <div class="item-card">
+    <div class="item-card-top">
+      <div>
+        <div class="item-title">${escapeHtml(f.nom)}</div>
+        <div class="item-sub">${contact || "Pas de contact renseigne"}</div>
+      </div>
+      <span class="badge badge-gray">${FOURNISSEUR_CATEGORIE_LABELS[f.categorie] || f.categorie}</span>
+    </div>
+    ${f.total_achats > 0 ? `<div class="item-meta">Total achats : ${fmtEuro(f.total_achats)}</div>` : ""}
+    <div class="item-actions">
+      <button type="button" class="btn-sm btn-sm-danger" data-action="delete-fournisseur" data-id="${f.id}">Supprimer</button>
+    </div>
+  </div>`;
+}
+
+function setupFournisseursView() {
+  document.querySelector('[data-action="show-fournisseur-form"]').addEventListener("click", () => {
+    const container = document.getElementById("fournisseur-form-container");
+    container.innerHTML = `
+      <div class="form-box">
+        <h3>Nouveau fournisseur</h3>
+        <form id="fournisseur-form">
+          <div class="form-grid">
+            <div><label for="fo-nom">Nom *</label><input type="text" id="fo-nom" required placeholder="Ex: Point P"></div>
+            <div>
+              <label for="fo-categorie">Categorie</label>
+              <select id="fo-categorie">${Object.entries(FOURNISSEUR_CATEGORIE_LABELS).map(([v, l]) => `<option value="${v}" ${v === "autre" ? "selected" : ""}>${l}</option>`).join("")}</select>
+            </div>
+            <div><label for="fo-contact">Contact</label><input type="text" id="fo-contact"></div>
+            <div><label for="fo-telephone">Telephone</label><input type="tel" id="fo-telephone"></div>
+            <div><label for="fo-email">Email</label><input type="email" id="fo-email"></div>
+            <div><label for="fo-adresse">Adresse</label><input type="text" id="fo-adresse"></div>
+          </div>
+          <label for="fo-notes" style="margin-top:14px;">Notes</label>
+          <textarea id="fo-notes"></textarea>
+          <p class="field-error" id="fournisseur-form-error" hidden></p>
+          <div class="form-actions">
+            <button type="submit" class="btn-sm btn-sm-primary">Ajouter</button>
+            <button type="button" class="btn-sm" data-action="cancel-fournisseur-form">Annuler</button>
+          </div>
+        </form>
+      </div>`;
+    container.hidden = false;
+    container.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    document.getElementById("fournisseur-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const errorBox = document.getElementById("fournisseur-form-error");
+      errorBox.hidden = true;
+      try {
+        await Api.createFournisseur({
+          nom: document.getElementById("fo-nom").value,
+          categorie: document.getElementById("fo-categorie").value,
+          contact_nom: emptyToNull(document.getElementById("fo-contact").value),
+          telephone: emptyToNull(document.getElementById("fo-telephone").value),
+          email: emptyToNull(document.getElementById("fo-email").value),
+          adresse: emptyToNull(document.getElementById("fo-adresse").value),
+          notes: emptyToNull(document.getElementById("fo-notes").value),
+        });
+        showToast("Fournisseur ajoute.");
+        container.hidden = true;
+        container.innerHTML = "";
+        loadFournisseurs();
+      } catch (err) {
+        errorBox.hidden = false;
+        errorBox.textContent = err.message;
+      }
+    });
+  });
+
+  document.getElementById("fournisseur-form-container").addEventListener("click", (e) => {
+    if (e.target.closest('[data-action="cancel-fournisseur-form"]')) {
+      const container = document.getElementById("fournisseur-form-container");
+      container.hidden = true;
+      container.innerHTML = "";
+    }
+  });
+
+  document.getElementById("fournisseurs-list").addEventListener("click", async (e) => {
+    const btn = e.target.closest('[data-action="delete-fournisseur"]');
+    if (!btn) return;
+    if (!confirm("Supprimer ce fournisseur ?")) return;
+    await withErrorToast(async () => {
+      await Api.deleteFournisseur(parseInt(btn.dataset.id, 10));
+      showToast("Fournisseur supprime.");
+      loadFournisseurs();
     });
   });
 }
@@ -2246,6 +2368,166 @@ function setupFacturesView() {
   });
 }
 
+// ===================== Contrats recurrents =====================
+const CONTRAT_FREQUENCE_LABELS = { mensuel: "Mensuelle", trimestriel: "Trimestrielle", annuel: "Annuelle" };
+const CONTRAT_STATUT_META = {
+  actif: { label: "Actif", badge: "badge-green" },
+  suspendu: { label: "Suspendu", badge: "badge-orange" },
+  resilie: { label: "Resilie", badge: "badge-gray" },
+};
+
+async function loadContrats() {
+  const list = document.getElementById("contrats-list");
+  if (!isSubscriptionActive()) {
+    list.innerHTML = renderUpgradeCard(
+      "Contrats recurrents reserves aux abonnes",
+      "La facturation automatique des contrats d'entretien/maintenance fait partie de l'abonnement mensuel Suite Artisan."
+    );
+    return;
+  }
+  list.innerHTML = skeletonCards();
+  try {
+    const contrats = await Api.listContrats();
+    if (contrats.length === 0) {
+      list.innerHTML = '<div class="empty-state">Aucun contrat recurrent. Un contrat d\'entretien ou de maintenance genere et envoie automatiquement sa facture a chaque echeance.</div>';
+      return;
+    }
+    list.innerHTML = contrats.map(renderContratCard).join("");
+  } catch (err) {
+    list.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function renderContratCard(c) {
+  const meta = CONTRAT_STATUT_META[c.statut] || { label: c.statut, badge: "badge-gray" };
+  return `
+  <div class="item-card">
+    <div class="item-card-top">
+      <div>
+        <div class="item-title">${escapeHtml(c.titre)}</div>
+        <div class="item-sub">${escapeHtml(c.client_nom)} · ${fmtEuro(c.montant_ht)} HT · ${CONTRAT_FREQUENCE_LABELS[c.frequence] || c.frequence}</div>
+      </div>
+      <span class="badge ${meta.badge}">${meta.label}</span>
+    </div>
+    <div class="item-meta">
+      Prochaine echeance : ${fmtDate(c.prochaine_echeance)}
+      ${c.derniere_generation ? ` · Derniere facture generee le ${fmtDate(c.derniere_generation)}` : ""}
+      · ${c.nb_factures_generees} facture${c.nb_factures_generees > 1 ? "s" : ""} generee${c.nb_factures_generees > 1 ? "s" : ""}
+    </div>
+    <div class="item-actions">
+      ${c.statut === "actif" ? `<button type="button" class="btn-sm" data-action="generer-contrat" data-id="${c.id}">Generer maintenant</button>` : ""}
+      ${c.statut === "actif" ? `<button type="button" class="btn-sm" data-action="suspendre-contrat" data-id="${c.id}">Suspendre</button>` : ""}
+      ${c.statut === "suspendu" ? `<button type="button" class="btn-sm btn-sm-primary" data-action="reactiver-contrat" data-id="${c.id}">Reactiver</button>` : ""}
+      ${c.statut !== "resilie" ? `<button type="button" class="btn-sm btn-sm-danger" data-action="resilier-contrat" data-id="${c.id}">Resilier</button>` : ""}
+    </div>
+  </div>`;
+}
+
+function setupContratsView() {
+  document.querySelector('[data-action="show-contrat-form"]').addEventListener("click", async () => {
+    const container = document.getElementById("contrat-form-container");
+    await ensureClientsCache();
+    if (clientsCache.length === 0) {
+      container.innerHTML = `<div class="form-box"><p>Vous n'avez pas encore de client. Ajoutez d'abord un contact dans l'onglet <strong>Clients &amp; prospects</strong>.</p>
+        <div class="form-actions"><button type="button" class="btn-sm" data-action="cancel-contrat-form">Fermer</button></div></div>`;
+      container.hidden = false;
+      return;
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    container.innerHTML = `
+      <div class="form-box">
+        <h3>Nouveau contrat recurrent</h3>
+        <form id="contrat-form">
+          <div class="form-grid">
+            <div><label for="ct-titre">Titre *</label><input type="text" id="ct-titre" required placeholder="Ex: Contrat d'entretien chaudiere"></div>
+            <div><label for="ct-client">Client *</label><select id="ct-client" required><option value="">Choisir...</option>${clientOptionsHtml()}</select></div>
+            <div><label for="ct-montant">Montant HT par echeance *</label><input type="number" step="0.01" min="0.01" id="ct-montant" required></div>
+            <div>
+              <label for="ct-tva">TVA</label>
+              <select id="ct-tva"><option value="10">10% (renovation)</option><option value="20">20% (neuf)</option></select>
+            </div>
+            <div>
+              <label for="ct-frequence">Frequence</label>
+              <select id="ct-frequence">${Object.entries(CONTRAT_FREQUENCE_LABELS).map(([v, l]) => `<option value="${v}" ${v === "mensuel" ? "selected" : ""}>${l}</option>`).join("")}</select>
+            </div>
+            <div><label for="ct-echeance">Premiere echeance *</label><input type="date" id="ct-echeance" required value="${today}"></div>
+          </div>
+          <p class="field-error" id="contrat-form-error" hidden></p>
+          <div class="form-actions">
+            <button type="submit" class="btn-sm btn-sm-primary">Creer</button>
+            <button type="button" class="btn-sm" data-action="cancel-contrat-form">Annuler</button>
+          </div>
+        </form>
+      </div>`;
+    container.hidden = false;
+    container.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    document.getElementById("contrat-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const errorBox = document.getElementById("contrat-form-error");
+      errorBox.hidden = true;
+      try {
+        await Api.createContrat({
+          client_id: parseInt(document.getElementById("ct-client").value, 10),
+          titre: document.getElementById("ct-titre").value,
+          montant_ht: parseFloat(document.getElementById("ct-montant").value),
+          taux_tva: parseFloat(document.getElementById("ct-tva").value),
+          frequence: document.getElementById("ct-frequence").value,
+          prochaine_echeance: document.getElementById("ct-echeance").value,
+        });
+        showToast("Contrat cree. La facture sera generee et envoyee automatiquement a l'echeance.");
+        container.hidden = true;
+        container.innerHTML = "";
+        loadContrats();
+      } catch (err) {
+        errorBox.hidden = false;
+        errorBox.textContent = err.message;
+      }
+    });
+  });
+
+  document.getElementById("contrat-form-container").addEventListener("click", (e) => {
+    if (e.target.closest('[data-action="cancel-contrat-form"]')) {
+      const container = document.getElementById("contrat-form-container");
+      container.hidden = true;
+      container.innerHTML = "";
+    }
+  });
+
+  document.getElementById("contrats-list").addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-action]");
+    if (!btn) return;
+    const id = parseInt(btn.dataset.id, 10);
+
+    if (btn.dataset.action === "generer-contrat") {
+      await withErrorToast(async () => {
+        await Api.genererContrat(id);
+        showToast("Facture generee et envoyee.");
+        loadContrats();
+      });
+    } else if (btn.dataset.action === "suspendre-contrat") {
+      await withErrorToast(async () => {
+        await Api.updateContrat(id, { statut: "suspendu" });
+        showToast("Contrat suspendu : plus aucune facture ne sera generee tant qu'il n'est pas reactive.");
+        loadContrats();
+      });
+    } else if (btn.dataset.action === "reactiver-contrat") {
+      await withErrorToast(async () => {
+        await Api.updateContrat(id, { statut: "actif" });
+        showToast("Contrat reactive.");
+        loadContrats();
+      });
+    } else if (btn.dataset.action === "resilier-contrat") {
+      if (!confirm("Resilier ce contrat ? Plus aucune facture ne sera generee.")) return;
+      await withErrorToast(async () => {
+        await Api.updateContrat(id, { statut: "resilie" });
+        showToast("Contrat resilie.");
+        loadContrats();
+      });
+    }
+  });
+}
+
 // ===================== Chantiers =====================
 async function loadChantiers() {
   const list = document.getElementById("chantiers-list");
@@ -2380,7 +2662,7 @@ function renderChantierCard(c) {
   const depensesHtml = (c.depenses || [])
     .slice()
     .reverse()
-    .map((d) => `<div class="item-sub">${fmtDate(d.date_depense)} · ${escapeHtml(d.libelle)} · ${fmtEuro(d.montant)}</div>`)
+    .map((d) => `<div class="item-sub">${fmtDate(d.date_depense)} · ${escapeHtml(d.libelle)} · ${fmtEuro(d.montant)}${d.fournisseur_nom ? " · " + escapeHtml(d.fournisseur_nom) : ""}</div>`)
     .join("");
 
   return `
@@ -2424,12 +2706,14 @@ function showDepenseForm(chantierId) {
   const container = document.getElementById(`depense-form-${chantierId}`);
   if (!container) return;
   const today = new Date().toISOString().slice(0, 10);
+  const fournisseurOptions = fournisseursCache.map((f) => `<option value="${f.id}">${escapeHtml(f.nom)}</option>`).join("");
   container.innerHTML = `
     <div class="form-box" style="margin-top:12px;">
       <div class="form-grid">
         <div><label for="dep-libelle-${chantierId}">Libelle *</label><input type="text" id="dep-libelle-${chantierId}" placeholder="Ex: Materiaux carrelage"></div>
         <div><label for="dep-montant-${chantierId}">Montant (euros) *</label><input type="number" step="0.01" min="0.01" id="dep-montant-${chantierId}"></div>
         <div><label for="dep-date-${chantierId}">Date</label><input type="date" id="dep-date-${chantierId}" value="${today}"></div>
+        <div><label for="dep-fournisseur-${chantierId}">Fournisseur (optionnel)</label><select id="dep-fournisseur-${chantierId}"><option value="">Aucun</option>${fournisseurOptions}</select></div>
       </div>
       <p class="field-error" id="depense-error-${chantierId}" hidden></p>
       <div class="form-actions">
@@ -2591,6 +2875,7 @@ function setupChantiersView() {
         errorBox.textContent = err.message;
       }
     } else if (btn.dataset.action === "toggle-depense-form") {
+      await ensureFournisseursCache();
       showDepenseForm(id);
     } else if (btn.dataset.action === "cancel-depense-form") {
       document.getElementById(`depense-form-${id}`).innerHTML = "";
@@ -2598,6 +2883,7 @@ function setupChantiersView() {
       const libelle = document.getElementById(`dep-libelle-${id}`).value.trim();
       const montant = document.getElementById(`dep-montant-${id}`).value;
       const dateDepense = document.getElementById(`dep-date-${id}`).value;
+      const fournisseurId = document.getElementById(`dep-fournisseur-${id}`).value;
       const errorBox = document.getElementById(`depense-error-${id}`);
       if (!libelle || !montant) {
         errorBox.hidden = false;
@@ -2605,7 +2891,10 @@ function setupChantiersView() {
         return;
       }
       try {
-        await Api.addChantierDepense(id, { libelle, montant: parseFloat(montant), date_depense: dateDepense });
+        await Api.addChantierDepense(id, {
+          libelle, montant: parseFloat(montant), date_depense: dateDepense,
+          fournisseur_id: fournisseurId ? parseInt(fournisseurId, 10) : null,
+        });
         showToast("Depense ajoutee.");
         loadChantiers();
       } catch (err) {
@@ -2954,38 +3243,122 @@ function setupDocumentsView() {
   });
 }
 
-// ===================== Planning =====================
+// ===================== Planning (calendrier jour/semaine/mois, drag & drop reel) =====================
 const PLANNING_TYPE_LABELS = { rdv: "RDV", visite: "Visite", intervention: "Intervention", autre: "Autre", tache: "Tache", chantier_debut: "Debut chantier" };
+const PLANNING_TYPE_CLASS = { rdv: "planning-item-blue", visite: "planning-item-blue", intervention: "planning-item-orange", autre: "planning-item-gray", tache: "planning-item-gray", chantier_debut: "planning-item-green" };
+
+let planningViewMode = "semaine"; // jour | semaine | mois
+let planningAnchorDate = new Date();
+
+function planningToIso(d) {
+  return d.toISOString().slice(0, 10);
+}
+
+function planningStartOfWeek(d) {
+  const date = new Date(d);
+  const jour = date.getDay(); // 0 = dimanche
+  const decalage = jour === 0 ? -6 : 1 - jour; // lundi = premier jour
+  date.setDate(date.getDate() + decalage);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function planningRange() {
+  const anchor = new Date(planningAnchorDate);
+  anchor.setHours(0, 0, 0, 0);
+  if (planningViewMode === "jour") return [new Date(anchor), new Date(anchor)];
+  if (planningViewMode === "semaine") {
+    const debut = planningStartOfWeek(anchor);
+    const fin = new Date(debut);
+    fin.setDate(fin.getDate() + 6);
+    return [debut, fin];
+  }
+  const premier = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+  const dernier = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0);
+  const debut = planningStartOfWeek(premier);
+  const fin = planningStartOfWeek(dernier);
+  fin.setDate(fin.getDate() + 6);
+  return [debut, fin];
+}
+
+function planningShift(direction) {
+  const d = new Date(planningAnchorDate);
+  if (planningViewMode === "jour") d.setDate(d.getDate() + direction);
+  else if (planningViewMode === "semaine") d.setDate(d.getDate() + direction * 7);
+  else d.setMonth(d.getMonth() + direction);
+  return d;
+}
+
+function planningToolbarHtml(debut, fin) {
+  const label = planningViewMode === "jour"
+    ? debut.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
+    : planningViewMode === "semaine"
+      ? `${debut.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })} – ${fin.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}`
+      : planningAnchorDate.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+  return `
+    <div class="planning-toolbar">
+      <div class="planning-nav">
+        <button type="button" class="btn-sm" data-action="planning-prev">&larr;</button>
+        <button type="button" class="btn-sm" data-action="planning-today">Aujourd'hui</button>
+        <button type="button" class="btn-sm" data-action="planning-next">&rarr;</button>
+        <strong class="planning-label">${escapeHtml(label)}</strong>
+      </div>
+      <div class="planning-modes">
+        ${["jour", "semaine", "mois"].map((m) => `<button type="button" class="btn-sm ${planningViewMode === m ? "btn-sm-primary" : ""}" data-action="planning-mode" data-mode="${m}">${m[0].toUpperCase()}${m.slice(1)}</button>`).join("")}
+      </div>
+    </div>`;
+}
+
+function planningItemChip(item, compact) {
+  const heure = item.type === "chantier_debut" ? "" : `<span class="planning-item-heure">${new Date(item.date).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</span> `;
+  return `<div class="planning-item ${PLANNING_TYPE_CLASS[item.type] || ""}" draggable="true" data-type="${item.type}" data-ref-id="${item.reference_id}" data-current-date="${item.date}" title="${escapeHtml(item.titre)}">
+    ${compact ? "" : heure}<span class="planning-item-titre">${escapeHtml(item.titre)}</span>
+  </div>`;
+}
+
+function planningDayCellHtml(dateObj, items, { compact = false, showWeekday = true, extraClass = "" } = {}) {
+  const iso = planningToIso(dateObj);
+  const dayItems = items.filter((i) => i.date.slice(0, 10) === iso).sort((a, b) => a.date.localeCompare(b.date));
+  const isToday = iso === planningToIso(new Date());
+  const headerLabel = showWeekday
+    ? dateObj.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" })
+    : String(dateObj.getDate());
+  return `
+    <div class="planning-day-cell ${isToday ? "is-today" : ""} ${extraClass}" data-date="${iso}">
+      <div class="planning-day-header">${headerLabel}</div>
+      <div class="planning-day-items">
+        ${dayItems.map((i) => planningItemChip(i, compact)).join("") || (compact ? "" : '<div class="planning-day-empty">Rien de prevu</div>')}
+      </div>
+    </div>`;
+}
+
+function renderPlanning(debut, fin, items) {
+  const container = document.getElementById("planning-content");
+  const jours = [];
+  for (let d = new Date(debut); d <= fin; d.setDate(d.getDate() + 1)) jours.push(new Date(d));
+
+  let gridHtml;
+  if (planningViewMode === "jour") {
+    gridHtml = `<div class="planning-day-view">${planningDayCellHtml(debut, items, { compact: false, showWeekday: true })}</div>`;
+  } else if (planningViewMode === "semaine") {
+    gridHtml = `<div class="planning-week-grid">${jours.map((j) => planningDayCellHtml(j, items, { compact: false, showWeekday: true })).join("")}</div>`;
+  } else {
+    const moisAnchor = planningAnchorDate.getMonth();
+    gridHtml = `<div class="planning-month-grid">
+      ${["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"].map((j) => `<div class="planning-month-weekday">${j}</div>`).join("")}
+      ${jours.map((j) => planningDayCellHtml(j, items, { compact: true, showWeekday: false, extraClass: j.getMonth() !== moisAnchor ? "is-outside-month" : "" })).join("")}
+    </div>`;
+  }
+  container.innerHTML = planningToolbarHtml(debut, fin) + gridHtml;
+}
 
 async function loadPlanning() {
   const container = document.getElementById("planning-content");
   container.innerHTML = skeletonCards();
   try {
-    const debut = new Date();
-    const fin = new Date();
-    fin.setDate(fin.getDate() + 13);
-    const toIso = (d) => d.toISOString().slice(0, 10);
-    const items = await Api.planning(toIso(debut), toIso(fin));
-
-    if (items.length === 0) {
-      container.innerHTML = '<div class="empty-state">Rien de prevu dans les 14 prochains jours. Ajoutez un rendez-vous, ou planifiez une tache / un chantier avec une date.</div>';
-      return;
-    }
-
-    const parJour = {};
-    items.forEach((i) => {
-      const jour = i.date.slice(0, 10);
-      (parJour[jour] = parJour[jour] || []).push(i);
-    });
-
-    container.innerHTML = Object.keys(parJour).sort().map((jour) => {
-      const dateLisible = new Date(jour + "T00:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
-      const rows = parJour[jour].map((i) => {
-        const heure = i.type === "chantier_debut" ? "" : new Date(i.date).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) + " · ";
-        return `<div class="dash-row"><span>${heure}${escapeHtml(i.titre)}</span><span class="badge badge-blue">${PLANNING_TYPE_LABELS[i.type] || i.type}</span></div>`;
-      }).join("");
-      return `<div class="dash-section"><h3 style="text-transform:capitalize;">${dateLisible}</h3>${rows}</div>`;
-    }).join("");
+    const [debut, fin] = planningRange();
+    const items = await Api.planning(planningToIso(debut), planningToIso(fin));
+    renderPlanning(debut, fin, items);
   } catch (err) {
     container.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
   }
@@ -3057,6 +3430,78 @@ function setupPlanningView() {
       container.hidden = true;
       container.innerHTML = "";
     }
+  });
+
+  const planningContent = document.getElementById("planning-content");
+
+  planningContent.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-action]");
+    if (!btn) return;
+    if (btn.dataset.action === "planning-prev") {
+      planningAnchorDate = planningShift(-1);
+      loadPlanning();
+    } else if (btn.dataset.action === "planning-next") {
+      planningAnchorDate = planningShift(1);
+      loadPlanning();
+    } else if (btn.dataset.action === "planning-today") {
+      planningAnchorDate = new Date();
+      loadPlanning();
+    } else if (btn.dataset.action === "planning-mode") {
+      planningViewMode = btn.dataset.mode;
+      loadPlanning();
+    }
+  });
+
+  planningContent.addEventListener("dragstart", (e) => {
+    const chip = e.target.closest(".planning-item");
+    if (!chip) return;
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", JSON.stringify({
+      type: chip.dataset.type, refId: chip.dataset.refId, currentDate: chip.dataset.currentDate,
+    }));
+  });
+
+  planningContent.addEventListener("dragover", (e) => {
+    const cell = e.target.closest(".planning-day-cell");
+    if (!cell) return;
+    e.preventDefault();
+    cell.classList.add("drag-over");
+  });
+
+  planningContent.addEventListener("dragleave", (e) => {
+    const cell = e.target.closest(".planning-day-cell");
+    if (cell) cell.classList.remove("drag-over");
+  });
+
+  planningContent.addEventListener("drop", async (e) => {
+    const cell = e.target.closest(".planning-day-cell");
+    if (!cell) return;
+    e.preventDefault();
+    cell.classList.remove("drag-over");
+    let data;
+    try {
+      data = JSON.parse(e.dataTransfer.getData("text/plain"));
+    } catch (err) {
+      return;
+    }
+    const newDate = cell.dataset.date;
+    if (data.currentDate.slice(0, 10) === newDate) return;
+
+    await withErrorToast(async () => {
+      if (data.type === "tache") {
+        await Api.updateTache(parseInt(data.refId, 10), { echeance: newDate });
+      } else if (data.type === "chantier_debut") {
+        await Api.updateChantier(parseInt(data.refId, 10), { date_debut: newDate });
+      } else {
+        const oldDate = new Date(data.currentDate);
+        const [y, m, d] = newDate.split("-").map(Number);
+        const combined = new Date(oldDate);
+        combined.setFullYear(y, m - 1, d);
+        await Api.updateEvenement(parseInt(data.refId, 10), { date_debut: combined.toISOString() });
+      }
+      showToast("Deplace au " + new Date(newDate + "T00:00:00").toLocaleDateString("fr-FR"));
+      loadPlanning();
+    });
   });
 }
 
@@ -3216,6 +3661,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupAutomatisationForm();
   setupEquipeView();
   setupPrestationsView();
+  setupFournisseursView();
+  setupContratsView();
   setupDevisView();
   setupFacturesView();
   setupChantiersView();

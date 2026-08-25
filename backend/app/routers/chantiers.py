@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.database import get_db
 from app.deps import require_active_subscription
 from app import email_service
-from app.models import Artisan, Chantier, ChantierNote, Client, Depense, Devis, Document, Facture, LigneFacture, Tache
+from app.models import Artisan, Chantier, ChantierNote, Client, Depense, Devis, Document, Facture, Fournisseur, LigneFacture, Tache
 from app.pdf import generate_chantier_report_pdf
 from app.routers.factures import _generer_numero as _generer_numero_facture
 from app.routers.factures import _to_out as _facture_to_out
@@ -44,7 +44,7 @@ CHECKLIST_PREPARATION = [
 def _get_chantier_or_404(db: Session, artisan: Artisan, chantier_id: int) -> Chantier:
     chantier = (
         db.query(Chantier)
-        .options(joinedload(Chantier.notes), joinedload(Chantier.depenses), joinedload(Chantier.client), joinedload(Chantier.factures), joinedload(Chantier.taches))
+        .options(joinedload(Chantier.notes), joinedload(Chantier.depenses).joinedload(Depense.fournisseur), joinedload(Chantier.client), joinedload(Chantier.factures), joinedload(Chantier.taches))
         .filter(Chantier.id == chantier_id, Chantier.artisan_id == artisan.id)
         .first()
     )
@@ -75,7 +75,7 @@ def lister_chantiers(
 ):
     chantiers = (
         db.query(Chantier)
-        .options(joinedload(Chantier.notes), joinedload(Chantier.depenses), joinedload(Chantier.client), joinedload(Chantier.factures), joinedload(Chantier.taches))
+        .options(joinedload(Chantier.notes), joinedload(Chantier.depenses).joinedload(Depense.fournisseur), joinedload(Chantier.client), joinedload(Chantier.factures), joinedload(Chantier.taches))
         .filter(Chantier.artisan_id == artisan.id)
         .order_by(Chantier.created_at.desc())
         .all()
@@ -244,6 +244,10 @@ def ajouter_depense(
 ):
     """Ajoute une depense (materiaux, sous-traitance...) pour suivre la marge du chantier."""
     chantier = _get_chantier_or_404(db, artisan, chantier_id)
+    if payload.fournisseur_id is not None:
+        fournisseur = db.query(Fournisseur).filter(Fournisseur.id == payload.fournisseur_id, Fournisseur.artisan_id == artisan.id).first()
+        if fournisseur is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Fournisseur introuvable")
     depense = Depense(chantier_id=chantier.id, **payload.model_dump())
     db.add(depense)
     db.commit()

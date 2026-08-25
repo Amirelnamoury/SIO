@@ -117,6 +117,19 @@ const Api = {
   preparerChantierDepuisDevis: (devisId, payload) => apiFetch(`/chantiers/depuis-devis/${devisId}`, { method: "POST", body: payload }),
   cloturerChantier: (id, payload) => apiFetch(`/chantiers/${id}/cloturer`, { method: "POST", body: payload }),
 
+  // ---------- Fournisseurs ----------
+  listFournisseurs: () => apiFetch("/fournisseurs"),
+  createFournisseur: (payload) => apiFetch("/fournisseurs", { method: "POST", body: payload }),
+  updateFournisseur: (id, payload) => apiFetch(`/fournisseurs/${id}`, { method: "PATCH", body: payload }),
+  deleteFournisseur: (id) => apiFetch(`/fournisseurs/${id}`, { method: "DELETE" }),
+
+  // ---------- Contrats recurrents ----------
+  listContrats: () => apiFetch("/contrats"),
+  createContrat: (payload) => apiFetch("/contrats", { method: "POST", body: payload }),
+  updateContrat: (id, payload) => apiFetch(`/contrats/${id}`, { method: "PATCH", body: payload }),
+  deleteContrat: (id) => apiFetch(`/contrats/${id}`, { method: "DELETE" }),
+  genererContrat: (id) => apiFetch(`/contrats/${id}/generer`, { method: "POST" }),
+
   // ---------- Conformite ----------
   listConformite: () => apiFetch("/conformite"),
   conformiteAlertes: () => apiFetch("/conformite/alertes"),
@@ -165,6 +178,7 @@ const Api = {
   planning: (debut, fin) => apiFetch(`/planning?debut=${debut}&fin=${fin}`),
   listEvenements: () => apiFetch("/evenements"),
   createEvenement: (payload) => apiFetch("/evenements", { method: "POST", body: payload }),
+  updateEvenement: (id, payload) => apiFetch(`/evenements/${id}`, { method: "PATCH", body: payload }),
   deleteEvenement: (id) => apiFetch(`/evenements/${id}`, { method: "DELETE" }),
 
   // ---------- Documents ----------

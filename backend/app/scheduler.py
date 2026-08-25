@@ -27,8 +27,9 @@ from sqlalchemy.orm import Session, joinedload
 from app.config import settings
 from app.database import SessionLocal
 from app import email_service
-from app.models import Artisan, AutomationRun, ConformiteItem, Devis, EmailLog, Facture
+from app.models import Artisan, AutomationRun, ConformiteItem, Contrat, Devis, EmailLog, Facture
 from app.routers.conformite import SEUIL_ALERTE_JOURS
+from app.routers.contrats import generer_facture_pour_contrat
 from app.routers.devis import JOURS_SEUIL_STATUTS, STATUT_SUIVANT, relance_due
 from app.routers.factures import relance_facture_due
 
@@ -162,6 +163,31 @@ def _traiter_conformite(db: Session, artisan: Artisan, run: AutomationRun) -> No
             run.nb_erreurs += 1
 
 
+def _traiter_contrats(db: Session, artisan: Artisan, run: AutomationRun) -> None:
+    """Facturation recurrente : un contrat actif dont l'echeance est arrivee
+    genere et envoie sa facture automatiquement. Idempotent par construction
+    (pas besoin de _tentative_recente) : generer_facture_pour_contrat avance
+    prochaine_echeance dans la meme transaction, ce qui rend la condition
+    fausse au prochain passage - un contrat en retard de plusieurs periodes
+    rattrape une periode par passage, jusqu'a etre a jour."""
+    if artisan.subscription_status != "active":
+        return
+    contrats = (
+        db.query(Contrat)
+        .filter(Contrat.artisan_id == artisan.id, Contrat.statut == "actif", Contrat.prochaine_echeance <= date.today())
+        .all()
+    )
+    for contrat in contrats:
+        _, log = generer_facture_pour_contrat(db, artisan, contrat)
+        run.nb_contrats_factures += 1
+        if log.statut == "envoye":
+            run.nb_emails_envoyes += 1
+        elif log.statut == "non_configure":
+            run.nb_emails_non_configures += 1
+        elif log.statut == "echec":
+            run.nb_erreurs += 1
+
+
 def run_automation_cycle() -> AutomationRun:
     """Un passage complet du moteur d'automatisation, pour tous les artisans.
     Fonction pure (pas de dependance FastAPI) : appelable directement par les
@@ -176,13 +202,14 @@ def run_automation_cycle() -> AutomationRun:
             _traiter_devis(db, artisan, run)
             _traiter_factures(db, artisan, run)
             _traiter_conformite(db, artisan, run)
+            _traiter_contrats(db, artisan, run)
         run.finished_at = datetime.now(timezone.utc)
         db.commit()
         logger.info(
             "Cycle d'automatisation termine : %s devis relances, %s factures relancees, "
-            "%s alertes conformite, %s emails envoyes, %s non configures, %s erreurs",
+            "%s alertes conformite, %s factures de contrats generees, %s emails envoyes, %s non configures, %s erreurs",
             run.nb_devis_relances, run.nb_factures_relancees, run.nb_alertes_conformite,
-            run.nb_emails_envoyes, run.nb_emails_non_configures, run.nb_erreurs,
+            run.nb_contrats_factures, run.nb_emails_envoyes, run.nb_emails_non_configures, run.nb_erreurs,
         )
     except Exception as exc:  # le scheduler ne doit jamais mourir silencieusement
         logger.exception("Cycle d'automatisation interrompu par une erreur")

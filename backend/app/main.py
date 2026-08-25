@@ -34,11 +34,13 @@ from app.routers import (
     chantiers,
     clients,
     conformite,
+    contrats,
     dashboard,
     devis,
     documents,
     equipe,
     factures,
+    fournisseurs,
     notifications,
     planning,
     prestations,
@@ -86,6 +88,8 @@ app.include_router(devis.router)
 app.include_router(factures.router)
 app.include_router(chantiers.router)
 app.include_router(conformite.router)
+app.include_router(fournisseurs.router)
+app.include_router(contrats.router)
 app.include_router(taches.router)
 app.include_router(planning.router)
 app.include_router(documents.router)

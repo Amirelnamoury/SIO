@@ -612,6 +612,7 @@ class DepenseCreate(BaseModel):
     libelle: str
     montant: float
     date_depense: date
+    fournisseur_id: Optional[int] = None
 
 
 class DepenseOut(BaseModel):
@@ -622,6 +623,60 @@ class DepenseOut(BaseModel):
     libelle: str
     montant: float
     date_depense: date
+    fournisseur_id: Optional[int] = None
+    fournisseur_nom: Optional[str] = None
+
+
+FOURNISSEUR_CATEGORIES = {"materiaux", "sous_traitance", "outillage", "autre"}
+
+
+class FournisseurCreate(BaseModel):
+    nom: str
+    categorie: str = "autre"
+    contact_nom: Optional[str] = None
+    telephone: Optional[str] = None
+    email: Optional[str] = None
+    adresse: Optional[str] = None
+    notes: Optional[str] = None
+
+    @field_validator("categorie")
+    @classmethod
+    def categorie_valide(cls, v):
+        if v not in FOURNISSEUR_CATEGORIES:
+            raise ValueError(f"categorie doit etre l'une de : {sorted(FOURNISSEUR_CATEGORIES)}")
+        return v
+
+
+class FournisseurUpdate(BaseModel):
+    nom: Optional[str] = None
+    categorie: Optional[str] = None
+    contact_nom: Optional[str] = None
+    telephone: Optional[str] = None
+    email: Optional[str] = None
+    adresse: Optional[str] = None
+    notes: Optional[str] = None
+
+    @field_validator("categorie")
+    @classmethod
+    def categorie_valide(cls, v):
+        if v is not None and v not in FOURNISSEUR_CATEGORIES:
+            raise ValueError(f"categorie doit etre l'une de : {sorted(FOURNISSEUR_CATEGORIES)}")
+        return v
+
+
+class FournisseurOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    nom: str
+    categorie: str
+    contact_nom: Optional[str] = None
+    telephone: Optional[str] = None
+    email: Optional[str] = None
+    adresse: Optional[str] = None
+    notes: Optional[str] = None
+    created_at: datetime
+    total_achats: float = 0.0
 
 
 class ChantierNoteCreate(BaseModel):
@@ -1111,3 +1166,65 @@ class AutomationStatutOut(BaseModel):
     derniere_execution: Optional[datetime] = None
     derniere_execution_resume: Optional[str] = None
     prochaine_execution_estimee: Optional[datetime] = None
+
+
+# ---------- Contrats recurrents (maintenance/entretien -> facturation automatique) ----------
+
+CONTRAT_FREQUENCES = {"mensuel", "trimestriel", "annuel"}
+CONTRAT_STATUTS = {"actif", "suspendu", "resilie"}
+
+
+class ContratCreate(BaseModel):
+    client_id: int
+    titre: str
+    montant_ht: float
+    taux_tva: float = 10.0
+    frequence: str
+    prochaine_echeance: date
+
+    @field_validator("frequence")
+    @classmethod
+    def frequence_valide(cls, v):
+        if v not in CONTRAT_FREQUENCES:
+            raise ValueError(f"frequence doit etre l'une de : {sorted(CONTRAT_FREQUENCES)}")
+        return v
+
+
+class ContratUpdate(BaseModel):
+    titre: Optional[str] = None
+    montant_ht: Optional[float] = None
+    taux_tva: Optional[float] = None
+    frequence: Optional[str] = None
+    statut: Optional[str] = None
+    prochaine_echeance: Optional[date] = None
+
+    @field_validator("frequence")
+    @classmethod
+    def frequence_valide(cls, v):
+        if v is not None and v not in CONTRAT_FREQUENCES:
+            raise ValueError(f"frequence doit etre l'une de : {sorted(CONTRAT_FREQUENCES)}")
+        return v
+
+    @field_validator("statut")
+    @classmethod
+    def statut_valide(cls, v):
+        if v is not None and v not in CONTRAT_STATUTS:
+            raise ValueError(f"statut doit etre l'un de : {sorted(CONTRAT_STATUTS)}")
+        return v
+
+
+class ContratOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    client_id: int
+    client_nom: str
+    titre: str
+    montant_ht: float
+    taux_tva: float
+    frequence: str
+    statut: str
+    prochaine_echeance: date
+    derniere_generation: Optional[date] = None
+    nb_factures_generees: int = 0
+    created_at: datetime
