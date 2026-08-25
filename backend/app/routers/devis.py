@@ -1,12 +1,13 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
 from app.deps import get_current_artisan, require_active_subscription
 from app.models import Artisan, Client, Devis, LigneDevis
+from app.pdf import generate_devis_pdf
 from app.schemas import DevisCreate, DevisOut, DevisUpdate
 
 router = APIRouter(prefix="/devis", tags=["devis"])
@@ -131,6 +132,33 @@ def creer_devis(
     return _to_out(devis)
 
 
+@router.post("/{devis_id}/dupliquer", response_model=DevisOut, status_code=status.HTTP_201_CREATED)
+def dupliquer_devis(
+    devis_id: int,
+    db: Session = Depends(get_db),
+    artisan: Artisan = Depends(get_current_artisan),
+):
+    """Cree un nouveau devis 'nouveau' en reprenant client, titre et lignes."""
+    original = _get_devis_or_404(db, artisan, devis_id)
+    numero = _generer_numero(db, artisan)
+
+    copie = Devis(
+        artisan_id=artisan.id, client_id=original.client_id, statut="nouveau", source="manuel",
+        titre=original.titre, description=original.description, taux_tva=original.taux_tva,
+        acompte_pourcentage=original.acompte_pourcentage, numero=numero,
+    )
+    db.add(copie)
+    db.flush()
+    for i, ligne in enumerate(original.lignes):
+        db.add(LigneDevis(
+            devis_id=copie.id, ordre=i, description=ligne.description,
+            quantite=ligne.quantite, unite=ligne.unite, prix_unitaire_ht=ligne.prix_unitaire_ht,
+        ))
+    db.commit()
+    copie = _get_devis_or_404(db, artisan, copie.id)
+    return _to_out(copie)
+
+
 @router.get("/{devis_id}", response_model=DevisOut)
 def obtenir_devis(
     devis_id: int,
@@ -138,6 +166,23 @@ def obtenir_devis(
     artisan: Artisan = Depends(get_current_artisan),
 ):
     return _to_out(_get_devis_or_404(db, artisan, devis_id))
+
+
+@router.get("/{devis_id}/pdf")
+def telecharger_devis_pdf(
+    devis_id: int,
+    db: Session = Depends(get_db),
+    artisan: Artisan = Depends(get_current_artisan),
+):
+    devis = _get_devis_or_404(db, artisan, devis_id)
+    if not devis.lignes:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ajoutez au moins une ligne avant de generer le PDF")
+    pdf_bytes = generate_devis_pdf(devis, artisan)
+    numero = devis.numero or f"devis-{devis.id}"
+    return Response(
+        content=pdf_bytes, media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="{numero}.pdf"'},
+    )
 
 
 @router.patch("/{devis_id}", response_model=DevisOut)

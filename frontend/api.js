@@ -90,6 +90,7 @@ const Api = {
   updateDevis: (id, payload) => apiFetch(`/devis/${id}`, { method: "PATCH", body: payload }),
   envoyerDevis: (id) => apiFetch(`/devis/${id}/envoyer`, { method: "POST" }),
   relancerDevis: (id) => apiFetch(`/devis/${id}/relancer`, { method: "POST" }),
+  dupliquerDevis: (id) => apiFetch(`/devis/${id}/dupliquer`, { method: "POST" }),
   deleteDevis: (id) => apiFetch(`/devis/${id}`, { method: "DELETE" }),
 
   // ---------- Chantiers ----------
@@ -140,3 +141,23 @@ const Api = {
 
 // Definie dans app.js : appelee quand le serveur renvoie 401 (token expire/invalide).
 let onUnauthorized = null;
+
+/**
+ * Recupere un PDF (devis ou facture) et l'ouvre dans un nouvel onglet.
+ * Pas de simple lien <a href> possible : l'endpoint exige le token JWT en
+ * en-tete, donc on le recupere en JS puis on ouvre un blob local.
+ */
+async function ouvrirPdf(path) {
+  const token = getToken();
+  const response = await fetch(API_BASE + path, {
+    headers: token ? { Authorization: "Bearer " + token } : {},
+  });
+  if (!response.ok) {
+    let data = null;
+    try { data = await response.json(); } catch (e) { /* pas de corps JSON */ }
+    throw new Error(formatApiError(data) || "Impossible de generer le PDF.");
+  }
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  window.open(url, "_blank");
+}

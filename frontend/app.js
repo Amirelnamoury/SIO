@@ -589,6 +589,62 @@ async function loadDevis() {
   }
 }
 
+// ---------- Editeur de lignes reutilisable (devis + factures) ----------
+function ligneRowHtml(ligne) {
+  const l = ligne || { description: "", quantite: 1, unite: "forfait", prix_unitaire_ht: "" };
+  return `
+  <div class="ligne-row">
+    <input type="text" class="ligne-description" placeholder="Description de la prestation" value="${escapeHtml(l.description || "")}">
+    <input type="number" step="0.01" min="0" class="ligne-quantite" placeholder="Qte" value="${l.quantite ?? 1}">
+    <input type="text" class="ligne-unite" placeholder="Unite" value="${escapeHtml(l.unite || "forfait")}">
+    <input type="number" step="0.01" min="0" class="ligne-prix" placeholder="PU HT" value="${l.prix_unitaire_ht !== undefined && l.prix_unitaire_ht !== null ? l.prix_unitaire_ht : ""}">
+    <button type="button" class="btn-sm btn-sm-danger" data-action="remove-ligne" title="Retirer">&times;</button>
+  </div>`;
+}
+
+function lignesEditorHtml(containerId, lignes) {
+  const rows = (lignes && lignes.length ? lignes : [null]).map(ligneRowHtml).join("");
+  return `
+  <div class="lignes-editor">
+    <label>Prestations</label>
+    <div id="${containerId}">${rows}</div>
+    <button type="button" class="btn-sm" data-action="add-ligne" data-target="${containerId}">+ Ajouter une ligne</button>
+  </div>`;
+}
+
+function attacherEditeurLignes(formEl) {
+  formEl.addEventListener("click", (e) => {
+    const addBtn = e.target.closest('[data-action="add-ligne"]');
+    if (addBtn) {
+      document.getElementById(addBtn.dataset.target).insertAdjacentHTML("beforeend", ligneRowHtml());
+      return;
+    }
+    const removeBtn = e.target.closest('[data-action="remove-ligne"]');
+    if (removeBtn) {
+      const row = removeBtn.closest(".ligne-row");
+      const parent = row.parentElement;
+      if (parent.children.length > 1) row.remove();
+    }
+  });
+}
+
+function lireLignes(containerId) {
+  const rows = document.querySelectorAll(`#${containerId} .ligne-row`);
+  const lignes = [];
+  rows.forEach((row) => {
+    const description = row.querySelector(".ligne-description").value.trim();
+    const prixRaw = row.querySelector(".ligne-prix").value;
+    if (!description || prixRaw === "") return;
+    lignes.push({
+      description,
+      quantite: parseFloat(row.querySelector(".ligne-quantite").value) || 1,
+      unite: row.querySelector(".ligne-unite").value.trim() || "u",
+      prix_unitaire_ht: parseFloat(prixRaw),
+    });
+  });
+  return lignes;
+}
+
 function renderDevisCard(d) {
   const meta = DEVIS_STATUT_META[d.statut] || { label: d.statut, badge: "badge-gray" };
   const isDue = devisDueIds.has(d.id);
@@ -610,6 +666,10 @@ function renderDevisCard(d) {
   if (d.statut === "signe") {
     actions += `<button type="button" class="btn-sm btn-sm-primary" data-action="facturer-devis" data-id="${d.id}">Convertir en facture</button>`;
   }
+  if (d.lignes && d.lignes.length > 0) {
+    actions += `<button type="button" class="btn-sm" data-action="pdf-devis" data-id="${d.id}">Telecharger le PDF</button>`;
+  }
+  actions += `<button type="button" class="btn-sm" data-action="dupliquer-devis" data-id="${d.id}">Dupliquer</button>`;
   actions += `<button type="button" class="btn-sm btn-sm-danger" data-action="delete-devis" data-id="${d.id}">Supprimer</button>`;
 
   return `
@@ -643,7 +703,6 @@ async function showDevisForm(devis) {
   }
 
   container.dataset.editingId = isEdit ? devis.id : "";
-  const montantActuel = isEdit && devis.montant_ht !== null ? devis.montant_ht : "";
   container.innerHTML = `
     <div class="form-box">
       <h3>${isEdit ? "Modifier le devis" : "Nouveau devis"}</h3>
@@ -661,18 +720,19 @@ async function showDevisForm(devis) {
             <input type="text" id="df-titre" placeholder="Ex: Renovation salle de bain" value="${isEdit ? escapeHtml(devis.titre || "") : ""}">
           </div>
           <div>
-            <label for="df-montant-ht">Montant HT (euros)</label>
-            <input type="number" step="0.01" min="0" id="df-montant-ht" value="${montantActuel}">
-          </div>
-          <div>
             <label for="df-taux-tva">TVA</label>
             <select id="df-taux-tva">
               <option value="10" ${!isEdit || devis.taux_tva === 10 ? "selected" : ""}>10% (renovation)</option>
               <option value="20" ${isEdit && devis.taux_tva === 20 ? "selected" : ""}>20% (neuf)</option>
             </select>
           </div>
+          <div>
+            <label for="df-acompte">Acompte a la signature (%)</label>
+            <input type="number" step="1" min="0" max="100" id="df-acompte" value="${isEdit ? devis.acompte_pourcentage : 30}">
+          </div>
         </div>
-        <label for="df-description" style="margin-top:14px;">Description</label>
+        ${lignesEditorHtml("df-lignes", isEdit ? devis.lignes : null)}
+        <label for="df-description" style="margin-top:14px;">Description / notes</label>
         <textarea id="df-description">${isEdit ? escapeHtml(devis.description || "") : ""}</textarea>
         <p class="field-error" id="devis-form-error" hidden></p>
         <div class="form-actions">
@@ -684,22 +744,22 @@ async function showDevisForm(devis) {
   container.hidden = false;
   container.scrollIntoView({ behavior: "smooth", block: "start" });
 
-  document.getElementById("devis-form").addEventListener("submit", async (e) => {
+  const formEl = document.getElementById("devis-form");
+  attacherEditeurLignes(formEl);
+
+  formEl.addEventListener("submit", async (e) => {
     e.preventDefault();
     const errorBox = document.getElementById("devis-form-error");
     errorBox.hidden = true;
-    const montantRaw = document.getElementById("df-montant-ht").value;
     const titre = document.getElementById("df-titre").value;
     const description = document.getElementById("df-description").value;
-    const lignes = montantRaw === "" ? undefined : [{
-      description: description || titre || "Prestation", quantite: 1, unite: "forfait", prix_unitaire_ht: parseFloat(montantRaw),
-    }];
 
     const payload = {
       titre: emptyToNull(titre),
       description: emptyToNull(description),
       taux_tva: parseFloat(document.getElementById("df-taux-tva").value),
-      lignes,
+      acompte_pourcentage: parseFloat(document.getElementById("df-acompte").value) || 0,
+      lignes: lireLignes("df-lignes"),
     };
     if (!isEdit) {
       payload.client_id = parseInt(document.getElementById("df-client").value, 10);
@@ -776,6 +836,14 @@ function setupDevisView() {
         showToast("Facture creee a partir du devis.");
         switchView("factures");
       });
+    } else if (btn.dataset.action === "pdf-devis") {
+      await withErrorToast(() => ouvrirPdf(`/devis/${id}/pdf`));
+    } else if (btn.dataset.action === "dupliquer-devis") {
+      await withErrorToast(async () => {
+        await Api.dupliquerDevis(id);
+        showToast("Devis duplique.");
+        loadDevis();
+      });
     }
   });
 
@@ -818,6 +886,7 @@ function renderFactureCard(f) {
   if (f.montant_restant > 0 && f.statut !== "brouillon" && f.statut !== "annulee") {
     actions += `<button type="button" class="btn-sm btn-sm-primary" data-action="ajouter-paiement" data-id="${f.id}">+ Enregistrer un paiement</button>`;
   }
+  actions += `<button type="button" class="btn-sm" data-action="pdf-facture" data-id="${f.id}">Telecharger le PDF</button>`;
   actions += `<button type="button" class="btn-sm btn-sm-danger" data-action="delete-facture" data-id="${f.id}">Supprimer</button>`;
 
   const paiementsHtml = (f.paiements || [])
@@ -887,14 +956,23 @@ function showFactureForm() {
         <form id="facture-form">
           <div class="form-grid">
             <div><label for="fa-client">Client *</label><select id="fa-client" required><option value="">Choisir...</option>${clientOptionsHtml()}</select></div>
-            <div><label for="fa-description">Description de la prestation *</label><input type="text" id="fa-description" required></div>
-            <div><label for="fa-montant">Montant HT (euros) *</label><input type="number" step="0.01" min="0.01" id="fa-montant" required></div>
+            <div>
+              <label for="fa-type">Type</label>
+              <select id="fa-type">
+                <option value="standard">Standard</option>
+                <option value="acompte">Acompte</option>
+                <option value="situation">Situation</option>
+                <option value="finale">Finale</option>
+                <option value="avoir">Avoir</option>
+              </select>
+            </div>
             <div>
               <label for="fa-tva">TVA</label>
               <select id="fa-tva"><option value="10">10% (renovation)</option><option value="20">20% (neuf)</option></select>
             </div>
             <div><label for="fa-echeance">Date d'echeance</label><input type="date" id="fa-echeance"></div>
           </div>
+          ${lignesEditorHtml("fa-lignes", null)}
           <p class="field-error" id="facture-form-error" hidden></p>
           <div class="form-actions">
             <button type="submit" class="btn-sm btn-sm-primary">Creer</button>
@@ -905,20 +983,20 @@ function showFactureForm() {
     container.hidden = false;
     container.scrollIntoView({ behavior: "smooth", block: "start" });
 
-    document.getElementById("facture-form").addEventListener("submit", async (e) => {
+    const formEl = document.getElementById("facture-form");
+    attacherEditeurLignes(formEl);
+
+    formEl.addEventListener("submit", async (e) => {
       e.preventDefault();
       const errorBox = document.getElementById("facture-form-error");
       errorBox.hidden = true;
       try {
         await Api.createFacture({
           client_id: parseInt(document.getElementById("fa-client").value, 10),
+          type: document.getElementById("fa-type").value,
           taux_tva: parseFloat(document.getElementById("fa-tva").value),
           date_echeance: emptyToNull(document.getElementById("fa-echeance").value),
-          lignes: [{
-            description: document.getElementById("fa-description").value,
-            quantite: 1, unite: "forfait",
-            prix_unitaire_ht: parseFloat(document.getElementById("fa-montant").value),
-          }],
+          lignes: lireLignes("fa-lignes"),
         });
         showToast("Facture creee.");
         container.hidden = true;
@@ -986,6 +1064,8 @@ function setupFacturesView() {
         showToast("Facture supprimee.");
         loadFactures();
       });
+    } else if (btn.dataset.action === "pdf-facture") {
+      await withErrorToast(() => ouvrirPdf(`/factures/${id}/pdf`));
     }
   });
 }

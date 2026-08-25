@@ -1,12 +1,13 @@
 from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
 from app.deps import get_current_artisan
 from app.models import Artisan, Client, Devis, Facture, LigneFacture, Paiement
+from app.pdf import generate_facture_pdf
 from app.schemas import FactureCreate, FactureOut, FactureUpdate, PaiementCreate, PaiementOut
 
 router = APIRouter(prefix="/factures", tags=["factures"])
@@ -162,6 +163,22 @@ def obtenir_facture(
     _recalculer_statut(facture)
     db.commit()
     return _to_out(facture)
+
+
+@router.get("/{facture_id}/pdf")
+def telecharger_facture_pdf(
+    facture_id: int,
+    db: Session = Depends(get_db),
+    artisan: Artisan = Depends(get_current_artisan),
+):
+    facture = _get_facture_or_404(db, artisan, facture_id)
+    if not facture.lignes:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cette facture n'a pas de lignes")
+    pdf_bytes = generate_facture_pdf(facture, artisan)
+    return Response(
+        content=pdf_bytes, media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="{facture.numero}.pdf"'},
+    )
 
 
 @router.patch("/{facture_id}", response_model=FactureOut)
