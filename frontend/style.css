@@ -22,12 +22,16 @@ body {
   color: var(--text);
   line-height: 1.5;
 }
-button { font-family: inherit; cursor: pointer; }
-input, select, textarea { font-family: inherit; }
+button { font-family: inherit; cursor: pointer; transition: transform 0.1s ease, background-color 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, opacity 0.15s ease; }
+button:active:not(:disabled) { transform: scale(0.97); }
+input, select, textarea { font-family: inherit; transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+a { transition: opacity 0.15s ease; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 h2 { margin: 0; }
 h3 { margin: 0 0 12px; }
 
 /* ---------- Ecran auth ---------- */
+.auth-screen[hidden] { display: none; }
 .auth-screen {
   min-height: 100vh;
   display: flex; align-items: center; justify-content: center;
@@ -52,6 +56,7 @@ h3 { margin: 0 0 12px; }
   background: var(--danger-bg); color: var(--danger); padding: 10px 14px; border-radius: 8px;
   font-size: 0.88rem; margin-bottom: 16px;
 }
+.auth-form[hidden] { display: none; }
 .auth-form { display: flex; flex-direction: column; }
 .auth-form label { font-size: 0.85rem; font-weight: 600; margin: 12px 0 5px; }
 .auth-form label:first-of-type { margin-top: 0; }
@@ -67,6 +72,7 @@ h3 { margin: 0 0 12px; }
 .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
 
 /* ---------- App shell (barre laterale) ---------- */
+.app-shell[hidden] { display: none; }
 .app-shell { min-height: 100vh; display: flex; }
 .sidebar {
   width: 248px; flex-shrink: 0; background: var(--primary-dark); color: #fff;
@@ -111,12 +117,14 @@ h3 { margin: 0 0 12px; }
 
 @media (max-width: 900px) {
   .app-shell { flex-direction: column; }
-  .sidebar { width: 100%; height: auto; position: static; flex-direction: row; align-items: center; overflow-x: auto; }
-  .sidebar-logo { padding: 12px 14px; }
-  .sidebar-nav { flex-direction: row; padding: 4px; }
-  .nav-link { white-space: nowrap; }
+  .sidebar { width: 100%; height: auto; position: static; flex-direction: column; align-items: stretch; }
+  .sidebar-logo { padding: 12px 16px; font-size: 1rem; }
+  .sidebar-search-btn { margin: 0 12px 8px; }
+  .kbd-hint { display: none; }
+  .sidebar-nav { flex: 0 0 auto; flex-direction: row; padding: 4px 12px 10px; overflow-x: auto; }
+  .nav-link { white-space: nowrap; flex: 0 0 auto; }
   .nav-link span:not(.badge-count), .nav-link { font-size: 0.82rem; }
-  .sidebar-footer { flex-direction: row; border-top: none; padding: 8px; }
+  .sidebar-footer { flex: 0 0 auto; flex-direction: row; border-top: 1px solid rgba(255,255,255,0.1); padding: 8px 12px; }
   .content { padding: 20px 16px 50px; }
 }
 
@@ -159,9 +167,35 @@ h3 { margin: 0 0 12px; }
 .dash-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 0.88rem; }
 .dash-row:last-child { border-bottom: none; }
 
+/* ---------- Skeleton loaders ---------- */
+.skeleton {
+  background: linear-gradient(90deg, var(--bg) 25%, #e4e5ee 37%, var(--bg) 63%);
+  background-size: 400% 100%;
+  animation: skeleton-loading 1.4s ease infinite;
+  border-radius: 14px;
+}
+.skeleton-card { height: 82px; margin-bottom: 12px; }
+@keyframes skeleton-loading {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; background: var(--bg); }
+}
+
+/* ---------- Transition de vue ---------- */
+.view:not([hidden]) { animation: view-fade-in 0.22s ease; }
+@keyframes view-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .view:not([hidden]) { animation: none; }
+}
+
 /* ---------- Listes / cartes ---------- */
 .list { display: flex; flex-direction: column; gap: 12px; }
-.empty-state { text-align: center; padding: 50px 20px; color: var(--text-muted); }
+.empty-state { text-align: center; padding: 50px 20px; color: var(--text-muted); line-height: 1.6; }
 
 .item-card {
   background: var(--surface); border-radius: 14px; padding: 18px 20px;
@@ -210,11 +244,11 @@ h3 { margin: 0 0 12px; }
 /* ---------- Editeur de lignes (devis / factures) ---------- */
 .lignes-editor { margin-top: 16px; }
 .lignes-editor label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; }
-.ligne-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
-.ligne-row .ligne-description { flex: 3; }
-.ligne-row .ligne-quantite { flex: 1; min-width: 60px; }
-.ligne-row .ligne-unite { flex: 1; min-width: 70px; }
-.ligne-row .ligne-prix { flex: 1; min-width: 80px; }
+.ligne-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; align-items: center; }
+.ligne-row .ligne-description { flex: 3 1 200px; }
+.ligne-row .ligne-quantite { flex: 1 1 60px; min-width: 60px; }
+.ligne-row .ligne-unite { flex: 1 1 70px; min-width: 70px; }
+.ligne-row .ligne-prix { flex: 1 1 80px; min-width: 80px; }
 .ligne-row input { padding: 8px 10px; border-radius: 8px; border: 1.5px solid var(--border); font-size: 0.88rem; }
 .ligne-row .btn-sm { padding: 6px 10px; flex-shrink: 0; }
 .lignes-total { text-align: right; font-weight: 700; margin-top: 8px; color: var(--primary); }
@@ -287,13 +321,15 @@ h3 { margin: 0 0 12px; }
 
 /* ---------- Toast ---------- */
 #toast {
-  position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+  position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(8px);
   background: #1e1e2e; color: #fff; padding: 12px 22px; border-radius: 999px;
   font-size: 0.9rem; font-weight: 600; box-shadow: 0 8px 24px rgba(0,0,0,0.25);
-  z-index: 50; opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+  z-index: 50; opacity: 0; pointer-events: none; transition: opacity 0.2s ease, transform 0.2s ease;
+  display: flex; align-items: center; gap: 9px; max-width: 90vw;
 }
-#toast.show { opacity: 1; }
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 #toast.toast-error { background: var(--danger); }
+.toast-icon { font-size: 0.95rem; flex-shrink: 0; }
 
 @media (max-width: 640px) {
   .topbar { padding: 12px 16px; }

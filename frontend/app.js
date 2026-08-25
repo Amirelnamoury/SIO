@@ -31,10 +31,15 @@ function fmtEuro(n) {
   return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(n);
 }
 
+function skeletonCards(n = 3) {
+  return Array.from({ length: n }).map(() => '<div class="skeleton skeleton-card"></div>').join("");
+}
+
 let toastTimer = null;
 function showToast(message, isError = false) {
   const toast = document.getElementById("toast");
-  toast.textContent = message;
+  const icon = isError ? "&#9888;" : "&#10003;";
+  toast.innerHTML = `<span class="toast-icon">${icon}</span><span>${escapeHtml(message)}</span>`;
   toast.classList.toggle("toast-error", isError);
   toast.classList.add("show");
   clearTimeout(toastTimer);
@@ -423,7 +428,7 @@ function renderPresenceSite(p) {
 
 async function loadDashboard() {
   const container = document.getElementById("dashboard-content");
-  container.innerHTML = '<div class="empty-state">Chargement...</div>';
+  container.innerHTML = skeletonCards();
   try {
     const d = await Api.dashboard();
     const stats = [
@@ -502,7 +507,7 @@ const CLIENT_PIPELINE_ORDRE = [
 
 async function loadClients() {
   const board = document.getElementById("clients-kanban");
-  board.innerHTML = '<div class="empty-state">Chargement...</div>';
+  board.innerHTML = skeletonCards();
   try {
     const clients = await Api.listClients();
     clientsCache = clients;
@@ -617,7 +622,7 @@ async function showTimeline(clientId) {
   const client = clientsCache.find((c) => c.id === clientId) || (await Api.listClients()).find((c) => c.id === clientId);
   document.getElementById("timeline-titre").textContent = client ? `Historique - ${client.nom}` : "Historique";
   const content = document.getElementById("timeline-content");
-  content.innerHTML = '<div class="empty-state">Chargement...</div>';
+  content.innerHTML = skeletonCards();
   document.getElementById("panel-timeline").hidden = false;
 
   try {
@@ -687,7 +692,7 @@ function setupClientsView() {
 // ===================== Devis & relances =====================
 async function loadDevis() {
   const list = document.getElementById("devis-list");
-  list.innerHTML = '<div class="empty-state">Chargement...</div>';
+  list.innerHTML = skeletonCards();
   try {
     const [devis, aRelancer] = await Promise.all([Api.listDevis(currentDevisFilter), Api.devisARelancer()]);
     devisDueIds = new Set(aRelancer.map((d) => d.id));
@@ -974,7 +979,7 @@ let currentFactureFilter = "";
 
 async function loadFactures() {
   const list = document.getElementById("factures-list");
-  list.innerHTML = '<div class="empty-state">Chargement...</div>';
+  list.innerHTML = skeletonCards();
   try {
     const factures = await Api.listFactures(currentFactureFilter);
     if (factures.length === 0) {
@@ -1200,7 +1205,7 @@ async function loadChantiers() {
   }
   newBtn.hidden = false;
 
-  list.innerHTML = '<div class="empty-state">Chargement...</div>';
+  list.innerHTML = skeletonCards();
   try {
     const chantiers = await Api.listChantiers();
     if (chantiers.length === 0) {
@@ -1391,7 +1396,7 @@ const TACHE_PRIORITE_BADGE = { basse: "badge-gray", normale: "badge-blue", haute
 
 async function loadTaches() {
   const list = document.getElementById("taches-list");
-  list.innerHTML = '<div class="empty-state">Chargement...</div>';
+  list.innerHTML = skeletonCards();
   try {
     const taches = await Api.listTaches(currentTacheFilter);
     if (taches.length === 0) {
@@ -1529,7 +1534,7 @@ const PLANNING_TYPE_LABELS = { rdv: "RDV", visite: "Visite", intervention: "Inte
 
 async function loadPlanning() {
   const container = document.getElementById("planning-content");
-  container.innerHTML = '<div class="empty-state">Chargement...</div>';
+  container.innerHTML = skeletonCards();
   try {
     const debut = new Date();
     const fin = new Date();
@@ -1650,7 +1655,7 @@ async function loadConformite() {
   }
   newBtn.hidden = false;
 
-  list.innerHTML = '<div class="empty-state">Chargement...</div>';
+  list.innerHTML = skeletonCards();
   try {
     const [items, alertes] = await Promise.all([Api.listConformite(), Api.conformiteAlertes()]);
 
