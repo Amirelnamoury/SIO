@@ -148,6 +148,8 @@ const Api = {
 
   // ---------- Tableau de bord & analytics ----------
   dashboard: () => apiFetch("/dashboard"),
+  dashboardRecommandations: () => apiFetch("/dashboard/recommandations"),
+  dashboardSante: () => apiFetch("/dashboard/sante"),
   analytics: () => apiFetch("/analytics"),
 
   // ---------- Recherche globale ----------

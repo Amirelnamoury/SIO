@@ -873,6 +873,7 @@ class DashboardAujourdhui(BaseModel):
     evenements: list[EvenementOut] = []
     devis_a_relancer: list[DevisOut] = []
     factures_en_retard: list[FactureOut] = []
+    chantiers_a_venir: list[ChantierOut] = []
 
 
 class DashboardCommercial(BaseModel):
@@ -904,6 +905,31 @@ class DashboardOut(BaseModel):
     finances: DashboardFinances
     alertes_conformite: list[ConformiteOut] = []
     presence_site: DashboardPresenceSite
+
+
+# ---------- Recommandations & sante entreprise ----------
+
+class RecommandationOut(BaseModel):
+    message: str
+    urgence: str  # haute, moyenne, basse
+    view: str
+    reference_id: Optional[int] = None
+
+
+class SousScoreOut(BaseModel):
+    label: str
+    valeur: Optional[int] = None  # 0-100, None si pas assez de donnees pour juger honnetement
+    raison_absence: Optional[str] = None
+
+
+class SanteEntrepriseOut(BaseModel):
+    score_global: Optional[int] = None
+    raison_absence_globale: Optional[str] = None
+    commercial: SousScoreOut
+    tresorerie: SousScoreOut
+    chantiers: SousScoreOut
+    conformite: SousScoreOut
+    organisation: SousScoreOut
 
 
 # ---------- Recherche globale ----------

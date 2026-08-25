@@ -176,11 +176,43 @@ h3 { margin: 0 0 12px; }
 .dash-stat .label { font-size: 0.82rem; color: var(--text-muted); margin-top: 2px; }
 .dash-section { margin-bottom: 30px; }
 .dash-section h3 { font-size: 1.05rem; margin-bottom: 12px; }
-.dash-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-@media (max-width: 760px) { .dash-two-col { grid-template-columns: 1fr; } }
 .dash-empty { font-size: 0.85rem; color: var(--text-muted); padding: 8px 0; }
 .dash-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 0.88rem; }
 .dash-row:last-child { border-bottom: none; }
+
+/* ---------- Priorites du jour ---------- */
+.priorite-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 14px; border-radius: 10px; margin-bottom: 8px;
+  border-left: 4px solid var(--border); background: var(--bg);
+}
+.priorite-row:last-child { margin-bottom: 0; }
+.priorite-row.urgence-haute { border-left-color: var(--danger); }
+.priorite-row.urgence-moyenne { border-left-color: var(--warning); }
+.priorite-row.urgence-basse { border-left-color: var(--info); }
+.priorite-row.urgence-info { border-left-color: var(--success); }
+.priorite-texte { display: flex; align-items: center; gap: 10px; font-size: 0.88rem; }
+.priorite-icone { font-size: 1rem; line-height: 1; }
+
+/* ---------- Recommandations ---------- */
+.recommandation-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 0.88rem;
+}
+.recommandation-row:last-child { border-bottom: none; }
+
+/* ---------- Sante de l'entreprise ---------- */
+.sante-widget { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
+.sante-score-global { text-align: center; flex-shrink: 0; }
+.sante-score-global .chiffre { font-size: 2.4rem; font-weight: 800; color: var(--primary); line-height: 1; }
+.sante-score-global .sur-cent { font-size: 1rem; color: var(--text-muted); font-weight: 600; }
+.sante-score-global .libelle { font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; }
+.sante-sous-scores { flex: 1; min-width: 240px; display: flex; flex-direction: column; gap: 10px; }
+.sante-sous-score .ligne { display: flex; align-items: center; justify-content: space-between; font-size: 0.82rem; margin-bottom: 3px; }
+.sante-sous-score .ligne .valeur { font-weight: 700; }
+.sante-barre { height: 6px; border-radius: 999px; background: var(--border); overflow: hidden; }
+.sante-barre .remplissage { height: 100%; border-radius: 999px; background: var(--success); }
+.sante-sous-score .raison { font-size: 0.78rem; color: var(--text-muted); font-style: italic; }
 
 /* ---------- Skeleton loaders ---------- */
 .skeleton {

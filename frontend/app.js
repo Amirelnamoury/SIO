@@ -1051,6 +1051,14 @@ function setupNotificationsView() {
   });
 }
 
+function setupDashboardView() {
+  document.getElementById("dashboard-content").addEventListener("click", (e) => {
+    const btn = e.target.closest('[data-action="voir-notification"]');
+    if (!btn) return;
+    switchView(btn.dataset.view);
+  });
+}
+
 // ===================== Recherche globale (Ctrl+K) =====================
 const SEARCH_TYPE_META = {
   client: { label: "Clients & prospects", view: "prospects" },
@@ -1166,11 +1174,72 @@ function renderPresenceSite(p) {
   return rows;
 }
 
+const URGENCE_META = {
+  haute: { label: "Important", icone: "\u{1F534}", classe: "urgence-haute" },
+  moyenne: { label: "A faire", icone: "\u{1F7E0}", classe: "urgence-moyenne" },
+  basse: { label: "Preparation", icone: "\u{1F535}", classe: "urgence-basse" },
+  info: { label: "Information", icone: "\u{1F7E2}", classe: "urgence-info" },
+};
+
+function prioriteRowHtml(item) {
+  const meta = URGENCE_META[item.urgence] || URGENCE_META.info;
+  return `
+  <div class="priorite-row ${meta.classe}">
+    <div class="priorite-texte"><span class="priorite-icone">${meta.icone}</span><span>${item.label}</span></div>
+    ${item.view ? `<button type="button" class="btn-sm" data-action="voir-notification" data-view="${item.view}">Voir</button>` : ""}
+  </div>`;
+}
+
+const RECOMMANDATION_URGENCE_LABELS = { haute: "Important", moyenne: "A surveiller", basse: "Info" };
+
+function recommandationRowHtml(r) {
+  const badgeClasse = r.urgence === "haute" ? "badge-red" : r.urgence === "moyenne" ? "badge-orange" : "badge-blue";
+  return `
+  <div class="recommandation-row">
+    <span>${escapeHtml(r.message)}</span>
+    <span style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+      <span class="badge ${badgeClasse}">${RECOMMANDATION_URGENCE_LABELS[r.urgence] || r.urgence}</span>
+      <button type="button" class="btn-sm" data-action="voir-notification" data-view="${r.view}">Voir</button>
+    </span>
+  </div>`;
+}
+
+function sousScoreHtml(s) {
+  if (s.valeur === null || s.valeur === undefined) {
+    return `<div class="sante-sous-score">
+      <div class="ligne"><span>${s.label}</span></div>
+      <div class="raison">${escapeHtml(s.raison_absence || "Pas encore assez de donnees.")}</div>
+    </div>`;
+  }
+  const couleur = s.valeur >= 70 ? "var(--success)" : s.valeur >= 40 ? "var(--warning)" : "var(--danger)";
+  return `<div class="sante-sous-score">
+    <div class="ligne"><span>${s.label}</span><span class="valeur">${s.valeur}/100</span></div>
+    <div class="sante-barre"><div class="remplissage" style="width:${s.valeur}%;background:${couleur};"></div></div>
+  </div>`;
+}
+
+function santeWidgetHtml(sante) {
+  const sousScores = [sante.commercial, sante.tresorerie, sante.chantiers, sante.conformite, sante.organisation];
+  return `
+  <div class="sante-widget">
+    <div class="sante-score-global">
+      ${sante.score_global !== null && sante.score_global !== undefined
+        ? `<div class="chiffre">${sante.score_global}<span class="sur-cent">/100</span></div><div class="libelle">Score global</div>`
+        : `<div class="dash-empty" style="max-width:160px;">${escapeHtml(sante.raison_absence_globale || "Pas assez de donnees.")}</div>`}
+    </div>
+    <div class="sante-sous-scores">
+      ${sousScores.map(sousScoreHtml).join("")}
+    </div>
+  </div>`;
+}
+
 async function loadDashboard() {
   const container = document.getElementById("dashboard-content");
   container.innerHTML = skeletonCards();
   try {
-    const d = await Api.dashboard();
+    const [d, recommandations, sante] = await Promise.all([
+      Api.dashboard(), Api.dashboardRecommandations(), Api.dashboardSante(),
+    ]);
     const stats = [
       { label: "CA ce mois-ci", value: fmtEuro(d.finances.ca_mois) },
       { label: "A encaisser", value: fmtEuro(d.finances.a_encaisser) },
@@ -1180,29 +1249,30 @@ async function loadDashboard() {
       { label: "Nouveaux prospects (7j)", value: d.commercial.nouveaux_prospects_7j },
     ];
 
-    const aujourdhuiItems = [
-      ...d.aujourdhui.evenements.map((e) => ({
-        label: `${new Date(e.date_debut).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })} · ${escapeHtml(e.titre)}`,
-        badge: `<span class="badge badge-blue">${e.type}</span>`,
-      })),
-      ...d.aujourdhui.taches.map((t) => ({
-        label: escapeHtml(t.titre),
-        badge: `<span class="badge badge-gray">Tache</span>`,
-      })),
-    ];
-
-    const aTraiterItems = [
-      ...d.aujourdhui.devis_a_relancer.map((dv) => ({
-        label: `Relancer ${escapeHtml(dv.client_nom)} (${escapeHtml(dv.numero || "devis #" + dv.id)})`,
-        badge: `<span class="badge badge-orange">Devis</span>`,
-      })),
+    const prioriteItems = [
       ...d.aujourdhui.factures_en_retard.map((f) => ({
+        urgence: "haute", view: "factures",
         label: `${escapeHtml(f.numero)} · ${escapeHtml(f.client_nom)} · ${fmtEuro(f.montant_restant)} en retard`,
-        badge: `<span class="badge badge-red">Facture</span>`,
       })),
       ...d.alertes_conformite.map((c) => ({
-        label: `${escapeHtml(c.libelle)} (${c.jours_restants} j)`,
-        badge: `<span class="badge badge-red">Conformite</span>`,
+        urgence: c.jours_restants < 7 ? "haute" : "moyenne", view: "entreprise",
+        label: `${escapeHtml(c.libelle)} · expire dans ${c.jours_restants} j`,
+      })),
+      ...d.aujourdhui.devis_a_relancer.map((dv) => ({
+        urgence: "moyenne", view: "devis",
+        label: `Relancer ${escapeHtml(dv.client_nom)} (${escapeHtml(dv.numero || "devis #" + dv.id)})`,
+      })),
+      ...d.aujourdhui.taches.map((t) => ({
+        urgence: "moyenne", view: "taches",
+        label: `Tache du jour : ${escapeHtml(t.titre)}`,
+      })),
+      ...d.aujourdhui.chantiers_a_venir.map((c) => ({
+        urgence: "basse", view: "chantiers",
+        label: `Chantier '${escapeHtml(c.titre)}' commence le ${fmtDate(c.date_debut)}`,
+      })),
+      ...d.aujourdhui.evenements.map((e) => ({
+        urgence: "info", view: "planning",
+        label: `${new Date(e.date_debut).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })} · ${escapeHtml(e.titre)}`,
       })),
     ];
 
@@ -1210,19 +1280,17 @@ async function loadDashboard() {
       <div class="dash-grid">
         ${stats.map((s) => `<div class="dash-stat"><div class="value">${s.value}</div><div class="label">${s.label}</div></div>`).join("")}
       </div>
-      <div class="dash-two-col">
-        <div class="dash-section">
-          <h3>Aujourd'hui</h3>
-          ${aujourdhuiItems.length
-            ? aujourdhuiItems.map((i) => `<div class="dash-row"><span>${i.label}</span>${i.badge}</div>`).join("")
-            : '<div class="dash-empty">Rien de prevu aujourd\'hui.</div>'}
-        </div>
-        <div class="dash-section">
-          <h3>A traiter</h3>
-          ${aTraiterItems.length
-            ? aTraiterItems.map((i) => `<div class="dash-row"><span>${i.label}</span>${i.badge}</div>`).join("")
-            : '<div class="dash-empty">Rien qui necessite votre attention.</div>'}
-        </div>
+      <div class="dash-section">
+        <h3>Priorites du jour</h3>
+        ${prioriteItems.length ? prioriteItems.map(prioriteRowHtml).join("") : '<div class="dash-empty">Rien qui necessite votre attention aujourd\'hui.</div>'}
+      </div>
+      <div class="dash-section">
+        <h3>Recommandations</h3>
+        ${recommandations.length ? recommandations.map(recommandationRowHtml).join("") : '<div class="dash-empty">Aucune recommandation pour le moment.</div>'}
+      </div>
+      <div class="dash-section">
+        <h3>Sante de votre entreprise</h3>
+        ${santeWidgetHtml(sante)}
       </div>
       ${d.finances.paiements_recents.length ? `
       <div class="dash-section">
@@ -3046,6 +3114,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupTabs();
   setupProfilPanel();
   setupGlobalSearch();
+  setupDashboardView();
   setupClientsView();
   setupEntrepriseForm();
   setupAutomatisationForm();
