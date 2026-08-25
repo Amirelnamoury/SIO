@@ -1,18 +1,28 @@
 :root {
-  --primary: #3730a3;
-  --primary-dark: #26206e;
-  --accent: #4f46e5;
-  --bg: #f4f5fa;
+  /* Bleu nuit + cuivre brule : une identite pensee pour un artisan du BTP,
+     plus proche d'un uniforme de travail et d'un outil de qualite que d'une
+     app grand public. Le cuivre est reserve aux actions et a l'accent :
+     tout le reste reste sobre. */
+  --primary: #1e293b;
+  --primary-dark: #0f172a;
+  --accent: #c2410c;
+  --accent-hover: #9a3412;
+  --bg: #f6f5f1;
   --surface: #ffffff;
-  --text: #1e1e2e;
-  --text-muted: #6b7280;
-  --border: #e5e7eb;
-  --success: #1e7e42;
-  --success-bg: #e7f7ee;
-  --warning: #b45309;
-  --warning-bg: #fef3e2;
-  --danger: #b02a2a;
-  --danger-bg: #fdeaea;
+  --text: #191b22;
+  --text-muted: #6b6b76;
+  --border: #e6e3da;
+  --success: #15803d;
+  --success-bg: #e7f6ee;
+  --warning: #a16207;
+  --warning-bg: #fdf6e3;
+  --danger: #b91c1c;
+  --danger-bg: #fef2f2;
+  --info: #33475b;
+  --info-bg: #eef2f6;
+  --radius-sm: 9px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
 }
 * { box-sizing: border-box; }
 body {
@@ -67,10 +77,11 @@ h3 { margin: 0 0 12px; }
 }
 .auth-form input:focus, .auth-form select:focus { outline: none; border-color: var(--accent); }
 .btn-primary {
-  margin-top: 20px; padding: 12px; border: none; border-radius: 999px;
+  margin-top: 20px; padding: 12px 20px; border: none; border-radius: var(--radius-sm);
   background: var(--accent); color: #fff; font-weight: 700; font-size: 0.98rem;
+  box-shadow: 0 1px 2px rgba(15,23,42,0.06);
 }
-.btn-primary:hover { background: var(--primary); }
+.btn-primary:hover { background: var(--accent-hover); }
 .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
 
 /* ---------- App shell (barre laterale) ---------- */
@@ -171,7 +182,7 @@ h3 { margin: 0 0 12px; }
 
 /* ---------- Skeleton loaders ---------- */
 .skeleton {
-  background: linear-gradient(90deg, var(--bg) 25%, #e4e5ee 37%, var(--bg) 63%);
+  background: linear-gradient(90deg, var(--bg) 25%, #eae6db 37%, var(--bg) 63%);
   background-size: 400% 100%;
   animation: skeleton-loading 1.4s ease infinite;
   border-radius: 14px;
@@ -213,19 +224,19 @@ h3 { margin: 0 0 12px; }
 .badge {
   display: inline-block; padding: 3px 11px; border-radius: 999px; font-size: 0.78rem; font-weight: 700;
 }
-.badge-gray { background: #eef0f4; color: #4b5563; }
-.badge-blue { background: #e6edff; color: #2f4ecf; }
+.badge-gray { background: #eef0ee; color: #52524f; }
+.badge-blue { background: var(--info-bg); color: var(--info); }
 .badge-orange { background: var(--warning-bg); color: var(--warning); }
 .badge-red { background: var(--danger-bg); color: var(--danger); }
 .badge-green { background: var(--success-bg); color: var(--success); }
 
 .btn-sm {
   border: 1.5px solid var(--border); background: var(--surface); padding: 6px 14px;
-  border-radius: 999px; font-size: 0.82rem; font-weight: 600;
+  border-radius: var(--radius-sm); font-size: 0.82rem; font-weight: 600;
 }
 .btn-sm:hover { background: var(--bg); }
 .btn-sm-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-.btn-sm-primary:hover { background: var(--primary); }
+.btn-sm-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 .btn-sm-danger { color: var(--danger); border-color: #f2c6c6; }
 .btn-sm-danger:hover { background: var(--danger-bg); }
 
@@ -282,7 +293,7 @@ h3 { margin: 0 0 12px; }
 .pricing-plans { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 @media (max-width: 640px) { .pricing-plans { grid-template-columns: 1fr; } }
 .plan-card { border: 1.5px solid var(--border); border-radius: 14px; padding: 22px; display: flex; flex-direction: column; }
-.plan-card.plan-highlight { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79,70,229,0.12); position: relative; }
+.plan-card.plan-highlight { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(194,65,12,0.13); position: relative; }
 .plan-badge {
   position: absolute; top: -11px; left: 22px; background: var(--accent); color: #fff;
   font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
@@ -378,7 +389,7 @@ h3 { margin: 0 0 12px; }
 /* ---------- Toast ---------- */
 #toast {
   position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(8px);
-  background: #1e1e2e; color: #fff; padding: 12px 22px; border-radius: 999px;
+  background: var(--primary-dark); color: #fff; padding: 12px 22px; border-radius: 999px;
   font-size: 0.9rem; font-weight: 600; box-shadow: 0 8px 24px rgba(0,0,0,0.25);
   z-index: 50; opacity: 0; pointer-events: none; transition: opacity 0.2s ease, transform 0.2s ease;
   display: flex; align-items: center; gap: 9px; max-width: 90vw;

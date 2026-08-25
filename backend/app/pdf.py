@@ -18,8 +18,8 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, Tabl
 
 from app.models import Artisan, Devis, Facture
 
-PRIMARY = HexColor("#3730a3")
-PRIMARY_DARK = HexColor("#26206e")
+PRIMARY = HexColor("#1e293b")
+PRIMARY_DARK = HexColor("#0f172a")
 
 
 def _add_months(d: date, months: int) -> date:
@@ -264,7 +264,7 @@ def generate_facture_pdf(facture: Facture, artisan: Artisan) -> bytes:
     ]
     if facture.montant_paye > 0:
         style_cmds.append(("FONTNAME", (0, 4), (-1, 4), "Helvetica-Bold"))
-        style_cmds.append(("TEXTCOLOR", (0, 4), (-1, 4), colors.HexColor("#b02a2a")))
+        style_cmds.append(("TEXTCOLOR", (0, 4), (-1, 4), colors.HexColor("#b91c1c")))
     totaux_table.setStyle(TableStyle(style_cmds))
     elements.append(totaux_table)
     elements.append(Spacer(1, 22))

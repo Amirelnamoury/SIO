@@ -42,7 +42,7 @@
 .landing-hero-visual { display: flex; justify-content: center; }
 .mock-window {
   width: 100%; max-width: 380px; background: var(--surface); border-radius: 16px;
-  box-shadow: 0 30px 70px rgba(38,32,110,0.18); border: 1px solid var(--border); overflow: hidden;
+  box-shadow: 0 30px 70px rgba(15,23,42,0.16); border: 1px solid var(--border); overflow: hidden;
 }
 .mock-window-bar { display: flex; gap: 6px; padding: 12px 14px; background: var(--bg); }
 .mock-window-bar span { width: 10px; height: 10px; border-radius: 50%; background: var(--border); }
@@ -51,7 +51,7 @@
 .mock-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 .mock-dot-green { background: var(--success); }
 .mock-dot-orange { background: var(--warning); }
-.mock-dot-blue { background: var(--accent); }
+.mock-dot-accent { background: var(--accent); }
 .mock-line { height: 9px; border-radius: 5px; background: var(--border); }
 .mock-card { background: var(--bg); border-radius: 10px; padding: 14px; }
 .mock-line-lg { font-size: 1.15rem; font-weight: 800; color: var(--primary); margin-top: 8px; }
