@@ -370,13 +370,18 @@ function switchView(view) {
     section.hidden = section.id !== `view-${view}`;
   });
   if (view === "dashboard") loadDashboard();
-  if (view === "clients") loadClients();
+  if (view === "prospects") loadClients();
+  if (view === "clients") loadClientsDirectory();
   if (view === "devis") loadDevis();
   if (view === "factures") loadFactures();
   if (view === "chantiers") loadChantiers();
   if (view === "planning") loadPlanning();
   if (view === "taches") loadTaches();
-  if (view === "conformite") loadConformite();
+  if (view === "statistiques") loadStatistiques();
+  if (view === "entreprise") {
+    loadEntrepriseForm();
+    loadConformite();
+  }
 }
 
 async function refreshBadges() {
@@ -438,9 +443,90 @@ function setupProfilPanel() {
   });
 }
 
+// ===================== Entreprise (infos + conformite) =====================
+function loadEntrepriseForm() {
+  document.getElementById("ent-nom-entreprise").value = currentArtisan.nom_entreprise || "";
+  document.getElementById("ent-telephone").value = currentArtisan.telephone || "";
+  document.getElementById("ent-ville").value = currentArtisan.ville || "";
+  document.getElementById("ent-code-postal").value = currentArtisan.code_postal || "";
+  document.getElementById("ent-adresse").value = currentArtisan.adresse || "";
+  document.getElementById("ent-siret").value = currentArtisan.siret || "";
+  document.getElementById("ent-assurance").value = currentArtisan.assurance_decennale_nom || "";
+}
+
+function setupEntrepriseForm() {
+  document.getElementById("entreprise-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const errorBox = document.getElementById("entreprise-form-error");
+    errorBox.hidden = true;
+    const submitBtn = e.target.querySelector("button[type=submit]");
+    submitBtn.disabled = true;
+    try {
+      currentArtisan = await Api.updateMe({
+        nom_entreprise: document.getElementById("ent-nom-entreprise").value,
+        telephone: emptyToNull(document.getElementById("ent-telephone").value),
+        ville: emptyToNull(document.getElementById("ent-ville").value),
+        code_postal: emptyToNull(document.getElementById("ent-code-postal").value),
+        adresse: emptyToNull(document.getElementById("ent-adresse").value),
+        siret: emptyToNull(document.getElementById("ent-siret").value),
+        assurance_decennale_nom: emptyToNull(document.getElementById("ent-assurance").value),
+      });
+      showToast("Informations enregistrees.");
+    } catch (err) {
+      errorBox.hidden = false;
+      errorBox.textContent = err.message;
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
+}
+
+// ===================== Statistiques =====================
+async function loadStatistiques() {
+  const container = document.getElementById("statistiques-content");
+  container.innerHTML = skeletonCards();
+  if (!isSubscriptionActive()) {
+    container.innerHTML = renderUpgradeCard(
+      "Statistiques reservees aux abonnes",
+      "Le suivi de la performance commerciale et financiere (CA, taux d'acceptation, impayes, panier moyen) fait partie de l'abonnement mensuel Suite Artisan."
+    );
+    return;
+  }
+  try {
+    const a = await Api.analytics();
+    const stats = [
+      { label: "CA (12 derniers mois)", value: fmtEuro(a.ca_par_mois.reduce((s, m) => s + m.ca, 0)) },
+      { label: "Valeur du pipeline", value: fmtEuro(a.valeur_pipeline) },
+      { label: "Impayes", value: fmtEuro(a.montant_impayes) },
+      { label: "Devis envoyes", value: a.nb_devis_total },
+      { label: "Devis signes", value: a.nb_devis_signes },
+      { label: "Taux d'acceptation", value: `${a.taux_acceptation}%` },
+      { label: "Panier moyen", value: fmtEuro(a.panier_moyen) },
+      { label: "Delai moyen de paiement", value: a.delai_moyen_paiement_jours !== null ? `${a.delai_moyen_paiement_jours} j` : "-" },
+      { label: "Clients acquis", value: a.nb_clients_acquis },
+      { label: "Clients recurrents", value: a.nb_clients_recurrents },
+    ];
+    const statsHtml = stats.map((s) => `<div class="dash-stat"><div class="value">${s.value}</div><div class="label">${escapeHtml(s.label)}</div></div>`).join("");
+
+    const moisHtml = a.ca_par_mois.length
+      ? a.ca_par_mois.map((m) => `<div class="dash-row"><span>${escapeHtml(m.mois)}</span><strong>${fmtEuro(m.ca)}</strong></div>`).join("")
+      : '<div class="dash-empty">Pas encore de paiement enregistre.</div>';
+
+    container.innerHTML = `
+      <div class="dash-grid">${statsHtml}</div>
+      <div class="dash-section">
+        <h3>CA par mois</h3>
+        ${moisHtml}
+      </div>
+    `;
+  } catch (err) {
+    container.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
+  }
+}
+
 // ===================== Recherche globale (Ctrl+K) =====================
 const SEARCH_TYPE_META = {
-  client: { label: "Clients & prospects", view: "clients" },
+  client: { label: "Clients & prospects", view: "prospects" },
   devis: { label: "Devis", view: "devis" },
   facture: { label: "Factures", view: "factures" },
   chantier: { label: "Chantiers", view: "chantiers" },
@@ -814,6 +900,46 @@ function setupClientsView() {
       document.getElementById("panel-timeline").hidden = true;
     }
   });
+
+  document.getElementById("clients-directory").addEventListener("click", (e) => {
+    const btn = e.target.closest('[data-action="voir-timeline"]');
+    if (btn) showTimeline(parseInt(btn.dataset.id, 10));
+  });
+}
+
+// ===================== Clients (annuaire des affaires gagnees) =====================
+async function loadClientsDirectory() {
+  const container = document.getElementById("clients-directory");
+  container.innerHTML = skeletonCards();
+  try {
+    const clients = await Api.listClients("gagne");
+    if (clients.length === 0) {
+      container.innerHTML = `<div class="empty-state">
+        Aucun client pour le moment.<br><br>
+        Un prospect devient client automatiquement quand il passe au statut "Gagne" dans le pipeline.
+      </div>`;
+      return;
+    }
+    container.innerHTML = clients
+      .map((c) => {
+        const contact = [c.telephone, c.email].filter(Boolean).map(escapeHtml).join(" · ");
+        return `
+        <div class="item-card">
+          <div class="item-card-top">
+            <div>
+              <div class="item-title">${escapeHtml(c.nom)}${c.societe ? " · " + escapeHtml(c.societe) : ""}</div>
+              <div class="item-sub">${contact || "Pas de coordonnees"}${c.ville ? " · " + escapeHtml(c.ville) : ""}</div>
+            </div>
+          </div>
+          <div class="item-actions">
+            <button type="button" class="btn-sm" data-action="voir-timeline" data-id="${c.id}">Voir l'historique</button>
+          </div>
+        </div>`;
+      })
+      .join("");
+  } catch (err) {
+    container.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
+  }
 }
 
 // ===================== Devis & relances =====================
@@ -1913,6 +2039,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupProfilPanel();
   setupGlobalSearch();
   setupClientsView();
+  setupEntrepriseForm();
   setupDevisView();
   setupFacturesView();
   setupChantiersView();

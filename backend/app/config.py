@@ -19,6 +19,12 @@ class Settings(BaseSettings):
     # Adresse publique du frontend, utilisee pour les redirections apres paiement Stripe.
     app_base_url: str = "http://localhost:8080"
 
+    # Origines autorisees a appeler l'API (CORS), separees par des virgules.
+    # "*" par defaut pour ne rien casser en dev. A restreindre en prod aux
+    # domaines reels du dashboard (les sites vitrines n'appellent que /pub/*,
+    # qui reste ouvert separement, voir main.py).
+    cors_origins: str = "*"
+
     class Config:
         env_file = ".env"
 

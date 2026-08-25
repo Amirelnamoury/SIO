@@ -116,11 +116,15 @@
     <nav class="sidebar-nav">
       <button type="button" class="nav-link active" data-view="dashboard">
         <svg viewBox="0 0 24 24" class="nav-icon"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
-        Tableau de bord
+        Accueil
+      </button>
+      <button type="button" class="nav-link" data-view="prospects">
+        <svg viewBox="0 0 24 24" class="nav-icon"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="17.5" cy="9" r="2.3"/><path d="M15.8 15c2.5.4 4.2 2.2 4.2 5"/></svg>
+        Prospects
       </button>
       <button type="button" class="nav-link" data-view="clients">
-        <svg viewBox="0 0 24 24" class="nav-icon"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="17.5" cy="9" r="2.3"/><path d="M15.8 15c2.5.4 4.2 2.2 4.2 5"/></svg>
-        Clients &amp; prospects
+        <svg viewBox="0 0 24 24" class="nav-icon"><path d="M4 20c0-3.6 3.1-6 8-6s8 2.4 8 6"/><circle cx="12" cy="8" r="4"/></svg>
+        Clients
       </button>
       <button type="button" class="nav-link" data-view="devis">
         <svg viewBox="0 0 24 24" class="nav-icon"><path d="M7 2h7l5 5v15H7z"/><path d="M14 2v5h5"/><path d="M9.5 12h6M9.5 15.5h6"/></svg>
@@ -142,9 +146,13 @@
         <svg viewBox="0 0 24 24" class="nav-icon"><rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M7.5 12l3 3 6-6"/></svg>
         Taches
       </button>
-      <button type="button" class="nav-link" data-view="conformite">
+      <button type="button" class="nav-link" data-view="statistiques">
+        <svg viewBox="0 0 24 24" class="nav-icon"><path d="M4 20V10M11 20V4M18 20v-7"/></svg>
+        Statistiques
+      </button>
+      <button type="button" class="nav-link" data-view="entreprise">
         <svg viewBox="0 0 24 24" class="nav-icon"><path d="M12 3l7 3v5c0 5-3 8.5-7 10-4-1.5-7-5-7-10V6l7-3z"/></svg>
-        Conformite <span id="badge-alertes" class="badge-count badge-alert" hidden>0</span>
+        Entreprise <span id="badge-alertes" class="badge-count badge-alert" hidden>0</span>
       </button>
     </nav>
     <div class="sidebar-footer">
@@ -179,16 +187,24 @@
       <div id="dashboard-content"></div>
     </section>
 
-    <!-- ---------- Section Clients & prospects (CRM) ---------- -->
-    <section id="view-clients" class="view" hidden>
+    <!-- ---------- Section Prospects (pipeline commercial) ---------- -->
+    <section id="view-prospects" class="view" hidden>
       <div class="view-header">
-        <h2>Clients &amp; prospects</h2>
+        <h2>Prospects</h2>
         <button type="button" class="btn-primary" data-action="show-client-form">+ Nouveau contact</button>
       </div>
 
       <div id="client-form-container" hidden></div>
 
       <div class="kanban" id="clients-kanban"></div>
+    </section>
+
+    <!-- ---------- Section Clients (annuaire des affaires gagnees) ---------- -->
+    <section id="view-clients" class="view" hidden>
+      <div class="view-header">
+        <h2>Clients</h2>
+      </div>
+      <div id="clients-directory" class="list"></div>
     </section>
 
     <!-- ---------- Section Devis & relances ---------- -->
@@ -273,10 +289,37 @@
       <div id="taches-list" class="list"></div>
     </section>
 
-    <!-- ---------- Section Conformite ---------- -->
-    <section id="view-conformite" class="view" hidden>
-      <div class="view-header">
-        <h2>Conformite</h2>
+    <!-- ---------- Section Statistiques ---------- -->
+    <section id="view-statistiques" class="view" hidden>
+      <div class="view-header"><h2>Statistiques</h2></div>
+      <div id="statistiques-content"></div>
+    </section>
+
+    <!-- ---------- Section Entreprise (infos + conformite) ---------- -->
+    <section id="view-entreprise" class="view" hidden>
+      <div class="view-header"><h2>Entreprise</h2></div>
+
+      <div class="form-box" id="entreprise-form-box">
+        <h3>Mes informations</h3>
+        <form id="entreprise-form">
+          <div class="form-grid">
+            <div><label for="ent-nom-entreprise">Nom de l'entreprise</label><input type="text" id="ent-nom-entreprise" required></div>
+            <div><label for="ent-telephone">Telephone</label><input type="tel" id="ent-telephone"></div>
+            <div><label for="ent-ville">Ville</label><input type="text" id="ent-ville"></div>
+            <div><label for="ent-code-postal">Code postal</label><input type="text" id="ent-code-postal"></div>
+            <div><label for="ent-adresse">Adresse</label><input type="text" id="ent-adresse"></div>
+            <div><label for="ent-siret">SIRET</label><input type="text" id="ent-siret"></div>
+            <div><label for="ent-assurance">Assureur decennale</label><input type="text" id="ent-assurance"></div>
+          </div>
+          <p class="field-error" id="entreprise-form-error" hidden></p>
+          <div class="form-actions">
+            <button type="submit" class="btn-sm btn-sm-primary">Enregistrer</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="view-header" style="margin-top:36px;">
+        <h2 style="font-size:1.15rem;">Conformite</h2>
         <button type="button" class="btn-primary" data-action="show-conformite-form">+ Nouvel element</button>
       </div>
 

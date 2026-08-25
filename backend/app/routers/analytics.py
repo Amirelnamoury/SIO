@@ -1,5 +1,6 @@
 from collections import defaultdict
 from datetime import date, timedelta
+from decimal import Decimal
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session, joinedload
@@ -30,7 +31,7 @@ def obtenir_analytics(
         .filter(Facture.artisan_id == artisan.id, Paiement.date_paiement >= depuis_12_mois)
         .all()
     )
-    ca_par_mois_dict = defaultdict(float)
+    ca_par_mois_dict = defaultdict(Decimal)
     for date_paiement, montant in paiements:
         cle = date_paiement.strftime("%Y-%m")
         ca_par_mois_dict[cle] += montant

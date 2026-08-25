@@ -7,6 +7,7 @@ sites vitrine generes)."""
 import calendar
 import io
 from datetime import date, timedelta
+from decimal import Decimal
 
 from reportlab.lib import colors
 from reportlab.lib.colors import HexColor
@@ -107,7 +108,7 @@ def generate_devis_pdf(devis: Devis, artisan: Artisan) -> bytes:
     date_validite = _add_months(date_emission, 3)
     numero = devis.numero or f"DEV-{date_emission.year}-{devis.id:04d}"
 
-    montant_ht = devis.montant_ht or 0.0
+    montant_ht = devis.montant_ht or Decimal("0")
     montant_tva = round(montant_ht * devis.taux_tva / 100, 2)
     montant_ttc = round(montant_ht + montant_tva, 2)
     montant_acompte = round(montant_ttc * devis.acompte_pourcentage / 100, 2)

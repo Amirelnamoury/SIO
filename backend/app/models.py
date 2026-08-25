@@ -4,7 +4,7 @@ from sqlalchemy import (
     Column,
     Integer,
     String,
-    Float,
+    Numeric,
     Boolean,
     DateTime,
     Date,
@@ -14,6 +14,11 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 
 from app.database import Base
+
+# Precision monetaire standard pour toute l'application : jamais de Float
+# pour un montant (les erreurs d'arrondi binaire s'accumulent au fil des
+# lectures/ecritures en base). 10 chiffres avant la virgule, 2 apres.
+MONTANT = Numeric(10, 2)
 
 
 def utcnow():
@@ -112,8 +117,8 @@ class Devis(Base):
     numero = Column(String, nullable=True)
     titre = Column(String, nullable=True)
     description = Column(Text, nullable=True)
-    taux_tva = Column(Float, default=10.0)  # 10 = renovation, 20 = neuf
-    acompte_pourcentage = Column(Float, default=30.0)
+    taux_tva = Column(MONTANT, default=10.0)  # 10 = renovation, 20 = neuf
+    acompte_pourcentage = Column(MONTANT, default=30.0)
 
     # nouveau -> envoye -> consulte -> relance_j3 -> relance_j7 -> relance_j15 -> signe / perdu / expire
     statut = Column(String, default="nouveau", index=True)
@@ -154,9 +159,9 @@ class LigneDevis(Base):
     devis_id = Column(Integer, ForeignKey("devis.id"), nullable=False, index=True)
 
     description = Column(String, nullable=False)
-    quantite = Column(Float, default=1.0)
+    quantite = Column(MONTANT, default=1.0)
     unite = Column(String, default="u")
-    prix_unitaire_ht = Column(Float, nullable=False)
+    prix_unitaire_ht = Column(MONTANT, nullable=False)
     ordre = Column(Integer, default=0)
 
     devis = relationship("Devis", back_populates="lignes")
@@ -182,7 +187,7 @@ class Facture(Base):
 
     numero = Column(String, nullable=False)
     type = Column(String, default="standard")
-    taux_tva = Column(Float, default=10.0)
+    taux_tva = Column(MONTANT, default=10.0)
 
     # brouillon -> envoyee -> (partiellement_payee) -> payee / en_retard / annulee
     statut = Column(String, default="brouillon", index=True)
@@ -231,9 +236,9 @@ class LigneFacture(Base):
     facture_id = Column(Integer, ForeignKey("factures.id"), nullable=False, index=True)
 
     description = Column(String, nullable=False)
-    quantite = Column(Float, default=1.0)
+    quantite = Column(MONTANT, default=1.0)
     unite = Column(String, default="u")
-    prix_unitaire_ht = Column(Float, nullable=False)
+    prix_unitaire_ht = Column(MONTANT, nullable=False)
     ordre = Column(Integer, default=0)
 
     facture = relationship("Facture", back_populates="lignes")
@@ -249,7 +254,7 @@ class Paiement(Base):
     id = Column(Integer, primary_key=True, index=True)
     facture_id = Column(Integer, ForeignKey("factures.id"), nullable=False, index=True)
 
-    montant = Column(Float, nullable=False)
+    montant = Column(MONTANT, nullable=False)
     date_paiement = Column(Date, default=date.today)
     moyen = Column(String, default="virement")  # virement, cheque, especes, cb, autre
     notes = Column(String, nullable=True)
@@ -273,7 +278,7 @@ class Chantier(Base):
     statut = Column(String, default="a_preparer", index=True)
     date_debut = Column(Date, nullable=True)
     date_fin_prevue = Column(Date, nullable=True)
-    budget = Column(Float, nullable=True)
+    budget = Column(MONTANT, nullable=True)
 
     created_at = Column(DateTime(timezone=True), default=utcnow)
 
@@ -304,7 +309,7 @@ class Depense(Base):
     chantier_id = Column(Integer, ForeignKey("chantiers.id"), nullable=False, index=True)
 
     libelle = Column(String, nullable=False)
-    montant = Column(Float, nullable=False)
+    montant = Column(MONTANT, nullable=False)
     date_depense = Column(Date, default=date.today)
 
     chantier = relationship("Chantier", back_populates="depenses")
