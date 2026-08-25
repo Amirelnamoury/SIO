@@ -403,6 +403,7 @@ function switchView(view) {
   if (view === "chantiers") loadChantiers();
   if (view === "planning") loadPlanning();
   if (view === "taches") loadTaches();
+  if (view === "documents") loadDocuments();
   if (view === "statistiques") loadStatistiques();
   if (view === "entreprise") {
     loadEntrepriseForm();
@@ -1735,6 +1736,20 @@ async function loadChantiers() {
   }
 }
 
+function rentabiliteHtml(c) {
+  if (c.total_depenses === 0 && c.montant_facture === null) return "";
+  const margeTxt = c.marge_reelle !== null
+    ? `<span style="${c.marge_reelle < 0 ? "color:var(--danger);" : ""}">${fmtEuro(c.marge_reelle)}</span>`
+    : "-";
+  return `
+    <div class="dash-grid" style="margin:12px 0;">
+      <div class="dash-stat"><div class="value">${fmtEuro(c.total_depenses)}</div><div class="label">Depenses</div></div>
+      <div class="dash-stat"><div class="value">${c.montant_facture !== null ? fmtEuro(c.montant_facture) : "-"}</div><div class="label">Facture</div></div>
+      <div class="dash-stat"><div class="value">${c.montant_encaisse !== null ? fmtEuro(c.montant_encaisse) : "-"}</div><div class="label">Encaisse</div></div>
+      <div class="dash-stat"><div class="value">${margeTxt}</div><div class="label">Marge reelle</div></div>
+    </div>`;
+}
+
 function renderChantierCard(c) {
   const notesHtml = (c.notes || [])
     .slice()
@@ -1748,6 +1763,12 @@ function renderChantierCard(c) {
       <div class="item-sub" style="margin-top:6px;">${fmtDateTime(n.created_at)}</div>
     </div>`
     )
+    .join("");
+
+  const depensesHtml = (c.depenses || [])
+    .slice()
+    .reverse()
+    .map((d) => `<div class="item-sub">${fmtDate(d.date_depense)} · ${escapeHtml(d.libelle)} · ${fmtEuro(d.montant)}</div>`)
     .join("");
 
   return `
@@ -1764,14 +1785,37 @@ function renderChantierCard(c) {
       ${c.budget !== null ? ` · Budget : ${fmtEuro(c.budget)}` : ""}
       ${c.marge_estimee !== null ? ` · Marge estimee : ${fmtEuro(c.marge_estimee)}` : ""}
     </div>
+    ${rentabiliteHtml(c)}
+    ${depensesHtml ? `<div class="item-meta">${depensesHtml}</div>` : ""}
     <div class="notes-list">${notesHtml || '<div class="item-sub">Aucune note pour le moment.</div>'}</div>
     <div class="item-actions">
       <button type="button" class="btn-sm btn-sm-primary" data-action="toggle-note-form" data-id="${c.id}">+ Ajouter une note</button>
+      <button type="button" class="btn-sm" data-action="toggle-depense-form" data-id="${c.id}">+ Ajouter une depense</button>
       ${c.statut !== "termine" ? `<button type="button" class="btn-sm" data-action="terminer-chantier" data-id="${c.id}">Marquer termine</button>` : ""}
       <button type="button" class="btn-sm btn-sm-danger" data-action="delete-chantier" data-id="${c.id}">Supprimer</button>
     </div>
     <div id="note-form-${c.id}"></div>
+    <div id="depense-form-${c.id}"></div>
   </div>`;
+}
+
+function showDepenseForm(chantierId) {
+  const container = document.getElementById(`depense-form-${chantierId}`);
+  if (!container) return;
+  const today = new Date().toISOString().slice(0, 10);
+  container.innerHTML = `
+    <div class="form-box" style="margin-top:12px;">
+      <div class="form-grid">
+        <div><label for="dep-libelle-${chantierId}">Libelle *</label><input type="text" id="dep-libelle-${chantierId}" placeholder="Ex: Materiaux carrelage"></div>
+        <div><label for="dep-montant-${chantierId}">Montant (euros) *</label><input type="number" step="0.01" min="0.01" id="dep-montant-${chantierId}"></div>
+        <div><label for="dep-date-${chantierId}">Date</label><input type="date" id="dep-date-${chantierId}" value="${today}"></div>
+      </div>
+      <p class="field-error" id="depense-error-${chantierId}" hidden></p>
+      <div class="form-actions">
+        <button type="button" class="btn-sm btn-sm-primary" data-action="submit-depense" data-id="${chantierId}">Ajouter</button>
+        <button type="button" class="btn-sm" data-action="cancel-depense-form" data-id="${chantierId}">Annuler</button>
+      </div>
+    </div>`;
 }
 
 function showNoteForm(chantierId) {
@@ -1887,6 +1931,28 @@ function setupChantiersView() {
         loadChantiers();
       } catch (err) {
         const errorBox = document.getElementById(`note-error-${id}`);
+        errorBox.hidden = false;
+        errorBox.textContent = err.message;
+      }
+    } else if (btn.dataset.action === "toggle-depense-form") {
+      showDepenseForm(id);
+    } else if (btn.dataset.action === "cancel-depense-form") {
+      document.getElementById(`depense-form-${id}`).innerHTML = "";
+    } else if (btn.dataset.action === "submit-depense") {
+      const libelle = document.getElementById(`dep-libelle-${id}`).value.trim();
+      const montant = document.getElementById(`dep-montant-${id}`).value;
+      const dateDepense = document.getElementById(`dep-date-${id}`).value;
+      const errorBox = document.getElementById(`depense-error-${id}`);
+      if (!libelle || !montant) {
+        errorBox.hidden = false;
+        errorBox.textContent = "Libelle et montant sont obligatoires.";
+        return;
+      }
+      try {
+        await Api.addChantierDepense(id, { libelle, montant: parseFloat(montant), date_depense: dateDepense });
+        showToast("Depense ajoutee.");
+        loadChantiers();
+      } catch (err) {
         errorBox.hidden = false;
         errorBox.textContent = err.message;
       }
@@ -2041,6 +2107,162 @@ function setupTachesView() {
         await Api.deleteTache(id);
         showToast("Tache supprimee.");
         loadTaches();
+      });
+    }
+  });
+}
+
+// ===================== Documents =====================
+const DOCUMENT_TYPE_LABELS = {
+  contrat: "Contrat", attestation: "Attestation", assurance: "Assurance",
+  photo: "Photo", plan: "Plan", administratif: "Administratif", autre: "Autre",
+};
+
+let currentDocumentFilter = "";
+
+function fmtTaille(octets) {
+  if (octets === null || octets === undefined) return "";
+  if (octets < 1024) return `${octets} o`;
+  if (octets < 1024 * 1024) return `${(octets / 1024).toFixed(0)} Ko`;
+  return `${(octets / (1024 * 1024)).toFixed(1)} Mo`;
+}
+
+async function loadDocuments() {
+  const list = document.getElementById("documents-list");
+  list.innerHTML = skeletonCards();
+  try {
+    const [documents] = await Promise.all([Api.listDocuments(), ensureClientsCache()]);
+    const affichees = currentDocumentFilter ? documents.filter((d) => d.type === currentDocumentFilter) : documents;
+    if (affichees.length === 0) {
+      list.innerHTML = '<div class="empty-state">Aucun document pour le moment. Ajoutez vos contrats, attestations d\'assurance, plans ou photos de chantier.</div>';
+      return;
+    }
+    list.innerHTML = affichees.map(renderDocumentCard).join("");
+  } catch (err) {
+    list.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function renderDocumentCard(d) {
+  const client = d.client_id ? clientsCache.find((c) => c.id === d.client_id) : null;
+  const lienTxt = client ? `Client : ${escapeHtml(client.nom)}` : "";
+  const estFichier = !!d.nom_original;
+  return `
+  <div class="item-card">
+    <div class="item-card-top">
+      <div>
+        <div class="item-title">${escapeHtml(d.nom)}</div>
+        <div class="item-sub">${lienTxt}${lienTxt && d.taille_octets ? " · " : ""}${d.taille_octets ? fmtTaille(d.taille_octets) : ""}</div>
+      </div>
+      <span class="badge badge-gray">${DOCUMENT_TYPE_LABELS[d.type] || d.type}</span>
+    </div>
+    <div class="item-meta">Ajoute le ${fmtDate(d.created_at)}</div>
+    <div class="item-actions">
+      ${estFichier
+        ? `<button type="button" class="btn-sm btn-sm-primary" data-action="telecharger-document" data-id="${d.id}" data-nom="${escapeHtml(d.nom_original)}">Telecharger</button>`
+        : `<a class="btn-sm" href="${escapeHtml(d.url)}" target="_blank" rel="noopener">Ouvrir le lien</a>`}
+      <button type="button" class="btn-sm btn-sm-danger" data-action="delete-document" data-id="${d.id}">Supprimer</button>
+    </div>
+  </div>`;
+}
+
+function showDocumentForm() {
+  const container = document.getElementById("document-form-container");
+  container.innerHTML = "";
+  Promise.all([ensureClientsCache(), Api.listChantiers().catch(() => [])]).then(([clients, chantiers]) => {
+    const chantierOptions = chantiers
+      .map((c) => `<option value="${c.id}">${escapeHtml(c.titre)}</option>`)
+      .join("");
+    container.innerHTML = `
+      <div class="form-box">
+        <h3>Ajouter un document</h3>
+        <form id="document-form">
+          <div class="form-grid">
+            <div><label for="doc-fichier">Fichier *</label><input type="file" id="doc-fichier" required accept=".pdf,.jpg,.jpeg,.png,.heic,.heif,.doc,.docx,.xls,.xlsx,.odt,.txt"></div>
+            <div><label for="doc-nom">Nom (optionnel)</label><input type="text" id="doc-nom" placeholder="Par defaut : nom du fichier"></div>
+            <div>
+              <label for="doc-type">Type</label>
+              <select id="doc-type">${Object.entries(DOCUMENT_TYPE_LABELS).map(([v, l]) => `<option value="${v}">${l}</option>`).join("")}</select>
+            </div>
+            <div><label for="doc-client">Client (optionnel)</label><select id="doc-client"><option value="">Aucun</option>${clientOptionsHtml()}</select></div>
+            <div><label for="doc-chantier">Chantier (optionnel)</label><select id="doc-chantier"><option value="">Aucun</option>${chantierOptions}</select></div>
+          </div>
+          <p class="field-error" id="document-form-error" hidden></p>
+          <div class="form-actions">
+            <button type="submit" class="btn-sm btn-sm-primary">Ajouter</button>
+            <button type="button" class="btn-sm" data-action="cancel-document-form">Annuler</button>
+          </div>
+        </form>
+      </div>`;
+    container.hidden = false;
+    container.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    document.getElementById("document-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const errorBox = document.getElementById("document-form-error");
+      errorBox.hidden = true;
+      const fichier = document.getElementById("doc-fichier").files[0];
+      if (!fichier) {
+        errorBox.hidden = false;
+        errorBox.textContent = "Choisissez un fichier.";
+        return;
+      }
+      const formData = new FormData();
+      formData.append("file", fichier);
+      const nom = document.getElementById("doc-nom").value.trim();
+      if (nom) formData.append("nom", nom);
+      formData.append("type", document.getElementById("doc-type").value);
+      const clientId = document.getElementById("doc-client").value;
+      if (clientId) formData.append("client_id", clientId);
+      const chantierId = document.getElementById("doc-chantier").value;
+      if (chantierId) formData.append("chantier_id", chantierId);
+
+      try {
+        await Api.uploadDocument(formData);
+        showToast("Document ajoute.");
+        container.hidden = true;
+        container.innerHTML = "";
+        loadDocuments();
+      } catch (err) {
+        errorBox.hidden = false;
+        errorBox.textContent = err.message;
+      }
+    });
+  });
+}
+
+function setupDocumentsView() {
+  document.querySelector('[data-action="show-document-form"]').addEventListener("click", showDocumentForm);
+  document.getElementById("document-form-container").addEventListener("click", (e) => {
+    if (e.target.closest('[data-action="cancel-document-form"]')) {
+      const container = document.getElementById("document-form-container");
+      container.hidden = true;
+      container.innerHTML = "";
+    }
+  });
+
+  document.getElementById("document-filters").addEventListener("click", (e) => {
+    const chip = e.target.closest(".filter-chip");
+    if (!chip) return;
+    document.querySelectorAll("#document-filters .filter-chip").forEach((c) => c.classList.remove("active"));
+    chip.classList.add("active");
+    currentDocumentFilter = chip.dataset.type;
+    loadDocuments();
+  });
+
+  document.getElementById("documents-list").addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-action]");
+    if (!btn) return;
+    const id = parseInt(btn.dataset.id, 10);
+
+    if (btn.dataset.action === "telecharger-document") {
+      await withErrorToast(() => telechargerDocument(id, btn.dataset.nom));
+    } else if (btn.dataset.action === "delete-document") {
+      if (!confirm("Supprimer ce document ?")) return;
+      await withErrorToast(async () => {
+        await Api.deleteDocument(id);
+        showToast("Document supprime.");
+        loadDocuments();
       });
     }
   });
@@ -2310,6 +2532,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupChantiersView();
   setupPlanningView();
   setupTachesView();
+  setupDocumentsView();
   setupConformiteView();
 
   const toast = document.createElement("div");

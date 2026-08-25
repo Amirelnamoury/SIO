@@ -20,7 +20,7 @@ router = APIRouter(prefix="/chantiers", tags=["chantiers"])
 def _get_chantier_or_404(db: Session, artisan: Artisan, chantier_id: int) -> Chantier:
     chantier = (
         db.query(Chantier)
-        .options(joinedload(Chantier.notes), joinedload(Chantier.depenses), joinedload(Chantier.client))
+        .options(joinedload(Chantier.notes), joinedload(Chantier.depenses), joinedload(Chantier.client), joinedload(Chantier.factures))
         .filter(Chantier.id == chantier_id, Chantier.artisan_id == artisan.id)
         .first()
     )
@@ -36,6 +36,8 @@ def _to_out(chantier: Chantier) -> ChantierOut:
         adresse=chantier.adresse, statut=chantier.statut, date_debut=chantier.date_debut,
         date_fin_prevue=chantier.date_fin_prevue, budget=chantier.budget,
         total_depenses=chantier.total_depenses, marge_estimee=chantier.marge_estimee,
+        montant_facture=chantier.montant_facture, montant_encaisse=chantier.montant_encaisse,
+        marge_reelle=chantier.marge_reelle,
         created_at=chantier.created_at, notes=chantier.notes, depenses=chantier.depenses,
     )
 
@@ -47,7 +49,7 @@ def lister_chantiers(
 ):
     chantiers = (
         db.query(Chantier)
-        .options(joinedload(Chantier.notes), joinedload(Chantier.depenses), joinedload(Chantier.client))
+        .options(joinedload(Chantier.notes), joinedload(Chantier.depenses), joinedload(Chantier.client), joinedload(Chantier.factures))
         .filter(Chantier.artisan_id == artisan.id)
         .order_by(Chantier.created_at.desc())
         .all()

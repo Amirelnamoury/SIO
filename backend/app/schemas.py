@@ -550,6 +550,9 @@ class ChantierOut(BaseModel):
     budget: Optional[float] = None
     total_depenses: float
     marge_estimee: Optional[float] = None
+    montant_facture: Optional[float] = None
+    montant_encaisse: Optional[float] = None
+    marge_reelle: Optional[float] = None
     created_at: datetime
     notes: list[ChantierNoteOut] = []
     depenses: list[DepenseOut] = []
@@ -703,7 +706,9 @@ class DocumentOut(BaseModel):
     facture_id: Optional[int] = None
     nom: str
     type: str
-    url: str
+    url: Optional[str] = None
+    nom_original: Optional[str] = None
+    taille_octets: Optional[int] = None
     created_at: datetime
 
 

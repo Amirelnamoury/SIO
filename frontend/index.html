@@ -146,6 +146,10 @@
         <svg viewBox="0 0 24 24" class="nav-icon"><rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M7.5 12l3 3 6-6"/></svg>
         Taches
       </button>
+      <button type="button" class="nav-link" data-view="documents">
+        <svg viewBox="0 0 24 24" class="nav-icon"><path d="M7 2h7l5 5v15H7z"/><path d="M14 2v5h5"/></svg>
+        Documents
+      </button>
       <button type="button" class="nav-link" data-view="statistiques">
         <svg viewBox="0 0 24 24" class="nav-icon"><path d="M4 20V10M11 20V4M18 20v-7"/></svg>
         Statistiques
@@ -290,6 +294,29 @@
       </div>
 
       <div id="taches-list" class="list"></div>
+    </section>
+
+    <!-- ---------- Section Documents ---------- -->
+    <section id="view-documents" class="view" hidden>
+      <div class="view-header">
+        <h2>Documents</h2>
+        <button type="button" class="btn-primary" data-action="show-document-form">+ Ajouter un document</button>
+      </div>
+
+      <div id="document-form-container" hidden></div>
+
+      <div class="filters" id="document-filters">
+        <button type="button" class="filter-chip active" data-type="">Tous</button>
+        <button type="button" class="filter-chip" data-type="contrat">Contrat</button>
+        <button type="button" class="filter-chip" data-type="attestation">Attestation</button>
+        <button type="button" class="filter-chip" data-type="assurance">Assurance</button>
+        <button type="button" class="filter-chip" data-type="photo">Photo</button>
+        <button type="button" class="filter-chip" data-type="plan">Plan</button>
+        <button type="button" class="filter-chip" data-type="administratif">Administratif</button>
+        <button type="button" class="filter-chip" data-type="autre">Autre</button>
+      </div>
+
+      <div id="documents-list" class="list"></div>
     </section>
 
     <!-- ---------- Section Statistiques ---------- -->

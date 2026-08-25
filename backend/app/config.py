@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     # Adresse publique du frontend, utilisee pour les redirections apres paiement Stripe.
     app_base_url: str = "http://localhost:8080"
 
+    # Dossier de stockage des documents uploades (chemin relatif au dossier backend/).
+    uploads_dir: str = "uploads"
+    max_upload_mo: int = 15
+
     # Origines autorisees a appeler l'API (CORS), separees par des virgules.
     # "*" par defaut pour ne rien casser en dev. A restreindre en prod aux
     # domaines reels du dashboard (les sites vitrines n'appellent que /pub/*,

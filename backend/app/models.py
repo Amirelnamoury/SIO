@@ -332,9 +332,39 @@ class Chantier(Base):
 
     @property
     def marge_estimee(self):
+        """Marge par rapport au budget prevu (avant meme d'avoir facture quoi que ce soit)."""
         if self.budget is None:
             return None
         return round(self.budget - self.total_depenses, 2)
+
+    @property
+    def _factures_actives(self):
+        return [f for f in self.factures if f.statut not in ("brouillon", "annulee")]
+
+    @property
+    def montant_facture(self):
+        """Total reellement facture au client (hors brouillons/factures annulees)."""
+        actives = self._factures_actives
+        if not actives:
+            return None
+        return round(sum(f.montant_ttc or 0 for f in actives), 2)
+
+    @property
+    def montant_encaisse(self):
+        actives = self._factures_actives
+        if not actives:
+            return None
+        return round(sum(f.montant_paye for f in actives), 2)
+
+    @property
+    def marge_reelle(self):
+        """Marge reelle : ce qui a ete facture moins les depenses engagees.
+        Contrairement a marge_estimee (basee sur le budget previsionnel), reflete
+        l'argent effectivement engage sur le chantier."""
+        facture = self.montant_facture
+        if facture is None:
+            return None
+        return round(facture - self.total_depenses, 2)
 
 
 class Depense(Base):
@@ -454,9 +484,9 @@ class Prestation(Base):
 
 
 class Document(Base):
-    """Un document rattache a un client/chantier/devis/facture. Stocke comme
-    URL (pas d'upload binaire pour l'instant, coherent avec les photos de
-    chantier qui fonctionnent deja ainsi)."""
+    """Un document rattache a un client/chantier/devis/facture. Soit un
+    fichier reellement uploade et stocke sur disque (chemin_fichier), soit
+    un lien externe (url) — l'un des deux est toujours renseigne."""
 
     __tablename__ = "documents"
 
@@ -469,7 +499,10 @@ class Document(Base):
 
     nom = Column(String, nullable=False)
     type = Column(String, default="autre")  # contrat, attestation, assurance, photo, plan, administratif, autre
-    url = Column(String, nullable=False)
+    url = Column(String, nullable=True)
+    chemin_fichier = Column(String, nullable=True)
+    nom_original = Column(String, nullable=True)
+    taille_octets = Column(Integer, nullable=True)
 
     created_at = Column(DateTime(timezone=True), default=utcnow)
 

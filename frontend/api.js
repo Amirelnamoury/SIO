@@ -106,6 +106,7 @@ const Api = {
   updateChantier: (id, payload) => apiFetch(`/chantiers/${id}`, { method: "PATCH", body: payload }),
   deleteChantier: (id) => apiFetch(`/chantiers/${id}`, { method: "DELETE" }),
   addChantierNote: (id, payload) => apiFetch(`/chantiers/${id}/notes`, { method: "POST", body: payload }),
+  addChantierDepense: (id, payload) => apiFetch(`/chantiers/${id}/depenses`, { method: "POST", body: payload }),
 
   // ---------- Conformite ----------
   listConformite: () => apiFetch("/conformite"),
@@ -145,6 +146,7 @@ const Api = {
   // ---------- Documents ----------
   listDocuments: (params) => apiFetch("/documents" + (params ? "?" + new URLSearchParams(params).toString() : "")),
   createDocument: (payload) => apiFetch("/documents", { method: "POST", body: payload }),
+  uploadDocument: (formData) => uploadFetch("/documents/upload", formData),
   deleteDocument: (id) => apiFetch(`/documents/${id}`, { method: "DELETE" }),
 
   // ---------- Abonnement ----------
@@ -172,4 +174,56 @@ async function ouvrirPdf(path) {
   const blob = await response.blob();
   const url = URL.createObjectURL(blob);
   window.open(url, "_blank");
+}
+
+/** Envoie un FormData (upload de fichier) avec le token JWT, sans Content-Type manuel
+ * (le navigateur ajoute le boundary multipart tout seul). */
+async function uploadFetch(path, formData) {
+  const token = getToken();
+  let response;
+  try {
+    response = await fetch(API_BASE + path, {
+      method: "POST",
+      headers: token ? { Authorization: "Bearer " + token } : {},
+      body: formData,
+    });
+  } catch (networkError) {
+    throw new Error("Impossible de contacter le serveur. Verifiez votre connexion.");
+  }
+  if (response.status === 401) {
+    clearToken();
+    if (typeof onUnauthorized === "function") onUnauthorized();
+    throw new Error("Votre session a expire, merci de vous reconnecter.");
+  }
+  if (!response.ok) {
+    let data = null;
+    try { data = await response.json(); } catch (e) { /* pas de corps JSON */ }
+    throw new Error(formatApiError(data));
+  }
+  return response.json();
+}
+
+/**
+ * Telecharge reellement un document uploade (pas d'ouverture d'onglet : on force
+ * le telechargement avec le nom de fichier original via un lien <a download>).
+ */
+async function telechargerDocument(id, nomFichier) {
+  const token = getToken();
+  const response = await fetch(API_BASE + `/documents/${id}/fichier`, {
+    headers: token ? { Authorization: "Bearer " + token } : {},
+  });
+  if (!response.ok) {
+    let data = null;
+    try { data = await response.json(); } catch (e) { /* pas de corps JSON */ }
+    throw new Error(formatApiError(data) || "Impossible de telecharger le document.");
+  }
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = nomFichier || "document";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
