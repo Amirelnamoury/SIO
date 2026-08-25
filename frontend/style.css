@@ -318,6 +318,10 @@ h3 { margin: 0 0 12px; }
 .search-result-item .title { font-weight: 600; font-size: 0.92rem; }
 .search-result-item .sub { font-size: 0.8rem; color: var(--text-muted); }
 .search-empty { padding: 20px; text-align: center; color: var(--text-muted); font-size: 0.88rem; }
+@media (max-width: 900px) {
+  .search-modal { padding: 16px; align-items: center; }
+  .search-modal-box { max-width: 100%; }
+}
 
 /* ---------- Toast ---------- */
 #toast {
