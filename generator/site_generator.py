@@ -376,10 +376,10 @@ __STATS_SECTION__
     messageBox.className = "form-message";
 
     var payload = {
-      client_nom: document.getElementById("client_nom").value,
-      client_telephone: document.getElementById("client_telephone").value || null,
-      client_email: document.getElementById("client_email").value || null,
-      description: document.getElementById("description").value || null
+      nom: document.getElementById("client_nom").value,
+      telephone: document.getElementById("client_telephone").value || null,
+      email: document.getElementById("client_email").value || null,
+      message: document.getElementById("description").value || null
     };
 
     fetch(API_BASE + "/pub/" + SLUG + "/demande-devis", {

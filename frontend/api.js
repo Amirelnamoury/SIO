@@ -74,6 +74,14 @@ const Api = {
   register: (payload) => apiFetch("/auth/register", { method: "POST", body: payload, auth: false }),
   login: (payload) => apiFetch("/auth/login", { method: "POST", body: payload, auth: false }),
   me: () => apiFetch("/auth/me"),
+  updateMe: (payload) => apiFetch("/auth/me", { method: "PATCH", body: payload }),
+
+  // ---------- Clients (CRM : prospects + clients, meme pipeline) ----------
+  listClients: (statut) => apiFetch("/clients" + (statut ? `?statut=${encodeURIComponent(statut)}` : "")),
+  createClient: (payload) => apiFetch("/clients", { method: "POST", body: payload }),
+  updateClient: (id, payload) => apiFetch(`/clients/${id}`, { method: "PATCH", body: payload }),
+  deleteClient: (id) => apiFetch(`/clients/${id}`, { method: "DELETE" }),
+  clientTimeline: (id) => apiFetch(`/clients/${id}/timeline`),
 
   // ---------- Devis ----------
   listDevis: (statut) => apiFetch("/devis" + (statut ? `?statut=${encodeURIComponent(statut)}` : "")),
@@ -96,6 +104,14 @@ const Api = {
   conformiteAlertes: () => apiFetch("/conformite/alertes"),
   createConformite: (payload) => apiFetch("/conformite", { method: "POST", body: payload }),
   deleteConformite: (id) => apiFetch(`/conformite/${id}`, { method: "DELETE" }),
+
+  // ---------- Factures ----------
+  listFactures: (statut) => apiFetch("/factures" + (statut ? `?statut=${encodeURIComponent(statut)}` : "")),
+  createFacture: (payload) => apiFetch("/factures", { method: "POST", body: payload }),
+  factureDepuisDevis: (devisId, type) => apiFetch(`/factures/depuis-devis/${devisId}?type=${encodeURIComponent(type || "standard")}`, { method: "POST" }),
+  updateFacture: (id, payload) => apiFetch(`/factures/${id}`, { method: "PATCH", body: payload }),
+  deleteFacture: (id) => apiFetch(`/factures/${id}`, { method: "DELETE" }),
+  ajouterPaiement: (id, payload) => apiFetch(`/factures/${id}/paiements`, { method: "POST", body: payload }),
 
   // ---------- Abonnement ----------
   checkoutSession: () => apiFetch("/stripe/checkout-session", { method: "POST" }),

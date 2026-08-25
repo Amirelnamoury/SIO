@@ -85,9 +85,11 @@
   </header>
 
   <nav class="tabbar">
-    <button type="button" class="tab-link active" data-view="devis">
+    <button type="button" class="tab-link active" data-view="clients">Clients &amp; prospects</button>
+    <button type="button" class="tab-link" data-view="devis">
       Devis &amp; relances <span id="badge-relances" class="badge-count" hidden>0</span>
     </button>
+    <button type="button" class="tab-link" data-view="factures">Factures</button>
     <button type="button" class="tab-link" data-view="chantiers">Chantiers</button>
     <button type="button" class="tab-link" data-view="conformite">
       Conformite <span id="badge-alertes" class="badge-count badge-alert" hidden>0</span>
@@ -105,8 +107,38 @@
       </div>
     </div>
 
+    <!-- ---------- Panneau timeline client ---------- -->
+    <div id="panel-timeline" class="side-panel" hidden>
+      <div class="side-panel-box">
+        <button type="button" class="side-panel-close" data-action="close-timeline">&times;</button>
+        <h3 id="timeline-titre">Historique</h3>
+        <div id="timeline-content"></div>
+      </div>
+    </div>
+
+    <!-- ---------- Section Clients & prospects (CRM) ---------- -->
+    <section id="view-clients" class="view">
+      <div class="view-header">
+        <h2>Clients &amp; prospects</h2>
+        <button type="button" class="btn-primary" data-action="show-client-form">+ Nouveau contact</button>
+      </div>
+
+      <div id="client-form-container" hidden></div>
+
+      <div class="filters" id="client-filters">
+        <button type="button" class="filter-chip active" data-statut="">Tous</button>
+        <button type="button" class="filter-chip" data-statut="nouveau">Nouveaux</button>
+        <button type="button" class="filter-chip" data-statut="qualification">En qualification</button>
+        <button type="button" class="filter-chip" data-statut="devis_envoye">Devis envoye</button>
+        <button type="button" class="filter-chip" data-statut="gagne">Gagnes</button>
+        <button type="button" class="filter-chip" data-statut="perdu">Perdus</button>
+      </div>
+
+      <div id="clients-list" class="list"></div>
+    </section>
+
     <!-- ---------- Section Devis & relances ---------- -->
-    <section id="view-devis" class="view">
+    <section id="view-devis" class="view" hidden>
       <div class="view-header">
         <h2>Devis &amp; relances</h2>
         <button type="button" class="btn-primary" data-action="show-devis-form">+ Nouveau devis</button>
@@ -123,6 +155,27 @@
       </div>
 
       <div id="devis-list" class="list"></div>
+    </section>
+
+    <!-- ---------- Section Factures ---------- -->
+    <section id="view-factures" class="view" hidden>
+      <div class="view-header">
+        <h2>Factures</h2>
+        <button type="button" class="btn-primary" data-action="show-facture-form">+ Nouvelle facture</button>
+      </div>
+
+      <div id="facture-form-container" hidden></div>
+
+      <div class="filters" id="facture-filters">
+        <button type="button" class="filter-chip active" data-statut="">Toutes</button>
+        <button type="button" class="filter-chip" data-statut="brouillon">Brouillons</button>
+        <button type="button" class="filter-chip" data-statut="envoyee">Envoyees</button>
+        <button type="button" class="filter-chip" data-statut="partiellement_payee">Partiellement payees</button>
+        <button type="button" class="filter-chip" data-statut="payee">Payees</button>
+        <button type="button" class="filter-chip" data-statut="en_retard">En retard</button>
+      </div>
+
+      <div id="factures-list" class="list"></div>
     </section>
 
     <!-- ---------- Section Chantiers ---------- -->

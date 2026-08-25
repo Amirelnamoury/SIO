@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import Base, engine
 from app import models  # noqa: F401  (necessaire pour que les tables soient enregistrees)
-from app.routers import auth, devis, chantiers, conformite, public, stripe_router
+from app.routers import auth, clients, devis, factures, chantiers, conformite, public, stripe_router
 
 Base.metadata.create_all(bind=engine)
 
@@ -18,7 +18,9 @@ app.add_middleware(
 )
 
 app.include_router(auth.router)
+app.include_router(clients.router)
 app.include_router(devis.router)
+app.include_router(factures.router)
 app.include_router(chantiers.router)
 app.include_router(conformite.router)
 app.include_router(public.router)

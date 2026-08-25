@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.deps import generate_unique_slug, get_current_artisan
 from app.models import Artisan
-from app.schemas import ArtisanCreate, ArtisanLogin, ArtisanOut, Token
+from app.schemas import ArtisanCreate, ArtisanLogin, ArtisanOut, ArtisanUpdate, Token
 from app.security import create_access_token, hash_password, verify_password
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -57,4 +57,18 @@ def login(payload: ArtisanLogin, db: Session = Depends(get_db)):
 def me(current_artisan: Artisan = Depends(get_current_artisan)):
     # ArtisanOut n'a pas de champ password_hash : meme si on passait le modele
     # SQLAlchemy complet, Pydantic ignore les champs non declares dans le schema.
+    return ArtisanOut.model_validate(current_artisan)
+
+
+@router.patch("/me", response_model=ArtisanOut)
+def modifier_profil(
+    payload: ArtisanUpdate,
+    db: Session = Depends(get_db),
+    current_artisan: Artisan = Depends(get_current_artisan),
+):
+    updates = payload.model_dump(exclude_unset=True)
+    for field, value in updates.items():
+        setattr(current_artisan, field, value)
+    db.commit()
+    db.refresh(current_artisan)
     return ArtisanOut.model_validate(current_artisan)

@@ -4,9 +4,23 @@ from typing import Optional
 from pydantic import BaseModel, EmailStr, ConfigDict, field_validator
 
 METIERS_VALIDES = {"plombier", "electricien", "macon", "peintre", "general"}
-DEVIS_STATUTS = {"nouveau", "envoye", "relance_j3", "relance_j7", "relance_j15", "signe", "perdu"}
+CLIENT_STATUTS = {
+    "nouveau", "contacte", "qualification", "visite_prevue",
+    "devis_a_faire", "devis_envoye", "negociation", "gagne", "perdu",
+}
+DEVIS_STATUTS = {
+    "nouveau", "envoye", "consulte", "relance_j3", "relance_j7", "relance_j15",
+    "signe", "perdu", "expire",
+}
+FACTURE_TYPES = {"standard", "acompte", "situation", "finale", "avoir"}
+FACTURE_STATUTS = {"brouillon", "envoyee", "partiellement_payee", "payee", "en_retard", "annulee"}
+CHANTIER_STATUTS = {"a_preparer", "planifie", "en_cours", "en_pause", "termine", "facture", "paye"}
 CHANTIER_PHASES = {"avant", "pendant", "apres"}
 CONFORMITE_TYPES = {"assurance_decennale", "qualibat", "rge", "autre"}
+TACHE_PRIORITES = {"basse", "normale", "haute", "urgente"}
+EVENEMENT_TYPES = {"rdv", "visite", "intervention", "autre"}
+PAIEMENT_MOYENS = {"virement", "cheque", "especes", "cb", "autre"}
+DOCUMENT_TYPES = {"contrat", "attestation", "assurance", "photo", "plan", "administratif", "autre"}
 
 
 # ---------- Artisan (tenant) ----------
@@ -21,7 +35,7 @@ class ArtisanCreate(BaseModel):
     code_postal: Optional[str] = None
     siret: Optional[str] = None
     assurance_decennale_nom: Optional[str] = None
-    slug: Optional[str] = None  # auto-genere depuis nom_entreprise si absent
+    slug: Optional[str] = None
 
     @field_validator("metier")
     @classmethod
@@ -43,10 +57,19 @@ class ArtisanLogin(BaseModel):
     password: str
 
 
-class ArtisanOut(BaseModel):
-    """Schema de SORTIE : ne contient jamais password_hash. Ne jamais renvoyer
-    le modele SQLAlchemy Artisan directement dans une reponse JSON."""
+class ArtisanUpdate(BaseModel):
+    nom_entreprise: Optional[str] = None
+    telephone: Optional[str] = None
+    ville: Optional[str] = None
+    code_postal: Optional[str] = None
+    adresse: Optional[str] = None
+    siret: Optional[str] = None
+    assurance_decennale_nom: Optional[str] = None
+    logo_url: Optional[str] = None
+    onboarding_termine: Optional[bool] = None
 
+
+class ArtisanOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
@@ -57,9 +80,15 @@ class ArtisanOut(BaseModel):
     telephone: Optional[str] = None
     ville: Optional[str] = None
     code_postal: Optional[str] = None
+    adresse: Optional[str] = None
     siret: Optional[str] = None
     assurance_decennale_nom: Optional[str] = None
+    logo_url: Optional[str] = None
+    site_url: Optional[str] = None
+    site_statut: str
+    onboarding_termine: bool
     subscription_status: str
+    plan: str
     created_at: datetime
 
 
@@ -69,15 +98,110 @@ class Token(BaseModel):
     artisan: ArtisanOut
 
 
+# ---------- Client (prospect / client, meme entite) ----------
+
+class ClientCreate(BaseModel):
+    nom: str
+    email: Optional[EmailStr] = None
+    telephone: Optional[str] = None
+    societe: Optional[str] = None
+    adresse: Optional[str] = None
+    code_postal: Optional[str] = None
+    ville: Optional[str] = None
+    notes: Optional[str] = None
+    statut: str = "nouveau"
+
+    @field_validator("statut")
+    @classmethod
+    def statut_valide(cls, v):
+        if v not in CLIENT_STATUTS:
+            raise ValueError(f"statut doit etre l'un de : {sorted(CLIENT_STATUTS)}")
+        return v
+
+
+class ClientUpdate(BaseModel):
+    nom: Optional[str] = None
+    email: Optional[EmailStr] = None
+    telephone: Optional[str] = None
+    societe: Optional[str] = None
+    adresse: Optional[str] = None
+    code_postal: Optional[str] = None
+    ville: Optional[str] = None
+    notes: Optional[str] = None
+    statut: Optional[str] = None
+
+    @field_validator("statut")
+    @classmethod
+    def statut_valide(cls, v):
+        if v is not None and v not in CLIENT_STATUTS:
+            raise ValueError(f"statut doit etre l'un de : {sorted(CLIENT_STATUTS)}")
+        return v
+
+
+class ClientPublicCreate(BaseModel):
+    """Ce que le formulaire du site vitrine envoie (creation d'un prospect)."""
+
+    nom: str
+    email: Optional[EmailStr] = None
+    telephone: Optional[str] = None
+    message: Optional[str] = None
+
+
+class ClientOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    artisan_id: int
+    nom: str
+    email: Optional[str] = None
+    telephone: Optional[str] = None
+    societe: Optional[str] = None
+    adresse: Optional[str] = None
+    code_postal: Optional[str] = None
+    ville: Optional[str] = None
+    notes: Optional[str] = None
+    statut: str
+    source: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class TimelineEntry(BaseModel):
+    date: datetime
+    type: str  # devis_cree, devis_envoye, devis_signe, facture_envoyee, paiement_recu, chantier_demarre, ...
+    label: str
+    reference_id: Optional[int] = None
+
+
 # ---------- Devis ----------
 
+class LigneDevisIn(BaseModel):
+    description: str
+    quantite: float = 1.0
+    unite: str = "u"
+    prix_unitaire_ht: float
+
+
+class LigneDevisOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    description: str
+    quantite: float
+    unite: str
+    prix_unitaire_ht: float
+    ordre: int
+    total_ht: float
+
+
 class DevisCreate(BaseModel):
-    client_nom: str
-    client_email: Optional[EmailStr] = None
-    client_telephone: Optional[str] = None
+    client_id: Optional[int] = None
+    nouveau_client: Optional[ClientCreate] = None  # cree le client a la volee si client_id absent
+    titre: Optional[str] = None
     description: Optional[str] = None
-    montant_ht: Optional[float] = None
     taux_tva: float = 10.0
+    acompte_pourcentage: float = 30.0
+    lignes: list[LigneDevisIn] = []
 
     @field_validator("taux_tva")
     @classmethod
@@ -88,13 +212,12 @@ class DevisCreate(BaseModel):
 
 
 class DevisUpdate(BaseModel):
-    client_nom: Optional[str] = None
-    client_email: Optional[EmailStr] = None
-    client_telephone: Optional[str] = None
+    titre: Optional[str] = None
     description: Optional[str] = None
-    montant_ht: Optional[float] = None
     taux_tva: Optional[float] = None
+    acompte_pourcentage: Optional[float] = None
     statut: Optional[str] = None
+    lignes: Optional[list[LigneDevisIn]] = None  # si fourni, remplace toutes les lignes
 
     @field_validator("statut")
     @classmethod
@@ -104,50 +227,179 @@ class DevisUpdate(BaseModel):
         return v
 
 
-class DevisPublicCreate(BaseModel):
-    """Ce que le formulaire du site vitrine envoie, sans authentification."""
-
-    client_nom: str
-    client_email: Optional[EmailStr] = None
-    client_telephone: Optional[str] = None
-    description: Optional[str] = None
-
-
 class DevisOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     artisan_id: int
+    client_id: int
     client_nom: str
-    client_email: Optional[str] = None
-    client_telephone: Optional[str] = None
+    numero: Optional[str] = None
+    titre: Optional[str] = None
     description: Optional[str] = None
-    montant_ht: Optional[float] = None
     taux_tva: float
+    acompte_pourcentage: float
+    montant_ht: Optional[float] = None
     montant_ttc: Optional[float] = None
     statut: str
     date_envoi: Optional[datetime] = None
+    date_consultation: Optional[datetime] = None
     date_derniere_relance: Optional[datetime] = None
+    date_signature: Optional[datetime] = None
     nb_relances: int
     source: str
     created_at: datetime
+    lignes: list[LigneDevisOut] = []
+
+
+# ---------- Facture ----------
+
+class LigneFactureIn(BaseModel):
+    description: str
+    quantite: float = 1.0
+    unite: str = "u"
+    prix_unitaire_ht: float
+
+
+class LigneFactureOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    description: str
+    quantite: float
+    unite: str
+    prix_unitaire_ht: float
+    ordre: int
+    total_ht: float
+
+
+class FactureCreate(BaseModel):
+    client_id: int
+    devis_id: Optional[int] = None
+    chantier_id: Optional[int] = None
+    type: str = "standard"
+    taux_tva: float = 10.0
+    date_echeance: Optional[date] = None
+    notes: Optional[str] = None
+    lignes: list[LigneFactureIn] = []
+
+    @field_validator("type")
+    @classmethod
+    def type_valide(cls, v):
+        if v not in FACTURE_TYPES:
+            raise ValueError(f"type doit etre l'un de : {sorted(FACTURE_TYPES)}")
+        return v
+
+
+class FactureUpdate(BaseModel):
+    statut: Optional[str] = None
+    date_echeance: Optional[date] = None
+    notes: Optional[str] = None
+    lignes: Optional[list[LigneFactureIn]] = None
+
+    @field_validator("statut")
+    @classmethod
+    def statut_valide(cls, v):
+        if v is not None and v not in FACTURE_STATUTS:
+            raise ValueError(f"statut doit etre l'un de : {sorted(FACTURE_STATUTS)}")
+        return v
+
+
+class PaiementCreate(BaseModel):
+    montant: float
+    date_paiement: date
+    moyen: str = "virement"
+    notes: Optional[str] = None
+
+    @field_validator("moyen")
+    @classmethod
+    def moyen_valide(cls, v):
+        if v not in PAIEMENT_MOYENS:
+            raise ValueError(f"moyen doit etre l'un de : {sorted(PAIEMENT_MOYENS)}")
+        return v
+
+
+class PaiementOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    facture_id: int
+    montant: float
+    date_paiement: date
+    moyen: str
+    notes: Optional[str] = None
+    created_at: datetime
+
+
+class FactureOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    artisan_id: int
+    client_id: int
+    client_nom: str
+    devis_id: Optional[int] = None
+    chantier_id: Optional[int] = None
+    numero: str
+    type: str
+    taux_tva: float
+    statut: str
+    montant_ht: float
+    montant_ttc: float
+    montant_paye: float
+    montant_restant: float
+    est_en_retard: bool
+    date_emission: date
+    date_echeance: Optional[date] = None
+    date_envoi: Optional[datetime] = None
+    notes: Optional[str] = None
+    created_at: datetime
+    lignes: list[LigneFactureOut] = []
+    paiements: list[PaiementOut] = []
 
 
 # ---------- Chantiers ----------
 
 class ChantierCreate(BaseModel):
+    client_id: int
+    devis_id: Optional[int] = None
     titre: str
-    client_nom: Optional[str] = None
     adresse: Optional[str] = None
     date_debut: Optional[date] = None
+    date_fin_prevue: Optional[date] = None
+    budget: Optional[float] = None
 
 
 class ChantierUpdate(BaseModel):
     titre: Optional[str] = None
-    client_nom: Optional[str] = None
     adresse: Optional[str] = None
     statut: Optional[str] = None
     date_debut: Optional[date] = None
+    date_fin_prevue: Optional[date] = None
+    budget: Optional[float] = None
+
+    @field_validator("statut")
+    @classmethod
+    def statut_valide(cls, v):
+        if v is not None and v not in CHANTIER_STATUTS:
+            raise ValueError(f"statut doit etre l'un de : {sorted(CHANTIER_STATUTS)}")
+        return v
+
+
+class DepenseCreate(BaseModel):
+    libelle: str
+    montant: float
+    date_depense: date
+
+
+class DepenseOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    chantier_id: int
+    libelle: str
+    montant: float
+    date_depense: date
 
 
 class ChantierNoteCreate(BaseModel):
@@ -179,13 +431,20 @@ class ChantierOut(BaseModel):
 
     id: int
     artisan_id: int
+    client_id: int
+    client_nom: str
+    devis_id: Optional[int] = None
     titre: str
-    client_nom: Optional[str] = None
     adresse: Optional[str] = None
     statut: str
     date_debut: Optional[date] = None
+    date_fin_prevue: Optional[date] = None
+    budget: Optional[float] = None
+    total_depenses: float
+    marge_estimee: Optional[float] = None
     created_at: datetime
     notes: list[ChantierNoteOut] = []
+    depenses: list[DepenseOut] = []
 
 
 # ---------- Conformite ----------
@@ -211,8 +470,6 @@ class ConformiteUpdate(BaseModel):
 
 
 class ConformiteOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
     id: int
     artisan_id: int
     type: str
@@ -222,3 +479,121 @@ class ConformiteOut(BaseModel):
     created_at: datetime
     alerte: bool = False
     jours_restants: Optional[int] = None
+
+
+# ---------- Taches ----------
+
+class TacheCreate(BaseModel):
+    titre: str
+    description: Optional[str] = None
+    priorite: str = "normale"
+    echeance: Optional[date] = None
+    client_id: Optional[int] = None
+    chantier_id: Optional[int] = None
+
+    @field_validator("priorite")
+    @classmethod
+    def priorite_valide(cls, v):
+        if v not in TACHE_PRIORITES:
+            raise ValueError(f"priorite doit etre l'une de : {sorted(TACHE_PRIORITES)}")
+        return v
+
+
+class TacheUpdate(BaseModel):
+    titre: Optional[str] = None
+    description: Optional[str] = None
+    priorite: Optional[str] = None
+    echeance: Optional[date] = None
+    statut: Optional[str] = None
+
+
+class TacheOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    artisan_id: int
+    client_id: Optional[int] = None
+    chantier_id: Optional[int] = None
+    titre: str
+    description: Optional[str] = None
+    priorite: str
+    echeance: Optional[date] = None
+    statut: str
+    created_at: datetime
+
+
+# ---------- Planning ----------
+
+class EvenementCreate(BaseModel):
+    titre: str
+    type: str = "rdv"
+    date_debut: datetime
+    date_fin: Optional[datetime] = None
+    lieu: Optional[str] = None
+    notes: Optional[str] = None
+    client_id: Optional[int] = None
+    chantier_id: Optional[int] = None
+
+    @field_validator("type")
+    @classmethod
+    def type_valide(cls, v):
+        if v not in EVENEMENT_TYPES:
+            raise ValueError(f"type doit etre l'un de : {sorted(EVENEMENT_TYPES)}")
+        return v
+
+
+class EvenementUpdate(BaseModel):
+    titre: Optional[str] = None
+    date_debut: Optional[datetime] = None
+    date_fin: Optional[datetime] = None
+    lieu: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class EvenementOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    artisan_id: int
+    client_id: Optional[int] = None
+    chantier_id: Optional[int] = None
+    titre: str
+    type: str
+    date_debut: datetime
+    date_fin: Optional[datetime] = None
+    lieu: Optional[str] = None
+    notes: Optional[str] = None
+
+
+# ---------- Documents ----------
+
+class DocumentCreate(BaseModel):
+    nom: str
+    type: str = "autre"
+    url: str
+    client_id: Optional[int] = None
+    chantier_id: Optional[int] = None
+    devis_id: Optional[int] = None
+    facture_id: Optional[int] = None
+
+    @field_validator("type")
+    @classmethod
+    def type_valide(cls, v):
+        if v not in DOCUMENT_TYPES:
+            raise ValueError(f"type doit etre l'un de : {sorted(DOCUMENT_TYPES)}")
+        return v
+
+
+class DocumentOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    artisan_id: int
+    client_id: Optional[int] = None
+    chantier_id: Optional[int] = None
+    devis_id: Optional[int] = None
+    facture_id: Optional[int] = None
+    nom: str
+    type: str
+    url: str
+    created_at: datetime

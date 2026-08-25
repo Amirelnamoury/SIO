@@ -62,12 +62,49 @@ const METIER_LABELS = {
 const DEVIS_STATUT_META = {
   nouveau: { label: "Nouvelle demande", badge: "badge-gray" },
   envoye: { label: "Envoye", badge: "badge-blue" },
+  consulte: { label: "Consulte", badge: "badge-blue" },
   relance_j3: { label: "Relance J+3", badge: "badge-orange" },
   relance_j7: { label: "Relance J+7", badge: "badge-orange" },
   relance_j15: { label: "Relance J+15", badge: "badge-red" },
   signe: { label: "Signe", badge: "badge-green" },
   perdu: { label: "Perdu", badge: "badge-gray" },
+  expire: { label: "Expire", badge: "badge-gray" },
 };
+
+const CLIENT_STATUT_META = {
+  nouveau: { label: "Nouveau", badge: "badge-gray" },
+  contacte: { label: "Contacte", badge: "badge-blue" },
+  qualification: { label: "Qualification", badge: "badge-blue" },
+  visite_prevue: { label: "Visite prevue", badge: "badge-blue" },
+  devis_a_faire: { label: "Devis a faire", badge: "badge-orange" },
+  devis_envoye: { label: "Devis envoye", badge: "badge-orange" },
+  negociation: { label: "Negociation", badge: "badge-orange" },
+  gagne: { label: "Gagne", badge: "badge-green" },
+  perdu: { label: "Perdu", badge: "badge-gray" },
+};
+
+const FACTURE_STATUT_META = {
+  brouillon: { label: "Brouillon", badge: "badge-gray" },
+  envoyee: { label: "Envoyee", badge: "badge-blue" },
+  partiellement_payee: { label: "Partiellement payee", badge: "badge-orange" },
+  payee: { label: "Payee", badge: "badge-green" },
+  en_retard: { label: "En retard", badge: "badge-red" },
+  annulee: { label: "Annulee", badge: "badge-gray" },
+};
+
+// Cache simple des clients pour remplir les listes deroulantes des formulaires
+// devis/chantier/facture sans reinterroger l'API a chaque frappe.
+let clientsCache = [];
+async function ensureClientsCache() {
+  clientsCache = await Api.listClients();
+  return clientsCache;
+}
+
+function clientOptionsHtml(selectedId) {
+  return clientsCache
+    .map((c) => `<option value="${c.id}" ${selectedId === c.id ? "selected" : ""}>${escapeHtml(c.nom)}</option>`)
+    .join("");
+}
 
 const PHASE_LABELS = { avant: "Avant", pendant: "Pendant", apres: "Apres" };
 const CONFORMITE_TYPE_LABELS = {
@@ -191,7 +228,7 @@ document.addEventListener("click", (e) => {
 function enterDashboard() {
   document.getElementById("auth-screen").hidden = true;
   document.getElementById("dashboard-screen").hidden = false;
-  switchView("devis");
+  switchView("clients");
   refreshBadges();
 }
 
@@ -200,7 +237,9 @@ function switchView(view) {
   document.querySelectorAll(".view").forEach((section) => {
     section.hidden = section.id !== `view-${view}`;
   });
+  if (view === "clients") loadClients();
   if (view === "devis") loadDevis();
+  if (view === "factures") loadFactures();
   if (view === "chantiers") loadChantiers();
   if (view === "conformite") loadConformite();
 }
@@ -270,6 +309,193 @@ function setupTabs() {
   });
 }
 
+// ===================== Clients & prospects (CRM) =====================
+let currentClientFilter = "";
+
+async function loadClients() {
+  const list = document.getElementById("clients-list");
+  list.innerHTML = '<div class="empty-state">Chargement...</div>';
+  try {
+    const clients = await Api.listClients(currentClientFilter);
+    clientsCache = clients;
+    if (clients.length === 0) {
+      list.innerHTML = `<div class="empty-state">
+        Aucun contact pour le moment.<br><br>
+        Les demandes venant de votre site vitrine arrivent automatiquement ici.
+        Vous pouvez aussi ajouter un contact a la main.
+      </div>`;
+      return;
+    }
+    list.innerHTML = clients.map(renderClientCard).join("");
+  } catch (err) {
+    list.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function renderClientCard(c) {
+  const meta = CLIENT_STATUT_META[c.statut] || { label: c.statut, badge: "badge-gray" };
+  const contact = [c.telephone, c.email].filter(Boolean).map(escapeHtml).join(" · ");
+  const statutOptions = Object.entries(CLIENT_STATUT_META)
+    .map(([value, m]) => `<option value="${value}" ${value === c.statut ? "selected" : ""}>${m.label}</option>`)
+    .join("");
+
+  return `
+  <div class="item-card">
+    <div class="item-card-top">
+      <div>
+        <div class="item-title">${escapeHtml(c.nom)}</div>
+        <div class="item-sub">${contact || "Pas de coordonnees"}${c.societe ? " · " + escapeHtml(c.societe) : ""}</div>
+      </div>
+      <span class="badge ${meta.badge}">${meta.label}</span>
+    </div>
+    ${c.notes ? `<div class="item-meta">${escapeHtml(c.notes)}</div>` : ""}
+    <div class="item-meta">Source : ${c.source === "site_vitrine" ? "Site vitrine" : "Manuel"}</div>
+    <div class="item-actions">
+      <select class="btn-sm" data-action="changer-statut-client" data-id="${c.id}" style="cursor:pointer;">${statutOptions}</select>
+      <button type="button" class="btn-sm" data-action="voir-timeline" data-id="${c.id}">Voir l'historique</button>
+      <button type="button" class="btn-sm btn-sm-danger" data-action="delete-client" data-id="${c.id}">Supprimer</button>
+    </div>
+  </div>`;
+}
+
+function showClientForm() {
+  const container = document.getElementById("client-form-container");
+  container.innerHTML = `
+    <div class="form-box">
+      <h3>Nouveau contact</h3>
+      <form id="client-form">
+        <div class="form-grid">
+          <div><label for="cli-nom">Nom *</label><input type="text" id="cli-nom" required></div>
+          <div><label for="cli-telephone">Telephone</label><input type="tel" id="cli-telephone"></div>
+          <div><label for="cli-email">Email</label><input type="email" id="cli-email"></div>
+          <div><label for="cli-societe">Societe</label><input type="text" id="cli-societe"></div>
+          <div><label for="cli-adresse">Adresse</label><input type="text" id="cli-adresse"></div>
+          <div><label for="cli-ville">Ville</label><input type="text" id="cli-ville"></div>
+        </div>
+        <label for="cli-notes" style="margin-top:14px;">Notes</label>
+        <textarea id="cli-notes" placeholder="Contexte, besoin exprime..."></textarea>
+        <p class="field-error" id="client-form-error" hidden></p>
+        <div class="form-actions">
+          <button type="submit" class="btn-sm btn-sm-primary">Ajouter</button>
+          <button type="button" class="btn-sm" data-action="cancel-client-form">Annuler</button>
+        </div>
+      </form>
+    </div>`;
+  container.hidden = false;
+  container.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  document.getElementById("client-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const errorBox = document.getElementById("client-form-error");
+    errorBox.hidden = true;
+    try {
+      await Api.createClient({
+        nom: document.getElementById("cli-nom").value,
+        telephone: emptyToNull(document.getElementById("cli-telephone").value),
+        email: emptyToNull(document.getElementById("cli-email").value),
+        societe: emptyToNull(document.getElementById("cli-societe").value),
+        adresse: emptyToNull(document.getElementById("cli-adresse").value),
+        ville: emptyToNull(document.getElementById("cli-ville").value),
+        notes: emptyToNull(document.getElementById("cli-notes").value),
+      });
+      showToast("Contact ajoute.");
+      container.hidden = true;
+      container.innerHTML = "";
+      loadClients();
+    } catch (err) {
+      errorBox.hidden = false;
+      errorBox.textContent = err.message;
+    }
+  });
+}
+
+const TIMELINE_ICONS = {
+  prospect_cree: "✨", devis_cree: "\u{1F4C4}", devis_envoye: "\u{1F4E4}",
+  devis_consulte: "\u{1F441}️", devis_relance: "\u{1F514}", devis_signe: "✅",
+  facture_creee: "\u{1F9FE}", facture_envoyee: "\u{1F4E4}", paiement_recu: "\u{1F4B0}",
+  chantier_cree: "\u{1F477}",
+};
+
+async function showTimeline(clientId) {
+  const client = clientsCache.find((c) => c.id === clientId) || (await Api.listClients()).find((c) => c.id === clientId);
+  document.getElementById("timeline-titre").textContent = client ? `Historique - ${client.nom}` : "Historique";
+  const content = document.getElementById("timeline-content");
+  content.innerHTML = '<div class="empty-state">Chargement...</div>';
+  document.getElementById("panel-timeline").hidden = false;
+
+  try {
+    const entries = await Api.clientTimeline(clientId);
+    if (entries.length === 0) {
+      content.innerHTML = '<div class="empty-state">Aucun evenement pour le moment.</div>';
+      return;
+    }
+    content.innerHTML = entries
+      .map(
+        (e) => `<div class="timeline-entry">
+          <span class="timeline-icon">${TIMELINE_ICONS[e.type] || "•"}</span>
+          <div><div class="timeline-label">${escapeHtml(e.label)}</div><div class="timeline-date">${fmtDateTime(e.date)}</div></div>
+        </div>`
+      )
+      .join("");
+  } catch (err) {
+    content.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function setupClientsView() {
+  document.getElementById("client-filters").addEventListener("click", (e) => {
+    const chip = e.target.closest(".filter-chip");
+    if (!chip) return;
+    document.querySelectorAll("#client-filters .filter-chip").forEach((c) => c.classList.remove("active"));
+    chip.classList.add("active");
+    currentClientFilter = chip.dataset.statut;
+    loadClients();
+  });
+
+  document.querySelector('[data-action="show-client-form"]').addEventListener("click", showClientForm);
+  document.getElementById("client-form-container").addEventListener("click", (e) => {
+    if (e.target.closest('[data-action="cancel-client-form"]')) {
+      const container = document.getElementById("client-form-container");
+      container.hidden = true;
+      container.innerHTML = "";
+    }
+  });
+
+  document.getElementById("clients-list").addEventListener("change", async (e) => {
+    const select = e.target.closest('[data-action="changer-statut-client"]');
+    if (!select) return;
+    const id = parseInt(select.dataset.id, 10);
+    await withErrorToast(async () => {
+      await Api.updateClient(id, { statut: select.value });
+      showToast("Statut mis a jour.");
+      loadClients();
+    });
+  });
+
+  document.getElementById("clients-list").addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-action]");
+    if (!btn) return;
+    const id = parseInt(btn.dataset.id, 10);
+
+    if (btn.dataset.action === "voir-timeline") {
+      showTimeline(id);
+    } else if (btn.dataset.action === "delete-client") {
+      if (!confirm("Supprimer ce contact ? Ses devis, factures et chantiers seront supprimes aussi.")) return;
+      await withErrorToast(async () => {
+        await Api.deleteClient(id);
+        showToast("Contact supprime.");
+        loadClients();
+      });
+    }
+  });
+
+  document.getElementById("panel-timeline").addEventListener("click", (e) => {
+    if (e.target.closest('[data-action="close-timeline"]') || e.target.id === "panel-timeline") {
+      document.getElementById("panel-timeline").hidden = true;
+    }
+  });
+}
+
 // ===================== Devis & relances =====================
 async function loadDevis() {
   const list = document.getElementById("devis-list");
@@ -305,21 +531,22 @@ function renderDevisCard(d) {
     actions += `<button type="button" class="btn-sm" data-action="marquer-devis" data-id="${d.id}" data-statut="signe">Marquer signe</button>`;
     actions += `<button type="button" class="btn-sm" data-action="marquer-devis" data-id="${d.id}" data-statut="perdu">Marquer perdu</button>`;
   }
+  if (d.statut === "signe") {
+    actions += `<button type="button" class="btn-sm btn-sm-primary" data-action="facturer-devis" data-id="${d.id}">Convertir en facture</button>`;
+  }
   actions += `<button type="button" class="btn-sm btn-sm-danger" data-action="delete-devis" data-id="${d.id}">Supprimer</button>`;
-
-  const contact = [d.client_telephone, d.client_email].filter(Boolean).map(escapeHtml).join(" · ");
 
   return `
   <div class="item-card ${isDue ? "is-due" : ""}">
     <div class="item-card-top">
       <div>
         <div class="item-title">${escapeHtml(d.client_nom)}</div>
-        <div class="item-sub">${escapeHtml(d.description || "Pas de description")}</div>
+        <div class="item-sub">${escapeHtml(d.titre || d.description || "Pas de description")}</div>
       </div>
       <span class="badge ${meta.badge}">${meta.label}</span>
     </div>
     <div class="item-meta">
-      ${montantTxt}${contact ? " · " + contact : ""}
+      ${montantTxt}${d.numero ? " · " + escapeHtml(d.numero) : ""}
       ${isDue ? " · <strong>Relance due aujourd'hui</strong>" : ""}
       · Source : ${d.source === "site_vitrine" ? "Site vitrine" : "Manuel"}
     </div>
@@ -327,30 +554,39 @@ function renderDevisCard(d) {
   </div>`;
 }
 
-function showDevisForm(devis) {
+async function showDevisForm(devis) {
   const container = document.getElementById("devis-form-container");
   const isEdit = !!devis;
+  await ensureClientsCache();
+
+  if (!isEdit && clientsCache.length === 0) {
+    container.innerHTML = `<div class="form-box"><p>Vous n'avez pas encore de client. Ajoutez d'abord un contact dans l'onglet <strong>Clients &amp; prospects</strong>, puis revenez creer un devis.</p>
+      <div class="form-actions"><button type="button" class="btn-sm" data-action="cancel-devis-form">Fermer</button></div></div>`;
+    container.hidden = false;
+    return;
+  }
+
   container.dataset.editingId = isEdit ? devis.id : "";
+  const montantActuel = isEdit && devis.montant_ht !== null ? devis.montant_ht : "";
   container.innerHTML = `
     <div class="form-box">
       <h3>${isEdit ? "Modifier le devis" : "Nouveau devis"}</h3>
       <form id="devis-form">
         <div class="form-grid">
           <div>
-            <label for="df-client-nom">Nom du client *</label>
-            <input type="text" id="df-client-nom" required value="${isEdit ? escapeHtml(devis.client_nom) : ""}">
+            <label for="df-client">Client *</label>
+            ${isEdit
+              ? `<input type="text" value="${escapeHtml(devis.client_nom)}" disabled>`
+              : `<select id="df-client" required><option value="">Choisir...</option>${clientOptionsHtml()}</select>`
+            }
           </div>
           <div>
-            <label for="df-client-telephone">Telephone</label>
-            <input type="tel" id="df-client-telephone" value="${isEdit ? escapeHtml(devis.client_telephone || "") : ""}">
-          </div>
-          <div>
-            <label for="df-client-email">Email</label>
-            <input type="email" id="df-client-email" value="${isEdit ? escapeHtml(devis.client_email || "") : ""}">
+            <label for="df-titre">Titre</label>
+            <input type="text" id="df-titre" placeholder="Ex: Renovation salle de bain" value="${isEdit ? escapeHtml(devis.titre || "") : ""}">
           </div>
           <div>
             <label for="df-montant-ht">Montant HT (euros)</label>
-            <input type="number" step="0.01" min="0" id="df-montant-ht" value="${isEdit && devis.montant_ht !== null ? devis.montant_ht : ""}">
+            <input type="number" step="0.01" min="0" id="df-montant-ht" value="${montantActuel}">
           </div>
           <div>
             <label for="df-taux-tva">TVA</label>
@@ -377,14 +613,22 @@ function showDevisForm(devis) {
     const errorBox = document.getElementById("devis-form-error");
     errorBox.hidden = true;
     const montantRaw = document.getElementById("df-montant-ht").value;
+    const titre = document.getElementById("df-titre").value;
+    const description = document.getElementById("df-description").value;
+    const lignes = montantRaw === "" ? undefined : [{
+      description: description || titre || "Prestation", quantite: 1, unite: "forfait", prix_unitaire_ht: parseFloat(montantRaw),
+    }];
+
     const payload = {
-      client_nom: document.getElementById("df-client-nom").value,
-      client_telephone: emptyToNull(document.getElementById("df-client-telephone").value),
-      client_email: emptyToNull(document.getElementById("df-client-email").value),
-      montant_ht: montantRaw === "" ? null : parseFloat(montantRaw),
+      titre: emptyToNull(titre),
+      description: emptyToNull(description),
       taux_tva: parseFloat(document.getElementById("df-taux-tva").value),
-      description: emptyToNull(document.getElementById("df-description").value),
+      lignes,
     };
+    if (!isEdit) {
+      payload.client_id = parseInt(document.getElementById("df-client").value, 10);
+    }
+
     try {
       if (isEdit) {
         await Api.updateDevis(devis.id, payload);
@@ -450,6 +694,12 @@ function setupDevisView() {
         loadDevis();
         refreshBadges();
       });
+    } else if (btn.dataset.action === "facturer-devis") {
+      await withErrorToast(async () => {
+        await Api.factureDepuisDevis(id, "standard");
+        showToast("Facture creee a partir du devis.");
+        switchView("factures");
+      });
     }
   });
 
@@ -459,6 +709,207 @@ function setupDevisView() {
       const container = document.getElementById("devis-form-container");
       container.hidden = true;
       container.innerHTML = "";
+    }
+  });
+}
+
+// ===================== Factures =====================
+let currentFactureFilter = "";
+
+async function loadFactures() {
+  const list = document.getElementById("factures-list");
+  list.innerHTML = '<div class="empty-state">Chargement...</div>';
+  try {
+    const factures = await Api.listFactures(currentFactureFilter);
+    if (factures.length === 0) {
+      list.innerHTML = '<div class="empty-state">Aucune facture pour le moment. Convertissez un devis signe, ou creez-en une directement.</div>';
+      return;
+    }
+    list.innerHTML = factures.map(renderFactureCard).join("");
+  } catch (err) {
+    list.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+const FACTURE_TYPE_LABELS = { standard: "Standard", acompte: "Acompte", situation: "Situation", finale: "Finale", avoir: "Avoir" };
+
+function renderFactureCard(f) {
+  const meta = FACTURE_STATUT_META[f.statut] || { label: f.statut, badge: "badge-gray" };
+  let actions = "";
+  if (f.statut === "brouillon") {
+    actions += `<button type="button" class="btn-sm btn-sm-primary" data-action="envoyer-facture" data-id="${f.id}">Marquer envoyee</button>`;
+  }
+  if (f.montant_restant > 0 && f.statut !== "brouillon" && f.statut !== "annulee") {
+    actions += `<button type="button" class="btn-sm btn-sm-primary" data-action="ajouter-paiement" data-id="${f.id}">+ Enregistrer un paiement</button>`;
+  }
+  actions += `<button type="button" class="btn-sm btn-sm-danger" data-action="delete-facture" data-id="${f.id}">Supprimer</button>`;
+
+  const paiementsHtml = (f.paiements || [])
+    .map((p) => `<div class="item-sub">${fmtDate(p.date_paiement)} · ${fmtEuro(p.montant)} · ${p.moyen}</div>`)
+    .join("");
+
+  return `
+  <div class="item-card ${f.est_en_retard ? "is-due" : ""}">
+    <div class="item-card-top">
+      <div>
+        <div class="item-title">${escapeHtml(f.client_nom)} &mdash; ${escapeHtml(f.numero)}</div>
+        <div class="item-sub">${FACTURE_TYPE_LABELS[f.type] || f.type}</div>
+      </div>
+      <span class="badge ${meta.badge}">${meta.label}</span>
+    </div>
+    <div class="item-meta">
+      ${fmtEuro(f.montant_ttc)} TTC · Paye : ${fmtEuro(f.montant_paye)} · Restant : ${fmtEuro(f.montant_restant)}
+      ${f.date_echeance ? " · Echeance : " + fmtDate(f.date_echeance) : ""}
+    </div>
+    ${paiementsHtml ? `<div class="item-meta">${paiementsHtml}</div>` : ""}
+    <div class="item-actions" id="facture-actions-${f.id}">${actions}</div>
+    <div id="paiement-form-${f.id}"></div>
+  </div>`;
+}
+
+function showPaiementForm(factureId) {
+  const container = document.getElementById(`paiement-form-${factureId}`);
+  if (!container) return;
+  const today = new Date().toISOString().slice(0, 10);
+  container.innerHTML = `
+    <div class="form-box" style="margin-top:12px;">
+      <div class="form-grid">
+        <div><label for="pay-montant-${factureId}">Montant (euros) *</label><input type="number" step="0.01" min="0.01" id="pay-montant-${factureId}" required></div>
+        <div><label for="pay-date-${factureId}">Date</label><input type="date" id="pay-date-${factureId}" value="${today}"></div>
+        <div>
+          <label for="pay-moyen-${factureId}">Moyen</label>
+          <select id="pay-moyen-${factureId}">
+            <option value="virement">Virement</option>
+            <option value="cheque">Cheque</option>
+            <option value="especes">Especes</option>
+            <option value="cb">Carte bancaire</option>
+            <option value="autre">Autre</option>
+          </select>
+        </div>
+      </div>
+      <p class="field-error" id="paiement-error-${factureId}" hidden></p>
+      <div class="form-actions">
+        <button type="button" class="btn-sm btn-sm-primary" data-action="submit-paiement" data-id="${factureId}">Enregistrer</button>
+        <button type="button" class="btn-sm" data-action="cancel-paiement-form" data-id="${factureId}">Annuler</button>
+      </div>
+    </div>`;
+}
+
+function showFactureForm() {
+  document.getElementById("facture-form-container").innerHTML = "";
+  ensureClientsCache().then(() => {
+    const container = document.getElementById("facture-form-container");
+    if (clientsCache.length === 0) {
+      container.innerHTML = `<div class="form-box"><p>Ajoutez d'abord un contact dans l'onglet <strong>Clients &amp; prospects</strong>.</p>
+        <div class="form-actions"><button type="button" class="btn-sm" data-action="cancel-facture-form">Fermer</button></div></div>`;
+      container.hidden = false;
+      return;
+    }
+    container.innerHTML = `
+      <div class="form-box">
+        <h3>Nouvelle facture</h3>
+        <form id="facture-form">
+          <div class="form-grid">
+            <div><label for="fa-client">Client *</label><select id="fa-client" required><option value="">Choisir...</option>${clientOptionsHtml()}</select></div>
+            <div><label for="fa-description">Description de la prestation *</label><input type="text" id="fa-description" required></div>
+            <div><label for="fa-montant">Montant HT (euros) *</label><input type="number" step="0.01" min="0.01" id="fa-montant" required></div>
+            <div>
+              <label for="fa-tva">TVA</label>
+              <select id="fa-tva"><option value="10">10% (renovation)</option><option value="20">20% (neuf)</option></select>
+            </div>
+            <div><label for="fa-echeance">Date d'echeance</label><input type="date" id="fa-echeance"></div>
+          </div>
+          <p class="field-error" id="facture-form-error" hidden></p>
+          <div class="form-actions">
+            <button type="submit" class="btn-sm btn-sm-primary">Creer</button>
+            <button type="button" class="btn-sm" data-action="cancel-facture-form">Annuler</button>
+          </div>
+        </form>
+      </div>`;
+    container.hidden = false;
+    container.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    document.getElementById("facture-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const errorBox = document.getElementById("facture-form-error");
+      errorBox.hidden = true;
+      try {
+        await Api.createFacture({
+          client_id: parseInt(document.getElementById("fa-client").value, 10),
+          taux_tva: parseFloat(document.getElementById("fa-tva").value),
+          date_echeance: emptyToNull(document.getElementById("fa-echeance").value),
+          lignes: [{
+            description: document.getElementById("fa-description").value,
+            quantite: 1, unite: "forfait",
+            prix_unitaire_ht: parseFloat(document.getElementById("fa-montant").value),
+          }],
+        });
+        showToast("Facture creee.");
+        container.hidden = true;
+        container.innerHTML = "";
+        loadFactures();
+      } catch (err) {
+        errorBox.hidden = false;
+        errorBox.textContent = err.message;
+      }
+    });
+  });
+}
+
+function setupFacturesView() {
+  document.getElementById("facture-filters").addEventListener("click", (e) => {
+    const chip = e.target.closest(".filter-chip");
+    if (!chip) return;
+    document.querySelectorAll("#facture-filters .filter-chip").forEach((c) => c.classList.remove("active"));
+    chip.classList.add("active");
+    currentFactureFilter = chip.dataset.statut;
+    loadFactures();
+  });
+
+  document.querySelector('[data-action="show-facture-form"]').addEventListener("click", showFactureForm);
+  document.getElementById("facture-form-container").addEventListener("click", (e) => {
+    if (e.target.closest('[data-action="cancel-facture-form"]')) {
+      const container = document.getElementById("facture-form-container");
+      container.hidden = true;
+      container.innerHTML = "";
+    }
+  });
+
+  document.getElementById("factures-list").addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-action]");
+    if (!btn) return;
+    const id = parseInt(btn.dataset.id, 10);
+
+    if (btn.dataset.action === "envoyer-facture") {
+      await withErrorToast(async () => {
+        await Api.updateFacture(id, { statut: "envoyee" });
+        showToast("Facture marquee envoyee.");
+        loadFactures();
+      });
+    } else if (btn.dataset.action === "ajouter-paiement") {
+      showPaiementForm(id);
+    } else if (btn.dataset.action === "cancel-paiement-form") {
+      document.getElementById(`paiement-form-${id}`).innerHTML = "";
+    } else if (btn.dataset.action === "submit-paiement") {
+      const montant = document.getElementById(`pay-montant-${id}`).value;
+      const datePaiement = document.getElementById(`pay-date-${id}`).value;
+      const moyen = document.getElementById(`pay-moyen-${id}`).value;
+      try {
+        await Api.ajouterPaiement(id, { montant: parseFloat(montant), date_paiement: datePaiement, moyen });
+        showToast("Paiement enregistre.");
+        loadFactures();
+      } catch (err) {
+        const errorBox = document.getElementById(`paiement-error-${id}`);
+        errorBox.hidden = false;
+        errorBox.textContent = err.message;
+      }
+    } else if (btn.dataset.action === "delete-facture") {
+      if (!confirm("Supprimer cette facture ?")) return;
+      await withErrorToast(async () => {
+        await Api.deleteFacture(id);
+        showToast("Facture supprimee.");
+        loadFactures();
+      });
     }
   });
 }
@@ -518,7 +969,11 @@ function renderChantierCard(c) {
       </div>
       <span class="badge ${c.statut === "termine" ? "badge-green" : "badge-blue"}">${c.statut === "termine" ? "Termine" : "En cours"}</span>
     </div>
-    <div class="item-meta">Debut : ${fmtDate(c.date_debut)}</div>
+    <div class="item-meta">
+      Debut : ${fmtDate(c.date_debut)}
+      ${c.budget !== null ? ` · Budget : ${fmtEuro(c.budget)}` : ""}
+      ${c.marge_estimee !== null ? ` · Marge estimee : ${fmtEuro(c.marge_estimee)}` : ""}
+    </div>
     <div class="notes-list">${notesHtml || '<div class="item-sub">Aucune note pour le moment.</div>'}</div>
     <div class="item-actions">
       <button type="button" class="btn-sm btn-sm-primary" data-action="toggle-note-form" data-id="${c.id}">+ Ajouter une note</button>
@@ -559,17 +1014,27 @@ function showNoteForm(chantierId) {
 }
 
 function setupChantiersView() {
-  document.querySelector('[data-action="show-chantier-form"]').addEventListener("click", () => {
+  document.querySelector('[data-action="show-chantier-form"]').addEventListener("click", async () => {
     const container = document.getElementById("chantier-form-container");
+    await ensureClientsCache();
+
+    if (clientsCache.length === 0) {
+      container.innerHTML = `<div class="form-box"><p>Vous n'avez pas encore de client. Ajoutez d'abord un contact dans l'onglet <strong>Clients &amp; prospects</strong>.</p>
+        <div class="form-actions"><button type="button" class="btn-sm" data-action="cancel-chantier-form">Fermer</button></div></div>`;
+      container.hidden = false;
+      return;
+    }
+
     container.innerHTML = `
       <div class="form-box">
         <h3>Nouveau chantier</h3>
         <form id="chantier-form">
           <div class="form-grid">
             <div><label for="cf-titre">Titre *</label><input type="text" id="cf-titre" required></div>
-            <div><label for="cf-client">Client</label><input type="text" id="cf-client"></div>
+            <div><label for="cf-client">Client *</label><select id="cf-client" required><option value="">Choisir...</option>${clientOptionsHtml()}</select></div>
             <div><label for="cf-adresse">Adresse</label><input type="text" id="cf-adresse"></div>
             <div><label for="cf-date">Date de debut</label><input type="date" id="cf-date"></div>
+            <div><label for="cf-budget">Budget prevu (euros)</label><input type="number" step="0.01" min="0" id="cf-budget"></div>
           </div>
           <p class="field-error" id="chantier-form-error" hidden></p>
           <div class="form-actions">
@@ -585,12 +1050,14 @@ function setupChantiersView() {
       e.preventDefault();
       const errorBox = document.getElementById("chantier-form-error");
       errorBox.hidden = true;
+      const budgetRaw = document.getElementById("cf-budget").value;
       try {
         await Api.createChantier({
           titre: document.getElementById("cf-titre").value,
-          client_nom: emptyToNull(document.getElementById("cf-client").value),
+          client_id: parseInt(document.getElementById("cf-client").value, 10),
           adresse: emptyToNull(document.getElementById("cf-adresse").value),
           date_debut: emptyToNull(document.getElementById("cf-date").value),
+          budget: budgetRaw === "" ? null : parseFloat(budgetRaw),
         });
         showToast("Chantier cree.");
         container.hidden = true;
@@ -799,7 +1266,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupAuthScreen();
   setupTabs();
   setupProfilPanel();
+  setupClientsView();
   setupDevisView();
+  setupFacturesView();
   setupChantiersView();
   setupConformiteView();
 

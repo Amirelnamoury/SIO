@@ -194,6 +194,13 @@ h3 { margin: 0 0 12px; }
 .profil-row .label { font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
 .profil-row .value { font-size: 0.95rem; font-weight: 600; word-break: break-word; }
 
+/* ---------- Timeline client ---------- */
+.timeline-entry { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.timeline-entry:last-child { border-bottom: none; }
+.timeline-icon { font-size: 1.1rem; flex-shrink: 0; }
+.timeline-label { font-size: 0.92rem; font-weight: 600; }
+.timeline-date { font-size: 0.8rem; color: var(--text-muted); }
+
 /* ---------- Toast ---------- */
 #toast {
   position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
