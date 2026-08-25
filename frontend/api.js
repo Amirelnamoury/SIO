@@ -114,6 +114,8 @@ const Api = {
   deleteChantier: (id) => apiFetch(`/chantiers/${id}`, { method: "DELETE" }),
   addChantierNote: (id, payload) => apiFetch(`/chantiers/${id}/notes`, { method: "POST", body: payload }),
   addChantierDepense: (id, payload) => apiFetch(`/chantiers/${id}/depenses`, { method: "POST", body: payload }),
+  preparerChantierDepuisDevis: (devisId, payload) => apiFetch(`/chantiers/depuis-devis/${devisId}`, { method: "POST", body: payload }),
+  cloturerChantier: (id, payload) => apiFetch(`/chantiers/${id}/cloturer`, { method: "POST", body: payload }),
 
   // ---------- Conformite ----------
   listConformite: () => apiFetch("/conformite"),

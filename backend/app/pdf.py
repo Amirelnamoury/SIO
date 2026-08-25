@@ -15,9 +15,9 @@ from reportlab.lib.enums import TA_RIGHT
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
-from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
-from app.models import Artisan, Devis, Facture
+from app.models import Artisan, Chantier, Devis, Document, Facture
 
 PRIMARY = HexColor("#1e293b")
 PRIMARY_DARK = HexColor("#0f172a")
@@ -288,6 +288,118 @@ def generate_facture_pdf(facture: Facture, artisan: Artisan) -> bytes:
     for mention in mentions:
         elements.append(Paragraph(f"&bull; {mention}", styles["small"]))
         elements.append(Spacer(1, 3))
+
+    doc.build(elements)
+    return buffer.getvalue()
+
+
+CHANTIER_STATUT_LABELS = {
+    "a_preparer": "A preparer", "planifie": "Planifie", "en_cours": "En cours",
+    "en_pause": "En pause", "termine": "Termine", "facture": "Facture", "paye": "Paye",
+}
+CHANTIER_PHASE_LABELS = {"avant": "Avant travaux", "pendant": "Pendant travaux", "apres": "Apres travaux"}
+
+
+def _dash_row(label: str, value: str, styles) -> list:
+    return [Paragraph(label, styles["small"]), Paragraph(value, styles["normal"])]
+
+
+def generate_chantier_report_pdf(chantier: Chantier, artisan: Artisan, photos: list[Document]) -> bytes:
+    """Rapport de chantier reel : infos, avancement financier, journal
+    chronologique, photos reellement uploadees (pas de lien externe non
+    verifie), depenses. Genere a la demande (bouton "Generer le rapport")."""
+    styles = _styles()
+    aujourdhui = date.today()
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer, pagesize=A4,
+        topMargin=1.8 * cm, bottomMargin=1.8 * cm, leftMargin=1.8 * cm, rightMargin=1.8 * cm,
+        title=f"Rapport de chantier - {chantier.titre}",
+    )
+    elements = []
+
+    right_block = [
+        Paragraph("RAPPORT DE CHANTIER", styles["title"]),
+        Paragraph(f"Genere le {aujourdhui.strftime('%d/%m/%Y')}", styles["meta"]),
+    ]
+    header_table = Table([[_artisan_header(artisan, styles), right_block]], colWidths=[10 * cm, 7 * cm])
+    header_table.setStyle(TableStyle([
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LINEBELOW", (0, 0), (-1, -1), 2, PRIMARY),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+    ]))
+    elements.append(header_table)
+    elements.append(Spacer(1, 16))
+
+    elements.append(Paragraph(chantier.titre, ParagraphStyle("h1", parent=styles["normal"], fontSize=16, fontName="Helvetica-Bold", textColor=PRIMARY_DARK)))
+    elements.append(Spacer(1, 4))
+    elements.append(Paragraph(f"Client : {chantier.client.nom}", styles["normal"]))
+    if chantier.adresse:
+        elements.append(Paragraph(f"Adresse : {chantier.adresse}", styles["normal"]))
+    elements.append(Spacer(1, 12))
+
+    infos_rows = [
+        _dash_row("Statut", CHANTIER_STATUT_LABELS.get(chantier.statut, chantier.statut), styles),
+        _dash_row("Date de debut", chantier.date_debut.strftime("%d/%m/%Y") if chantier.date_debut else "-", styles),
+        _dash_row("Fin prevue", chantier.date_fin_prevue.strftime("%d/%m/%Y") if chantier.date_fin_prevue else "-", styles),
+    ]
+    infos_table = Table(infos_rows, colWidths=[4 * cm, 13 * cm])
+    infos_table.setStyle(TableStyle([("BOTTOMPADDING", (0, 0), (-1, -1), 4), ("TOPPADDING", (0, 0), (-1, -1), 4)]))
+    elements.append(infos_table)
+    elements.append(Spacer(1, 14))
+
+    elements.append(Paragraph("Avancement financier", styles["section"]))
+    fin_rows = [
+        _dash_row("Budget prevu", _euros(chantier.budget) if chantier.budget is not None else "-", styles),
+        _dash_row("Depenses engagees", _euros(chantier.total_depenses), styles),
+        _dash_row("Montant facture", _euros(chantier.montant_facture) if chantier.montant_facture is not None else "-", styles),
+        _dash_row("Montant encaisse", _euros(chantier.montant_encaisse) if chantier.montant_encaisse is not None else "-", styles),
+        _dash_row("Marge reelle", _euros(chantier.marge_reelle) if chantier.marge_reelle is not None else "-", styles),
+    ]
+    fin_table = Table(fin_rows, colWidths=[4 * cm, 13 * cm])
+    fin_table.setStyle(TableStyle([("BOTTOMPADDING", (0, 0), (-1, -1), 4), ("TOPPADDING", (0, 0), (-1, -1), 4)]))
+    elements.append(fin_table)
+    elements.append(Spacer(1, 14))
+
+    if chantier.depenses:
+        elements.append(Paragraph("Depenses", styles["section"]))
+        dep_rows = [["Date", "Libelle", "Montant"]]
+        for d in sorted(chantier.depenses, key=lambda x: x.date_depense):
+            dep_rows.append([d.date_depense.strftime("%d/%m/%Y"), Paragraph(d.libelle, styles["normal"]), _euros(d.montant)])
+        dep_table = Table(dep_rows, colWidths=[3 * cm, 10.5 * cm, 3.5 * cm])
+        dep_table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), PRIMARY), ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"), ("FONTSIZE", (0, 0), (-1, -1), 9),
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#dddddd")),
+            ("TOPPADDING", (0, 0), (-1, -1), 5), ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+        ]))
+        elements.append(dep_table)
+        elements.append(Spacer(1, 14))
+
+    if chantier.notes:
+        elements.append(Paragraph("Journal de chantier", styles["section"]))
+        for note in sorted(chantier.notes, key=lambda n: n.created_at):
+            phase_label = CHANTIER_PHASE_LABELS.get(note.phase, note.phase)
+            date_str = note.created_at.strftime("%d/%m/%Y")
+            elements.append(Paragraph(f"<b>{date_str} &middot; {phase_label}</b>", styles["small"]))
+            if note.texte:
+                elements.append(Paragraph(note.texte, styles["normal"]))
+            elements.append(Spacer(1, 6))
+        elements.append(Spacer(1, 8))
+
+    if photos:
+        elements.append(Paragraph("Photos", styles["section"]))
+        for photo in photos:
+            try:
+                img = Image(photo.chemin_fichier, width=9 * cm, height=6.5 * cm, kind="proportional")
+                elements.append(img)
+                elements.append(Paragraph(f"{photo.nom} &middot; {photo.created_at.strftime('%d/%m/%Y')}", styles["small"]))
+                elements.append(Spacer(1, 10))
+            except Exception:
+                # Format d'image non lisible (ex: HEIC sans plugin dedie) :
+                # on le signale au lieu de faire planter tout le rapport.
+                elements.append(Paragraph(f"[Photo non affichable ici : {photo.nom}]", styles["small"]))
 
     doc.build(elements)
     return buffer.getvalue()

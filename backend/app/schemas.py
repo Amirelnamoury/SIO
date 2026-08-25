@@ -670,6 +670,37 @@ class ChantierOut(BaseModel):
     depenses: list[DepenseOut] = []
 
 
+# ---------- Workflows (devis signe -> chantier, chantier termine -> cloture) ----------
+
+class PreparerChantierIn(BaseModel):
+    adresse: Optional[str] = None
+    date_debut: Optional[date] = None
+    budget: Optional[float] = None
+    creer_acompte: bool = True
+    creer_checklist: bool = True
+
+
+class PreparerChantierOut(BaseModel):
+    chantier: ChantierOut
+    facture_acompte: Optional[FactureOut] = None
+    nb_taches_creees: int = 0
+
+
+class CloturerChantierIn(BaseModel):
+    generer_facture_finale: bool = True
+    demander_avis: bool = True
+
+
+class CloturerChantierOut(BaseModel):
+    chantier: ChantierOut
+    facture_finale: Optional[FactureOut] = None
+    facture_finale_email_statut: Optional[str] = None
+    facture_finale_raison_absence: Optional[str] = None
+    avis_demande: bool = False
+    avis_email_statut: Optional[str] = None
+    tache_suivi_creee: bool = False
+
+
 # ---------- Conformite ----------
 
 class ConformiteCreate(BaseModel):

@@ -114,6 +114,16 @@ const FACTURE_STATUT_META = {
   annulee: { label: "Annulee", badge: "badge-gray" },
 };
 
+const CHANTIER_STATUT_META = {
+  a_preparer: { label: "A preparer", badge: "badge-gray" },
+  planifie: { label: "Planifie", badge: "badge-blue" },
+  en_cours: { label: "En cours", badge: "badge-blue" },
+  en_pause: { label: "En pause", badge: "badge-orange" },
+  termine: { label: "Termine", badge: "badge-green" },
+  facture: { label: "Facture", badge: "badge-green" },
+  paye: { label: "Paye", badge: "badge-green" },
+};
+
 // Cache simple des clients pour remplir les listes deroulantes des formulaires
 // devis/chantier/facture sans reinterroger l'API a chaque frappe.
 let clientsCache = [];
@@ -1604,6 +1614,33 @@ function lireLignes(containerId) {
   return lignes;
 }
 
+function showPreparerChantierForm(devisId) {
+  const container = document.getElementById(`preparer-form-${devisId}`);
+  if (!container) return;
+  const today = new Date().toISOString().slice(0, 10);
+  container.innerHTML = `
+    <div class="form-box" style="margin-top:12px;">
+      <h3 style="font-size:0.95rem;">Tout preparer</h3>
+      <p class="section-hint">Cree le chantier, l'acompte a facturer et une checklist de preparation.</p>
+      <div class="form-grid">
+        <div><label for="prep-adresse-${devisId}">Adresse du chantier</label><input type="text" id="prep-adresse-${devisId}"></div>
+        <div><label for="prep-date-${devisId}">Date de debut</label><input type="date" id="prep-date-${devisId}" min="${today}"></div>
+        <div><label for="prep-budget-${devisId}">Budget (optionnel, sinon = montant HT du devis)</label><input type="number" step="0.01" min="0" id="prep-budget-${devisId}"></div>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-weight:500;">
+        <input type="checkbox" id="prep-acompte-${devisId}" checked> Creer la facture d'acompte
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:6px;font-weight:500;">
+        <input type="checkbox" id="prep-checklist-${devisId}" checked> Creer la checklist de preparation
+      </label>
+      <p class="field-error" id="preparer-error-${devisId}" hidden></p>
+      <div class="form-actions">
+        <button type="button" class="btn-sm btn-sm-primary" data-action="confirmer-preparer-chantier" data-id="${devisId}">Confirmer</button>
+        <button type="button" class="btn-sm" data-action="cancel-preparer-form" data-id="${devisId}">Annuler</button>
+      </div>
+    </div>`;
+}
+
 function renderDevisCard(d) {
   const meta = DEVIS_STATUT_META[d.statut] || { label: d.statut, badge: "badge-gray" };
   const isDue = devisDueIds.has(d.id);
@@ -1623,7 +1660,8 @@ function renderDevisCard(d) {
     actions += `<button type="button" class="btn-sm" data-action="marquer-devis" data-id="${d.id}" data-statut="perdu">Marquer perdu</button>`;
   }
   if (d.statut === "signe") {
-    actions += `<button type="button" class="btn-sm btn-sm-primary" data-action="facturer-devis" data-id="${d.id}">Convertir en facture</button>`;
+    actions += `<button type="button" class="btn-sm btn-sm-primary" data-action="preparer-chantier" data-id="${d.id}">Tout preparer</button>`;
+    actions += `<button type="button" class="btn-sm" data-action="facturer-devis" data-id="${d.id}">Convertir en facture</button>`;
   }
   if (d.lignes && d.lignes.length > 0) {
     actions += `<button type="button" class="btn-sm" data-action="pdf-devis" data-id="${d.id}">Telecharger le PDF</button>`;
@@ -1651,6 +1689,7 @@ function renderDevisCard(d) {
       ${d.statut === "signe" && d.nom_signataire ? ` · Accepte par ${escapeHtml(d.nom_signataire)}` : ""}
     </div>
     <div class="item-actions">${actions}</div>
+    <div id="preparer-form-${d.id}"></div>
   </div>`;
 }
 
@@ -1806,6 +1845,31 @@ function setupDevisView() {
         showToast("Facture creee a partir du devis.");
         switchView("factures");
       });
+    } else if (btn.dataset.action === "preparer-chantier") {
+      showPreparerChantierForm(id);
+    } else if (btn.dataset.action === "cancel-preparer-form") {
+      document.getElementById(`preparer-form-${id}`).innerHTML = "";
+    } else if (btn.dataset.action === "confirmer-preparer-chantier") {
+      const errorBox = document.getElementById(`preparer-error-${id}`);
+      errorBox.hidden = true;
+      const budgetRaw = document.getElementById(`prep-budget-${id}`).value;
+      try {
+        const res = await Api.preparerChantierDepuisDevis(id, {
+          adresse: emptyToNull(document.getElementById(`prep-adresse-${id}`).value),
+          date_debut: emptyToNull(document.getElementById(`prep-date-${id}`).value),
+          budget: budgetRaw === "" ? null : parseFloat(budgetRaw),
+          creer_acompte: document.getElementById(`prep-acompte-${id}`).checked,
+          creer_checklist: document.getElementById(`prep-checklist-${id}`).checked,
+        });
+        let msg = `Chantier "${res.chantier.titre}" cree.`;
+        if (res.facture_acompte) msg += ` Facture d'acompte ${fmtEuro(res.facture_acompte.montant_ttc)} creee.`;
+        if (res.nb_taches_creees > 0) msg += ` ${res.nb_taches_creees} taches de preparation ajoutees.`;
+        showToast(msg);
+        switchView("chantiers");
+      } catch (err) {
+        errorBox.hidden = false;
+        errorBox.textContent = err.message;
+      }
     } else if (btn.dataset.action === "pdf-devis") {
       await withErrorToast(() => ouvrirPdf(`/devis/${id}/pdf`));
     } else if (btn.dataset.action === "copier-lien-devis") {
@@ -2155,6 +2219,26 @@ function rentabiliteHtml(c) {
     </div>`;
 }
 
+function showCloturerForm(chantierId) {
+  const container = document.getElementById(`cloturer-form-${chantierId}`);
+  if (!container) return;
+  container.innerHTML = `
+    <div class="form-box" style="margin-top:12px;">
+      <h3 style="font-size:0.95rem;">Cloturer le chantier</h3>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:6px;font-weight:500;">
+        <input type="checkbox" id="clot-facture-${chantierId}" checked> Generer et envoyer la facture finale (solde reellement du)
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:6px;font-weight:500;">
+        <input type="checkbox" id="clot-avis-${chantierId}" checked> Demander un avis au client
+      </label>
+      <p class="field-error" id="cloturer-error-${chantierId}" hidden></p>
+      <div class="form-actions">
+        <button type="button" class="btn-sm btn-sm-primary" data-action="confirmer-cloturer" data-id="${chantierId}">Cloturer et lancer les actions</button>
+        <button type="button" class="btn-sm" data-action="cancel-cloturer-form" data-id="${chantierId}">Annuler</button>
+      </div>
+    </div>`;
+}
+
 function renderChantierCard(c) {
   const notesHtml = (c.notes || [])
     .slice()
@@ -2183,7 +2267,7 @@ function renderChantierCard(c) {
         <div class="item-title">${escapeHtml(c.titre)}</div>
         <div class="item-sub">${escapeHtml(c.client_nom || "")}${c.adresse ? " · " + escapeHtml(c.adresse) : ""}</div>
       </div>
-      <span class="badge ${c.statut === "termine" ? "badge-green" : "badge-blue"}">${c.statut === "termine" ? "Termine" : "En cours"}</span>
+      <span class="badge ${(CHANTIER_STATUT_META[c.statut] || {}).badge || "badge-gray"}">${(CHANTIER_STATUT_META[c.statut] || {}).label || c.statut}</span>
     </div>
     <div class="item-meta">
       Debut : ${fmtDate(c.date_debut)}
@@ -2196,11 +2280,14 @@ function renderChantierCard(c) {
     <div class="item-actions">
       <button type="button" class="btn-sm btn-sm-primary" data-action="toggle-note-form" data-id="${c.id}">+ Ajouter une note</button>
       <button type="button" class="btn-sm" data-action="toggle-depense-form" data-id="${c.id}">+ Ajouter une depense</button>
-      ${c.statut !== "termine" ? `<button type="button" class="btn-sm" data-action="terminer-chantier" data-id="${c.id}">Marquer termine</button>` : ""}
+      ${!["termine", "facture", "paye"].includes(c.statut) ? `<button type="button" class="btn-sm" data-action="terminer-chantier" data-id="${c.id}">Marquer termine</button>` : ""}
+      ${c.statut === "termine" ? `<button type="button" class="btn-sm btn-sm-primary" data-action="toggle-cloturer-form" data-id="${c.id}">Cloturer le chantier</button>` : ""}
+      <button type="button" class="btn-sm" data-action="rapport-chantier" data-id="${c.id}">Telecharger le rapport</button>
       <button type="button" class="btn-sm btn-sm-danger" data-action="delete-chantier" data-id="${c.id}">Supprimer</button>
     </div>
     <div id="note-form-${c.id}"></div>
     <div id="depense-form-${c.id}"></div>
+    <div id="cloturer-form-${c.id}"></div>
   </div>`;
 }
 
@@ -2367,6 +2454,36 @@ function setupChantiersView() {
         showToast("Chantier marque termine.");
         loadChantiers();
       });
+    } else if (btn.dataset.action === "toggle-cloturer-form") {
+      showCloturerForm(id);
+    } else if (btn.dataset.action === "cancel-cloturer-form") {
+      document.getElementById(`cloturer-form-${id}`).innerHTML = "";
+    } else if (btn.dataset.action === "confirmer-cloturer") {
+      const errorBox = document.getElementById(`cloturer-error-${id}`);
+      errorBox.hidden = true;
+      try {
+        const res = await Api.cloturerChantier(id, {
+          generer_facture_finale: document.getElementById(`clot-facture-${id}`).checked,
+          demander_avis: document.getElementById(`clot-avis-${id}`).checked,
+        });
+        let msg = "Chantier cloture.";
+        if (res.facture_finale) {
+          const statutTxt = res.facture_finale_email_statut === "envoye" ? "envoyee par email" : "creee (email non envoye, copiez le lien pour la transmettre)";
+          msg += ` Facture finale de ${fmtEuro(res.facture_finale.montant_ttc)} ${statutTxt}.`;
+        } else if (res.facture_finale_raison_absence) {
+          msg += ` Pas de facture finale : ${res.facture_finale_raison_absence}.`;
+        }
+        if (res.avis_demande) {
+          msg += res.avis_email_statut === "envoye" ? " Demande d'avis envoyee." : " Demande d'avis generee (email non envoye, lien a transmettre manuellement).";
+        }
+        showToast(msg);
+        loadChantiers();
+      } catch (err) {
+        errorBox.hidden = false;
+        errorBox.textContent = err.message;
+      }
+    } else if (btn.dataset.action === "rapport-chantier") {
+      await withErrorToast(() => ouvrirPdf(`/chantiers/${id}/rapport-pdf`));
     } else if (btn.dataset.action === "delete-chantier") {
       if (!confirm("Supprimer ce chantier et toutes ses notes ?")) return;
       await withErrorToast(async () => {
