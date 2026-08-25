@@ -28,6 +28,7 @@ if settings.jwt_secret == _DEFAULT_JWT_SECRET:
 from app.routers import (
     analytics,
     auth,
+    avis,
     chantiers,
     clients,
     conformite,
@@ -76,6 +77,7 @@ app.include_router(taches.router)
 app.include_router(planning.router)
 app.include_router(documents.router)
 app.include_router(prestations.router)
+app.include_router(avis.router)
 app.include_router(dashboard.router)
 app.include_router(notifications.router)
 app.include_router(analytics.router)

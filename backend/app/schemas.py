@@ -225,6 +225,7 @@ class ClientOut(BaseModel):
     montant_estime: Optional[float] = None
     probabilite: Optional[int] = None
     prochaine_action: Optional[str] = None
+    token_avis: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
@@ -799,6 +800,13 @@ class AnalyticsMois(BaseModel):
     ca: float
 
 
+class AnalyticsSource(BaseModel):
+    source: str
+    nb_clients: int
+    nb_gagnes: int
+    ca: float
+
+
 class AnalyticsOut(BaseModel):
     ca_par_mois: list[AnalyticsMois]
     nb_devis_total: int
@@ -810,6 +818,7 @@ class AnalyticsOut(BaseModel):
     nb_clients_recurrents: int  # clients avec plus d'un devis signe
     montant_impayes: float
     valeur_pipeline: float
+    sources_acquisition: list[AnalyticsSource] = []
 
 
 # ---------- Catalogue de prestations ----------
@@ -855,6 +864,58 @@ class PrestationOut(BaseModel):
     prix_unitaire_ht: float
     taux_tva: float
     created_at: datetime
+
+
+# ---------- Avis clients ----------
+
+class AvisCreate(BaseModel):
+    client_id: Optional[int] = None
+    note: int
+    commentaire: Optional[str] = None
+    nom_auteur: Optional[str] = None
+
+    @field_validator("note")
+    @classmethod
+    def note_valide(cls, v):
+        if v not in (1, 2, 3, 4, 5):
+            raise ValueError("note doit etre comprise entre 1 et 5")
+        return v
+
+
+class AvisPublicIn(BaseModel):
+    note: int
+    commentaire: Optional[str] = None
+
+    @field_validator("note")
+    @classmethod
+    def note_valide(cls, v):
+        if v not in (1, 2, 3, 4, 5):
+            raise ValueError("note doit etre comprise entre 1 et 5")
+        return v
+
+
+class AvisOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    artisan_id: int
+    client_id: Optional[int] = None
+    client_nom: Optional[str] = None
+    note: int
+    commentaire: Optional[str] = None
+    nom_auteur: Optional[str] = None
+    source: str
+    created_at: datetime
+
+
+class DemandeAvisOut(BaseModel):
+    token_avis: str
+
+
+class AvisPublicStatutOut(BaseModel):
+    artisan_nom_entreprise: str
+    client_nom: str
+    deja_soumis: bool
 
 
 # ---------- Notifications (centre de notifications) ----------

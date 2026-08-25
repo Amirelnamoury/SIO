@@ -4,8 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
-from app.models import Artisan, Client, Devis
-from app.schemas import ClientPublicCreate, DevisAccepterIn, DevisPublicOut
+from app.models import Artisan, Avis, Client, Devis
+from app.schemas import AvisPublicIn, AvisPublicStatutOut, ClientPublicCreate, DevisAccepterIn, DevisPublicOut
 
 router = APIRouter(prefix="/pub", tags=["public"])
 
@@ -105,3 +105,43 @@ def accepter_devis_public(token: str, payload: DevisAccepterIn, db: Session = De
     db.commit()
     devis = _get_devis_public_or_404(db, token)
     return _to_public_out(devis)
+
+
+def _get_client_avis_or_404(db: Session, token: str) -> Client:
+    client = (
+        db.query(Client)
+        .options(joinedload(Client.artisan))
+        .filter(Client.token_avis == token)
+        .first()
+    )
+    if client is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lien invalide")
+    return client
+
+
+@router.get("/avis/{token}", response_model=AvisPublicStatutOut)
+def voir_demande_avis(token: str, db: Session = Depends(get_db)):
+    """Endpoint PUBLIC : page que le client ouvre pour laisser un avis."""
+    client = _get_client_avis_or_404(db, token)
+    deja_soumis = db.query(Avis).filter(Avis.client_id == client.id, Avis.source == "lien_public").first() is not None
+    return AvisPublicStatutOut(
+        artisan_nom_entreprise=client.artisan.nom_entreprise, client_nom=client.nom, deja_soumis=deja_soumis,
+    )
+
+
+@router.post("/avis/{token}", status_code=status.HTTP_201_CREATED)
+def soumettre_avis_public(token: str, payload: AvisPublicIn, db: Session = Depends(get_db)):
+    """Endpoint PUBLIC : soumission reelle de l'avis par le client. Un seul
+    avis par lien de demande (pas de spam ni de doublon accidentel)."""
+    client = _get_client_avis_or_404(db, token)
+    deja_soumis = db.query(Avis).filter(Avis.client_id == client.id, Avis.source == "lien_public").first() is not None
+    if deja_soumis:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Un avis a deja ete transmis pour ce lien")
+
+    avis = Avis(
+        artisan_id=client.artisan_id, client_id=client.id, note=payload.note,
+        commentaire=payload.commentaire, nom_auteur=client.nom, source="lien_public",
+    )
+    db.add(avis)
+    db.commit()
+    return {"message": "Avis transmis avec succes"}

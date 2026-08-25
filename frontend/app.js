@@ -406,6 +406,7 @@ function switchView(view) {
   if (view === "documents") loadDocuments();
   if (view === "notifications") loadNotifications();
   if (view === "statistiques") loadStatistiques();
+  if (view === "avis") loadAvis();
   if (view === "entreprise") {
     loadEntrepriseForm();
     loadPrestations();
@@ -693,16 +694,151 @@ async function loadStatistiques() {
       ? a.ca_par_mois.map((m) => `<div class="dash-row"><span>${escapeHtml(m.mois)}</span><strong>${fmtEuro(m.ca)}</strong></div>`).join("")
       : '<div class="dash-empty">Pas encore de paiement enregistre.</div>';
 
+    const sourcesHtml = a.sources_acquisition.length
+      ? a.sources_acquisition.map((s) => `<div class="dash-row"><span>${escapeHtml(CLIENT_SOURCE_LABELS[s.source] || s.source)}</span><strong>${s.nb_clients} contact${s.nb_clients > 1 ? "s" : ""} · ${s.nb_gagnes} gagne${s.nb_gagnes > 1 ? "s" : ""} · ${fmtEuro(s.ca)}</strong></div>`).join("")
+      : '<div class="dash-empty">Pas encore de contact enregistre.</div>';
+
     container.innerHTML = `
       <div class="dash-grid">${statsHtml}</div>
       <div class="dash-section">
         <h3>CA par mois</h3>
         ${moisHtml}
       </div>
+      <div class="dash-section">
+        <h3>Sources d'acquisition</h3>
+        ${sourcesHtml}
+      </div>
     `;
   } catch (err) {
     container.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
   }
+}
+
+// ===================== Avis clients =====================
+const AVIS_SOURCE_LABELS = { manuel: "Saisi a la main", lien_public: "Envoye par le client" };
+
+function starsText(note) {
+  return "★".repeat(note) + "☆".repeat(5 - note);
+}
+
+function avisResumeHtml(avis) {
+  if (avis.length === 0) return "";
+  const moyenne = avis.reduce((s, a) => s + a.note, 0) / avis.length;
+  return `
+    <div class="dash-grid" style="margin-bottom:20px;">
+      <div class="dash-stat"><div class="value">${moyenne.toFixed(1)}/5</div><div class="label">Note moyenne</div></div>
+      <div class="dash-stat"><div class="value">${avis.length}</div><div class="label">Avis recus</div></div>
+    </div>`;
+}
+
+async function loadAvis() {
+  const list = document.getElementById("avis-list");
+  const resume = document.getElementById("avis-resume");
+  list.innerHTML = skeletonCards();
+  try {
+    const [avis] = await Promise.all([Api.listAvis(), ensureClientsCache()]);
+    resume.innerHTML = avisResumeHtml(avis);
+    if (avis.length === 0) {
+      list.innerHTML = '<div class="empty-state">Aucun avis pour le moment. Saisissez-en un, ou envoyez une demande d\'avis depuis la fiche d\'un client.</div>';
+      return;
+    }
+    list.innerHTML = avis.map(renderAvisCard).join("");
+  } catch (err) {
+    list.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function renderAvisCard(a) {
+  return `
+  <div class="item-card">
+    <div class="item-card-top">
+      <div>
+        <div class="item-title" style="color:#f5a623;letter-spacing:2px;">${starsText(a.note)}</div>
+        <div class="item-sub">${escapeHtml(a.client_nom || "Anonyme")} · ${fmtDate(a.created_at)}</div>
+      </div>
+      <span class="badge badge-gray">${AVIS_SOURCE_LABELS[a.source] || a.source}</span>
+    </div>
+    ${a.commentaire ? `<div class="item-meta">${escapeHtml(a.commentaire)}</div>` : ""}
+    <div class="item-actions">
+      <button type="button" class="btn-sm btn-sm-danger" data-action="delete-avis" data-id="${a.id}">Supprimer</button>
+    </div>
+  </div>`;
+}
+
+function showAvisForm() {
+  const container = document.getElementById("avis-form-container");
+  container.innerHTML = `
+    <div class="form-box">
+      <h3>Saisir un avis</h3>
+      <form id="avis-form">
+        <div class="form-grid">
+          <div>
+            <label for="av-note">Note</label>
+            <select id="av-note">
+              <option value="5">5 - Excellent</option>
+              <option value="4">4 - Tres bien</option>
+              <option value="3">3 - Correct</option>
+              <option value="2">2 - Deçu</option>
+              <option value="1">1 - Tres deçu</option>
+            </select>
+          </div>
+          <div><label for="av-client">Client (optionnel)</label><select id="av-client"><option value="">Aucun</option>${clientOptionsHtml()}</select></div>
+          <div><label for="av-nom-auteur">Nom (si pas de client lie)</label><input type="text" id="av-nom-auteur"></div>
+        </div>
+        <label for="av-commentaire" style="margin-top:10px;">Commentaire (optionnel)</label>
+        <textarea id="av-commentaire" placeholder="Ce que le client a dit..."></textarea>
+        <p class="field-error" id="avis-form-error" hidden></p>
+        <div class="form-actions">
+          <button type="submit" class="btn-sm btn-sm-primary">Ajouter</button>
+          <button type="button" class="btn-sm" data-action="cancel-avis-form">Annuler</button>
+        </div>
+      </form>
+    </div>`;
+  container.hidden = false;
+  container.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  document.getElementById("avis-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const errorBox = document.getElementById("avis-form-error");
+    errorBox.hidden = true;
+    const clientId = document.getElementById("av-client").value;
+    try {
+      await Api.createAvis({
+        note: parseInt(document.getElementById("av-note").value, 10),
+        client_id: clientId ? parseInt(clientId, 10) : null,
+        nom_auteur: emptyToNull(document.getElementById("av-nom-auteur").value),
+        commentaire: emptyToNull(document.getElementById("av-commentaire").value),
+      });
+      showToast("Avis ajoute.");
+      container.hidden = true;
+      container.innerHTML = "";
+      loadAvis();
+    } catch (err) {
+      errorBox.hidden = false;
+      errorBox.textContent = err.message;
+    }
+  });
+}
+
+function setupAvisView() {
+  document.querySelector('[data-action="show-avis-form"]').addEventListener("click", showAvisForm);
+  document.getElementById("avis-form-container").addEventListener("click", (e) => {
+    if (e.target.closest('[data-action="cancel-avis-form"]')) {
+      const container = document.getElementById("avis-form-container");
+      container.hidden = true;
+      container.innerHTML = "";
+    }
+  });
+  document.getElementById("avis-list").addEventListener("click", async (e) => {
+    const btn = e.target.closest('[data-action="delete-avis"]');
+    if (!btn) return;
+    if (!confirm("Supprimer cet avis ?")) return;
+    await withErrorToast(async () => {
+      await Api.deleteAvis(parseInt(btn.dataset.id, 10));
+      showToast("Avis supprime.");
+      loadAvis();
+    });
+  });
 }
 
 // ===================== Notifications =====================
@@ -1079,6 +1215,7 @@ function clientQuickActionsHtml(client) {
   if (client.telephone) actions.push(`<a class="btn-sm" href="tel:${escapeHtml(client.telephone)}">Appeler</a>`);
   if (client.email) actions.push(`<a class="btn-sm" href="mailto:${escapeHtml(client.email)}">Email</a>`);
   actions.push(`<button type="button" class="btn-sm btn-sm-primary" data-action="quick-devis" data-client-id="${client.id}">+ Nouveau devis</button>`);
+  actions.push(`<button type="button" class="btn-sm" data-action="demander-avis" data-client-id="${client.id}">Demander un avis</button>`);
   return `<div class="item-actions" style="margin-bottom:18px;">${actions.join("")}</div>`;
 }
 
@@ -1156,7 +1293,7 @@ function setupClientsView() {
     }
   });
 
-  document.getElementById("panel-timeline").addEventListener("click", (e) => {
+  document.getElementById("panel-timeline").addEventListener("click", async (e) => {
     if (e.target.closest('[data-action="close-timeline"]') || e.target.id === "panel-timeline") {
       document.getElementById("panel-timeline").hidden = true;
       return;
@@ -1167,6 +1304,21 @@ function setupClientsView() {
       document.getElementById("panel-timeline").hidden = true;
       switchView("devis");
       setTimeout(() => showDevisForm(null, clientId), 200);
+    }
+
+    const avisBtn = e.target.closest('[data-action="demander-avis"]');
+    if (avisBtn) {
+      const clientId = parseInt(avisBtn.dataset.clientId, 10);
+      await withErrorToast(async () => {
+        const { token_avis } = await Api.demanderAvis(clientId);
+        const url = `${window.location.origin}/avis-public.html?t=${token_avis}`;
+        try {
+          await navigator.clipboard.writeText(url);
+          showToast("Lien copie. Envoyez-le a votre client par email ou SMS.");
+        } catch (err) {
+          showToast(url, false);
+        }
+      });
     }
   });
 
@@ -2621,6 +2773,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupTachesView();
   setupDocumentsView();
   setupNotificationsView();
+  setupAvisView();
   setupConformiteView();
 
   const toast = document.createElement("div");

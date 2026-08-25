@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.database import get_db
 from app.deps import require_active_subscription
 from app.models import Artisan, Client, Devis, Facture, Paiement
-from app.schemas import AnalyticsMois, AnalyticsOut
+from app.schemas import AnalyticsMois, AnalyticsOut, AnalyticsSource
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
@@ -97,10 +97,38 @@ def obtenir_analytics(
     )
     montant_impayes = round(sum(f.montant_restant for f in factures_actives), 2)
 
+    # ---------- Sources d'acquisition ----------
+    clients_tous = db.query(Client).filter(Client.artisan_id == artisan.id).all()
+    paiements_par_client = defaultdict(Decimal)
+    paiements_rows = (
+        db.query(Facture.client_id, Paiement.montant)
+        .join(Paiement, Paiement.facture_id == Facture.id)
+        .filter(Facture.artisan_id == artisan.id)
+        .all()
+    )
+    for client_id, montant in paiements_rows:
+        paiements_par_client[client_id] += montant
+
+    sources_dict = defaultdict(lambda: {"nb_clients": 0, "nb_gagnes": 0, "ca": Decimal("0")})
+    for c in clients_tous:
+        entree = sources_dict[c.source]
+        entree["nb_clients"] += 1
+        if c.statut == "gagne":
+            entree["nb_gagnes"] += 1
+        entree["ca"] += paiements_par_client.get(c.id, Decimal("0"))
+
+    sources_acquisition = sorted(
+        (
+            AnalyticsSource(source=k, nb_clients=v["nb_clients"], nb_gagnes=v["nb_gagnes"], ca=round(v["ca"], 2))
+            for k, v in sources_dict.items()
+        ),
+        key=lambda s: s.ca, reverse=True,
+    )
+
     return AnalyticsOut(
         ca_par_mois=ca_par_mois, nb_devis_total=devis_total, nb_devis_signes=devis_signes,
         taux_acceptation=taux_acceptation, panier_moyen=panier_moyen,
         delai_moyen_paiement_jours=delai_moyen, nb_clients_acquis=nb_clients_acquis,
         nb_clients_recurrents=nb_clients_recurrents, montant_impayes=montant_impayes,
-        valeur_pipeline=valeur_pipeline,
+        valeur_pipeline=valeur_pipeline, sources_acquisition=sources_acquisition,
     )

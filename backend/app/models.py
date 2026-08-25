@@ -67,6 +67,7 @@ class Artisan(Base):
     created_at = Column(DateTime(timezone=True), default=utcnow)
 
     clients = relationship("Client", back_populates="artisan", cascade="all, delete-orphan")
+    avis = relationship("Avis", back_populates="artisan", cascade="all, delete-orphan")
     devis = relationship("Devis", back_populates="artisan", cascade="all, delete-orphan")
     factures = relationship("Facture", back_populates="artisan", cascade="all, delete-orphan")
     chantiers = relationship("Chantier", back_populates="artisan", cascade="all, delete-orphan")
@@ -115,6 +116,10 @@ class Client(Base):
     probabilite = Column(Integer, nullable=True)  # 0-100
     prochaine_action = Column(String, nullable=True)
 
+    # Jeton public pour demander un avis a ce client (voir Avis). Genere a la
+    # demande, jamais expose autrement que dans ce lien.
+    token_avis = Column(String, unique=True, index=True, nullable=True)
+
     created_at = Column(DateTime(timezone=True), default=utcnow)
     updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 
@@ -123,6 +128,7 @@ class Client(Base):
     factures = relationship("Facture", back_populates="client", cascade="all, delete-orphan")
     chantiers = relationship("Chantier", back_populates="client")
     taches = relationship("Tache", back_populates="client")
+    avis = relationship("Avis", back_populates="client", cascade="all, delete-orphan")
 
 
 class Devis(Base):
@@ -514,3 +520,25 @@ class Document(Base):
     created_at = Column(DateTime(timezone=True), default=utcnow)
 
     artisan = relationship("Artisan", back_populates="documents")
+
+
+class Avis(Base):
+    """Un avis client, soit saisi a la main par l'artisan (recu par telephone,
+    Google, en personne...), soit soumis par le client lui-meme via le lien
+    public genere depuis sa fiche (voir Client.token_avis)."""
+
+    __tablename__ = "avis"
+
+    id = Column(Integer, primary_key=True, index=True)
+    artisan_id = Column(Integer, ForeignKey("artisans.id"), nullable=False, index=True)
+    client_id = Column(Integer, ForeignKey("clients.id"), nullable=True, index=True)
+
+    note = Column(Integer, nullable=False)  # 1 a 5
+    commentaire = Column(Text, nullable=True)
+    nom_auteur = Column(String, nullable=True)  # si pas de client lie, ou avis externe
+    source = Column(String, default="manuel")  # manuel, lien_public
+
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+
+    artisan = relationship("Artisan", back_populates="avis")
+    client = relationship("Client", back_populates="avis")

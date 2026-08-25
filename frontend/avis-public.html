@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Donner un avis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="devis-public.css">
+<link rel="stylesheet" href="avis-public.css">
+</head>
+<body class="devis-public-body">
+
+<div class="devis-public-wrap">
+  <div id="avis-public-content" class="devis-public-card">
+    <div class="empty-state">Chargement...</div>
+  </div>
+  <p class="devis-public-footer">Page geree via <strong>Suite Artisan</strong></p>
+</div>
+
+<script>
+const API_BASE = "http://localhost:8000";
+
+function escapeHtml(value) {
+  if (value === null || value === undefined) return "";
+  return String(value)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+const token = new URLSearchParams(window.location.search).get("t");
+const contentEl = document.getElementById("avis-public-content");
+
+let noteChoisie = 0;
+
+function starsHtml() {
+  let html = '<div class="avis-stars" id="avis-stars">';
+  for (let i = 1; i <= 5; i++) {
+    html += `<button type="button" class="avis-star" data-note="${i}" aria-label="${i} etoile(s)">&#9733;</button>`;
+  }
+  html += "</div>";
+  return html;
+}
+
+function updateStarsDisplay() {
+  document.querySelectorAll(".avis-star").forEach((el) => {
+    el.classList.toggle("is-active", parseInt(el.dataset.note, 10) <= noteChoisie);
+  });
+}
+
+function renderForm(statut) {
+  contentEl.innerHTML = `
+    <div class="devis-public-header">
+      <div><div class="devis-public-artisan">${escapeHtml(statut.artisan_nom_entreprise)}</div></div>
+    </div>
+    <h1>Votre avis compte</h1>
+    <p class="section-hint">Bonjour ${escapeHtml(statut.client_nom)}, merci de partager votre experience avec ${escapeHtml(statut.artisan_nom_entreprise)}.</p>
+
+    <div class="avis-public-form">
+      ${starsHtml()}
+      <label for="avis-commentaire" style="margin-top:18px;display:block;">Commentaire (optionnel)</label>
+      <textarea id="avis-commentaire" placeholder="Votre experience en quelques mots..."></textarea>
+      <p class="field-error" id="avis-error" hidden></p>
+      <button type="button" class="btn-primary" id="avis-submit" style="width:100%;margin-top:14px;">Envoyer mon avis</button>
+    </div>
+  `;
+
+  document.getElementById("avis-stars").addEventListener("click", (e) => {
+    const btn = e.target.closest(".avis-star");
+    if (!btn) return;
+    noteChoisie = parseInt(btn.dataset.note, 10);
+    updateStarsDisplay();
+  });
+
+  document.getElementById("avis-submit").addEventListener("click", async () => {
+    const errorBox = document.getElementById("avis-error");
+    errorBox.hidden = true;
+    if (noteChoisie === 0) {
+      errorBox.hidden = false;
+      errorBox.textContent = "Choisissez une note de 1 a 5 etoiles.";
+      return;
+    }
+    const btn = document.getElementById("avis-submit");
+    btn.disabled = true;
+    try {
+      const res = await fetch(`${API_BASE}/pub/avis/${token}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ note: noteChoisie, commentaire: document.getElementById("avis-commentaire").value || null }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error((data && data.detail) || "Impossible d'envoyer votre avis.");
+      }
+      contentEl.innerHTML = `
+        <div class="devis-public-banner is-success">
+          <strong>Merci pour votre avis !</strong> Il a bien ete transmis.
+        </div>`;
+    } catch (err) {
+      errorBox.hidden = false;
+      errorBox.textContent = err.message;
+      btn.disabled = false;
+    }
+  });
+}
+
+async function load() {
+  if (!token) {
+    contentEl.innerHTML = '<div class="empty-state">Lien invalide.</div>';
+    return;
+  }
+  try {
+    const res = await fetch(`${API_BASE}/pub/avis/${token}`);
+    if (!res.ok) {
+      contentEl.innerHTML = '<div class="empty-state">Ce lien est introuvable ou a expire.</div>';
+      return;
+    }
+    const statut = await res.json();
+    if (statut.deja_soumis) {
+      contentEl.innerHTML = `
+        <div class="devis-public-banner is-muted">
+          Un avis a deja ete transmis pour ${escapeHtml(statut.client_nom)}. Merci !
+        </div>`;
+      return;
+    }
+    renderForm(statut);
+  } catch (err) {
+    contentEl.innerHTML = '<div class="empty-state">Impossible de contacter le serveur. Verifiez votre connexion.</div>';
+  }
+}
+
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+/* ===================== Page publique de demande d'avis ===================== */
+.avis-public-form { margin-top: 24px; }
+
+.avis-stars { display: flex; gap: 6px; justify-content: center; margin: 8px 0 4px; }
+.avis-star {
+  background: none; border: none; cursor: pointer; font-size: 2.2rem; line-height: 1;
+  color: var(--border); padding: 2px; transition: color 0.12s ease, transform 0.12s ease;
+}
+.avis-star:hover { transform: scale(1.1); }
+.avis-star.is-active { color: #f5a623; }
+
+.avis-public-form textarea {
+  width: 100%; min-height: 100px; padding: 11px 14px; border-radius: 9px; border: 1.5px solid var(--border);
+  font-size: 0.95rem; font-family: inherit; resize: vertical; margin-top: 6px;
+}
+.avis-public-form textarea:focus { outline: none; border-color: var(--accent); }
+
+@media (max-width: 640px) {
+  .avis-star { font-size: 1.9rem; }
+}

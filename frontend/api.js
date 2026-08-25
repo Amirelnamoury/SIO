@@ -124,6 +124,12 @@ const Api = {
   relancerFacture: (id) => apiFetch(`/factures/${id}/relancer`, { method: "POST" }),
   ajouterPaiement: (id, payload) => apiFetch(`/factures/${id}/paiements`, { method: "POST", body: payload }),
 
+  // ---------- Avis clients ----------
+  listAvis: () => apiFetch("/avis"),
+  createAvis: (payload) => apiFetch("/avis", { method: "POST", body: payload }),
+  deleteAvis: (id) => apiFetch(`/avis/${id}`, { method: "DELETE" }),
+  demanderAvis: (clientId) => apiFetch(`/clients/${clientId}/demande-avis`, { method: "POST" }),
+
   // ---------- Notifications ----------
   listNotifications: () => apiFetch("/notifications"),
 

@@ -154,6 +154,10 @@
         <svg viewBox="0 0 24 24" class="nav-icon"><path d="M4 20V10M11 20V4M18 20v-7"/></svg>
         Statistiques
       </button>
+      <button type="button" class="nav-link" data-view="avis">
+        <svg viewBox="0 0 24 24" class="nav-icon"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5-5.9-3.2-5.9 3.2 1.2-6.5-4.8-4.6 6.6-.9z"/></svg>
+        Avis clients
+      </button>
       <button type="button" class="nav-link" data-view="entreprise">
         <svg viewBox="0 0 24 24" class="nav-icon"><path d="M12 3l7 3v5c0 5-3 8.5-7 10-4-1.5-7-5-7-10V6l7-3z"/></svg>
         Entreprise <span id="badge-alertes" class="badge-count badge-alert" hidden>0</span>
@@ -327,6 +331,21 @@
     <section id="view-statistiques" class="view" hidden>
       <div class="view-header"><h2>Statistiques</h2></div>
       <div id="statistiques-content"></div>
+    </section>
+
+    <!-- ---------- Section Avis clients ---------- -->
+    <section id="view-avis" class="view" hidden>
+      <div class="view-header">
+        <h2>Avis clients</h2>
+        <button type="button" class="btn-primary" data-action="show-avis-form">+ Saisir un avis</button>
+      </div>
+      <p class="section-hint">Avis recus par telephone, Google, en personne... ou soumis directement par vos clients via un lien que vous leur envoyez depuis leur fiche.</p>
+
+      <div id="avis-resume"></div>
+
+      <div id="avis-form-container" hidden></div>
+
+      <div id="avis-list" class="list"></div>
     </section>
 
     <!-- ---------- Section Entreprise (infos + conformite) ---------- -->
