@@ -597,3 +597,66 @@ class DocumentOut(BaseModel):
     type: str
     url: str
     created_at: datetime
+
+
+# ---------- Planning (agrege evenements + echeances de taches/chantiers) ----------
+
+class PlanningItem(BaseModel):
+    date: datetime
+    type: str  # rdv, visite, intervention, autre, tache, chantier_debut, chantier_fin
+    titre: str
+    reference_id: Optional[int] = None
+    client_id: Optional[int] = None
+    chantier_id: Optional[int] = None
+
+
+# ---------- Dashboard ----------
+
+class DashboardAujourdhui(BaseModel):
+    taches: list[TacheOut] = []
+    evenements: list[EvenementOut] = []
+    devis_a_relancer: list[DevisOut] = []
+    factures_en_retard: list[FactureOut] = []
+
+
+class DashboardCommercial(BaseModel):
+    nouveaux_prospects_7j: int
+    devis_en_attente: int
+    devis_acceptes_30j: int
+    taux_transformation: float  # % devis signes parmi les devis envoyes (tous statuts finaux confondus)
+    valeur_pipeline: float
+
+
+class DashboardFinances(BaseModel):
+    ca_mois: float
+    ca_annee: float
+    a_encaisser: float
+    montant_en_retard: float
+    paiements_recents: list[PaiementOut] = []
+
+
+class DashboardOut(BaseModel):
+    aujourdhui: DashboardAujourdhui
+    commercial: DashboardCommercial
+    finances: DashboardFinances
+    alertes_conformite: list[ConformiteOut] = []
+
+
+# ---------- Analytics ----------
+
+class AnalyticsMois(BaseModel):
+    mois: str  # "2026-08"
+    ca: float
+
+
+class AnalyticsOut(BaseModel):
+    ca_par_mois: list[AnalyticsMois]
+    nb_devis_total: int
+    nb_devis_signes: int
+    taux_acceptation: float
+    panier_moyen: float
+    delai_moyen_paiement_jours: Optional[float] = None
+    nb_clients_acquis: int
+    nb_clients_recurrents: int  # clients avec plus d'un devis signe
+    montant_impayes: float
+    valeur_pipeline: float
