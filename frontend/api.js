@@ -113,6 +113,27 @@ const Api = {
   deleteFacture: (id) => apiFetch(`/factures/${id}`, { method: "DELETE" }),
   ajouterPaiement: (id, payload) => apiFetch(`/factures/${id}/paiements`, { method: "POST", body: payload }),
 
+  // ---------- Tableau de bord & analytics ----------
+  dashboard: () => apiFetch("/dashboard"),
+  analytics: () => apiFetch("/analytics"),
+
+  // ---------- Taches ----------
+  listTaches: (statut) => apiFetch("/taches" + (statut ? `?statut=${encodeURIComponent(statut)}` : "")),
+  createTache: (payload) => apiFetch("/taches", { method: "POST", body: payload }),
+  updateTache: (id, payload) => apiFetch(`/taches/${id}`, { method: "PATCH", body: payload }),
+  deleteTache: (id) => apiFetch(`/taches/${id}`, { method: "DELETE" }),
+
+  // ---------- Planning ----------
+  planning: (debut, fin) => apiFetch(`/planning?debut=${debut}&fin=${fin}`),
+  listEvenements: () => apiFetch("/evenements"),
+  createEvenement: (payload) => apiFetch("/evenements", { method: "POST", body: payload }),
+  deleteEvenement: (id) => apiFetch(`/evenements/${id}`, { method: "DELETE" }),
+
+  // ---------- Documents ----------
+  listDocuments: (params) => apiFetch("/documents" + (params ? "?" + new URLSearchParams(params).toString() : "")),
+  createDocument: (payload) => apiFetch("/documents", { method: "POST", body: payload }),
+  deleteDocument: (id) => apiFetch(`/documents/${id}`, { method: "DELETE" }),
+
   // ---------- Abonnement ----------
   checkoutSession: () => apiFetch("/stripe/checkout-session", { method: "POST" }),
 };

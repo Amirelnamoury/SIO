@@ -228,19 +228,22 @@ document.addEventListener("click", (e) => {
 function enterDashboard() {
   document.getElementById("auth-screen").hidden = true;
   document.getElementById("dashboard-screen").hidden = false;
-  switchView("clients");
+  switchView("dashboard");
   refreshBadges();
 }
 
 function switchView(view) {
-  document.querySelectorAll(".tab-link").forEach((btn) => btn.classList.toggle("active", btn.dataset.view === view));
+  document.querySelectorAll(".nav-link").forEach((btn) => btn.classList.toggle("active", btn.dataset.view === view));
   document.querySelectorAll(".view").forEach((section) => {
     section.hidden = section.id !== `view-${view}`;
   });
+  if (view === "dashboard") loadDashboard();
   if (view === "clients") loadClients();
   if (view === "devis") loadDevis();
   if (view === "factures") loadFactures();
   if (view === "chantiers") loadChantiers();
+  if (view === "planning") loadPlanning();
+  if (view === "taches") loadTaches();
   if (view === "conformite") loadConformite();
 }
 
@@ -304,56 +307,138 @@ function setupProfilPanel() {
 }
 
 function setupTabs() {
-  document.querySelectorAll(".tab-link").forEach((btn) => {
+  document.querySelectorAll(".nav-link").forEach((btn) => {
     btn.addEventListener("click", () => switchView(btn.dataset.view));
   });
 }
 
-// ===================== Clients & prospects (CRM) =====================
-let currentClientFilter = "";
+// ===================== Tableau de bord =====================
+async function loadDashboard() {
+  const container = document.getElementById("dashboard-content");
+  container.innerHTML = '<div class="empty-state">Chargement...</div>';
+  try {
+    const d = await Api.dashboard();
+    const stats = [
+      { label: "CA ce mois-ci", value: fmtEuro(d.finances.ca_mois) },
+      { label: "A encaisser", value: fmtEuro(d.finances.a_encaisser) },
+      { label: "Valeur du pipeline", value: fmtEuro(d.commercial.valeur_pipeline) },
+      { label: "Devis en attente", value: d.commercial.devis_en_attente },
+      { label: "Taux de transformation", value: d.commercial.taux_transformation + "%" },
+      { label: "Nouveaux prospects (7j)", value: d.commercial.nouveaux_prospects_7j },
+    ];
+
+    const aujourdhuiItems = [
+      ...d.aujourdhui.evenements.map((e) => ({
+        label: `${new Date(e.date_debut).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })} · ${escapeHtml(e.titre)}`,
+        badge: `<span class="badge badge-blue">${e.type}</span>`,
+      })),
+      ...d.aujourdhui.taches.map((t) => ({
+        label: escapeHtml(t.titre),
+        badge: `<span class="badge badge-gray">Tache</span>`,
+      })),
+    ];
+
+    const aTraiterItems = [
+      ...d.aujourdhui.devis_a_relancer.map((dv) => ({
+        label: `Relancer ${escapeHtml(dv.client_nom)} (${escapeHtml(dv.numero || "devis #" + dv.id)})`,
+        badge: `<span class="badge badge-orange">Devis</span>`,
+      })),
+      ...d.aujourdhui.factures_en_retard.map((f) => ({
+        label: `${escapeHtml(f.numero)} · ${escapeHtml(f.client_nom)} · ${fmtEuro(f.montant_restant)} en retard`,
+        badge: `<span class="badge badge-red">Facture</span>`,
+      })),
+      ...d.alertes_conformite.map((c) => ({
+        label: `${escapeHtml(c.libelle)} (${c.jours_restants} j)`,
+        badge: `<span class="badge badge-red">Conformite</span>`,
+      })),
+    ];
+
+    container.innerHTML = `
+      <div class="dash-grid">
+        ${stats.map((s) => `<div class="dash-stat"><div class="value">${s.value}</div><div class="label">${s.label}</div></div>`).join("")}
+      </div>
+      <div class="dash-two-col">
+        <div class="dash-section">
+          <h3>Aujourd'hui</h3>
+          ${aujourdhuiItems.length
+            ? aujourdhuiItems.map((i) => `<div class="dash-row"><span>${i.label}</span>${i.badge}</div>`).join("")
+            : '<div class="dash-empty">Rien de prevu aujourd\'hui.</div>'}
+        </div>
+        <div class="dash-section">
+          <h3>A traiter</h3>
+          ${aTraiterItems.length
+            ? aTraiterItems.map((i) => `<div class="dash-row"><span>${i.label}</span>${i.badge}</div>`).join("")
+            : '<div class="dash-empty">Rien qui necessite votre attention.</div>'}
+        </div>
+      </div>
+      ${d.finances.paiements_recents.length ? `
+      <div class="dash-section">
+        <h3>Paiements recents</h3>
+        ${d.finances.paiements_recents.map((p) => `<div class="dash-row"><span>${fmtDate(p.date_paiement)} · ${p.moyen}</span><strong>${fmtEuro(p.montant)}</strong></div>`).join("")}
+      </div>` : ""}
+    `;
+  } catch (err) {
+    container.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+// ===================== Clients & prospects (CRM, vue Kanban) =====================
+const CLIENT_PIPELINE_ORDRE = [
+  "nouveau", "contacte", "qualification", "visite_prevue",
+  "devis_a_faire", "devis_envoye", "negociation", "gagne", "perdu",
+];
 
 async function loadClients() {
-  const list = document.getElementById("clients-list");
-  list.innerHTML = '<div class="empty-state">Chargement...</div>';
+  const board = document.getElementById("clients-kanban");
+  board.innerHTML = '<div class="empty-state">Chargement...</div>';
   try {
-    const clients = await Api.listClients(currentClientFilter);
+    const clients = await Api.listClients();
     clientsCache = clients;
     if (clients.length === 0) {
-      list.innerHTML = `<div class="empty-state">
+      board.innerHTML = `<div class="empty-state">
         Aucun contact pour le moment.<br><br>
         Les demandes venant de votre site vitrine arrivent automatiquement ici.
         Vous pouvez aussi ajouter un contact a la main.
       </div>`;
       return;
     }
-    list.innerHTML = clients.map(renderClientCard).join("");
+    const parColonne = {};
+    CLIENT_PIPELINE_ORDRE.forEach((s) => (parColonne[s] = []));
+    clients.forEach((c) => { (parColonne[c.statut] || (parColonne[c.statut] = [])).push(c); });
+
+    board.innerHTML = CLIENT_PIPELINE_ORDRE.map((statut) => {
+      const meta = CLIENT_STATUT_META[statut] || { label: statut };
+      const items = parColonne[statut] || [];
+      return `
+      <div class="kanban-column">
+        <div class="kanban-column-header">
+          <span class="kanban-column-title">${meta.label}</span>
+          <span class="kanban-column-count">${items.length}</span>
+        </div>
+        <div class="kanban-cards">
+          ${items.length ? items.map(renderClientCard).join("") : '<div class="kanban-empty">Vide</div>'}
+        </div>
+      </div>`;
+    }).join("");
   } catch (err) {
-    list.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
+    board.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
   }
 }
 
 function renderClientCard(c) {
-  const meta = CLIENT_STATUT_META[c.statut] || { label: c.statut, badge: "badge-gray" };
   const contact = [c.telephone, c.email].filter(Boolean).map(escapeHtml).join(" · ");
   const statutOptions = Object.entries(CLIENT_STATUT_META)
     .map(([value, m]) => `<option value="${value}" ${value === c.statut ? "selected" : ""}>${m.label}</option>`)
     .join("");
 
   return `
-  <div class="item-card">
-    <div class="item-card-top">
-      <div>
-        <div class="item-title">${escapeHtml(c.nom)}</div>
-        <div class="item-sub">${contact || "Pas de coordonnees"}${c.societe ? " · " + escapeHtml(c.societe) : ""}</div>
-      </div>
-      <span class="badge ${meta.badge}">${meta.label}</span>
-    </div>
-    ${c.notes ? `<div class="item-meta">${escapeHtml(c.notes)}</div>` : ""}
-    <div class="item-meta">Source : ${c.source === "site_vitrine" ? "Site vitrine" : "Manuel"}</div>
-    <div class="item-actions">
-      <select class="btn-sm" data-action="changer-statut-client" data-id="${c.id}" style="cursor:pointer;">${statutOptions}</select>
-      <button type="button" class="btn-sm" data-action="voir-timeline" data-id="${c.id}">Voir l'historique</button>
-      <button type="button" class="btn-sm btn-sm-danger" data-action="delete-client" data-id="${c.id}">Supprimer</button>
+  <div class="kanban-card" data-action="voir-timeline" data-id="${c.id}">
+    <div class="kanban-card-title">${escapeHtml(c.nom)}</div>
+    <div class="kanban-card-sub">${contact || "Pas de coordonnees"}${c.societe ? " · " + escapeHtml(c.societe) : ""}</div>
+    ${c.source === "site_vitrine" ? '<div class="kanban-card-sub">Source : site vitrine</div>' : ""}
+    <div class="kanban-card-actions">
+      <select data-action="changer-statut-client" data-id="${c.id}">${statutOptions}</select>
+      <button type="button" class="btn-sm btn-sm-danger" data-action="delete-client" data-id="${c.id}" title="Supprimer">&times;</button>
     </div>
   </div>`;
 }
@@ -443,15 +528,6 @@ async function showTimeline(clientId) {
 }
 
 function setupClientsView() {
-  document.getElementById("client-filters").addEventListener("click", (e) => {
-    const chip = e.target.closest(".filter-chip");
-    if (!chip) return;
-    document.querySelectorAll("#client-filters .filter-chip").forEach((c) => c.classList.remove("active"));
-    chip.classList.add("active");
-    currentClientFilter = chip.dataset.statut;
-    loadClients();
-  });
-
   document.querySelector('[data-action="show-client-form"]').addEventListener("click", showClientForm);
   document.getElementById("client-form-container").addEventListener("click", (e) => {
     if (e.target.closest('[data-action="cancel-client-form"]')) {
@@ -461,7 +537,7 @@ function setupClientsView() {
     }
   });
 
-  document.getElementById("clients-list").addEventListener("change", async (e) => {
+  document.getElementById("clients-kanban").addEventListener("change", async (e) => {
     const select = e.target.closest('[data-action="changer-statut-client"]');
     if (!select) return;
     const id = parseInt(select.dataset.id, 10);
@@ -472,20 +548,20 @@ function setupClientsView() {
     });
   });
 
-  document.getElementById("clients-list").addEventListener("click", async (e) => {
+  document.getElementById("clients-kanban").addEventListener("click", async (e) => {
     const btn = e.target.closest("[data-action]");
     if (!btn) return;
     const id = parseInt(btn.dataset.id, 10);
 
-    if (btn.dataset.action === "voir-timeline") {
-      showTimeline(id);
-    } else if (btn.dataset.action === "delete-client") {
+    if (btn.dataset.action === "delete-client") {
       if (!confirm("Supprimer ce contact ? Ses devis, factures et chantiers seront supprimes aussi.")) return;
       await withErrorToast(async () => {
         await Api.deleteClient(id);
         showToast("Contact supprime.");
         loadClients();
       });
+    } else if (btn.dataset.action === "voir-timeline") {
+      showTimeline(id);
     }
   });
 
@@ -1117,6 +1193,251 @@ function setupChantiersView() {
   });
 }
 
+// ===================== Taches =====================
+let currentTacheFilter = "a_faire";
+const TACHE_PRIORITE_BADGE = { basse: "badge-gray", normale: "badge-blue", haute: "badge-orange", urgente: "badge-red" };
+
+async function loadTaches() {
+  const list = document.getElementById("taches-list");
+  list.innerHTML = '<div class="empty-state">Chargement...</div>';
+  try {
+    const taches = await Api.listTaches(currentTacheFilter);
+    if (taches.length === 0) {
+      list.innerHTML = '<div class="empty-state">Aucune tache ici.</div>';
+      return;
+    }
+    list.innerHTML = taches.map(renderTacheCard).join("");
+  } catch (err) {
+    list.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function renderTacheCard(t) {
+  const estFaite = t.statut === "faite";
+  return `
+  <div class="item-card">
+    <div class="item-card-top">
+      <div>
+        <div class="item-title" style="${estFaite ? "text-decoration:line-through;opacity:0.6;" : ""}">${escapeHtml(t.titre)}</div>
+        ${t.description ? `<div class="item-sub">${escapeHtml(t.description)}</div>` : ""}
+      </div>
+      <span class="badge ${TACHE_PRIORITE_BADGE[t.priorite] || "badge-gray"}">${t.priorite}</span>
+    </div>
+    <div class="item-meta">${t.echeance ? "Echeance : " + fmtDate(t.echeance) : "Pas d'echeance"}</div>
+    <div class="item-actions">
+      ${!estFaite
+        ? `<button type="button" class="btn-sm btn-sm-primary" data-action="terminer-tache" data-id="${t.id}">Marquer faite</button>`
+        : `<button type="button" class="btn-sm" data-action="reouvrir-tache" data-id="${t.id}">Reouvrir</button>`}
+      <button type="button" class="btn-sm btn-sm-danger" data-action="delete-tache" data-id="${t.id}">Supprimer</button>
+    </div>
+  </div>`;
+}
+
+function showTacheForm() {
+  const container = document.getElementById("tache-form-container");
+  container.innerHTML = `
+    <div class="form-box">
+      <h3>Nouvelle tache</h3>
+      <form id="tache-form">
+        <div class="form-grid">
+          <div><label for="ta-titre">Titre *</label><input type="text" id="ta-titre" required></div>
+          <div><label for="ta-echeance">Echeance</label><input type="date" id="ta-echeance"></div>
+          <div>
+            <label for="ta-priorite">Priorite</label>
+            <select id="ta-priorite">
+              <option value="basse">Basse</option>
+              <option value="normale" selected>Normale</option>
+              <option value="haute">Haute</option>
+              <option value="urgente">Urgente</option>
+            </select>
+          </div>
+        </div>
+        <label for="ta-description" style="margin-top:14px;">Description</label>
+        <textarea id="ta-description"></textarea>
+        <p class="field-error" id="tache-form-error" hidden></p>
+        <div class="form-actions">
+          <button type="submit" class="btn-sm btn-sm-primary">Creer</button>
+          <button type="button" class="btn-sm" data-action="cancel-tache-form">Annuler</button>
+        </div>
+      </form>
+    </div>`;
+  container.hidden = false;
+  container.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  document.getElementById("tache-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const errorBox = document.getElementById("tache-form-error");
+    errorBox.hidden = true;
+    try {
+      await Api.createTache({
+        titre: document.getElementById("ta-titre").value,
+        echeance: emptyToNull(document.getElementById("ta-echeance").value),
+        priorite: document.getElementById("ta-priorite").value,
+        description: emptyToNull(document.getElementById("ta-description").value),
+      });
+      showToast("Tache creee.");
+      container.hidden = true;
+      container.innerHTML = "";
+      loadTaches();
+    } catch (err) {
+      errorBox.hidden = false;
+      errorBox.textContent = err.message;
+    }
+  });
+}
+
+function setupTachesView() {
+  document.getElementById("tache-filters").addEventListener("click", (e) => {
+    const chip = e.target.closest(".filter-chip");
+    if (!chip) return;
+    document.querySelectorAll("#tache-filters .filter-chip").forEach((c) => c.classList.remove("active"));
+    chip.classList.add("active");
+    currentTacheFilter = chip.dataset.statut;
+    loadTaches();
+  });
+
+  document.querySelector('[data-action="show-tache-form"]').addEventListener("click", showTacheForm);
+  document.getElementById("tache-form-container").addEventListener("click", (e) => {
+    if (e.target.closest('[data-action="cancel-tache-form"]')) {
+      const container = document.getElementById("tache-form-container");
+      container.hidden = true;
+      container.innerHTML = "";
+    }
+  });
+
+  document.getElementById("taches-list").addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-action]");
+    if (!btn) return;
+    const id = parseInt(btn.dataset.id, 10);
+
+    if (btn.dataset.action === "terminer-tache") {
+      await withErrorToast(async () => {
+        await Api.updateTache(id, { statut: "faite" });
+        showToast("Tache marquee faite.");
+        loadTaches();
+      });
+    } else if (btn.dataset.action === "reouvrir-tache") {
+      await withErrorToast(async () => {
+        await Api.updateTache(id, { statut: "a_faire" });
+        loadTaches();
+      });
+    } else if (btn.dataset.action === "delete-tache") {
+      if (!confirm("Supprimer cette tache ?")) return;
+      await withErrorToast(async () => {
+        await Api.deleteTache(id);
+        showToast("Tache supprimee.");
+        loadTaches();
+      });
+    }
+  });
+}
+
+// ===================== Planning =====================
+const PLANNING_TYPE_LABELS = { rdv: "RDV", visite: "Visite", intervention: "Intervention", autre: "Autre", tache: "Tache", chantier_debut: "Debut chantier" };
+
+async function loadPlanning() {
+  const container = document.getElementById("planning-content");
+  container.innerHTML = '<div class="empty-state">Chargement...</div>';
+  try {
+    const debut = new Date();
+    const fin = new Date();
+    fin.setDate(fin.getDate() + 13);
+    const toIso = (d) => d.toISOString().slice(0, 10);
+    const items = await Api.planning(toIso(debut), toIso(fin));
+
+    if (items.length === 0) {
+      container.innerHTML = '<div class="empty-state">Rien de prevu dans les 14 prochains jours. Ajoutez un rendez-vous, ou planifiez une tache / un chantier avec une date.</div>';
+      return;
+    }
+
+    const parJour = {};
+    items.forEach((i) => {
+      const jour = i.date.slice(0, 10);
+      (parJour[jour] = parJour[jour] || []).push(i);
+    });
+
+    container.innerHTML = Object.keys(parJour).sort().map((jour) => {
+      const dateLisible = new Date(jour + "T00:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+      const rows = parJour[jour].map((i) => {
+        const heure = i.type === "chantier_debut" ? "" : new Date(i.date).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) + " · ";
+        return `<div class="dash-row"><span>${heure}${escapeHtml(i.titre)}</span><span class="badge badge-blue">${PLANNING_TYPE_LABELS[i.type] || i.type}</span></div>`;
+      }).join("");
+      return `<div class="dash-section"><h3 style="text-transform:capitalize;">${dateLisible}</h3>${rows}</div>`;
+    }).join("");
+  } catch (err) {
+    container.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function setupPlanningView() {
+  document.querySelector('[data-action="show-evenement-form"]').addEventListener("click", async () => {
+    const container = document.getElementById("evenement-form-container");
+    await ensureClientsCache();
+    container.innerHTML = `
+      <div class="form-box">
+        <h3>Nouveau rendez-vous</h3>
+        <form id="evenement-form">
+          <div class="form-grid">
+            <div><label for="ev-titre">Titre *</label><input type="text" id="ev-titre" required></div>
+            <div>
+              <label for="ev-type">Type</label>
+              <select id="ev-type">
+                <option value="rdv">Rendez-vous</option>
+                <option value="visite">Visite</option>
+                <option value="intervention">Intervention</option>
+                <option value="autre">Autre</option>
+              </select>
+            </div>
+            <div><label for="ev-date">Date *</label><input type="date" id="ev-date" required></div>
+            <div><label for="ev-heure">Heure</label><input type="time" id="ev-heure" value="09:00"></div>
+            <div><label for="ev-client">Client (optionnel)</label><select id="ev-client"><option value="">Aucun</option>${clientOptionsHtml()}</select></div>
+            <div><label for="ev-lieu">Lieu</label><input type="text" id="ev-lieu"></div>
+          </div>
+          <p class="field-error" id="evenement-form-error" hidden></p>
+          <div class="form-actions">
+            <button type="submit" class="btn-sm btn-sm-primary">Creer</button>
+            <button type="button" class="btn-sm" data-action="cancel-evenement-form">Annuler</button>
+          </div>
+        </form>
+      </div>`;
+    container.hidden = false;
+    container.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    document.getElementById("evenement-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const errorBox = document.getElementById("evenement-form-error");
+      errorBox.hidden = true;
+      const dateVal = document.getElementById("ev-date").value;
+      const heureVal = document.getElementById("ev-heure").value || "09:00";
+      const clientVal = document.getElementById("ev-client").value;
+      try {
+        await Api.createEvenement({
+          titre: document.getElementById("ev-titre").value,
+          type: document.getElementById("ev-type").value,
+          date_debut: new Date(`${dateVal}T${heureVal}:00`).toISOString(),
+          lieu: emptyToNull(document.getElementById("ev-lieu").value),
+          client_id: clientVal ? parseInt(clientVal, 10) : null,
+        });
+        showToast("Rendez-vous cree.");
+        container.hidden = true;
+        container.innerHTML = "";
+        loadPlanning();
+      } catch (err) {
+        errorBox.hidden = false;
+        errorBox.textContent = err.message;
+      }
+    });
+  });
+
+  document.getElementById("evenement-form-container").addEventListener("click", (e) => {
+    if (e.target.closest('[data-action="cancel-evenement-form"]')) {
+      const container = document.getElementById("evenement-form-container");
+      container.hidden = true;
+      container.innerHTML = "";
+    }
+  });
+}
+
 // ===================== Conformite =====================
 async function loadConformite() {
   const list = document.getElementById("conformite-list");
@@ -1270,6 +1591,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupDevisView();
   setupFacturesView();
   setupChantiersView();
+  setupPlanningView();
+  setupTachesView();
   setupConformiteView();
 
   const toast = document.createElement("div");
