@@ -1,6 +1,13 @@
 """Genere un mini-site vitrine HTML autonome (CSS + JS inline, aucune
 dependance externe a part une police Google Fonts) pour un artisan donne.
 
+Chaque site combine :
+- l'identite du METIER (couleurs de base, police, textes, icone de marque) ;
+- une VARIANTE choisie automatiquement et de facon stable pour cet artisan
+  (palette parmi 3, motif visuel du hero parmi 2) - voir themes.py.
+Deux artisans du meme metier ont donc un style cohesif avec leur metier,
+mais un rendu different l'un de l'autre.
+
 Le formulaire de devis du site appelle directement l'API publique du SaaS
 (POST /pub/{slug}/demande-devis) : pas de mailto, la demande arrive
 directement dans le tableau de bord de l'artisan.
@@ -17,21 +24,83 @@ Usage :
         "email": "contact@plomberie-dupont.fr",
         "siret": "123 456 789 00012",
         "assurance_decennale_nom": "AXA",
+        # optionnel : forcer la variante au lieu de la laisser auto-choisie
+        # "variante_couleur": 1, "variante_motif": "gradient-mesh",
+        # optionnel : chiffres cles reels (rien n'est invente si absent)
+        # "stats": [{"valeur": "12 ans", "label": "d'experience"}],
     }
     generate_site(artisan, api_base_url="https://api.suite-artisan.fr", output_path="site.html")
 """
 
 from pathlib import Path
 
-from themes import GOOGLE_FONTS, get_theme
+from themes import (
+    GOOGLE_FONTS,
+    get_hero_motif,
+    get_palette,
+    get_theme,
+    trade_icon_svg,
+    ui_icon_svg,
+)
 
-# Sections "pourquoi nous choisir" : identiques pour tous les metiers, seul
-# le style visuel change (couleurs/police du theme).
 POURQUOI_NOUS_CHOISIR = [
-    ("\U0001F6E1️", "Assurance decennale", "Tous nos chantiers sont couverts, en toute tranquillite."),
-    ("\U0001F4C4", "Devis gratuit", "Un devis clair et detaille, sans engagement, sous 48h."),
-    ("⏱️", "Reactivite", "Intervention rapide, y compris en urgence."),
+    ("shield", "Assurance decennale", "Tous nos chantiers sont couverts, en toute tranquillite."),
+    ("document", "Devis gratuit", "Un devis clair et detaille, sans engagement, sous 48h."),
+    ("clock", "Reactivite", "Intervention rapide, y compris en urgence."),
 ]
+
+# Blocs CSS du hero : chaque motif definit .hero (fond) et ses pseudo-elements
+# decoratifs, en s'appuyant uniquement sur les variables de couleur -- aucune
+# valeur hexadecimale en dur ici, donc ca marche avec n'importe quelle palette.
+HERO_MOTIF_CSS = {
+    "wave-gradient": """
+.hero { background: linear-gradient(160deg, var(--primary) 0%, var(--primary-dark) 100%); }
+.hero::after {
+  content: ""; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 80% 15%, rgba(255,255,255,0.16), transparent 55%);
+  pointer-events: none;
+}
+""",
+    "gradient-mesh": """
+.hero { background: var(--primary-dark); }
+.hero::before {
+  content: ""; position: absolute; width: 440px; height: 440px; border-radius: 50%;
+  background: var(--accent); filter: blur(100px); opacity: 0.5; top: -140px; left: -100px; pointer-events: none;
+}
+.hero::after {
+  content: ""; position: absolute; width: 380px; height: 380px; border-radius: 50%;
+  background: var(--secondary); filter: blur(110px); opacity: 0.4; bottom: -160px; right: -80px; pointer-events: none;
+}
+""",
+    "diagonal-stripes": """
+.hero {
+  background-color: var(--primary);
+  background-image: repeating-linear-gradient(115deg, transparent 0px 40px, rgba(255,255,255,0.06) 40px 80px);
+}
+.hero::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.35) 100%); pointer-events: none;
+}
+""",
+    "dot-grid": """
+.hero {
+  background-color: var(--primary);
+  background-image: radial-gradient(rgba(255,255,255,0.18) 1.6px, transparent 1.6px);
+  background-size: 22px 22px;
+}
+.hero::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent 30%, var(--primary-dark) 130%); opacity: 0.6; pointer-events: none;
+}
+""",
+    "brick-rows": """
+.hero { background: repeating-linear-gradient(0deg, var(--primary) 0px 38px, var(--primary-dark) 38px 42px); }
+.hero::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.22), transparent 45%); pointer-events: none;
+}
+""",
+}
 
 CSS_TEMPLATE = """
 :root {
@@ -43,6 +112,7 @@ CSS_TEMPLATE = """
   --text: __TEXT__;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
 body {
   font-family: __FONT__;
   color: var(--text);
@@ -50,157 +120,141 @@ body {
   line-height: 1.6;
 }
 a { color: inherit; }
-.container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+.icon { display: inline-block; vertical-align: middle; flex-shrink: 0; }
+.container { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
 
+/* ---------- Header ---------- */
 header.site-header {
-  position: sticky; top: 0; z-index: 10;
-  background: var(--primary);
+  position: sticky; top: 0; z-index: 20;
+  background: var(--primary-dark);
   color: #fff;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+  transition: box-shadow 0.2s ease;
 }
+header.site-header.scrolled { box-shadow: 0 4px 20px rgba(0,0,0,0.25); }
 header.site-header .container {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: center; justify-content: space-between; gap: 20px;
   padding-top: 14px; padding-bottom: 14px;
 }
-.logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.25rem; }
-.logo .icon { font-size: 1.6rem; }
+.logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.2rem; white-space: nowrap; }
+.logo .icon { color: var(--secondary); }
+nav.main-nav { display: flex; gap: 26px; }
+nav.main-nav a { font-size: 0.92rem; font-weight: 600; opacity: 0.88; text-decoration: none; }
+nav.main-nav a:hover { opacity: 1; }
+.header-actions { display: flex; align-items: center; gap: 12px; }
 .header-phone {
-  background: var(--secondary);
-  color: var(--primary-dark);
-  padding: 8px 18px;
-  border-radius: 999px;
-  font-weight: 600;
-  text-decoration: none;
+  display: flex; align-items: center; gap: 6px;
+  color: #fff; text-decoration: none; font-weight: 600; font-size: 0.92rem;
   white-space: nowrap;
 }
-
-.hero {
-  __HERO_BACKGROUND__
-  color: __HERO_TEXT_COLOR__;
-  padding: 80px 0 70px;
-  text-align: center;
+.btn-header-cta {
+  background: var(--accent); color: #fff; padding: 9px 18px; border-radius: 999px;
+  font-weight: 700; font-size: 0.9rem; text-decoration: none; white-space: nowrap;
 }
-.hero .icon-large { font-size: 4rem; display: block; margin-bottom: 12px; }
-.hero h1 { font-size: 2.4rem; margin-bottom: 14px; }
-.hero p.tagline { font-size: 1.2rem; opacity: 0.92; max-width: 640px; margin: 0 auto 10px; }
-.hero p.zone { font-size: 1rem; opacity: 0.85; margin-bottom: 28px; }
+
+/* ---------- Hero ---------- */
+.hero { position: relative; overflow: hidden; padding: 90px 0 76px; text-align: center; color: #fff; }
+.hero .container { position: relative; z-index: 1; }
+.hero-icon-badge {
+  width: 74px; height: 74px; border-radius: 50%; margin: 0 auto 22px;
+  background: rgba(255,255,255,0.14); display: flex; align-items: center; justify-content: center;
+}
+.hero-icon-badge .icon { color: #fff; }
+.hero h1 { font-size: 2.5rem; margin-bottom: 14px; letter-spacing: -0.02em; }
+.hero p.tagline { font-size: 1.2rem; opacity: 0.94; max-width: 640px; margin: 0 auto 10px; }
+.hero p.zone { font-size: 1rem; opacity: 0.82; margin-bottom: 30px; }
+.hero-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
 .btn-cta {
-  display: inline-block;
-  background: var(--accent);
-  color: #fff;
-  padding: 14px 32px;
-  border-radius: 999px;
-  font-weight: 700;
-  text-decoration: none;
-  font-size: 1.05rem;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.2);
-  transition: transform 0.15s ease;
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--accent); color: #fff; padding: 14px 30px; border-radius: 999px;
+  font-weight: 700; text-decoration: none; font-size: 1.02rem;
+  box-shadow: 0 10px 26px rgba(0,0,0,0.22); transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
-.btn-cta:hover { transform: translateY(-2px); }
+.btn-cta:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(0,0,0,0.28); }
+.btn-ghost {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,0.08); color: #fff; padding: 14px 26px; border-radius: 999px;
+  font-weight: 700; text-decoration: none; font-size: 1.02rem; border: 1.5px solid rgba(255,255,255,0.5);
+  transition: background 0.15s ease;
+}
+.btn-ghost:hover { background: rgba(255,255,255,0.18); }
+.palette-swatches { display: flex; gap: 8px; justify-content: center; margin: 0 0 26px; }
+.palette-swatches span { width: 18px; height: 18px; border-radius: 50%; display: inline-block; border: 2px solid rgba(255,255,255,0.6); }
 
-section { padding: 64px 0; }
-section h2 {
-  text-align: center;
-  font-size: 1.9rem;
-  margin-bottom: 40px;
-  color: var(--primary-dark);
+/* ---------- Stats (optionnel, uniquement si donnees reelles fournies) ---------- */
+.stats-bar { background: var(--background); border-bottom: 1px solid rgba(0,0,0,0.06); }
+.stats-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 20px;
+  padding: 34px 0; text-align: center;
 }
+.stats-grid .stat-value { font-size: 1.9rem; font-weight: 800; color: var(--primary-dark); }
+.stats-grid .stat-label { font-size: 0.88rem; opacity: 0.75; }
+
+/* ---------- Sections generiques ---------- */
+section { padding: 68px 0; }
+section h2 { text-align: center; font-size: 1.9rem; margin-bottom: 44px; color: var(--primary-dark); letter-spacing: -0.01em; }
 
 .services-grid, .pourquoi-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 24px;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 22px;
 }
 .card {
-  background: #fff;
-  border: 1px solid rgba(0,0,0,0.06);
-  border-left: 4px solid var(--primary);
-  border-radius: 10px;
-  padding: 22px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  background: #fff; border-radius: 16px; padding: 26px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  opacity: 0; transform: translateY(14px);
+  transition: opacity 0.5s ease, transform 0.5s ease, box-shadow 0.2s ease, translate 0.2s ease;
+}
+.card.in-view { opacity: 1; transform: translateY(0); }
+.card:hover { box-shadow: 0 10px 26px rgba(0,0,0,0.09); transform: translateY(-3px); }
+.card.in-view:hover { transform: translateY(-3px); }
+.icon-badge {
+  width: 46px; height: 46px; border-radius: 50%; margin-bottom: 14px;
+  display: flex; align-items: center; justify-content: center;
+  background: color-mix(in srgb, var(--accent) 16%, white);
+  color: var(--accent);
 }
 .card h3 { font-size: 1.05rem; margin-bottom: 6px; color: var(--primary-dark); }
-.card .emoji { font-size: 1.8rem; display: block; margin-bottom: 10px; }
+.card p { font-size: 0.92rem; opacity: 0.8; }
 
-section.pourquoi { background: var(--secondary); background-opacity: 0.15; }
+section.pourquoi { background: color-mix(in srgb, var(--background) 55%, white); }
 .pourquoi-card { text-align: center; }
-.pourquoi-card .emoji { font-size: 2.2rem; display: block; margin-bottom: 10px; }
-.pourquoi-card h3 { color: var(--primary-dark); margin-bottom: 6px; }
+.pourquoi-card .icon-badge { margin-left: auto; margin-right: auto; }
 
+/* ---------- Devis ---------- */
 section.devis { background: #fff; }
 .devis-box {
-  max-width: 560px; margin: 0 auto;
-  background: var(--background);
-  border-radius: 14px;
-  padding: 32px;
-  border: 1px solid rgba(0,0,0,0.06);
+  max-width: 580px; margin: 0 auto; background: var(--background);
+  border-radius: 18px; padding: 36px; border: 1px solid rgba(0,0,0,0.06);
 }
 .devis-box label { display: block; font-weight: 600; margin: 14px 0 6px; font-size: 0.92rem; }
 .devis-box input, .devis-box textarea {
-  width: 100%;
-  padding: 11px 14px;
-  border-radius: 8px;
-  border: 1px solid rgba(0,0,0,0.15);
-  font-family: inherit;
-  font-size: 0.98rem;
+  width: 100%; padding: 12px 14px; border-radius: 10px; border: 1.5px solid rgba(0,0,0,0.14);
+  font-family: inherit; font-size: 0.98rem; background: #fff; transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.devis-box input:focus, .devis-box textarea:focus {
+  outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 .devis-box textarea { min-height: 100px; resize: vertical; }
 .devis-box button {
-  margin-top: 22px;
-  width: 100%;
-  padding: 14px;
-  border: none;
-  border-radius: 999px;
-  background: var(--primary);
-  color: #fff;
-  font-weight: 700;
-  font-size: 1.02rem;
-  cursor: pointer;
+  margin-top: 24px; width: 100%; padding: 15px; border: none; border-radius: 999px;
+  background: var(--primary); color: #fff; font-weight: 700; font-size: 1.03rem; cursor: pointer;
+  transition: opacity 0.15s ease;
 }
 .devis-box button:disabled { opacity: 0.6; cursor: not-allowed; }
-.form-message { margin-top: 16px; padding: 12px 14px; border-radius: 8px; font-size: 0.95rem; display: none; }
+.form-message { margin-top: 16px; padding: 12px 14px; border-radius: 10px; font-size: 0.95rem; display: none; }
 .form-message.success { display: block; background: #e7f7ee; color: #1e7e42; }
 .form-message.error { display: block; background: #fdeaea; color: #b02a2a; }
 
-footer.site-footer {
-  background: var(--primary-dark);
-  color: rgba(255,255,255,0.85);
-  padding: 32px 0;
-  font-size: 0.88rem;
-  text-align: center;
-}
-footer.site-footer p { margin: 4px 0; }
+/* ---------- Footer ---------- */
+footer.site-footer { background: var(--primary-dark); color: rgba(255,255,255,0.82); padding: 44px 0 24px; font-size: 0.88rem; }
+.footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px; margin-bottom: 24px; }
+.footer-grid h4 { color: #fff; font-size: 0.92rem; margin-bottom: 10px; }
+.footer-grid p { margin: 3px 0; }
+.footer-bottom { text-align: center; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.12); opacity: 0.7; }
 
-@media (max-width: 640px) {
-  .hero h1 { font-size: 1.8rem; }
-  header.site-header .container { flex-direction: column; gap: 10px; }
+@media (max-width: 760px) {
+  nav.main-nav { display: none; }
+  .hero h1 { font-size: 1.9rem; }
 }
 """
-
-HERO_BACKGROUNDS = {
-    "wave": (
-        "background: linear-gradient(160deg, var(--primary) 0%, var(--primary-dark) 100%);",
-        "#fff",
-    ),
-    "bolt": (
-        "background: repeating-linear-gradient(115deg, var(--primary) 0px, var(--primary) 40px, "
-        "#111 40px, #111 80px); background-color: var(--primary);",
-        "var(--secondary)",
-    ),
-    "brick": (
-        "background: repeating-linear-gradient(0deg, var(--primary) 0px, var(--primary) 38px, "
-        "var(--primary-dark) 38px, var(--primary-dark) 42px);",
-        "#fff",
-    ),
-    "palette": (
-        "background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);",
-        "#fff",
-    ),
-    "plain": (
-        "background: linear-gradient(160deg, var(--primary) 0%, var(--primary-dark) 100%);",
-        "#fff",
-    ),
-}
 
 HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="fr">
@@ -216,22 +270,36 @@ __CSS__
 </head>
 <body>
 
-<header class="site-header">
+<header class="site-header" id="site-header">
   <div class="container">
-    <div class="logo"><span class="icon">__ICON__</span> __NOM_ENTREPRISE__</div>
-    <a class="header-phone" href="tel:__TELEPHONE_HREF__">\U0001F4DE __TELEPHONE__</a>
+    <div class="logo">__ICON_SMALL__ __NOM_ENTREPRISE__</div>
+    <nav class="main-nav">
+      <a href="#services">Prestations</a>
+      <a href="#pourquoi">Pourquoi nous</a>
+      <a href="#devis">Devis gratuit</a>
+    </nav>
+    <div class="header-actions">
+      <a class="header-phone" href="tel:__TELEPHONE_HREF__">__ICON_PHONE__ __TELEPHONE__</a>
+      <a class="btn-header-cta" href="#devis">Devis gratuit</a>
+    </div>
   </div>
 </header>
 
 <section class="hero">
   <div class="container">
-    <span class="icon-large">__ICON__</span>
+    <div class="hero-icon-badge">__ICON_HERO__</div>
     <h1>__NOM_ENTREPRISE__</h1>
     <p class="tagline">__TAGLINE__</p>
     <p class="zone">Intervention a __VILLE__ (__CODE_POSTAL__) et dans les environs</p>
-    <a class="btn-cta" href="#devis">Demander un devis gratuit</a>
+    __PALETTE_SWATCHES__
+    <div class="hero-actions">
+      <a class="btn-cta" href="#devis">Demander un devis gratuit</a>
+      <a class="btn-ghost" href="tel:__TELEPHONE_HREF__">__ICON_PHONE__ Appeler maintenant</a>
+    </div>
   </div>
 </section>
+
+__STATS_SECTION__
 
 <section id="services">
   <div class="container">
@@ -242,7 +310,7 @@ __CSS__
   </div>
 </section>
 
-<section class="pourquoi">
+<section class="pourquoi" id="pourquoi">
   <div class="container">
     <h2>Pourquoi nous choisir</h2>
     <div class="pourquoi-grid">
@@ -277,9 +345,19 @@ __CSS__
 
 <footer class="site-footer">
   <div class="container">
-    <p>__NOM_ENTREPRISE__ &mdash; __ADRESSE_LIGNE__</p>
-    <p>SIRET __SIRET__ &mdash; Assurance decennale : __ASSURANCE_DECENNALE__</p>
-    <p>&copy; __ANNEE__ __NOM_ENTREPRISE__. Tous droits reserves.</p>
+    <div class="footer-grid">
+      <div>
+        <h4>__NOM_ENTREPRISE__</h4>
+        <p>__ADRESSE_LIGNE__</p>
+        <p>Tel : __TELEPHONE__</p>
+      </div>
+      <div>
+        <h4>Informations legales</h4>
+        <p>SIRET __SIRET__</p>
+        <p>Assurance decennale : __ASSURANCE_DECENNALE__</p>
+      </div>
+    </div>
+    <div class="footer-bottom">&copy; __ANNEE__ __NOM_ENTREPRISE__. Tous droits reserves.</div>
   </div>
 </footer>
 
@@ -327,6 +405,22 @@ __CSS__
         submitBtn.textContent = "Envoyer ma demande";
       });
   });
+
+  var header = document.getElementById("site-header");
+  window.addEventListener("scroll", function () {
+    header.classList.toggle("scrolled", window.scrollY > 10);
+  });
+
+  if ("IntersectionObserver" in window) {
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) { entry.target.classList.add("in-view"); }
+      });
+    }, { threshold: 0.15 });
+    document.querySelectorAll(".card").forEach(function (el) { observer.observe(el); });
+  } else {
+    document.querySelectorAll(".card").forEach(function (el) { el.classList.add("in-view"); });
+  }
 })();
 </script>
 
@@ -336,14 +430,35 @@ __CSS__
 
 
 def _service_card(service: str) -> str:
-    return f'<div class="card"><span class="emoji">✓</span><h3>{service}</h3></div>'
-
-
-def _pourquoi_card(emoji: str, title: str, text: str) -> str:
     return (
-        f'<div class="card pourquoi-card"><span class="emoji">{emoji}</span>'
+        f'<div class="card"><div class="icon-badge">{ui_icon_svg("check", size=20)}</div>'
+        f"<h3>{service}</h3></div>"
+    )
+
+
+def _pourquoi_card(icon_name: str, title: str, text: str) -> str:
+    return (
+        f'<div class="card pourquoi-card"><div class="icon-badge">{ui_icon_svg(icon_name, size=22)}</div>'
         f"<h3>{title}</h3><p>{text}</p></div>"
     )
+
+
+def _stats_section(stats: list) -> str:
+    if not stats:
+        return ""
+    items = "\n      ".join(
+        f'<div><div class="stat-value">{s["valeur"]}</div><div class="stat-label">{s["label"]}</div></div>'
+        for s in stats
+    )
+    return f'<section class="stats-bar"><div class="container stats-grid">\n      {items}\n    </div></section>'
+
+
+def _palette_swatches(palette: dict) -> str:
+    colors = palette.get("palette_colors")
+    if not colors:
+        return ""
+    spans = "".join(f'<span style="background:{c}"></span>' for c in colors)
+    return f'<div class="palette-swatches">{spans}</div>'
 
 
 def generate_site(artisan: dict, api_base_url: str, output_path: str | None = None) -> str:
@@ -354,9 +469,10 @@ def generate_site(artisan: dict, api_base_url: str, output_path: str | None = No
 
     metier = artisan.get("metier", "general")
     theme = get_theme(metier)
+    palette = get_palette(metier, artisan)
+    motif = get_hero_motif(metier, artisan)
 
     services = artisan.get("services") or theme["services"]
-    hero_bg, hero_text_color = HERO_BACKGROUNDS.get(theme["hero_style"], HERO_BACKGROUNDS["plain"])
 
     google_font = GOOGLE_FONTS.get(theme["font"])
     font_link = ""
@@ -367,18 +483,20 @@ def generate_site(artisan: dict, api_base_url: str, output_path: str | None = No
         )
 
     css = CSS_TEMPLATE
-    css = css.replace("__PRIMARY__", theme["primary"])
-    css = css.replace("__PRIMARY_DARK__", theme["primary_dark"])
-    css = css.replace("__SECONDARY__", theme["secondary"])
-    css = css.replace("__ACCENT__", theme["accent"])
-    css = css.replace("__BACKGROUND__", theme["background"])
-    css = css.replace("__TEXT__", theme["text"])
+    css = css.replace("__PRIMARY__", palette["primary"])
+    css = css.replace("__PRIMARY_DARK__", palette["primary_dark"])
+    css = css.replace("__SECONDARY__", palette["secondary"])
+    css = css.replace("__ACCENT__", palette["accent"])
+    css = css.replace("__BACKGROUND__", palette["background"])
+    css = css.replace("__TEXT__", palette["text"])
     css = css.replace("__FONT__", theme["font"])
-    css = css.replace("__HERO_BACKGROUND__", hero_bg)
-    css = css.replace("__HERO_TEXT_COLOR__", hero_text_color)
+    # Le bloc .hero{...} generique ci-dessus fixe position/overflow/padding ;
+    # le motif ajoute son propre fond + pseudo-elements par-dessus.
+    css += "\n.hero { position: relative; overflow: hidden; }\n"
+    css += HERO_MOTIF_CSS.get(motif, HERO_MOTIF_CSS["wave-gradient"])
 
     services_cards = "\n      ".join(_service_card(s) for s in services)
-    pourquoi_cards = "\n      ".join(_pourquoi_card(e, t, d) for e, t, d in POURQUOI_NOUS_CHOISIR)
+    pourquoi_cards = "\n      ".join(_pourquoi_card(i, t, d) for i, t, d in POURQUOI_NOUS_CHOISIR)
 
     telephone = artisan.get("telephone") or "Nous contacter"
     telephone_href = "".join(ch for ch in telephone if ch.isdigit() or ch == "+")
@@ -390,12 +508,16 @@ def generate_site(artisan: dict, api_base_url: str, output_path: str | None = No
     html = html.replace("__GOOGLE_FONT_LINK__", font_link)
     html = html.replace("__NOM_ENTREPRISE__", artisan["nom_entreprise"])
     html = html.replace("__METIER_LABEL__", theme["label"])
-    html = html.replace("__ICON__", theme["icon"])
+    html = html.replace("__ICON_SMALL__", trade_icon_svg(metier, size=26))
+    html = html.replace("__ICON_HERO__", trade_icon_svg(metier, size=34))
+    html = html.replace("__ICON_PHONE__", ui_icon_svg("phone", size=16))
     html = html.replace("__TAGLINE__", artisan.get("tagline") or theme["tagline"])
     html = html.replace("__VILLE__", artisan.get("ville") or "")
     html = html.replace("__CODE_POSTAL__", artisan.get("code_postal") or "")
     html = html.replace("__TELEPHONE_HREF__", telephone_href)
     html = html.replace("__TELEPHONE__", telephone)
+    html = html.replace("__PALETTE_SWATCHES__", _palette_swatches(palette))
+    html = html.replace("__STATS_SECTION__", _stats_section(artisan.get("stats")))
     html = html.replace("__SERVICES_CARDS__", services_cards)
     html = html.replace("__POURQUOI_CARDS__", pourquoi_cards)
     html = html.replace("__ADRESSE_LIGNE__", adresse_ligne)

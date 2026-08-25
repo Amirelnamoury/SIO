@@ -34,7 +34,7 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_RIGHT, TA_CENTER
 
-from themes import get_theme
+from themes import get_palette
 
 
 def add_months(d: date, months: int) -> date:
@@ -63,9 +63,11 @@ def _build_lignes(devis: dict) -> list[dict]:
 
 
 def generate_devis_pdf(devis: dict, artisan: dict, output_path: str) -> str:
-    theme = get_theme(artisan.get("metier", "general"))
-    primary = HexColor(theme["primary"])
-    primary_dark = HexColor(theme["primary_dark"])
+    # Meme palette que le site vitrine de cet artisan (choisie de facon stable
+    # a partir de son slug/SIRET), pour que devis et site restent cohérents.
+    palette = get_palette(artisan.get("metier", "general"), artisan)
+    primary = HexColor(palette["primary"])
+    primary_dark = HexColor(palette["primary_dark"])
 
     date_emission = devis.get("date_emission") or date.today()
     if isinstance(date_emission, str):
