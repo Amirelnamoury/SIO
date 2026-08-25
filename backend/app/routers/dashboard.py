@@ -7,7 +7,7 @@ from app.database import get_db
 from app.deps import get_current_artisan
 from app.models import Artisan, Client, ConformiteItem, Devis, Evenement, Facture, Paiement, Tache
 from app.routers.conformite import SEUIL_ALERTE_JOURS, _to_out as conformite_to_out
-from app.routers.devis import JOURS_SEUIL, relance_due, _to_out as devis_to_out
+from app.routers.devis import JOURS_SEUIL_STATUTS, relance_due, _to_out as devis_to_out
 from app.routers.factures import _to_out as facture_to_out
 from app.schemas import DashboardAujourdhui, DashboardCommercial, DashboardFinances, DashboardOut, DashboardPresenceSite
 
@@ -47,10 +47,10 @@ def obtenir_dashboard(
     devis_candidats = (
         db.query(Devis)
         .options(joinedload(Devis.lignes), joinedload(Devis.client))
-        .filter(Devis.artisan_id == artisan.id, Devis.statut.in_(JOURS_SEUIL.keys()))
+        .filter(Devis.artisan_id == artisan.id, Devis.statut.in_(JOURS_SEUIL_STATUTS))
         .all()
     )
-    devis_a_relancer = [devis_to_out(d) for d in devis_candidats if relance_due(d)]
+    devis_a_relancer = [devis_to_out(d) for d in devis_candidats if relance_due(d, artisan)]
 
     factures_ouvertes = (
         db.query(Facture)

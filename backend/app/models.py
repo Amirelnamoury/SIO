@@ -52,6 +52,13 @@ class Artisan(Base):
 
     onboarding_termine = Column(Boolean, default=False)
 
+    # Delais du moteur de relance automatique, configurables par artisan (les
+    # anciennes valeurs fixes 3/7/15 jours et 7 jours deviennent les defauts).
+    relance_devis_j1 = Column(Integer, default=3)
+    relance_devis_j2 = Column(Integer, default=7)
+    relance_devis_j3 = Column(Integer, default=15)
+    relance_facture_jours = Column(Integer, default=7)
+
     stripe_customer_id = Column(String, nullable=True)
     stripe_subscription_id = Column(String, nullable=True)
     subscription_status = Column(String, default="inactive")  # inactive, active, past_due, canceled

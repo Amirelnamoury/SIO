@@ -124,6 +124,9 @@ const Api = {
   relancerFacture: (id) => apiFetch(`/factures/${id}/relancer`, { method: "POST" }),
   ajouterPaiement: (id, payload) => apiFetch(`/factures/${id}/paiements`, { method: "POST", body: payload }),
 
+  // ---------- Notifications ----------
+  listNotifications: () => apiFetch("/notifications"),
+
   // ---------- Tableau de bord & analytics ----------
   dashboard: () => apiFetch("/dashboard"),
   analytics: () => apiFetch("/analytics"),

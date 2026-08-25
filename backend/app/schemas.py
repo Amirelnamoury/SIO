@@ -1,7 +1,7 @@
 from datetime import datetime, date
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr, ConfigDict, field_validator
+from pydantic import BaseModel, EmailStr, ConfigDict, field_validator, model_validator
 
 METIERS_VALIDES = {"plombier", "electricien", "macon", "peintre", "general"}
 CLIENT_STATUTS = {
@@ -71,6 +71,22 @@ class ArtisanUpdate(BaseModel):
     assurance_decennale_nom: Optional[str] = None
     logo_url: Optional[str] = None
     onboarding_termine: Optional[bool] = None
+    relance_devis_j1: Optional[int] = None
+    relance_devis_j2: Optional[int] = None
+    relance_devis_j3: Optional[int] = None
+    relance_facture_jours: Optional[int] = None
+
+    @model_validator(mode="after")
+    def delais_relance_valides(self):
+        valeurs = [self.relance_devis_j1, self.relance_devis_j2, self.relance_devis_j3]
+        if any(v is not None for v in valeurs):
+            if any(v is None for v in valeurs):
+                raise ValueError("Les 3 delais de relance devis doivent etre fournis ensemble")
+            if not (0 < valeurs[0] < valeurs[1] < valeurs[2]):
+                raise ValueError("Les delais de relance devis doivent etre croissants (ex: 3, 7, 15)")
+        if self.relance_facture_jours is not None and self.relance_facture_jours <= 0:
+            raise ValueError("Le delai de relance facture doit etre positif")
+        return self
 
 
 class ArtisanOut(BaseModel):
@@ -93,6 +109,10 @@ class ArtisanOut(BaseModel):
     onboarding_termine: bool
     subscription_status: str
     plan: str
+    relance_devis_j1: int
+    relance_devis_j2: int
+    relance_devis_j3: int
+    relance_facture_jours: int
     created_at: datetime
 
 
@@ -835,3 +855,15 @@ class PrestationOut(BaseModel):
     prix_unitaire_ht: float
     taux_tva: float
     created_at: datetime
+
+
+# ---------- Notifications (centre de notifications) ----------
+
+class NotificationOut(BaseModel):
+    type: str  # devis_relance, facture_relance, conformite
+    id: int
+    titre: str
+    sous_titre: Optional[str] = None
+    urgent: bool
+    date: datetime
+    view: str

@@ -158,6 +158,10 @@
         <svg viewBox="0 0 24 24" class="nav-icon"><path d="M12 3l7 3v5c0 5-3 8.5-7 10-4-1.5-7-5-7-10V6l7-3z"/></svg>
         Entreprise <span id="badge-alertes" class="badge-count badge-alert" hidden>0</span>
       </button>
+      <button type="button" class="nav-link" data-view="notifications">
+        <svg viewBox="0 0 24 24" class="nav-icon"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>
+        Notifications <span id="badge-notifications" class="badge-count badge-alert" hidden>0</span>
+      </button>
     </nav>
     <div class="sidebar-footer">
       <button type="button" id="btn-profil" class="btn-ghost-small">Mon profil</button>
@@ -348,6 +352,23 @@
         </form>
       </div>
 
+      <div class="form-box" id="automatisation-form-box" style="margin-top:24px;">
+        <h3>Automatisation des relances</h3>
+        <p class="section-hint">Delais avant qu'une relance ne devienne "a faire" dans vos notifications.</p>
+        <form id="automatisation-form">
+          <div class="form-grid">
+            <div><label for="auto-devis-j1">Devis : 1ere relance apres (jours)</label><input type="number" min="1" id="auto-devis-j1" required></div>
+            <div><label for="auto-devis-j2">Devis : 2e relance apres (jours)</label><input type="number" min="1" id="auto-devis-j2" required></div>
+            <div><label for="auto-devis-j3">Devis : 3e relance apres (jours)</label><input type="number" min="1" id="auto-devis-j3" required></div>
+            <div><label for="auto-facture-jours">Facture impayee : relancer tous les (jours)</label><input type="number" min="1" id="auto-facture-jours" required></div>
+          </div>
+          <p class="field-error" id="automatisation-form-error" hidden></p>
+          <div class="form-actions">
+            <button type="submit" class="btn-sm btn-sm-primary">Enregistrer</button>
+          </div>
+        </form>
+      </div>
+
       <div class="view-header" style="margin-top:36px;">
         <h2 style="font-size:1.15rem;">Catalogue de prestations</h2>
         <button type="button" class="btn-primary" data-action="show-prestation-form">+ Nouvelle prestation</button>
@@ -368,6 +389,13 @@
       <div id="conformite-form-container" hidden></div>
 
       <div id="conformite-list" class="list"></div>
+    </section>
+
+    <!-- ---------- Section Notifications ---------- -->
+    <section id="view-notifications" class="view" hidden>
+      <div class="view-header"><h2>Notifications</h2></div>
+      <p class="section-hint">Devis a relancer, factures impayees et echeances de conformite, regroupes ici.</p>
+      <div id="notifications-list" class="list"></div>
     </section>
 
   </main>

@@ -40,10 +40,10 @@ def _to_out(facture: Facture) -> FactureOut:
     )
 
 
-def relance_facture_due(facture: Facture) -> bool:
+def relance_facture_due(facture: Facture, artisan: Artisan) -> bool:
     """Une facture merite une relance si elle est en retard de paiement,
-    et soit jamais relancee, soit relancee il y a 7 jours ou plus (rythme
-    hebdomadaire tant que l'impaye n'est pas regularise)."""
+    et soit jamais relancee, soit relancee il y a artisan.relance_facture_jours
+    jours ou plus (rythme configurable tant que l'impaye n'est pas regularise)."""
     if not facture.est_en_retard:
         return False
     if facture.date_derniere_relance is None:
@@ -52,7 +52,7 @@ def relance_facture_due(facture: Facture) -> bool:
     now = datetime.now(timezone.utc)
     if derniere_relance.tzinfo is None:
         derniere_relance = derniere_relance.replace(tzinfo=timezone.utc)
-    return (now - derniere_relance).days >= 7
+    return (now - derniere_relance).days >= artisan.relance_facture_jours
 
 
 def _generer_numero(db: Session, artisan: Artisan) -> str:
@@ -114,7 +114,7 @@ def factures_a_relancer(
     for f in factures:
         _recalculer_statut(f)
     db.commit()
-    return [_to_out(f) for f in factures if relance_facture_due(f)]
+    return [_to_out(f) for f in factures if relance_facture_due(f, artisan)]
 
 
 @router.post("/{facture_id}/relancer", response_model=FactureOut)

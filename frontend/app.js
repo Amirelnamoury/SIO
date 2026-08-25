@@ -404,6 +404,7 @@ function switchView(view) {
   if (view === "planning") loadPlanning();
   if (view === "taches") loadTaches();
   if (view === "documents") loadDocuments();
+  if (view === "notifications") loadNotifications();
   if (view === "statistiques") loadStatistiques();
   if (view === "entreprise") {
     loadEntrepriseForm();
@@ -416,7 +417,9 @@ async function refreshBadges() {
   // Les deux compteurs sont independants : la conformite est une fonction payante
   // (402 si l'abonnement n'est pas actif), on ne veut pas que ca empeche le badge
   // des relances (gratuit) de s'afficher. D'ou Promise.allSettled plutot que Promise.all.
-  const [relancerResult, alertesResult] = await Promise.allSettled([Api.devisARelancer(), Api.conformiteAlertes()]);
+  const [relancerResult, alertesResult, notificationsResult] = await Promise.allSettled([
+    Api.devisARelancer(), Api.conformiteAlertes(), Api.listNotifications(),
+  ]);
 
   const badgeRelances = document.getElementById("badge-relances");
   if (relancerResult.status === "fulfilled") {
@@ -435,6 +438,15 @@ async function refreshBadges() {
   } else {
     // 402 si pas abonne : pas d'alerte affichee, c'est attendu.
     badgeAlertes.hidden = true;
+  }
+
+  const badgeNotifications = document.getElementById("badge-notifications");
+  if (notificationsResult.status === "fulfilled") {
+    badgeNotifications.textContent = notificationsResult.value.length;
+    badgeNotifications.hidden = notificationsResult.value.length === 0;
+  } else {
+    badgeNotifications.hidden = true;
+    console.warn("Impossible de charger les notifications :", notificationsResult.reason?.message);
   }
 }
 
@@ -480,6 +492,11 @@ function loadEntrepriseForm() {
   document.getElementById("ent-adresse").value = currentArtisan.adresse || "";
   document.getElementById("ent-siret").value = currentArtisan.siret || "";
   document.getElementById("ent-assurance").value = currentArtisan.assurance_decennale_nom || "";
+
+  document.getElementById("auto-devis-j1").value = currentArtisan.relance_devis_j1;
+  document.getElementById("auto-devis-j2").value = currentArtisan.relance_devis_j2;
+  document.getElementById("auto-devis-j3").value = currentArtisan.relance_devis_j3;
+  document.getElementById("auto-facture-jours").value = currentArtisan.relance_facture_jours;
 }
 
 function setupEntrepriseForm() {
@@ -500,6 +517,31 @@ function setupEntrepriseForm() {
         assurance_decennale_nom: emptyToNull(document.getElementById("ent-assurance").value),
       });
       showToast("Informations enregistrees.");
+    } catch (err) {
+      errorBox.hidden = false;
+      errorBox.textContent = err.message;
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
+}
+
+function setupAutomatisationForm() {
+  document.getElementById("automatisation-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const errorBox = document.getElementById("automatisation-form-error");
+    errorBox.hidden = true;
+    const submitBtn = e.target.querySelector("button[type=submit]");
+    submitBtn.disabled = true;
+    try {
+      currentArtisan = await Api.updateMe({
+        relance_devis_j1: parseInt(document.getElementById("auto-devis-j1").value, 10),
+        relance_devis_j2: parseInt(document.getElementById("auto-devis-j2").value, 10),
+        relance_devis_j3: parseInt(document.getElementById("auto-devis-j3").value, 10),
+        relance_facture_jours: parseInt(document.getElementById("auto-facture-jours").value, 10),
+      });
+      showToast("Delais de relance enregistres.");
+      refreshBadges();
     } catch (err) {
       errorBox.hidden = false;
       errorBox.textContent = err.message;
@@ -661,6 +703,50 @@ async function loadStatistiques() {
   } catch (err) {
     container.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
   }
+}
+
+// ===================== Notifications =====================
+const NOTIFICATION_TYPE_LABELS = {
+  devis_relance: "Devis", facture_relance: "Facture", conformite: "Conformite",
+};
+
+async function loadNotifications() {
+  const list = document.getElementById("notifications-list");
+  list.innerHTML = skeletonCards();
+  try {
+    const notifications = await Api.listNotifications();
+    if (notifications.length === 0) {
+      list.innerHTML = '<div class="empty-state">Rien a signaler. Tout est a jour.</div>';
+      return;
+    }
+    list.innerHTML = notifications.map(renderNotificationCard).join("");
+  } catch (err) {
+    list.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function renderNotificationCard(n) {
+  return `
+  <div class="item-card ${n.urgent ? "is-due" : ""}">
+    <div class="item-card-top">
+      <div>
+        <div class="item-title">${escapeHtml(n.titre)}</div>
+        ${n.sous_titre ? `<div class="item-sub">${escapeHtml(n.sous_titre)}</div>` : ""}
+      </div>
+      <span class="badge ${n.urgent ? "badge-red" : "badge-gray"}">${NOTIFICATION_TYPE_LABELS[n.type] || n.type}</span>
+    </div>
+    <div class="item-actions">
+      <button type="button" class="btn-sm btn-sm-primary" data-action="voir-notification" data-view="${n.view}">Voir</button>
+    </div>
+  </div>`;
+}
+
+function setupNotificationsView() {
+  document.getElementById("notifications-list").addEventListener("click", (e) => {
+    const btn = e.target.closest('[data-action="voir-notification"]');
+    if (!btn) return;
+    switchView(btn.dataset.view);
+  });
 }
 
 // ===================== Recherche globale (Ctrl+K) =====================
@@ -2526,6 +2612,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupGlobalSearch();
   setupClientsView();
   setupEntrepriseForm();
+  setupAutomatisationForm();
   setupPrestationsView();
   setupDevisView();
   setupFacturesView();
@@ -2533,6 +2620,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupPlanningView();
   setupTachesView();
   setupDocumentsView();
+  setupNotificationsView();
   setupConformiteView();
 
   const toast = document.createElement("div");

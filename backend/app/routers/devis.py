@@ -20,14 +20,24 @@ router = APIRouter(prefix="/devis", tags=["devis"])
 # Cycle de relance : depuis quel statut, et combien de jours apres l'envoi
 # la relance suivante devient due. Une fois "relance_j15" atteint, il n'y a
 # plus de relance automatique : l'artisan doit marquer signe/perdu a la main.
+# Les statuts eligibles a une relance sont fixes ; les delais (j1/j2/j3) sont
+# configurables par artisan (voir Artisan.relance_devis_j1/j2/j3).
 STATUT_SUIVANT = {"envoye": "relance_j3", "consulte": "relance_j3", "relance_j3": "relance_j7", "relance_j7": "relance_j15"}
-JOURS_SEUIL = {"envoye": 3, "consulte": 3, "relance_j3": 7, "relance_j7": 15}
+JOURS_SEUIL_STATUTS = ("envoye", "consulte", "relance_j3", "relance_j7")
 
 
-def relance_due(devis: Devis) -> bool:
-    if devis.statut not in JOURS_SEUIL or devis.date_envoi is None:
+def _jours_seuil(artisan: Artisan) -> dict:
+    return {
+        "envoye": artisan.relance_devis_j1, "consulte": artisan.relance_devis_j1,
+        "relance_j3": artisan.relance_devis_j2, "relance_j7": artisan.relance_devis_j3,
+    }
+
+
+def relance_due(devis: Devis, artisan: Artisan) -> bool:
+    seuils = _jours_seuil(artisan)
+    if devis.statut not in seuils or devis.date_envoi is None:
         return False
-    echeance = devis.date_envoi + timedelta(days=JOURS_SEUIL[devis.statut])
+    echeance = devis.date_envoi + timedelta(days=seuils[devis.statut])
     now = datetime.now(timezone.utc)
     if echeance.tzinfo is None:
         echeance = echeance.replace(tzinfo=timezone.utc)
@@ -109,10 +119,10 @@ def devis_a_relancer(
     candidats = (
         db.query(Devis)
         .options(joinedload(Devis.lignes), joinedload(Devis.client))
-        .filter(Devis.artisan_id == artisan.id, Devis.statut.in_(JOURS_SEUIL.keys()))
+        .filter(Devis.artisan_id == artisan.id, Devis.statut.in_(JOURS_SEUIL_STATUTS))
         .all()
     )
-    return [_to_out(d) for d in candidats if relance_due(d)]
+    return [_to_out(d) for d in candidats if relance_due(d, artisan)]
 
 
 @router.post("", response_model=DevisOut, status_code=status.HTTP_201_CREATED)
