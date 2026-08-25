@@ -635,11 +635,28 @@ class DashboardFinances(BaseModel):
     paiements_recents: list[PaiementOut] = []
 
 
+class DashboardPresenceSite(BaseModel):
+    statut: str  # non_livre, en_cours, livre
+    url: Optional[str] = None
+    nb_demandes_total: int
+    nb_demandes_30j: int
+
+
 class DashboardOut(BaseModel):
     aujourdhui: DashboardAujourdhui
     commercial: DashboardCommercial
     finances: DashboardFinances
     alertes_conformite: list[ConformiteOut] = []
+    presence_site: DashboardPresenceSite
+
+
+# ---------- Recherche globale ----------
+
+class SearchResult(BaseModel):
+    type: str  # client, devis, facture, chantier
+    id: int
+    label: str
+    sublabel: str = ""
 
 
 # ---------- Analytics ----------

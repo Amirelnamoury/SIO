@@ -9,7 +9,7 @@ from app.models import Artisan, Client, ConformiteItem, Devis, Evenement, Factur
 from app.routers.conformite import SEUIL_ALERTE_JOURS, _to_out as conformite_to_out
 from app.routers.devis import JOURS_SEUIL, relance_due, _to_out as devis_to_out
 from app.routers.factures import _to_out as facture_to_out
-from app.schemas import DashboardAujourdhui, DashboardCommercial, DashboardFinances, DashboardOut
+from app.schemas import DashboardAujourdhui, DashboardCommercial, DashboardFinances, DashboardOut, DashboardPresenceSite
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
@@ -143,7 +143,20 @@ def obtenir_dashboard(
         .all()
     )
 
+    # ---------- Presence en ligne (site vitrine livre par nous, pas de constructeur) ----------
+    nb_demandes_total = db.query(Client).filter(Client.artisan_id == artisan.id, Client.source == "site_vitrine").count()
+    nb_demandes_30j = (
+        db.query(Client)
+        .filter(Client.artisan_id == artisan.id, Client.source == "site_vitrine", Client.created_at >= il_y_a_30j)
+        .count()
+    )
+    presence_site = DashboardPresenceSite(
+        statut=artisan.site_statut, url=artisan.site_url,
+        nb_demandes_total=nb_demandes_total, nb_demandes_30j=nb_demandes_30j,
+    )
+
     return DashboardOut(
         aujourdhui=aujourdhui_out, commercial=commercial_out, finances=finances_out,
         alertes_conformite=[conformite_to_out(i) for i in conformite_items],
+        presence_site=presence_site,
     )

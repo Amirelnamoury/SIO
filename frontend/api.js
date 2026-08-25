@@ -118,6 +118,9 @@ const Api = {
   dashboard: () => apiFetch("/dashboard"),
   analytics: () => apiFetch("/analytics"),
 
+  // ---------- Recherche globale ----------
+  search: (q) => apiFetch(`/search?q=${encodeURIComponent(q)}`),
+
   // ---------- Taches ----------
   listTaches: (statut) => apiFetch("/taches" + (statut ? `?statut=${encodeURIComponent(statut)}` : "")),
   createTache: (payload) => apiFetch("/taches", { method: "POST", body: payload }),

@@ -306,6 +306,94 @@ function setupProfilPanel() {
   });
 }
 
+// ===================== Recherche globale (Ctrl+K) =====================
+const SEARCH_TYPE_META = {
+  client: { label: "Clients & prospects", view: "clients" },
+  devis: { label: "Devis", view: "devis" },
+  facture: { label: "Factures", view: "factures" },
+  chantier: { label: "Chantiers", view: "chantiers" },
+};
+
+let searchDebounceTimer = null;
+
+function openSearch() {
+  const modal = document.getElementById("search-modal");
+  modal.hidden = false;
+  const input = document.getElementById("search-input");
+  input.value = "";
+  document.getElementById("search-results").innerHTML = "";
+  input.focus();
+}
+
+function closeSearch() {
+  document.getElementById("search-modal").hidden = true;
+}
+
+async function runSearch(q) {
+  const resultsBox = document.getElementById("search-results");
+  if (!q || q.trim().length < 2) {
+    resultsBox.innerHTML = '<div class="search-empty">Tapez au moins 2 caracteres...</div>';
+    return;
+  }
+  try {
+    const results = await Api.search(q);
+    if (results.length === 0) {
+      resultsBox.innerHTML = '<div class="search-empty">Aucun resultat.</div>';
+      return;
+    }
+    const parGroupe = {};
+    results.forEach((r) => { (parGroupe[r.type] = parGroupe[r.type] || []).push(r); });
+    resultsBox.innerHTML = Object.keys(parGroupe).map((type) => {
+      const meta = SEARCH_TYPE_META[type] || { label: type, view: type };
+      const items = parGroupe[type].map((r) => `
+        <button type="button" class="search-result-item" data-type="${type}" data-id="${r.id}">
+          <div class="title">${escapeHtml(r.label)}</div>
+          ${r.sublabel ? `<div class="sub">${escapeHtml(r.sublabel)}</div>` : ""}
+        </button>`).join("");
+      return `<div class="search-result-group">${meta.label}</div>${items}`;
+    }).join("");
+  } catch (err) {
+    resultsBox.innerHTML = `<div class="search-empty">Erreur : ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function setupGlobalSearch() {
+  document.getElementById("btn-open-search").addEventListener("click", openSearch);
+
+  document.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+      e.preventDefault();
+      const modal = document.getElementById("search-modal");
+      if (modal.hidden) openSearch(); else closeSearch();
+    } else if (e.key === "Escape") {
+      closeSearch();
+    }
+  });
+
+  document.getElementById("search-modal").addEventListener("click", (e) => {
+    if (e.target.id === "search-modal") closeSearch();
+  });
+
+  document.getElementById("search-input").addEventListener("input", (e) => {
+    clearTimeout(searchDebounceTimer);
+    const q = e.target.value;
+    searchDebounceTimer = setTimeout(() => runSearch(q), 250);
+  });
+
+  document.getElementById("search-results").addEventListener("click", (e) => {
+    const item = e.target.closest(".search-result-item");
+    if (!item) return;
+    const meta = SEARCH_TYPE_META[item.dataset.type];
+    closeSearch();
+    if (meta) {
+      switchView(meta.view);
+      if (item.dataset.type === "client") {
+        setTimeout(() => showTimeline(parseInt(item.dataset.id, 10)), 300);
+      }
+    }
+  });
+}
+
 function setupTabs() {
   document.querySelectorAll(".nav-link").forEach((btn) => {
     btn.addEventListener("click", () => switchView(btn.dataset.view));
@@ -313,6 +401,26 @@ function setupTabs() {
 }
 
 // ===================== Tableau de bord =====================
+const SITE_STATUT_META = {
+  non_livre: { label: "Pas encore livre", badge: "badge-gray" },
+  en_cours: { label: "En cours de fabrication", badge: "badge-orange" },
+  livre: { label: "En ligne", badge: "badge-green" },
+};
+
+function renderPresenceSite(p) {
+  const meta = SITE_STATUT_META[p.statut] || { label: p.statut, badge: "badge-gray" };
+  let rows = `<div class="dash-row"><span>Statut du site</span><span class="badge ${meta.badge}">${meta.label}</span></div>`;
+  if (p.url) {
+    rows += `<div class="dash-row"><span>Adresse</span><a href="${escapeHtml(p.url)}" target="_blank" rel="noopener">${escapeHtml(p.url)}</a></div>`;
+  }
+  rows += `<div class="dash-row"><span>Demandes recues (30 derniers jours)</span><strong>${p.nb_demandes_30j}</strong></div>`;
+  rows += `<div class="dash-row"><span>Demandes recues (total)</span><strong>${p.nb_demandes_total}</strong></div>`;
+  if (p.statut === "non_livre") {
+    rows += `<div class="dash-empty">Votre site vitrine professionnel n'est pas encore livre. C'est nous qui le fabriquons et vous le connectons a votre compte : contactez-nous pour en discuter.</div>`;
+  }
+  return rows;
+}
+
 async function loadDashboard() {
   const container = document.getElementById("dashboard-content");
   container.innerHTML = '<div class="empty-state">Chargement...</div>';
@@ -376,6 +484,10 @@ async function loadDashboard() {
         <h3>Paiements recents</h3>
         ${d.finances.paiements_recents.map((p) => `<div class="dash-row"><span>${fmtDate(p.date_paiement)} · ${p.moyen}</span><strong>${fmtEuro(p.montant)}</strong></div>`).join("")}
       </div>` : ""}
+      <div class="dash-section">
+        <h3>Presence en ligne</h3>
+        ${renderPresenceSite(d.presence_site)}
+      </div>
     `;
   } catch (err) {
     container.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
@@ -1667,6 +1779,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupAuthScreen();
   setupTabs();
   setupProfilPanel();
+  setupGlobalSearch();
   setupClientsView();
   setupDevisView();
   setupFacturesView();

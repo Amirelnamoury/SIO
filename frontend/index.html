@@ -72,10 +72,22 @@
 </div>
 
 <!-- ===================== TABLEAU DE BORD ===================== -->
+<!-- ---------- Recherche globale (Ctrl+K) ---------- -->
+<div id="search-modal" class="search-modal" hidden>
+  <div class="search-modal-box">
+    <input type="text" id="search-input" placeholder="Rechercher un client, un devis, une facture, un chantier..." autocomplete="off">
+    <div id="search-results"></div>
+  </div>
+</div>
+
 <div id="dashboard-screen" class="app-shell" hidden>
 
   <aside class="sidebar">
     <div class="sidebar-logo">Suite Artisan</div>
+    <button type="button" id="btn-open-search" class="sidebar-search-btn">
+      <svg viewBox="0 0 24 24" class="nav-icon"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      Rechercher <span class="kbd-hint">Ctrl K</span>
+    </button>
     <nav class="sidebar-nav">
       <button type="button" class="nav-link active" data-view="dashboard">
         <svg viewBox="0 0 24 24" class="nav-icon"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
