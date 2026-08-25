@@ -1135,7 +1135,7 @@ function setupAvisView() {
 
 // ===================== Notifications =====================
 const NOTIFICATION_TYPE_LABELS = {
-  devis_relance: "Devis", facture_relance: "Facture", conformite: "Conformite",
+  devis_relance: "Devis", facture_relance: "Facture", conformite: "Conformite", message_client: "Message",
 };
 
 async function loadNotifications() {
@@ -1576,7 +1576,28 @@ function clientQuickActionsHtml(client) {
   if (client.email) actions.push(`<a class="btn-sm" href="mailto:${escapeHtml(client.email)}">Email</a>`);
   actions.push(`<button type="button" class="btn-sm btn-sm-primary" data-action="quick-devis" data-client-id="${client.id}">+ Nouveau devis</button>`);
   actions.push(`<button type="button" class="btn-sm" data-action="demander-avis" data-client-id="${client.id}">Demander un avis</button>`);
+  actions.push(`<button type="button" class="btn-sm" data-action="copier-lien-portail" data-client-id="${client.id}">Copier le lien de l'espace client</button>`);
   return `<div class="item-actions" style="margin-bottom:18px;">${actions.join("")}</div>`;
+}
+
+function messagesPanelHtml(messages) {
+  const listHtml = messages.length
+    ? messages.map((m) => `
+      <div class="timeline-entry">
+        <span class="timeline-icon">${m.expediteur === "client" ? "\u{1F4E9}" : "\u{1F4E4}"}</span>
+        <div><div class="timeline-label">${escapeHtml(m.texte)}</div><div class="timeline-date">${fmtDateTime(m.created_at)}</div></div>
+      </div>`).join("")
+    : '<div class="empty-state">Aucun message pour le moment. Le client peut vous ecrire depuis son espace client.</div>';
+  return `
+  <div class="dash-section" style="margin-top:24px;">
+    <h3>Messages</h3>
+    <div id="client-messages-list">${listHtml}</div>
+    <form id="client-message-form" style="margin-top:12px;">
+      <textarea id="client-message-texte" placeholder="Repondre au client..." required></textarea>
+      <p class="field-error" id="client-message-error" hidden></p>
+      <div class="form-actions"><button type="submit" class="btn-sm btn-sm-primary">Envoyer</button></div>
+    </form>
+  </div>`;
 }
 
 function clientResumeHtml(r) {
@@ -1601,7 +1622,9 @@ async function showTimeline(clientId) {
   document.getElementById("panel-timeline").dataset.clientId = clientId;
 
   try {
-    const [entries, resume] = await Promise.all([Api.clientTimeline(clientId), Api.clientResume(clientId)]);
+    const [entries, resume, messages] = await Promise.all([
+      Api.clientTimeline(clientId), Api.clientResume(clientId), Api.listClientMessages(clientId).catch(() => []),
+    ]);
     const entriesHtml = entries.length === 0
       ? '<div class="empty-state">Aucun evenement pour le moment.</div>'
       : entries.map((e) => `<div class="timeline-entry">
@@ -1609,7 +1632,23 @@ async function showTimeline(clientId) {
           <div><div class="timeline-label">${escapeHtml(e.label)}</div><div class="timeline-date">${fmtDateTime(e.date)}</div></div>
         </div>`).join("");
 
-    content.innerHTML = (client ? clientQuickActionsHtml(client) : "") + clientResumeHtml(resume) + entriesHtml;
+    content.innerHTML = (client ? clientQuickActionsHtml(client) : "") + clientResumeHtml(resume) + entriesHtml + messagesPanelHtml(messages);
+    refreshBadges();
+
+    document.getElementById("client-message-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const errorBox = document.getElementById("client-message-error");
+      errorBox.hidden = true;
+      const texte = document.getElementById("client-message-texte").value.trim();
+      if (!texte) return;
+      try {
+        await Api.envoyerClientMessage(clientId, { texte });
+        showTimeline(clientId);
+      } catch (err) {
+        errorBox.hidden = false;
+        errorBox.textContent = err.message;
+      }
+    });
   } catch (err) {
     content.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
   }
@@ -1675,6 +1714,21 @@ function setupClientsView() {
         try {
           await navigator.clipboard.writeText(url);
           showToast("Lien copie. Envoyez-le a votre client par email ou SMS.");
+        } catch (err) {
+          showToast(url, false);
+        }
+      });
+    }
+
+    const portailBtn = e.target.closest('[data-action="copier-lien-portail"]');
+    if (portailBtn) {
+      const clientId = parseInt(portailBtn.dataset.clientId, 10);
+      await withErrorToast(async () => {
+        const { token_portail } = await Api.genererLienPortail(clientId);
+        const url = `${window.location.origin}/portail-client.html?t=${token_portail}`;
+        try {
+          await navigator.clipboard.writeText(url);
+          showToast("Lien copie. Ce lien remplace l'ancien (si un lien avait deja ete envoye, il ne fonctionne plus).");
         } catch (err) {
           showToast(url, false);
         }

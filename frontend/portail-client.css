@@ -1,0 +1,34 @@
+/* ===================== Portail client (espace limite public) ===================== */
+.portail-section { margin-top: 30px; padding-top: 22px; border-top: 1px solid var(--border); }
+.portail-section h3 { font-size: 1rem; margin: 0 0 12px; }
+
+.portail-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 0; border-bottom: 1px solid var(--border); text-decoration: none; color: inherit;
+}
+.portail-row:last-child { border-bottom: none; }
+.portail-row:hover .portail-row-title { color: var(--accent); }
+.portail-row-title { font-weight: 600; font-size: 0.92rem; }
+.portail-row-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+.portail-chantier { padding: 14px 0; border-bottom: 1px solid var(--border); }
+.portail-chantier:last-child { border-bottom: none; }
+
+.portail-progression { display: flex; align-items: center; gap: 10px; margin: 6px 0 10px; font-size: 0.82rem; font-weight: 700; }
+.portail-progression-bar { flex: 1; height: 6px; border-radius: 999px; background: var(--border); overflow: hidden; }
+.portail-progression-bar div { height: 100%; background: var(--success); border-radius: 999px; }
+
+.portail-photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; margin-top: 8px; }
+.portail-photo-grid img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); }
+
+.portail-message { max-width: 80%; padding: 10px 14px; border-radius: 12px; background: var(--bg); margin-bottom: 8px; font-size: 0.88rem; }
+.portail-message.is-mine { margin-left: auto; background: var(--info-bg); color: var(--info); }
+.portail-message-date { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; }
+
+.portail-message-form { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+.portail-message-form textarea {
+  width: 100%; min-height: 70px; padding: 11px 14px; border-radius: 9px; border: 1.5px solid var(--border);
+  font-size: 0.92rem; font-family: inherit; resize: vertical;
+}
+.portail-message-form textarea:focus { outline: none; border-color: var(--accent); }
+.portail-message-form button { align-self: flex-start; }

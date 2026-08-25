@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
 from app.deps import get_current_artisan
-from app.models import Artisan, ConformiteItem, Devis, Facture
+from app.models import Artisan, ConformiteItem, Devis, Facture, Message
 from app.routers.conformite import SEUIL_ALERTE_JOURS
 from app.routers.devis import JOURS_SEUIL_STATUTS, relance_due
 from app.routers.factures import relance_facture_due
@@ -75,6 +75,22 @@ def lister_notifications(
                 date=datetime.combine(c.date_expiration, datetime.min.time(), tzinfo=timezone.utc),
                 view="entreprise",
             ))
+
+    messages_non_lus = (
+        db.query(Message)
+        .options(joinedload(Message.client))
+        .filter(Message.artisan_id == artisan.id, Message.expediteur == "client", Message.lu.is_(False))
+        .all()
+    )
+    for m in messages_non_lus:
+        notifications.append(NotificationOut(
+            type="message_client", id=m.id,
+            titre=f"Message de {m.client.nom}",
+            sous_titre=m.texte[:80],
+            urgent=False,
+            date=m.created_at,
+            view="prospects",
+        ))
 
     notifications.sort(key=lambda n: (not n.urgent, n.date))
     return notifications

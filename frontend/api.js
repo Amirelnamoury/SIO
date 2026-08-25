@@ -152,6 +152,11 @@ const Api = {
   deleteAvis: (id) => apiFetch(`/avis/${id}`, { method: "DELETE" }),
   demanderAvis: (clientId) => apiFetch(`/clients/${clientId}/demande-avis`, { method: "POST" }),
 
+  // ---------- Portail client ----------
+  genererLienPortail: (clientId) => apiFetch(`/clients/${clientId}/portail/generer`, { method: "POST" }),
+  listClientMessages: (clientId) => apiFetch(`/clients/${clientId}/messages`),
+  envoyerClientMessage: (clientId, payload) => apiFetch(`/clients/${clientId}/messages`, { method: "POST", body: payload }),
+
   // ---------- Automatisation ----------
   automationStatus: () => apiFetch("/automation/status"),
   automationEmails: () => apiFetch("/automation/emails"),

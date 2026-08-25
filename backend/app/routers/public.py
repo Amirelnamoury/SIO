@@ -1,10 +1,13 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
-from app.models import Artisan, Avis, Client, Devis, Facture
+from app.models import Artisan, Avis, Chantier, Client, Devis, Document, Facture, Message
+from app.routers.clients import PORTAIL_VALIDITE_JOURS
 from app.schemas import (
     AvisPublicIn,
     AvisPublicStatutOut,
@@ -12,6 +15,13 @@ from app.schemas import (
     DevisAccepterIn,
     DevisPublicOut,
     FacturePublicOut,
+    MessageCreate,
+    MessageOut,
+    PortailChantierOut,
+    PortailClientOut,
+    PortailDevisOut,
+    PortailFactureOut,
+    PortailPhotoOut,
 )
 
 router = APIRouter(prefix="/pub", tags=["public"])
@@ -176,3 +186,112 @@ def soumettre_avis_public(token: str, payload: AvisPublicIn, db: Session = Depen
     db.add(avis)
     db.commit()
     return {"message": "Avis transmis avec succes"}
+
+
+def _get_client_portail_or_404(db: Session, token: str) -> Client:
+    """Resout et valide un jeton de portail : introuvable OU expire renvoient
+    la meme erreur 404 generique (jamais d'indice permettant de distinguer
+    "jeton inexistant" de "jeton expire" a un attaquant qui devine)."""
+    client = (
+        db.query(Client)
+        .options(joinedload(Client.artisan))
+        .filter(Client.token_portail == token)
+        .first()
+    )
+    if client is None or client.token_portail_genere_le is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lien invalide")
+    genere_le = client.token_portail_genere_le
+    if genere_le.tzinfo is None:
+        genere_le = genere_le.replace(tzinfo=timezone.utc)
+    if datetime.now(timezone.utc) - genere_le > timedelta(days=PORTAIL_VALIDITE_JOURS):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lien invalide")
+    return client
+
+
+@router.get("/portail/{token}", response_model=PortailClientOut)
+def voir_portail_client(token: str, db: Session = Depends(get_db)):
+    """Endpoint PUBLIC : espace limite du client (jamais les donnees d'un
+    autre client, jamais les infos internes de l'artisan - marges, notes,
+    autres prospects...). Tout est filtre explicitement par client_id."""
+    client = _get_client_portail_or_404(db, token)
+
+    devis_list = db.query(Devis).filter(Devis.client_id == client.id).order_by(Devis.created_at.desc()).all()
+    factures_list = (
+        db.query(Facture)
+        .options(joinedload(Facture.lignes), joinedload(Facture.paiements))
+        .filter(Facture.client_id == client.id, Facture.statut != "brouillon")
+        .order_by(Facture.created_at.desc())
+        .all()
+    )
+    chantiers_list = (
+        db.query(Chantier)
+        .options(joinedload(Chantier.taches))
+        .filter(Chantier.client_id == client.id)
+        .order_by(Chantier.created_at.desc())
+        .all()
+    )
+    chantiers_out = []
+    for c in chantiers_list:
+        photos = (
+            db.query(Document)
+            .filter(Document.chantier_id == c.id, Document.type == "photo", Document.chemin_fichier.isnot(None))
+            .order_by(Document.created_at)
+            .all()
+        )
+        chantiers_out.append(PortailChantierOut(
+            titre=c.titre, statut=c.statut, date_debut=c.date_debut, date_fin_prevue=c.date_fin_prevue,
+            progression=c.progression, photos=[PortailPhotoOut(id=p.id, nom=p.nom) for p in photos],
+        ))
+
+    return PortailClientOut(
+        artisan_nom_entreprise=client.artisan.nom_entreprise, artisan_telephone=client.artisan.telephone,
+        artisan_email=client.artisan.email, client_nom=client.nom,
+        devis=[
+            PortailDevisOut(numero=d.numero, titre=d.titre, statut=d.statut, montant_ttc=d.montant_ttc, date_signature=d.date_signature, token=d.token)
+            for d in devis_list
+        ],
+        factures=[
+            PortailFactureOut(
+                numero=f.numero, statut=f.statut, montant_ttc=f.montant_ttc, montant_restant=f.montant_restant,
+                est_en_retard=f.est_en_retard, date_echeance=f.date_echeance, token=f.token,
+            )
+            for f in factures_list
+        ],
+        chantiers=chantiers_out,
+        messages=client.messages,
+    )
+
+
+@router.post("/portail/{token}/messages", response_model=MessageOut, status_code=status.HTTP_201_CREATED)
+def envoyer_message_portail(token: str, payload: MessageCreate, db: Session = Depends(get_db)):
+    """Endpoint PUBLIC : le client envoie un message a l'artisan depuis son
+    portail. Marque non lu jusqu'a ce que l'artisan ouvre le fil (voir
+    GET /clients/{id}/messages cote authentifie)."""
+    client = _get_client_portail_or_404(db, token)
+    if not payload.texte.strip():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Le message ne peut pas etre vide")
+    message = Message(artisan_id=client.artisan_id, client_id=client.id, expediteur="client", texte=payload.texte.strip()[:2000], lu=False)
+    db.add(message)
+    db.commit()
+    db.refresh(message)
+    return message
+
+
+@router.get("/portail/{token}/photos/{document_id}")
+def voir_photo_portail(token: str, document_id: int, db: Session = Depends(get_db)):
+    """Endpoint PUBLIC : sert une photo de chantier, apres avoir verifie
+    qu'elle appartient bien a un chantier de CE client (jamais la photo d'un
+    autre client, meme en devinant un id)."""
+    client = _get_client_portail_or_404(db, token)
+    document = (
+        db.query(Document)
+        .join(Chantier, Document.chantier_id == Chantier.id)
+        .filter(Document.id == document_id, Document.type == "photo", Chantier.client_id == client.id)
+        .first()
+    )
+    if document is None or not document.chemin_fichier:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Photo introuvable")
+    chemin = Path(document.chemin_fichier)
+    if not chemin.is_file():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Photo introuvable")
+    return FileResponse(path=chemin)

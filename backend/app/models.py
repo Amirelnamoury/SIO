@@ -80,6 +80,7 @@ class Artisan(Base):
     prestations = relationship("Prestation", back_populates="artisan", cascade="all, delete-orphan")
     fournisseurs = relationship("Fournisseur", back_populates="artisan", cascade="all, delete-orphan")
     contrats = relationship("Contrat", back_populates="artisan", cascade="all, delete-orphan")
+    messages = relationship("Message", back_populates="artisan", cascade="all, delete-orphan")
 
 
 # Pipeline commercial : de la premiere demande jusqu'a la signature (ou la perte).
@@ -124,6 +125,14 @@ class Client(Base):
     # demande, jamais expose autrement que dans ce lien.
     token_avis = Column(String, unique=True, index=True, nullable=True)
 
+    # Jeton du portail client (espace limite : devis, factures, chantiers,
+    # documents, messages - jamais les donnees d'un autre client). Regenerer
+    # le jeton EST le mecanisme de revocation (l'ancien jeton ne correspond
+    # plus a rien) ; l'expiration se calcule a partir de la date de generation
+    # (voir PORTAIL_VALIDITE_JOURS dans routers/clients.py).
+    token_portail = Column(String, unique=True, index=True, nullable=True)
+    token_portail_genere_le = Column(DateTime(timezone=True), nullable=True)
+
     created_at = Column(DateTime(timezone=True), default=utcnow)
     updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 
@@ -134,6 +143,7 @@ class Client(Base):
     taches = relationship("Tache", back_populates="client")
     avis = relationship("Avis", back_populates="client", cascade="all, delete-orphan")
     contrats = relationship("Contrat", back_populates="client", cascade="all, delete-orphan")
+    messages = relationship("Message", back_populates="client", cascade="all, delete-orphan", order_by="Message.created_at")
 
 
 class Devis(Base):
@@ -716,3 +726,28 @@ class Contrat(Base):
     artisan = relationship("Artisan", back_populates="contrats")
     client = relationship("Client", back_populates="contrats")
     factures = relationship("Facture", back_populates="contrat")
+
+
+EXPEDITEUR_TYPES = ["artisan", "client"]
+
+
+class Message(Base):
+    """Message echange entre l'artisan et un client via le portail client
+    (section 'communication' du cahier des charges). Un message envoye par
+    le client n'est pas lu par defaut ; l'artisan le voit dans son centre de
+    notifications tant qu'il ne l'a pas ouvert."""
+
+    __tablename__ = "messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    artisan_id = Column(Integer, ForeignKey("artisans.id"), nullable=False, index=True)
+    client_id = Column(Integer, ForeignKey("clients.id"), nullable=False, index=True)
+
+    expediteur = Column(String, nullable=False)  # voir EXPEDITEUR_TYPES
+    texte = Column(Text, nullable=False)
+    lu = Column(Boolean, default=False)
+
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+
+    artisan = relationship("Artisan", back_populates="messages")
+    client = relationship("Client", back_populates="messages")

@@ -1124,10 +1124,78 @@ class DemandeAvisOut(BaseModel):
     token_avis: str
 
 
+class PortailTokenOut(BaseModel):
+    token_portail: str
+    genere_le: datetime
+    expire_le: datetime
+
+
 class AvisPublicStatutOut(BaseModel):
     artisan_nom_entreprise: str
     client_nom: str
     deja_soumis: bool
+
+
+# ---------- Messages (communication artisan <-> client via le portail) ----------
+
+class MessageCreate(BaseModel):
+    texte: str
+
+
+class MessageOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    expediteur: str
+    texte: str
+    lu: bool
+    created_at: datetime
+
+
+# ---------- Portail client (espace limite : jamais les donnees d'un autre client) ----------
+
+class PortailDevisOut(BaseModel):
+    numero: Optional[str] = None
+    titre: Optional[str] = None
+    statut: str
+    montant_ttc: float
+    date_signature: Optional[datetime] = None
+    token: Optional[str] = None
+
+
+class PortailFactureOut(BaseModel):
+    numero: str
+    statut: str
+    montant_ttc: float
+    montant_restant: float
+    est_en_retard: bool
+    date_echeance: Optional[date] = None
+    token: Optional[str] = None
+
+
+class PortailPhotoOut(BaseModel):
+    id: int
+    nom: str
+
+
+class PortailChantierOut(BaseModel):
+    titre: str
+    statut: str
+    date_debut: Optional[date] = None
+    date_fin_prevue: Optional[date] = None
+    progression: Optional[int] = None
+    photos: list[PortailPhotoOut] = []
+
+
+class PortailClientOut(BaseModel):
+    artisan_nom_entreprise: str
+    artisan_telephone: Optional[str] = None
+    artisan_email: Optional[str] = None
+    client_nom: str
+    devis: list[PortailDevisOut] = []
+    factures: list[PortailFactureOut] = []
+    chantiers: list[PortailChantierOut] = []
+    messages: list[MessageOut] = []
 
 
 # ---------- Notifications (centre de notifications) ----------

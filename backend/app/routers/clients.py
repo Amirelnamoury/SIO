@@ -1,14 +1,21 @@
-from datetime import timezone
+import secrets
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
 from app.deps import get_current_artisan
-from app.models import Artisan, Client, Devis, EmailLog, Facture, Chantier
-from app.schemas import ClientCreate, ClientOut, ClientResume, ClientUpdate, TimelineEntry
+from app.models import Artisan, Client, Devis, EmailLog, Facture, Chantier, Message
+from app.schemas import ClientCreate, ClientOut, ClientResume, ClientUpdate, MessageCreate, MessageOut, PortailTokenOut, TimelineEntry
 
 router = APIRouter(prefix="/clients", tags=["clients"])
+
+# Duree de validite d'un lien de portail client avant de devoir en regenerer
+# un (voir Client.token_portail_genere_le). Regenerer EST le mecanisme de
+# revocation : un artisan qui souhaite couper l'acces le fait en un clic,
+# sans etat "revoque" separe a gerer.
+PORTAIL_VALIDITE_JOURS = 365
 
 
 def _get_client_or_404(db: Session, artisan: Artisan, client_id: int) -> Client:
@@ -185,5 +192,60 @@ def timeline_client(
     # SQLite ne conserve pas systematiquement l'info de fuseau horaire selon
     # le chemin d'ecriture (defaut ORM vs mise a jour directe) : on normalise
     # avant de trier pour ne jamais comparer un datetime naif a un aware.
+    for m in client.messages:
+        libelle = "Message recu du client" if m.expediteur == "client" else "Message envoye au client"
+        entries.append(TimelineEntry(date=m.created_at, type="message", label=f"{libelle} : {m.texte[:80]}", reference_id=client.id))
+
     entries.sort(key=lambda e: e.date if e.date.tzinfo is not None else e.date.replace(tzinfo=timezone.utc))
     return entries
+
+
+@router.post("/{client_id}/portail/generer", response_model=PortailTokenOut)
+def generer_lien_portail(
+    client_id: int,
+    db: Session = Depends(get_db),
+    artisan: Artisan = Depends(get_current_artisan),
+):
+    """Genere un NOUVEAU jeton de portail (remplace l'ancien, qui devient
+    immediatement invalide - c'est le mecanisme de revocation)."""
+    client = _get_client_or_404(db, artisan, client_id)
+    client.token_portail = secrets.token_urlsafe(32)
+    client.token_portail_genere_le = datetime.now(timezone.utc)
+    db.commit()
+    return PortailTokenOut(
+        token_portail=client.token_portail, genere_le=client.token_portail_genere_le,
+        expire_le=client.token_portail_genere_le + timedelta(days=PORTAIL_VALIDITE_JOURS),
+    )
+
+
+@router.get("/{client_id}/messages", response_model=list[MessageOut])
+def lister_messages(
+    client_id: int,
+    db: Session = Depends(get_db),
+    artisan: Artisan = Depends(get_current_artisan),
+):
+    """Consulter le fil marque les messages du client comme lus (signal de
+    lecture reel, pas un simple compteur decoratif)."""
+    client = _get_client_or_404(db, artisan, client_id)
+    a_marquer = [m for m in client.messages if m.expediteur == "client" and not m.lu]
+    for m in a_marquer:
+        m.lu = True
+    if a_marquer:
+        db.commit()
+    client = _get_client_or_404(db, artisan, client_id)
+    return client.messages
+
+
+@router.post("/{client_id}/messages", response_model=MessageOut, status_code=status.HTTP_201_CREATED)
+def envoyer_message(
+    client_id: int,
+    payload: MessageCreate,
+    db: Session = Depends(get_db),
+    artisan: Artisan = Depends(get_current_artisan),
+):
+    client = _get_client_or_404(db, artisan, client_id)
+    message = Message(artisan_id=artisan.id, client_id=client.id, expediteur="artisan", texte=payload.texte, lu=True)
+    db.add(message)
+    db.commit()
+    db.refresh(message)
+    return message
