@@ -1442,17 +1442,49 @@ function setupDevisView() {
 
 // ===================== Factures =====================
 let currentFactureFilter = "";
+let facturesDueIds = new Set();
+
+function joursRetard(dateEcheance) {
+  if (!dateEcheance) return null;
+  const diff = Math.floor((new Date() - new Date(dateEcheance)) / 86400000);
+  return diff > 0 ? diff : null;
+}
+
+function tresorerieHeaderHtml(factures) {
+  const enCours = factures.filter((f) => !["brouillon", "annulee", "payee"].includes(f.statut));
+  if (enCours.length === 0) return "";
+  const aEncaisser = enCours.reduce((s, f) => s + f.montant_restant, 0);
+  const enRetard = enCours.filter((f) => f.est_en_retard).reduce((s, f) => s + f.montant_restant, 0);
+  return `
+  <div class="dash-grid" style="margin-bottom:20px;">
+    <div class="dash-stat"><div class="value">${fmtEuro(aEncaisser)}</div><div class="label">A encaisser</div></div>
+    <div class="dash-stat"><div class="value" style="${enRetard > 0 ? "color:var(--danger);" : ""}">${fmtEuro(enRetard)}</div><div class="label">Dont en retard</div></div>
+  </div>`;
+}
 
 async function loadFactures() {
   const list = document.getElementById("factures-list");
+  const tresorerie = document.getElementById("factures-tresorerie");
   list.innerHTML = skeletonCards();
   try {
-    const factures = await Api.listFactures(currentFactureFilter);
-    if (factures.length === 0) {
+    const [factures, aRelancer] = await Promise.all([Api.listFactures(), Api.facturesARelancer()]);
+    facturesDueIds = new Set(aRelancer.map((f) => f.id));
+    tresorerie.innerHTML = tresorerieHeaderHtml(factures);
+
+    let affichees = factures;
+    if (currentFactureFilter === "a_encaisser") {
+      affichees = factures
+        .filter((f) => f.montant_restant > 0 && !["brouillon", "annulee"].includes(f.statut))
+        .sort((a, b) => (a.date_echeance || "9999-99-99").localeCompare(b.date_echeance || "9999-99-99"));
+    } else if (currentFactureFilter) {
+      affichees = factures.filter((f) => f.statut === currentFactureFilter);
+    }
+
+    if (affichees.length === 0) {
       list.innerHTML = '<div class="empty-state">Aucune facture pour le moment. Convertissez un devis signe, ou creez-en une directement.</div>';
       return;
     }
-    list.innerHTML = factures.map(renderFactureCard).join("");
+    list.innerHTML = affichees.map(renderFactureCard).join("");
   } catch (err) {
     list.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
   }
@@ -1462,6 +1494,8 @@ const FACTURE_TYPE_LABELS = { standard: "Standard", acompte: "Acompte", situatio
 
 function renderFactureCard(f) {
   const meta = FACTURE_STATUT_META[f.statut] || { label: f.statut, badge: "badge-gray" };
+  const isDue = facturesDueIds.has(f.id);
+  const retard = joursRetard(f.date_echeance);
   let actions = "";
   if (f.statut === "brouillon") {
     actions += `<button type="button" class="btn-sm btn-sm-primary" data-action="envoyer-facture" data-id="${f.id}">Marquer envoyee</button>`;
@@ -1469,12 +1503,19 @@ function renderFactureCard(f) {
   if (f.montant_restant > 0 && f.statut !== "brouillon" && f.statut !== "annulee") {
     actions += `<button type="button" class="btn-sm btn-sm-primary" data-action="ajouter-paiement" data-id="${f.id}">+ Enregistrer un paiement</button>`;
   }
+  if (isDue) {
+    actions += `<button type="button" class="btn-sm btn-sm-primary" data-action="relancer-facture" data-id="${f.id}">Relancer</button>`;
+  }
   actions += `<button type="button" class="btn-sm" data-action="pdf-facture" data-id="${f.id}">Telecharger le PDF</button>`;
   actions += `<button type="button" class="btn-sm btn-sm-danger" data-action="delete-facture" data-id="${f.id}">Supprimer</button>`;
 
   const paiementsHtml = (f.paiements || [])
-    .map((p) => `<div class="item-sub">${fmtDate(p.date_paiement)} · ${fmtEuro(p.montant)} · ${p.moyen}</div>`)
+    .map((p) => `<div class="item-sub">${fmtDate(p.date_paiement)} · ${fmtEuro(p.montant)} · ${p.moyen}${p.reference ? " · Ref : " + escapeHtml(p.reference) : ""}</div>`)
     .join("");
+
+  const relanceTxt = f.nb_relances > 0
+    ? `<div class="item-sub">${f.nb_relances} relance${f.nb_relances > 1 ? "s" : ""}${f.date_derniere_relance ? " · derniere le " + fmtDate(f.date_derniere_relance) : ""}</div>`
+    : "";
 
   return `
   <div class="item-card ${f.est_en_retard ? "is-due" : ""}">
@@ -1488,8 +1529,10 @@ function renderFactureCard(f) {
     <div class="item-meta">
       ${fmtEuro(f.montant_ttc)} TTC · Paye : ${fmtEuro(f.montant_paye)} · Restant : ${fmtEuro(f.montant_restant)}
       ${f.date_echeance ? " · Echeance : " + fmtDate(f.date_echeance) : ""}
+      ${retard !== null ? ` · <span style="color:var(--danger);">${retard} j de retard</span>` : ""}
     </div>
     ${paiementsHtml ? `<div class="item-meta">${paiementsHtml}</div>` : ""}
+    ${relanceTxt}
     <div class="item-actions" id="facture-actions-${f.id}">${actions}</div>
     <div id="paiement-form-${f.id}"></div>
   </div>`;
@@ -1514,6 +1557,7 @@ function showPaiementForm(factureId) {
             <option value="autre">Autre</option>
           </select>
         </div>
+        <div><label for="pay-reference-${factureId}">Reference (optionnel)</label><input type="text" id="pay-reference-${factureId}" placeholder="N° cheque, ref virement..."></div>
       </div>
       <p class="field-error" id="paiement-error-${factureId}" hidden></p>
       <div class="form-actions">
@@ -1631,8 +1675,9 @@ function setupFacturesView() {
       const montant = document.getElementById(`pay-montant-${id}`).value;
       const datePaiement = document.getElementById(`pay-date-${id}`).value;
       const moyen = document.getElementById(`pay-moyen-${id}`).value;
+      const reference = document.getElementById(`pay-reference-${id}`).value;
       try {
-        await Api.ajouterPaiement(id, { montant: parseFloat(montant), date_paiement: datePaiement, moyen });
+        await Api.ajouterPaiement(id, { montant: parseFloat(montant), date_paiement: datePaiement, moyen, reference: emptyToNull(reference) });
         showToast("Paiement enregistre.");
         loadFactures();
       } catch (err) {
@@ -1649,6 +1694,12 @@ function setupFacturesView() {
       });
     } else if (btn.dataset.action === "pdf-facture") {
       await withErrorToast(() => ouvrirPdf(`/factures/${id}/pdf`));
+    } else if (btn.dataset.action === "relancer-facture") {
+      await withErrorToast(async () => {
+        await Api.relancerFacture(id);
+        showToast("Relance enregistree.");
+        loadFactures();
+      });
     }
   });
 }

@@ -115,10 +115,12 @@ const Api = {
 
   // ---------- Factures ----------
   listFactures: (statut) => apiFetch("/factures" + (statut ? `?statut=${encodeURIComponent(statut)}` : "")),
+  facturesARelancer: () => apiFetch("/factures/a-relancer"),
   createFacture: (payload) => apiFetch("/factures", { method: "POST", body: payload }),
   factureDepuisDevis: (devisId, type) => apiFetch(`/factures/depuis-devis/${devisId}?type=${encodeURIComponent(type || "standard")}`, { method: "POST" }),
   updateFacture: (id, payload) => apiFetch(`/factures/${id}`, { method: "PATCH", body: payload }),
   deleteFacture: (id) => apiFetch(`/factures/${id}`, { method: "DELETE" }),
+  relancerFacture: (id) => apiFetch(`/factures/${id}/relancer`, { method: "POST" }),
   ajouterPaiement: (id, payload) => apiFetch(`/factures/${id}/paiements`, { method: "POST", body: payload }),
 
   // ---------- Tableau de bord & analytics ----------

@@ -230,6 +230,9 @@ class Facture(Base):
     date_envoi = Column(DateTime(timezone=True), nullable=True)
     notes = Column(Text, nullable=True)
 
+    date_derniere_relance = Column(DateTime(timezone=True), nullable=True)
+    nb_relances = Column(Integer, default=0)
+
     created_at = Column(DateTime(timezone=True), default=utcnow)
 
     artisan = relationship("Artisan", back_populates="factures")
@@ -290,6 +293,7 @@ class Paiement(Base):
     montant = Column(MONTANT, nullable=False)
     date_paiement = Column(Date, default=date.today)
     moyen = Column(String, default="virement")  # virement, cheque, especes, cb, autre
+    reference = Column(String, nullable=True)  # n° de cheque, reference de virement...
     notes = Column(String, nullable=True)
 
     created_at = Column(DateTime(timezone=True), default=utcnow)

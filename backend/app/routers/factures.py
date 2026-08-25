@@ -33,9 +33,26 @@ def _to_out(facture: Facture) -> FactureOut:
         montant_ht=facture.montant_ht, montant_ttc=facture.montant_ttc, montant_paye=facture.montant_paye,
         montant_restant=facture.montant_restant, est_en_retard=facture.est_en_retard,
         date_emission=facture.date_emission, date_echeance=facture.date_echeance,
-        date_envoi=facture.date_envoi, notes=facture.notes, created_at=facture.created_at,
+        date_envoi=facture.date_envoi, notes=facture.notes,
+        date_derniere_relance=facture.date_derniere_relance, nb_relances=facture.nb_relances,
+        created_at=facture.created_at,
         lignes=facture.lignes, paiements=facture.paiements,
     )
+
+
+def relance_facture_due(facture: Facture) -> bool:
+    """Une facture merite une relance si elle est en retard de paiement,
+    et soit jamais relancee, soit relancee il y a 7 jours ou plus (rythme
+    hebdomadaire tant que l'impaye n'est pas regularise)."""
+    if not facture.est_en_retard:
+        return False
+    if facture.date_derniere_relance is None:
+        return True
+    derniere_relance = facture.date_derniere_relance
+    now = datetime.now(timezone.utc)
+    if derniere_relance.tzinfo is None:
+        derniere_relance = derniere_relance.replace(tzinfo=timezone.utc)
+    return (now - derniere_relance).days >= 7
 
 
 def _generer_numero(db: Session, artisan: Artisan) -> str:
@@ -80,6 +97,41 @@ def lister_factures(
         _recalculer_statut(f)
     db.commit()
     return [_to_out(f) for f in factures]
+
+
+@router.get("/a-relancer", response_model=list[FactureOut])
+def factures_a_relancer(
+    db: Session = Depends(get_db),
+    artisan: Artisan = Depends(get_current_artisan),
+):
+    """Factures impayees dont la prochaine relance est due (voir relance_facture_due)."""
+    factures = (
+        db.query(Facture)
+        .options(joinedload(Facture.lignes), joinedload(Facture.paiements), joinedload(Facture.client))
+        .filter(Facture.artisan_id == artisan.id, Facture.statut.notin_(("brouillon", "annulee", "payee")))
+        .all()
+    )
+    for f in factures:
+        _recalculer_statut(f)
+    db.commit()
+    return [_to_out(f) for f in factures if relance_facture_due(f)]
+
+
+@router.post("/{facture_id}/relancer", response_model=FactureOut)
+def relancer_facture(
+    facture_id: int,
+    db: Session = Depends(get_db),
+    artisan: Artisan = Depends(get_current_artisan),
+):
+    """Enregistre qu'une relance a ete envoyee au client pour cette facture impayee."""
+    facture = _get_facture_or_404(db, artisan, facture_id)
+    if facture.montant_restant <= 0 or facture.statut in ("brouillon", "annulee"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cette facture n'a pas d'impaye a relancer")
+    facture.date_derniere_relance = datetime.now(timezone.utc)
+    facture.nb_relances += 1
+    db.commit()
+    facture = _get_facture_or_404(db, artisan, facture_id)
+    return _to_out(facture)
 
 
 @router.post("", response_model=FactureOut, status_code=status.HTTP_201_CREATED)

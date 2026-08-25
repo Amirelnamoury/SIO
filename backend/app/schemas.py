@@ -413,6 +413,7 @@ class PaiementCreate(BaseModel):
     montant: float
     date_paiement: date
     moyen: str = "virement"
+    reference: Optional[str] = None
     notes: Optional[str] = None
 
     @field_validator("moyen")
@@ -431,6 +432,7 @@ class PaiementOut(BaseModel):
     montant: float
     date_paiement: date
     moyen: str
+    reference: Optional[str] = None
     notes: Optional[str] = None
     created_at: datetime
 
@@ -457,6 +459,8 @@ class FactureOut(BaseModel):
     date_echeance: Optional[date] = None
     date_envoi: Optional[datetime] = None
     notes: Optional[str] = None
+    date_derniere_relance: Optional[datetime] = None
+    nb_relances: int = 0
     created_at: datetime
     lignes: list[LigneFactureOut] = []
     paiements: list[PaiementOut] = []
