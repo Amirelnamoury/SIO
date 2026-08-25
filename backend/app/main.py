@@ -36,6 +36,7 @@ from app.routers import (
     documents,
     factures,
     planning,
+    prestations,
     public,
     search,
     stripe_router,
@@ -73,6 +74,7 @@ app.include_router(conformite.router)
 app.include_router(taches.router)
 app.include_router(planning.router)
 app.include_router(documents.router)
+app.include_router(prestations.router)
 app.include_router(dashboard.router)
 app.include_router(analytics.router)
 app.include_router(search.router)

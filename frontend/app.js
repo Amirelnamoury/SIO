@@ -88,6 +88,18 @@ const CLIENT_STATUT_META = {
   perdu: { label: "Perdu", badge: "badge-gray" },
 };
 
+const CLIENT_SOURCE_LABELS = {
+  manuel: "Ajoute manuellement",
+  site_vitrine: "Site vitrine",
+  google: "Google",
+  recommandation: "Recommandation",
+  telephone: "Telephone",
+  facebook: "Facebook",
+  instagram: "Instagram",
+  ancien_client: "Ancien client",
+  autre: "Autre",
+};
+
 const FACTURE_STATUT_META = {
   brouillon: { label: "Brouillon", badge: "badge-gray" },
   envoyee: { label: "Envoyee", badge: "badge-blue" },
@@ -109,6 +121,20 @@ function clientOptionsHtml(selectedId) {
   return clientsCache
     .map((c) => `<option value="${c.id}" ${selectedId === c.id ? "selected" : ""}>${escapeHtml(c.nom)}</option>`)
     .join("");
+}
+
+// Catalogue de prestations : meme principe, mis en cache pour la recherche
+// rapide (datalist) dans l'editeur de lignes de devis/facture.
+let prestationsCache = [];
+async function ensurePrestationsCache() {
+  prestationsCache = await Api.listPrestations();
+  return prestationsCache;
+}
+
+function prestationsDatalistHtml() {
+  return `<datalist id="prestations-datalist">${prestationsCache
+    .map((p) => `<option value="${escapeHtml(p.description)}"></option>`)
+    .join("")}</datalist>`;
 }
 
 const PHASE_LABELS = { avant: "Avant", pendant: "Pendant", apres: "Apres" };
@@ -380,6 +406,7 @@ function switchView(view) {
   if (view === "statistiques") loadStatistiques();
   if (view === "entreprise") {
     loadEntrepriseForm();
+    loadPrestations();
     loadConformite();
   }
 }
@@ -478,6 +505,117 @@ function setupEntrepriseForm() {
     } finally {
       submitBtn.disabled = false;
     }
+  });
+}
+
+// ===================== Catalogue de prestations =====================
+const PRESTATION_CATEGORIE_DEFAUT = "Sans categorie";
+
+async function loadPrestations() {
+  const list = document.getElementById("prestations-list");
+  list.innerHTML = skeletonCards();
+  try {
+    const prestations = await Api.listPrestations();
+    prestationsCache = prestations;
+    if (prestations.length === 0) {
+      list.innerHTML = `<div class="empty-state">
+        Aucune prestation dans votre catalogue.<br><br>
+        Ajoutez vos prestations types pour les retrouver en tapant leur nom lors de la creation d'un devis.
+      </div>`;
+      return;
+    }
+    list.innerHTML = prestations.map(renderPrestationCard).join("");
+  } catch (err) {
+    list.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function renderPrestationCard(p) {
+  return `
+  <div class="item-card">
+    <div class="item-card-top">
+      <div>
+        <div class="item-title">${escapeHtml(p.description)}</div>
+        <div class="item-sub">${escapeHtml(p.categorie || PRESTATION_CATEGORIE_DEFAUT)} · ${escapeHtml(p.unite)} · TVA ${p.taux_tva}%</div>
+      </div>
+      <strong>${fmtEuro(p.prix_unitaire_ht)}</strong>
+    </div>
+    <div class="item-actions">
+      <button type="button" class="btn-sm btn-sm-danger" data-action="delete-prestation" data-id="${p.id}">Supprimer</button>
+    </div>
+  </div>`;
+}
+
+function setupPrestationsView() {
+  document.querySelector('[data-action="show-prestation-form"]').addEventListener("click", () => {
+    const container = document.getElementById("prestation-form-container");
+    container.innerHTML = `
+      <div class="form-box">
+        <h3>Nouvelle prestation</h3>
+        <form id="prestation-form">
+          <div class="form-grid">
+            <div><label for="pr-description">Description *</label><input type="text" id="pr-description" required placeholder="Ex: Peinture murale"></div>
+            <div><label for="pr-categorie">Categorie</label><input type="text" id="pr-categorie" placeholder="Ex: Peinture"></div>
+            <div><label for="pr-unite">Unite</label><input type="text" id="pr-unite" value="u" placeholder="u, m2, h, forfait..."></div>
+            <div><label for="pr-prix">Prix unitaire HT *</label><input type="number" step="0.01" min="0" id="pr-prix" required></div>
+            <div>
+              <label for="pr-tva">TVA</label>
+              <select id="pr-tva">
+                <option value="10">10% (renovation)</option>
+                <option value="20">20% (neuf)</option>
+              </select>
+            </div>
+          </div>
+          <p class="field-error" id="prestation-form-error" hidden></p>
+          <div class="form-actions">
+            <button type="submit" class="btn-sm btn-sm-primary">Ajouter</button>
+            <button type="button" class="btn-sm" data-action="cancel-prestation-form">Annuler</button>
+          </div>
+        </form>
+      </div>`;
+    container.hidden = false;
+    container.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    document.getElementById("prestation-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const errorBox = document.getElementById("prestation-form-error");
+      errorBox.hidden = true;
+      try {
+        await Api.createPrestation({
+          description: document.getElementById("pr-description").value,
+          categorie: emptyToNull(document.getElementById("pr-categorie").value),
+          unite: document.getElementById("pr-unite").value.trim() || "u",
+          prix_unitaire_ht: parseFloat(document.getElementById("pr-prix").value),
+          taux_tva: parseFloat(document.getElementById("pr-tva").value),
+        });
+        showToast("Prestation ajoutee au catalogue.");
+        container.hidden = true;
+        container.innerHTML = "";
+        loadPrestations();
+      } catch (err) {
+        errorBox.hidden = false;
+        errorBox.textContent = err.message;
+      }
+    });
+  });
+
+  document.getElementById("prestation-form-container").addEventListener("click", (e) => {
+    if (e.target.closest('[data-action="cancel-prestation-form"]')) {
+      const container = document.getElementById("prestation-form-container");
+      container.hidden = true;
+      container.innerHTML = "";
+    }
+  });
+
+  document.getElementById("prestations-list").addEventListener("click", async (e) => {
+    const btn = e.target.closest('[data-action="delete-prestation"]');
+    if (!btn) return;
+    if (!confirm("Supprimer cette prestation du catalogue ?")) return;
+    await withErrorToast(async () => {
+      await Api.deletePrestation(parseInt(btn.dataset.id, 10));
+      showToast("Prestation supprimee.");
+      loadPrestations();
+    });
   });
 }
 
@@ -761,11 +899,17 @@ function renderClientCard(c) {
     .map(([value, m]) => `<option value="${value}" ${value === c.statut ? "selected" : ""}>${m.label}</option>`)
     .join("");
 
+  const infosComplementaires = [
+    c.montant_estime ? fmtEuro(c.montant_estime) + (c.probabilite !== null && c.probabilite !== undefined ? ` · ${c.probabilite}%` : "") : null,
+    c.source && c.source !== "manuel" ? "Source : " + (CLIENT_SOURCE_LABELS[c.source] || c.source) : null,
+  ].filter(Boolean);
+
   return `
   <div class="kanban-card" data-action="voir-timeline" data-id="${c.id}">
     <div class="kanban-card-title">${escapeHtml(c.nom)}</div>
     <div class="kanban-card-sub">${contact || "Pas de coordonnees"}${c.societe ? " · " + escapeHtml(c.societe) : ""}</div>
-    ${c.source === "site_vitrine" ? '<div class="kanban-card-sub">Source : site vitrine</div>' : ""}
+    ${infosComplementaires.map((t) => `<div class="kanban-card-sub">${escapeHtml(t)}</div>`).join("")}
+    ${c.prochaine_action ? `<div class="kanban-card-next">→ ${escapeHtml(c.prochaine_action)}</div>` : ""}
     <div class="kanban-card-actions">
       <select data-action="changer-statut-client" data-id="${c.id}">${statutOptions}</select>
       <button type="button" class="btn-sm btn-sm-danger" data-action="delete-client" data-id="${c.id}" title="Supprimer">&times;</button>
@@ -786,7 +930,15 @@ function showClientForm() {
           <div><label for="cli-societe">Societe</label><input type="text" id="cli-societe"></div>
           <div><label for="cli-adresse">Adresse</label><input type="text" id="cli-adresse"></div>
           <div><label for="cli-ville">Ville</label><input type="text" id="cli-ville"></div>
+          <div>
+            <label for="cli-source">Source</label>
+            <select id="cli-source">${Object.entries(CLIENT_SOURCE_LABELS).map(([v, l]) => `<option value="${v}" ${v === "manuel" ? "selected" : ""}>${l}</option>`).join("")}</select>
+          </div>
+          <div><label for="cli-montant-estime">Montant estime (EUR)</label><input type="number" step="0.01" min="0" id="cli-montant-estime"></div>
+          <div><label for="cli-probabilite">Probabilite (%)</label><input type="number" step="1" min="0" max="100" id="cli-probabilite"></div>
         </div>
+        <label for="cli-prochaine-action" style="margin-top:14px;">Prochaine action</label>
+        <input type="text" id="cli-prochaine-action" placeholder="Ex: Rappeler jeudi pour confirmer le RDV">
         <label for="cli-notes" style="margin-top:14px;">Notes</label>
         <textarea id="cli-notes" placeholder="Contexte, besoin exprime..."></textarea>
         <p class="field-error" id="client-form-error" hidden></p>
@@ -811,6 +963,10 @@ function showClientForm() {
         societe: emptyToNull(document.getElementById("cli-societe").value),
         adresse: emptyToNull(document.getElementById("cli-adresse").value),
         ville: emptyToNull(document.getElementById("cli-ville").value),
+        source: document.getElementById("cli-source").value,
+        montant_estime: document.getElementById("cli-montant-estime").value ? parseFloat(document.getElementById("cli-montant-estime").value) : null,
+        probabilite: document.getElementById("cli-probabilite").value ? parseInt(document.getElementById("cli-probabilite").value, 10) : null,
+        prochaine_action: emptyToNull(document.getElementById("cli-prochaine-action").value),
         notes: emptyToNull(document.getElementById("cli-notes").value),
       });
       showToast("Contact ajoute.");
@@ -831,27 +987,45 @@ const TIMELINE_ICONS = {
   chantier_cree: "\u{1F477}",
 };
 
+function clientQuickActionsHtml(client) {
+  const actions = [];
+  if (client.telephone) actions.push(`<a class="btn-sm" href="tel:${escapeHtml(client.telephone)}">Appeler</a>`);
+  if (client.email) actions.push(`<a class="btn-sm" href="mailto:${escapeHtml(client.email)}">Email</a>`);
+  actions.push(`<button type="button" class="btn-sm btn-sm-primary" data-action="quick-devis" data-client-id="${client.id}">+ Nouveau devis</button>`);
+  return `<div class="item-actions" style="margin-bottom:18px;">${actions.join("")}</div>`;
+}
+
+function clientResumeHtml(r) {
+  const rows = [
+    { label: "Valeur totale facturee", value: fmtEuro(r.valeur_totale) },
+    { label: "Impayes", value: fmtEuro(r.impayes) },
+    { label: "Chantiers", value: r.nb_chantiers },
+    { label: "Dernier contact", value: r.dernier_contact ? fmtDate(r.dernier_contact) : "-" },
+    { label: "Dernier devis", value: r.date_dernier_devis ? fmtDate(r.date_dernier_devis) : "-" },
+  ];
+  return `<div class="profil-row-group" style="margin-bottom:18px;">
+    ${rows.map((row) => `<div class="profil-row"><div class="label">${row.label}</div><div class="value">${row.value}</div></div>`).join("")}
+  </div>`;
+}
+
 async function showTimeline(clientId) {
   const client = clientsCache.find((c) => c.id === clientId) || (await Api.listClients()).find((c) => c.id === clientId);
   document.getElementById("timeline-titre").textContent = client ? `Historique - ${client.nom}` : "Historique";
   const content = document.getElementById("timeline-content");
   content.innerHTML = skeletonCards();
   document.getElementById("panel-timeline").hidden = false;
+  document.getElementById("panel-timeline").dataset.clientId = clientId;
 
   try {
-    const entries = await Api.clientTimeline(clientId);
-    if (entries.length === 0) {
-      content.innerHTML = '<div class="empty-state">Aucun evenement pour le moment.</div>';
-      return;
-    }
-    content.innerHTML = entries
-      .map(
-        (e) => `<div class="timeline-entry">
+    const [entries, resume] = await Promise.all([Api.clientTimeline(clientId), Api.clientResume(clientId)]);
+    const entriesHtml = entries.length === 0
+      ? '<div class="empty-state">Aucun evenement pour le moment.</div>'
+      : entries.map((e) => `<div class="timeline-entry">
           <span class="timeline-icon">${TIMELINE_ICONS[e.type] || "•"}</span>
           <div><div class="timeline-label">${escapeHtml(e.label)}</div><div class="timeline-date">${fmtDateTime(e.date)}</div></div>
-        </div>`
-      )
-      .join("");
+        </div>`).join("");
+
+    content.innerHTML = (client ? clientQuickActionsHtml(client) : "") + clientResumeHtml(resume) + entriesHtml;
   } catch (err) {
     content.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
   }
@@ -898,6 +1072,14 @@ function setupClientsView() {
   document.getElementById("panel-timeline").addEventListener("click", (e) => {
     if (e.target.closest('[data-action="close-timeline"]') || e.target.id === "panel-timeline") {
       document.getElementById("panel-timeline").hidden = true;
+      return;
+    }
+    const devisBtn = e.target.closest('[data-action="quick-devis"]');
+    if (devisBtn) {
+      const clientId = parseInt(devisBtn.dataset.clientId, 10);
+      document.getElementById("panel-timeline").hidden = true;
+      switchView("devis");
+      setTimeout(() => showDevisForm(null, clientId), 200);
     }
   });
 
@@ -964,7 +1146,7 @@ function ligneRowHtml(ligne) {
   const l = ligne || { description: "", quantite: 1, unite: "forfait", prix_unitaire_ht: "" };
   return `
   <div class="ligne-row">
-    <input type="text" class="ligne-description" placeholder="Description de la prestation" value="${escapeHtml(l.description || "")}">
+    <input type="text" class="ligne-description" list="prestations-datalist" placeholder="Description de la prestation (recherchez votre catalogue)" value="${escapeHtml(l.description || "")}">
     <input type="number" step="0.01" min="0" class="ligne-quantite" placeholder="Qte" value="${l.quantite ?? 1}">
     <input type="text" class="ligne-unite" placeholder="Unite" value="${escapeHtml(l.unite || "forfait")}">
     <input type="number" step="0.01" min="0" class="ligne-prix" placeholder="PU HT" value="${l.prix_unitaire_ht !== undefined && l.prix_unitaire_ht !== null ? l.prix_unitaire_ht : ""}">
@@ -979,6 +1161,7 @@ function lignesEditorHtml(containerId, lignes) {
     <label>Prestations</label>
     <div id="${containerId}">${rows}</div>
     <button type="button" class="btn-sm" data-action="add-ligne" data-target="${containerId}">+ Ajouter une ligne</button>
+    ${prestationsDatalistHtml()}
   </div>`;
 }
 
@@ -995,6 +1178,17 @@ function attacherEditeurLignes(formEl) {
       const parent = row.parentElement;
       if (parent.children.length > 1) row.remove();
     }
+  });
+
+  // Choisir une prestation du catalogue (via la datalist) remplit
+  // automatiquement l'unite et le prix unitaire de la ligne.
+  formEl.addEventListener("input", (e) => {
+    if (!e.target.classList.contains("ligne-description")) return;
+    const prestation = prestationsCache.find((p) => p.description === e.target.value);
+    if (!prestation) return;
+    const row = e.target.closest(".ligne-row");
+    row.querySelector(".ligne-unite").value = prestation.unite;
+    row.querySelector(".ligne-prix").value = prestation.prix_unitaire_ht;
   });
 }
 
@@ -1060,10 +1254,10 @@ function renderDevisCard(d) {
   </div>`;
 }
 
-async function showDevisForm(devis) {
+async function showDevisForm(devis, preselectClientId) {
   const container = document.getElementById("devis-form-container");
   const isEdit = !!devis;
-  await ensureClientsCache();
+  await Promise.all([ensureClientsCache(), ensurePrestationsCache()]);
 
   if (!isEdit && clientsCache.length === 0) {
     container.innerHTML = `<div class="form-box"><p>Vous n'avez pas encore de client. Ajoutez d'abord un contact dans l'onglet <strong>Clients &amp; prospects</strong>, puis revenez creer un devis.</p>
@@ -1082,7 +1276,7 @@ async function showDevisForm(devis) {
             <label for="df-client">Client *</label>
             ${isEdit
               ? `<input type="text" value="${escapeHtml(devis.client_nom)}" disabled>`
-              : `<select id="df-client" required><option value="">Choisir...</option>${clientOptionsHtml()}</select>`
+              : `<select id="df-client" required><option value="">Choisir...</option>${clientOptionsHtml(preselectClientId)}</select>`
             }
           </div>
           <div>
@@ -1312,7 +1506,7 @@ function showPaiementForm(factureId) {
 
 function showFactureForm() {
   document.getElementById("facture-form-container").innerHTML = "";
-  ensureClientsCache().then(() => {
+  Promise.all([ensureClientsCache(), ensurePrestationsCache()]).then(() => {
     const container = document.getElementById("facture-form-container");
     if (clientsCache.length === 0) {
       container.innerHTML = `<div class="form-box"><p>Ajoutez d'abord un contact dans l'onglet <strong>Clients &amp; prospects</strong>.</p>
@@ -2040,6 +2234,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupGlobalSearch();
   setupClientsView();
   setupEntrepriseForm();
+  setupPrestationsView();
   setupDevisView();
   setupFacturesView();
   setupChantiersView();

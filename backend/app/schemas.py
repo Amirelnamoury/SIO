@@ -21,6 +21,10 @@ TACHE_PRIORITES = {"basse", "normale", "haute", "urgente"}
 EVENEMENT_TYPES = {"rdv", "visite", "intervention", "autre"}
 PAIEMENT_MOYENS = {"virement", "cheque", "especes", "cb", "autre"}
 DOCUMENT_TYPES = {"contrat", "attestation", "assurance", "photo", "plan", "administratif", "autre"}
+CLIENT_SOURCES = {
+    "manuel", "site_vitrine", "google", "recommandation",
+    "telephone", "facebook", "instagram", "ancien_client", "autre",
+}
 
 
 # ---------- Artisan (tenant) ----------
@@ -110,12 +114,30 @@ class ClientCreate(BaseModel):
     ville: Optional[str] = None
     notes: Optional[str] = None
     statut: str = "nouveau"
+    source: str = "manuel"
+    montant_estime: Optional[float] = None
+    probabilite: Optional[int] = None
+    prochaine_action: Optional[str] = None
 
     @field_validator("statut")
     @classmethod
     def statut_valide(cls, v):
         if v not in CLIENT_STATUTS:
             raise ValueError(f"statut doit etre l'un de : {sorted(CLIENT_STATUTS)}")
+        return v
+
+    @field_validator("source")
+    @classmethod
+    def source_valide(cls, v):
+        if v not in CLIENT_SOURCES:
+            raise ValueError(f"source doit etre l'une de : {sorted(CLIENT_SOURCES)}")
+        return v
+
+    @field_validator("probabilite")
+    @classmethod
+    def probabilite_valide(cls, v):
+        if v is not None and not (0 <= v <= 100):
+            raise ValueError("probabilite doit etre entre 0 et 100")
         return v
 
 
@@ -129,12 +151,30 @@ class ClientUpdate(BaseModel):
     ville: Optional[str] = None
     notes: Optional[str] = None
     statut: Optional[str] = None
+    source: Optional[str] = None
+    montant_estime: Optional[float] = None
+    probabilite: Optional[int] = None
+    prochaine_action: Optional[str] = None
 
     @field_validator("statut")
     @classmethod
     def statut_valide(cls, v):
         if v is not None and v not in CLIENT_STATUTS:
             raise ValueError(f"statut doit etre l'un de : {sorted(CLIENT_STATUTS)}")
+        return v
+
+    @field_validator("source")
+    @classmethod
+    def source_valide(cls, v):
+        if v is not None and v not in CLIENT_SOURCES:
+            raise ValueError(f"source doit etre l'une de : {sorted(CLIENT_SOURCES)}")
+        return v
+
+    @field_validator("probabilite")
+    @classmethod
+    def probabilite_valide(cls, v):
+        if v is not None and not (0 <= v <= 100):
+            raise ValueError("probabilite doit etre entre 0 et 100")
         return v
 
 
@@ -162,8 +202,19 @@ class ClientOut(BaseModel):
     notes: Optional[str] = None
     statut: str
     source: str
+    montant_estime: Optional[float] = None
+    probabilite: Optional[int] = None
+    prochaine_action: Optional[str] = None
     created_at: datetime
     updated_at: datetime
+
+
+class ClientResume(BaseModel):
+    valeur_totale: float
+    nb_chantiers: int
+    dernier_contact: Optional[datetime] = None
+    impayes: float
+    date_dernier_devis: Optional[datetime] = None
 
 
 class TimelineEntry(BaseModel):
@@ -677,3 +728,48 @@ class AnalyticsOut(BaseModel):
     nb_clients_recurrents: int  # clients avec plus d'un devis signe
     montant_impayes: float
     valeur_pipeline: float
+
+
+# ---------- Catalogue de prestations ----------
+
+class PrestationCreate(BaseModel):
+    description: str
+    categorie: Optional[str] = None
+    unite: str = "u"
+    prix_unitaire_ht: float
+    taux_tva: float = 10.0
+
+    @field_validator("taux_tva")
+    @classmethod
+    def tva_valide(cls, v):
+        if v not in (10.0, 20.0):
+            raise ValueError("taux_tva doit etre 10 (renovation) ou 20 (neuf)")
+        return v
+
+
+class PrestationUpdate(BaseModel):
+    description: Optional[str] = None
+    categorie: Optional[str] = None
+    unite: Optional[str] = None
+    prix_unitaire_ht: Optional[float] = None
+    taux_tva: Optional[float] = None
+
+    @field_validator("taux_tva")
+    @classmethod
+    def tva_valide(cls, v):
+        if v is not None and v not in (10.0, 20.0):
+            raise ValueError("taux_tva doit etre 10 (renovation) ou 20 (neuf)")
+        return v
+
+
+class PrestationOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    artisan_id: int
+    description: str
+    categorie: Optional[str] = None
+    unite: str
+    prix_unitaire_ht: float
+    taux_tva: float
+    created_at: datetime

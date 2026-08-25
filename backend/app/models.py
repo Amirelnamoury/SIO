@@ -67,12 +67,18 @@ class Artisan(Base):
     taches = relationship("Tache", back_populates="artisan", cascade="all, delete-orphan")
     evenements = relationship("Evenement", back_populates="artisan", cascade="all, delete-orphan")
     documents = relationship("Document", back_populates="artisan", cascade="all, delete-orphan")
+    prestations = relationship("Prestation", back_populates="artisan", cascade="all, delete-orphan")
 
 
 # Pipeline commercial : de la premiere demande jusqu'a la signature (ou la perte).
 CLIENT_STATUTS = [
     "nouveau", "contacte", "qualification", "visite_prevue",
     "devis_a_faire", "devis_envoye", "negociation", "gagne", "perdu",
+]
+
+CLIENT_SOURCES = [
+    "manuel", "site_vitrine", "google", "recommandation",
+    "telephone", "facebook", "instagram", "ancien_client", "autre",
 ]
 
 
@@ -95,7 +101,12 @@ class Client(Base):
     notes = Column(Text, nullable=True)
 
     statut = Column(String, default="nouveau", index=True)
-    source = Column(String, default="manuel")  # manuel, site_vitrine
+    source = Column(String, default="manuel")  # voir CLIENT_SOURCES
+
+    # Pilotage du pipeline commercial (section CRM du cahier des charges V2).
+    montant_estime = Column(MONTANT, nullable=True)
+    probabilite = Column(Integer, nullable=True)  # 0-100
+    prochaine_action = Column(String, nullable=True)
 
     created_at = Column(DateTime(timezone=True), default=utcnow)
     updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
@@ -394,6 +405,26 @@ class Evenement(Base):
     created_at = Column(DateTime(timezone=True), default=utcnow)
 
     artisan = relationship("Artisan", back_populates="evenements")
+
+
+class Prestation(Base):
+    """Une ligne de catalogue reutilisable (bibliotheque de prestations),
+    pour ne pas ressaisir les memes descriptions/prix a chaque devis."""
+
+    __tablename__ = "prestations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    artisan_id = Column(Integer, ForeignKey("artisans.id"), nullable=False, index=True)
+
+    description = Column(String, nullable=False)
+    categorie = Column(String, nullable=True)
+    unite = Column(String, default="u")
+    prix_unitaire_ht = Column(MONTANT, nullable=False)
+    taux_tva = Column(MONTANT, default=10.0)
+
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+
+    artisan = relationship("Artisan", back_populates="prestations")
 
 
 class Document(Base):

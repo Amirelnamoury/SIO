@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.deps import get_current_artisan
 from app.models import Artisan, Client, Devis, Facture, Chantier
-from app.schemas import ClientCreate, ClientOut, ClientUpdate, TimelineEntry
+from app.schemas import ClientCreate, ClientOut, ClientResume, ClientUpdate, TimelineEntry
 
 router = APIRouter(prefix="/clients", tags=["clients"])
 
@@ -38,7 +38,7 @@ def creer_client(
     db: Session = Depends(get_db),
     artisan: Artisan = Depends(get_current_artisan),
 ):
-    client = Client(artisan_id=artisan.id, source="manuel", **payload.model_dump())
+    client = Client(artisan_id=artisan.id, **payload.model_dump())
     db.add(client)
     db.commit()
     db.refresh(client)
@@ -79,6 +79,43 @@ def supprimer_client(
     client = _get_client_or_404(db, artisan, client_id)
     db.delete(client)
     db.commit()
+
+
+@router.get("/{client_id}/resume", response_model=ClientResume)
+def resume_client(
+    client_id: int,
+    db: Session = Depends(get_db),
+    artisan: Artisan = Depends(get_current_artisan),
+):
+    """Chiffres cles de la fiche client (section CRM du cahier des charges V2) :
+    valeur totale facturee, nombre de chantiers, dernier contact, impayes,
+    date du dernier devis. Calcule a la volee, pas stocke."""
+    client = _get_client_or_404(db, artisan, client_id)
+
+    factures_list = db.query(Facture).filter(Facture.client_id == client.id).all()
+    valeur_totale = sum(f.montant_ttc for f in factures_list)
+    impayes = sum(f.montant_restant for f in factures_list if f.statut not in ("payee", "annulee"))
+
+    nb_chantiers = db.query(Chantier).filter(Chantier.client_id == client.id).count()
+
+    devis_list = db.query(Devis).filter(Devis.client_id == client.id).order_by(Devis.created_at.desc()).all()
+    date_dernier_devis = devis_list[0].created_at if devis_list else None
+
+    dates_contact = [client.created_at]
+    for d in devis_list:
+        dates_contact.extend(filter(None, [d.created_at, d.date_envoi, d.date_consultation, d.date_derniere_relance, d.date_signature]))
+    for f in factures_list:
+        dates_contact.extend(filter(None, [f.created_at, f.date_envoi]))
+        dates_contact.extend(p.created_at for p in f.paiements)
+    dernier_contact = max(dates_contact) if dates_contact else None
+
+    return ClientResume(
+        valeur_totale=round(float(valeur_totale), 2),
+        nb_chantiers=nb_chantiers,
+        dernier_contact=dernier_contact,
+        impayes=round(float(impayes), 2),
+        date_dernier_devis=date_dernier_devis,
+    )
 
 
 @router.get("/{client_id}/timeline", response_model=list[TimelineEntry])

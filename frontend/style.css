@@ -127,6 +127,7 @@ h3 { margin: 0 0 12px; }
 .content { flex: 1; min-width: 0; max-width: 1120px; margin: 0 auto; padding: 32px 32px 60px; width: 100%; }
 .view-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
 .view-header .btn-primary { margin-top: 0; padding: 10px 20px; }
+.section-hint { color: var(--text-muted); font-size: 0.86rem; margin: -12px 0 16px; }
 
 @media (max-width: 900px) {
   .app-shell { flex-direction: column; }
@@ -163,6 +164,7 @@ h3 { margin: 0 0 12px; }
 .kanban-card:hover { box-shadow: 0 4px 10px rgba(0,0,0,0.07); }
 .kanban-card-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 3px; }
 .kanban-card-sub { font-size: 0.78rem; color: var(--text-muted); }
+.kanban-card-next { font-size: 0.78rem; color: var(--accent); font-weight: 600; margin-top: 4px; }
 .kanban-card-actions { display: flex; gap: 6px; margin-top: 10px; }
 .kanban-card select { font-size: 0.76rem; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--border); flex: 1; }
 .kanban-empty { font-size: 0.8rem; color: var(--text-muted); padding: 10px 4px; }
@@ -349,6 +351,8 @@ h3 { margin: 0 0 12px; }
   padding: 26px; position: relative; overflow-y: auto;
 }
 .side-panel-close { position: absolute; top: 18px; right: 18px; border: none; background: none; font-size: 1.4rem; color: var(--text-muted); }
+.profil-row-group { background: var(--bg); border-radius: 12px; padding: 16px; }
+.profil-row-group .profil-row:last-child { margin-bottom: 0; }
 .profil-row { margin-bottom: 12px; }
 .profil-row .label { font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
 .profil-row .value { font-size: 0.95rem; font-weight: 600; word-break: break-word; }

@@ -82,6 +82,13 @@ const Api = {
   updateClient: (id, payload) => apiFetch(`/clients/${id}`, { method: "PATCH", body: payload }),
   deleteClient: (id) => apiFetch(`/clients/${id}`, { method: "DELETE" }),
   clientTimeline: (id) => apiFetch(`/clients/${id}/timeline`),
+  clientResume: (id) => apiFetch(`/clients/${id}/resume`),
+
+  // ---------- Catalogue de prestations ----------
+  listPrestations: (q) => apiFetch("/prestations" + (q ? `?q=${encodeURIComponent(q)}` : "")),
+  createPrestation: (payload) => apiFetch("/prestations", { method: "POST", body: payload }),
+  updatePrestation: (id, payload) => apiFetch(`/prestations/${id}`, { method: "PATCH", body: payload }),
+  deletePrestation: (id) => apiFetch(`/prestations/${id}`, { method: "DELETE" }),
 
   // ---------- Devis ----------
   listDevis: (statut) => apiFetch("/devis" + (statut ? `?statut=${encodeURIComponent(statut)}` : "")),
