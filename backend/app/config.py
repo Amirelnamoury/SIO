@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     stripe_webhook_secret: str | None = None
     stripe_price_id: str | None = None
 
+    # Adresse publique du frontend, utilisee pour les redirections apres paiement Stripe.
+    app_base_url: str = "http://localhost:8080"
+
     class Config:
         env_file = ".env"
 

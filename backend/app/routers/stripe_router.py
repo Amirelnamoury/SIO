@@ -48,8 +48,8 @@ def creer_session_paiement(
         customer=artisan.stripe_customer_id,
         mode="subscription",
         line_items=[{"price": settings.stripe_price_id, "quantity": 1}],
-        success_url="https://example.com/abonnement/succes",
-        cancel_url="https://example.com/abonnement/annule",
+        success_url=f"{settings.app_base_url}/?abonnement=succes",
+        cancel_url=f"{settings.app_base_url}/?abonnement=annule",
         metadata={"artisan_id": str(artisan.id)},
     )
     return {"checkout_url": session.url}

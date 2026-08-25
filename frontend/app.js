@@ -137,6 +137,13 @@ function showAuthError(message) {
 }
 
 function setupAuthScreen() {
+  const wantedTab = new URLSearchParams(window.location.search).get("tab");
+  if (wantedTab === "register") {
+    document.querySelectorAll(".auth-tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === "register"));
+    document.getElementById("login-form").hidden = true;
+    document.getElementById("register-form").hidden = false;
+  }
+
   document.querySelectorAll(".auth-tab").forEach((tab) => {
     tab.addEventListener("click", () => {
       document.querySelectorAll(".auth-tab").forEach((t) => t.classList.remove("active"));
@@ -201,16 +208,19 @@ function isSubscriptionActive() {
 }
 
 function renderUpgradeCard(title, description) {
+  const pro = PRICING.pro;
   return `
   <div class="upgrade-card">
     <div class="upgrade-icon">&#128274;</div>
     <h3>${escapeHtml(title)}</h3>
-    <p>${escapeHtml(description)}</p>
-    <button type="button" class="btn-primary" data-action="upgrade-subscription">S'abonner a Suite Artisan</button>
+    <p>${escapeHtml(description)} A partir de ${pro.prix}&nbsp;&euro; ${pro.mention}.</p>
+    <button type="button" class="btn-primary" data-action="upgrade-subscription">Voir les tarifs</button>
   </div>`;
 }
 
 async function attemptUpgrade() {
+  const btn = document.querySelector('[data-action="confirm-upgrade"]');
+  if (btn) btn.disabled = true;
   try {
     const data = await Api.checkoutSession();
     window.location.href = data.checkout_url;
@@ -220,13 +230,53 @@ async function attemptUpgrade() {
     } else {
       showToast(err.message, true);
     }
+  } finally {
+    if (btn) btn.disabled = false;
   }
+}
+
+// ===================== Modale des tarifs =====================
+function planCardHtml(key, plan) {
+  const isPro = key === "pro";
+  const priceHtml = plan.prix === 0
+    ? '<div class="plan-price">Gratuit</div>'
+    : `<div class="plan-price">${plan.prix}&nbsp;&euro; <span class="period">/ ${plan.periode}</span></div>`;
+  return `
+  <div class="plan-card ${isPro ? "plan-highlight" : ""}">
+    ${isPro ? '<span class="plan-badge">Recommande</span>' : ""}
+    <div class="plan-name">${escapeHtml(plan.nom)}</div>
+    <div class="plan-accroche">${escapeHtml(plan.accroche)}</div>
+    ${priceHtml}
+    ${plan.mention ? `<div class="plan-mention">${escapeHtml(plan.mention)}</div>` : '<div class="plan-mention">&nbsp;</div>'}
+    <ul class="plan-features">
+      ${plan.fonctionnalites.map((f) => `<li>${escapeHtml(f)}</li>`).join("")}
+    </ul>
+    ${isPro
+      ? '<button type="button" class="btn-primary" data-action="confirm-upgrade">S\'abonner a Suite Artisan Pro</button>'
+      : '<button type="button" class="btn-secondary" data-action="close-pricing">Rester sur le plan Gratuit</button>'}
+  </div>`;
+}
+
+function openPricingModal() {
+  const container = document.getElementById("pricing-plans");
+  container.innerHTML = Object.entries(PRICING).map(([key, plan]) => planCardHtml(key, plan)).join("");
+  document.getElementById("pricing-modal").hidden = false;
+}
+function closePricingModal() {
+  document.getElementById("pricing-modal").hidden = true;
 }
 
 document.addEventListener("click", (e) => {
   if (e.target.closest('[data-action="upgrade-subscription"]')) {
+    openPricingModal();
+  } else if (e.target.closest('[data-action="confirm-upgrade"]')) {
     attemptUpgrade();
+  } else if (e.target.closest('[data-action="close-pricing"]') || e.target.id === "pricing-modal") {
+    closePricingModal();
   }
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !document.getElementById("pricing-modal").hidden) closePricingModal();
 });
 
 // ===================== Coquille du tableau de bord =====================
@@ -235,7 +285,84 @@ function enterDashboard() {
   document.getElementById("dashboard-screen").hidden = false;
   switchView("dashboard");
   refreshBadges();
+  maybeShowOnboarding();
 }
+
+// ===================== Onboarding (premiere connexion) =====================
+const ONBOARDING_STEPS = [
+  {
+    icon: "&#128075;",
+    title: "Bienvenue sur Suite Artisan",
+    body: "Un seul outil pour ne plus perdre de prospects, relancer vos devis automatiquement et garder une vue claire sur votre activite. Tout ce dont vous avez besoin pour demarrer est deja gratuit.",
+  },
+  {
+    icon: "&#128203;",
+    title: "Comment ca marche",
+    list: [
+      "Ajoutez un client ou un prospect",
+      "Creez un devis avec vos lignes de prestation, envoyez le PDF",
+      "Suite Artisan vous rappelle quand relancer",
+    ],
+  },
+  {
+    icon: "&#127970;",
+    title: "Votre site vitrine",
+    body: "Si vous avez commande un site vitrine, il apparaitra dans votre tableau de bord des qu'il sera livre, avec les demandes recues automatiquement dans vos prospects.",
+  },
+  {
+    icon: "&#128274;",
+    title: "Pour aller plus loin",
+    body: `Suite ${PRICING.pro.nom.replace("Suite ", "")} (${PRICING.pro.prix}€ ${PRICING.pro.mention}) ajoute le suivi de chantiers, la conformite et les statistiques. Vous pourrez l'activer a tout moment depuis votre profil.`,
+  },
+];
+let onboardingStepIndex = 0;
+
+function renderOnboardingStep() {
+  const step = ONBOARDING_STEPS[onboardingStepIndex];
+  document.getElementById("onboarding-steps").innerHTML = `
+    <div class="onboarding-step">
+      <div class="onboarding-step-icon">${step.icon}</div>
+      <h3>${escapeHtml(step.title)}</h3>
+      ${step.body ? `<p>${escapeHtml(step.body)}</p>` : ""}
+      ${step.list ? `<ul>${step.list.map((l, i) => `<li data-num="${i + 1}">${escapeHtml(l)}</li>`).join("")}</ul>` : ""}
+    </div>`;
+  document.getElementById("onboarding-dots").innerHTML = ONBOARDING_STEPS
+    .map((_, i) => `<span class="${i === onboardingStepIndex ? "active" : ""}"></span>`)
+    .join("");
+  const nextBtn = document.querySelector('[data-action="onboarding-next"]');
+  const isLast = onboardingStepIndex === ONBOARDING_STEPS.length - 1;
+  nextBtn.textContent = isLast ? "Commencer" : "Suivant";
+  document.querySelector('[data-action="onboarding-skip"]').hidden = isLast;
+}
+
+async function finishOnboarding() {
+  document.getElementById("onboarding-modal").hidden = true;
+  try {
+    currentArtisan = await Api.updateMe({ onboarding_termine: true });
+  } catch (err) {
+    /* pas grave si ca echoue, on ne bloque pas l'utilisateur */
+  }
+}
+
+function maybeShowOnboarding() {
+  if (!currentArtisan || currentArtisan.onboarding_termine) return;
+  onboardingStepIndex = 0;
+  renderOnboardingStep();
+  document.getElementById("onboarding-modal").hidden = false;
+}
+
+document.addEventListener("click", (e) => {
+  if (e.target.closest('[data-action="onboarding-next"]')) {
+    if (onboardingStepIndex === ONBOARDING_STEPS.length - 1) {
+      finishOnboarding();
+    } else {
+      onboardingStepIndex++;
+      renderOnboardingStep();
+    }
+  } else if (e.target.closest('[data-action="onboarding-skip"]')) {
+    finishOnboarding();
+  }
+});
 
 function switchView(view) {
   document.querySelectorAll(".nav-link").forEach((btn) => btn.classList.toggle("active", btn.dataset.view === view));
@@ -294,7 +421,7 @@ function setupProfilPanel() {
         <div class="value">
           <span class="badge ${isSubscriptionActive() ? "badge-green" : "badge-gray"}">${isSubscriptionActive() ? "Actif" : "Inactif"}</span>
         </div>
-        ${!isSubscriptionActive() ? '<button type="button" class="btn-primary" data-action="upgrade-subscription" style="margin-top:10px;width:100%;">S\'abonner</button>' : ""}
+        ${!isSubscriptionActive() ? '<button type="button" class="btn-primary" data-action="upgrade-subscription" style="margin-top:10px;width:100%;">Voir les tarifs</button>' : ""}
       </div>
     `;
     document.getElementById("panel-profil").hidden = false;
@@ -1797,11 +1924,22 @@ document.addEventListener("DOMContentLoaded", async () => {
   toast.id = "toast";
   document.body.appendChild(toast);
 
+  const params = new URLSearchParams(window.location.search);
+  const abonnement = params.get("abonnement");
+  if (abonnement) {
+    window.history.replaceState({}, "", window.location.pathname);
+  }
+
   const token = getToken();
   if (token) {
     try {
       currentArtisan = await Api.me();
       enterDashboard();
+      if (abonnement === "succes") {
+        showToast("Paiement recu ! Votre abonnement Pro s'active dans quelques instants.");
+      } else if (abonnement === "annule") {
+        showToast("Abonnement annule, vous pouvez reessayer a tout moment depuis votre profil.", true);
+      }
       return;
     } catch (err) {
       clearToken();

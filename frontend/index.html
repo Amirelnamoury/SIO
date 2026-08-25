@@ -13,6 +13,7 @@
 <!-- ===================== ECRAN CONNEXION / INSCRIPTION ===================== -->
 <div id="auth-screen" class="auth-screen">
   <div class="auth-box">
+    <a href="landing.html" class="auth-back">&larr; Retour a l'accueil</a>
     <div class="auth-logo">Suite Artisan</div>
 
     <div class="auth-tabs">
@@ -72,6 +73,30 @@
 </div>
 
 <!-- ===================== TABLEAU DE BORD ===================== -->
+<!-- ---------- Modale tarifs / abonnement ---------- -->
+<div id="pricing-modal" class="search-modal" hidden>
+  <div class="pricing-modal-box">
+    <button type="button" class="side-panel-close" data-action="close-pricing">&times;</button>
+    <h3>Passer a Suite Artisan Pro</h3>
+    <p class="pricing-modal-sub">Debloquez le suivi de chantiers, la conformite et les relances automatiques.</p>
+    <div id="pricing-plans" class="pricing-plans"></div>
+  </div>
+</div>
+
+<!-- ---------- Onboarding (premiere connexion) ---------- -->
+<div id="onboarding-modal" class="search-modal" hidden>
+  <div class="onboarding-box">
+    <div id="onboarding-steps"></div>
+    <div class="onboarding-nav">
+      <div class="onboarding-dots" id="onboarding-dots"></div>
+      <div class="onboarding-actions">
+        <button type="button" class="onboarding-skip-btn" data-action="onboarding-skip">Passer</button>
+        <button type="button" class="btn-primary" data-action="onboarding-next">Suivant</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ---------- Recherche globale (Ctrl+K) ---------- -->
 <div id="search-modal" class="search-modal" hidden>
   <div class="search-modal-box">
@@ -265,6 +290,7 @@
   </main>
 </div>
 
+<script src="pricing.js"></script>
 <script src="api.js"></script>
 <script src="app.js"></script>
 </body>
