@@ -1219,12 +1219,34 @@ const SEARCH_TYPE_META = {
 
 let searchDebounceTimer = null;
 
+// Palette de commandes (section "actions rapides") : creer quelque chose en
+// un seul geste depuis n'importe quel ecran, au lieu de naviguer puis
+// chercher le bouton "+ Nouveau...". Reutilise les formulaires existants -
+// aucune nouvelle logique de creation, juste un raccourci d'acces.
+const QUICK_ACTIONS = [
+  { id: "qa-devis", label: "Nouveau devis", view: "devis", run: () => showDevisForm(null) },
+  { id: "qa-client", label: "Nouveau contact", view: "prospects", run: () => showClientForm() },
+  { id: "qa-facture", label: "Nouvelle facture", view: "factures", run: () => showFactureForm() },
+  { id: "qa-chantier", label: "Nouveau chantier", view: "chantiers", run: () => document.querySelector('[data-action="show-chantier-form"]').click() },
+  { id: "qa-tache", label: "Nouvelle tache", view: "taches", run: () => showTacheForm() },
+  { id: "qa-rdv", label: "Nouveau rendez-vous", view: "planning", run: () => document.querySelector('[data-action="show-evenement-form"]').click() },
+];
+
+function quickActionsHtml(actions) {
+  if (actions.length === 0) return "";
+  const items = actions.map((a) => `
+    <button type="button" class="search-result-item search-action-item" data-action-id="${a.id}">
+      <div class="title">+ ${escapeHtml(a.label)}</div>
+    </button>`).join("");
+  return `<div class="search-result-group">Actions rapides</div>${items}`;
+}
+
 function openSearch() {
   const modal = document.getElementById("search-modal");
   modal.hidden = false;
   const input = document.getElementById("search-input");
   input.value = "";
-  document.getElementById("search-results").innerHTML = "";
+  document.getElementById("search-results").innerHTML = quickActionsHtml(QUICK_ACTIONS);
   input.focus();
 }
 
@@ -1234,19 +1256,21 @@ function closeSearch() {
 
 async function runSearch(q) {
   const resultsBox = document.getElementById("search-results");
-  if (!q || q.trim().length < 2) {
-    resultsBox.innerHTML = '<div class="search-empty">Tapez au moins 2 caracteres...</div>';
+  const query = (q || "").trim();
+  if (!query) {
+    resultsBox.innerHTML = quickActionsHtml(QUICK_ACTIONS);
+    return;
+  }
+  const actionsMatch = QUICK_ACTIONS.filter((a) => a.label.toLowerCase().includes(query.toLowerCase()));
+  if (query.length < 2) {
+    resultsBox.innerHTML = quickActionsHtml(actionsMatch) || '<div class="search-empty">Tapez au moins 2 caracteres pour chercher...</div>';
     return;
   }
   try {
-    const results = await Api.search(q);
-    if (results.length === 0) {
-      resultsBox.innerHTML = '<div class="search-empty">Aucun resultat.</div>';
-      return;
-    }
+    const results = await Api.search(query);
     const parGroupe = {};
     results.forEach((r) => { (parGroupe[r.type] = parGroupe[r.type] || []).push(r); });
-    resultsBox.innerHTML = Object.keys(parGroupe).map((type) => {
+    const resultsHtml = Object.keys(parGroupe).map((type) => {
       const meta = SEARCH_TYPE_META[type] || { label: type, view: type };
       const items = parGroupe[type].map((r) => `
         <button type="button" class="search-result-item" data-type="${type}" data-id="${r.id}">
@@ -1255,8 +1279,10 @@ async function runSearch(q) {
         </button>`).join("");
       return `<div class="search-result-group">${meta.label}</div>${items}`;
     }).join("");
+    const combined = quickActionsHtml(actionsMatch) + resultsHtml;
+    resultsBox.innerHTML = combined || '<div class="search-empty">Aucun resultat.</div>';
   } catch (err) {
-    resultsBox.innerHTML = `<div class="search-empty">Erreur : ${escapeHtml(err.message)}</div>`;
+    resultsBox.innerHTML = quickActionsHtml(actionsMatch) + `<div class="search-empty">Erreur : ${escapeHtml(err.message)}</div>`;
   }
 }
 
@@ -1284,6 +1310,16 @@ function setupGlobalSearch() {
   });
 
   document.getElementById("search-results").addEventListener("click", (e) => {
+    const actionItem = e.target.closest(".search-action-item");
+    if (actionItem) {
+      const action = QUICK_ACTIONS.find((a) => a.id === actionItem.dataset.actionId);
+      closeSearch();
+      if (action) {
+        switchView(action.view);
+        setTimeout(action.run, 200);
+      }
+      return;
+    }
     const item = e.target.closest(".search-result-item");
     if (!item) return;
     const meta = SEARCH_TYPE_META[item.dataset.type];
