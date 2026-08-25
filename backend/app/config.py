@@ -1,0 +1,23 @@
+from pydantic_settings import BaseSettings
+
+
+class Settings(BaseSettings):
+    # SQLite par defaut (zero config). En prod, definir DATABASE_URL vers Postgres,
+    # ex: postgresql://user:password@host:5432/dbname
+    database_url: str = "sqlite:///./suite_artisan.db"
+
+    jwt_secret: str = "dev-secret-change-me-in-production"
+    jwt_algorithm: str = "HS256"
+    jwt_expire_minutes: int = 60 * 24 * 7  # 7 jours
+
+    # Stripe est optionnel : si les cles ne sont pas configurees, les endpoints
+    # /stripe/* renvoient une erreur claire au lieu de faire planter l'appli.
+    stripe_secret_key: str | None = None
+    stripe_webhook_secret: str | None = None
+    stripe_price_id: str | None = None
+
+    class Config:
+        env_file = ".env"
+
+
+settings = Settings()
