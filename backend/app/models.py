@@ -68,6 +68,7 @@ class Artisan(Base):
 
     clients = relationship("Client", back_populates="artisan", cascade="all, delete-orphan")
     avis = relationship("Avis", back_populates="artisan", cascade="all, delete-orphan")
+    membres = relationship("Membre", back_populates="artisan", cascade="all, delete-orphan")
     devis = relationship("Devis", back_populates="artisan", cascade="all, delete-orphan")
     factures = relationship("Facture", back_populates="artisan", cascade="all, delete-orphan")
     chantiers = relationship("Chantier", back_populates="artisan", cascade="all, delete-orphan")
@@ -542,3 +543,28 @@ class Avis(Base):
 
     artisan = relationship("Artisan", back_populates="avis")
     client = relationship("Client", back_populates="avis")
+
+
+MEMBRE_ROLES = ["administrateur", "salarie"]
+
+
+class Membre(Base):
+    """Un membre de l'equipe d'un artisan (fonction payante Business) :
+    connexion propre (email/mot de passe), mais toutes les donnees restent
+    scopees sur l'artisan (l'entreprise), pas sur le membre. Un
+    "administrateur" peut gerer l'equipe, un "salarie" non."""
+
+    __tablename__ = "membres"
+
+    id = Column(Integer, primary_key=True, index=True)
+    artisan_id = Column(Integer, ForeignKey("artisans.id"), nullable=False, index=True)
+
+    nom = Column(String, nullable=False)
+    email = Column(String, unique=True, index=True, nullable=False)
+    password_hash = Column(String, nullable=False)
+    role = Column(String, default="salarie")  # voir MEMBRE_ROLES
+    actif = Column(Boolean, default=True)
+
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+
+    artisan = relationship("Artisan", back_populates="membres")

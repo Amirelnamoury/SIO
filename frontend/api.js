@@ -74,7 +74,14 @@ const Api = {
   register: (payload) => apiFetch("/auth/register", { method: "POST", body: payload, auth: false }),
   login: (payload) => apiFetch("/auth/login", { method: "POST", body: payload, auth: false }),
   me: () => apiFetch("/auth/me"),
+  moi: () => apiFetch("/auth/moi"),
   updateMe: (payload) => apiFetch("/auth/me", { method: "PATCH", body: payload }),
+
+  // ---------- Equipe ----------
+  listEquipe: () => apiFetch("/equipe"),
+  createMembre: (payload) => apiFetch("/equipe", { method: "POST", body: payload }),
+  updateMembre: (id, payload) => apiFetch(`/equipe/${id}`, { method: "PATCH", body: payload }),
+  deleteMembre: (id) => apiFetch(`/equipe/${id}`, { method: "DELETE" }),
 
   // ---------- Clients (CRM : prospects + clients, meme pipeline) ----------
   listClients: (statut) => apiFetch("/clients" + (statut ? `?statut=${encodeURIComponent(statut)}` : "")),

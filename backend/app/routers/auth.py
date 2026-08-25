@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.deps import generate_unique_slug, get_current_artisan
-from app.models import Artisan
-from app.schemas import ArtisanCreate, ArtisanLogin, ArtisanOut, ArtisanUpdate, Token
+from app.deps import UtilisateurActif, generate_unique_slug, get_current_artisan, get_utilisateur_actif
+from app.models import Artisan, Membre
+from app.schemas import ArtisanCreate, ArtisanLogin, ArtisanOut, ArtisanUpdate, MoiOut, Token
 from app.security import create_access_token, hash_password, verify_password
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -13,7 +13,8 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 @router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
 def register(payload: ArtisanCreate, db: Session = Depends(get_db)):
     existing = db.query(Artisan).filter(Artisan.email == payload.email).first()
-    if existing is not None:
+    existing_membre = db.query(Membre).filter(Membre.email == payload.email).first()
+    if existing is not None or existing_membre is not None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Un compte existe deja avec cet email")
 
     slug = payload.slug.strip().lower() if payload.slug else None
@@ -45,12 +46,21 @@ def register(payload: ArtisanCreate, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=Token)
 def login(payload: ArtisanLogin, db: Session = Depends(get_db)):
+    """Connexion unifiee : essaie d'abord le proprietaire (Artisan), puis un
+    membre d'equipe (Membre) - les deux se connectent avec le meme
+    formulaire, l'email suffit a savoir de qui il s'agit."""
     artisan = db.query(Artisan).filter(Artisan.email == payload.email).first()
-    if artisan is None or not verify_password(payload.password, artisan.password_hash):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Email ou mot de passe incorrect")
+    if artisan is not None and verify_password(payload.password, artisan.password_hash):
+        token = create_access_token(artisan.id, "artisan")
+        return Token(access_token=token, artisan=ArtisanOut.model_validate(artisan))
 
-    token = create_access_token(artisan.id)
-    return Token(access_token=token, artisan=ArtisanOut.model_validate(artisan))
+    membre = db.query(Membre).filter(Membre.email == payload.email).first()
+    if membre is not None and membre.actif and verify_password(payload.password, membre.password_hash):
+        artisan = db.query(Artisan).filter(Artisan.id == membre.artisan_id).first()
+        token = create_access_token(membre.id, "membre")
+        return Token(access_token=token, artisan=ArtisanOut.model_validate(artisan))
+
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Email ou mot de passe incorrect")
 
 
 @router.get("/me", response_model=ArtisanOut)
@@ -58,6 +68,17 @@ def me(current_artisan: Artisan = Depends(get_current_artisan)):
     # ArtisanOut n'a pas de champ password_hash : meme si on passait le modele
     # SQLAlchemy complet, Pydantic ignore les champs non declares dans le schema.
     return ArtisanOut.model_validate(current_artisan)
+
+
+@router.get("/moi", response_model=MoiOut)
+def moi(utilisateur: UtilisateurActif = Depends(get_utilisateur_actif)):
+    """Identite precise de la personne connectee (par opposition a /auth/me,
+    qui renvoie toujours les infos de l'entreprise) : son role determine ce
+    qu'elle peut voir/faire, notamment pour la gestion d'equipe."""
+    return MoiOut(
+        role=utilisateur.role, nom=utilisateur.nom, email=utilisateur.email,
+        membre_id=utilisateur.membre.id if utilisateur.membre else None,
+    )
 
 
 @router.patch("/me", response_model=ArtisanOut)

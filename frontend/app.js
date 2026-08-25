@@ -1,7 +1,12 @@
 // ===================== Etat global =====================
 let currentArtisan = null;
+let currentUtilisateur = null; // { role, nom, email, membre_id } - qui est precisement connecte
 let currentDevisFilter = "";
 let devisDueIds = new Set();
+
+function estAdministrateur() {
+  return currentUtilisateur && (currentUtilisateur.role === "proprietaire" || currentUtilisateur.role === "administrateur");
+}
 
 // ===================== Utilitaires =====================
 function escapeHtml(value) {
@@ -192,6 +197,7 @@ function setupAuthScreen() {
       });
       setToken(data.access_token);
       currentArtisan = data.artisan;
+      currentUtilisateur = await Api.moi();
       enterDashboard();
     } catch (err) {
       showAuthError(err.message);
@@ -219,6 +225,7 @@ function setupAuthScreen() {
       });
       setToken(data.access_token);
       currentArtisan = data.artisan;
+      currentUtilisateur = await Api.moi();
       enterDashboard();
     } catch (err) {
       showAuthError(err.message);
@@ -411,6 +418,7 @@ function switchView(view) {
     loadEntrepriseForm();
     loadPrestations();
     loadConformite();
+    loadEquipe();
   }
 }
 
@@ -548,6 +556,133 @@ function setupAutomatisationForm() {
       errorBox.textContent = err.message;
     } finally {
       submitBtn.disabled = false;
+    }
+  });
+}
+
+// ===================== Equipe =====================
+const MEMBRE_ROLE_LABELS = { administrateur: "Administrateur", salarie: "Salarie" };
+
+async function loadEquipe() {
+  const list = document.getElementById("equipe-list");
+  const addBtn = document.getElementById("btn-show-membre-form");
+  addBtn.hidden = !estAdministrateur();
+  list.innerHTML = skeletonCards();
+  try {
+    const equipe = await Api.listEquipe();
+    if (equipe.length === 0) {
+      list.innerHTML = '<div class="empty-state">Personne dans votre equipe pour le moment. Vous etes seul(e) sur ce compte.</div>';
+      return;
+    }
+    list.innerHTML = equipe.map(renderMembreCard).join("");
+  } catch (err) {
+    // 402 si pas abonne : la liste (lecture) reste gratuite normalement, mais
+    // on affiche quand meme un message clair en cas d'erreur inattendue.
+    list.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function renderMembreCard(m) {
+  const estMoi = currentUtilisateur && currentUtilisateur.membre_id === m.id;
+  let actions = "";
+  if (estAdministrateur()) {
+    actions += `<button type="button" class="btn-sm" data-action="toggle-membre-actif" data-id="${m.id}" data-actif="${m.actif}">${m.actif ? "Desactiver" : "Reactiver"}</button>`;
+    if (!estMoi) {
+      actions += `<button type="button" class="btn-sm btn-sm-danger" data-action="delete-membre" data-id="${m.id}">Supprimer</button>`;
+    }
+  }
+  return `
+  <div class="item-card">
+    <div class="item-card-top">
+      <div>
+        <div class="item-title">${escapeHtml(m.nom)}${estMoi ? " (vous)" : ""}</div>
+        <div class="item-sub">${escapeHtml(m.email)}</div>
+      </div>
+      <span class="badge ${m.role === "administrateur" ? "badge-blue" : "badge-gray"}">${MEMBRE_ROLE_LABELS[m.role] || m.role}</span>
+    </div>
+    ${!m.actif ? '<div class="item-meta"><span class="badge badge-gray">Desactive</span></div>' : ""}
+    ${actions ? `<div class="item-actions">${actions}</div>` : ""}
+  </div>`;
+}
+
+function showMembreForm() {
+  const container = document.getElementById("membre-form-container");
+  container.innerHTML = `
+    <div class="form-box">
+      <h3>Ajouter un membre</h3>
+      <form id="membre-form">
+        <div class="form-grid">
+          <div><label for="mb-nom">Nom *</label><input type="text" id="mb-nom" required></div>
+          <div><label for="mb-email">Email *</label><input type="email" id="mb-email" required></div>
+          <div><label for="mb-password">Mot de passe * (8 caracteres minimum)</label><input type="password" id="mb-password" minlength="8" required></div>
+          <div>
+            <label for="mb-role">Role</label>
+            <select id="mb-role">
+              <option value="salarie">Salarie (acces normal)</option>
+              <option value="administrateur">Administrateur (peut gerer l'equipe)</option>
+            </select>
+          </div>
+        </div>
+        <p class="field-error" id="membre-form-error" hidden></p>
+        <div class="form-actions">
+          <button type="submit" class="btn-sm btn-sm-primary">Ajouter</button>
+          <button type="button" class="btn-sm" data-action="cancel-membre-form">Annuler</button>
+        </div>
+      </form>
+    </div>`;
+  container.hidden = false;
+  container.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  document.getElementById("membre-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const errorBox = document.getElementById("membre-form-error");
+    errorBox.hidden = true;
+    try {
+      await Api.createMembre({
+        nom: document.getElementById("mb-nom").value,
+        email: document.getElementById("mb-email").value,
+        password: document.getElementById("mb-password").value,
+        role: document.getElementById("mb-role").value,
+      });
+      showToast("Membre ajoute. Communiquez-lui son email et son mot de passe pour qu'il se connecte.");
+      container.hidden = true;
+      container.innerHTML = "";
+      loadEquipe();
+    } catch (err) {
+      errorBox.hidden = false;
+      errorBox.textContent = err.message;
+    }
+  });
+}
+
+function setupEquipeView() {
+  document.getElementById("btn-show-membre-form").addEventListener("click", showMembreForm);
+  document.getElementById("membre-form-container").addEventListener("click", (e) => {
+    if (e.target.closest('[data-action="cancel-membre-form"]')) {
+      const container = document.getElementById("membre-form-container");
+      container.hidden = true;
+      container.innerHTML = "";
+    }
+  });
+  document.getElementById("equipe-list").addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-action]");
+    if (!btn) return;
+    const id = parseInt(btn.dataset.id, 10);
+
+    if (btn.dataset.action === "toggle-membre-actif") {
+      const actif = btn.dataset.actif === "true";
+      await withErrorToast(async () => {
+        await Api.updateMembre(id, { actif: !actif });
+        showToast(actif ? "Membre desactive." : "Membre reactive.");
+        loadEquipe();
+      });
+    } else if (btn.dataset.action === "delete-membre") {
+      if (!confirm("Supprimer ce membre de l'equipe ?")) return;
+      await withErrorToast(async () => {
+        await Api.deleteMembre(id);
+        showToast("Membre supprime.");
+        loadEquipe();
+      });
     }
   });
 }
@@ -2765,6 +2900,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupClientsView();
   setupEntrepriseForm();
   setupAutomatisationForm();
+  setupEquipeView();
   setupPrestationsView();
   setupDevisView();
   setupFacturesView();
@@ -2790,6 +2926,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (token) {
     try {
       currentArtisan = await Api.me();
+      currentUtilisateur = await Api.moi();
       enterDashboard();
       if (abonnement === "succes") {
         showToast("Paiement recu ! Votre abonnement Pro s'active dans quelques instants.");

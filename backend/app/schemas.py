@@ -122,6 +122,64 @@ class Token(BaseModel):
     artisan: ArtisanOut
 
 
+# ---------- Equipe (membres) ----------
+
+MEMBRE_ROLES = {"administrateur", "salarie"}
+
+
+class MembreCreate(BaseModel):
+    nom: str
+    email: EmailStr
+    password: str
+    role: str = "salarie"
+
+    @field_validator("password")
+    @classmethod
+    def password_valide(cls, v):
+        if len(v) < 8:
+            raise ValueError("Le mot de passe doit faire au moins 8 caracteres")
+        return v
+
+    @field_validator("role")
+    @classmethod
+    def role_valide(cls, v):
+        if v not in MEMBRE_ROLES:
+            raise ValueError(f"role doit etre l'un de : {sorted(MEMBRE_ROLES)}")
+        return v
+
+
+class MembreUpdate(BaseModel):
+    nom: Optional[str] = None
+    role: Optional[str] = None
+    actif: Optional[bool] = None
+
+    @field_validator("role")
+    @classmethod
+    def role_valide(cls, v):
+        if v is not None and v not in MEMBRE_ROLES:
+            raise ValueError(f"role doit etre l'un de : {sorted(MEMBRE_ROLES)}")
+        return v
+
+
+class MembreOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    artisan_id: int
+    nom: str
+    email: EmailStr
+    role: str
+    actif: bool
+    created_at: datetime
+
+
+class MoiOut(BaseModel):
+    role: str  # proprietaire, administrateur, salarie
+    nom: str
+    email: EmailStr
+    membre_id: Optional[int] = None
+
+
 # ---------- Client (prospect / client, meme entite) ----------
 
 class ClientCreate(BaseModel):

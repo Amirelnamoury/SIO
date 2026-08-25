@@ -34,15 +34,20 @@ def verify_password(password: str, password_hash: str) -> bool:
         return False
 
 
-def create_access_token(artisan_id: int) -> str:
+def create_access_token(subject_id: int, subject_type: str = "artisan") -> str:
+    """subject_type distingue une connexion proprietaire ("artisan") d'une
+    connexion membre d'equipe ("membre") : les deux se connectent avec leur
+    propre email/mot de passe mais partagent les donnees de l'entreprise."""
     expire = datetime.now(timezone.utc) + timedelta(minutes=settings.jwt_expire_minutes)
-    payload = {"sub": str(artisan_id), "exp": expire}
+    payload = {"sub": str(subject_id), "typ": subject_type, "exp": expire}
     return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
 
 
-def decode_access_token(token: str) -> int | None:
+def decode_access_token(token: str) -> tuple[int, str] | None:
     try:
         payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
-        return int(payload["sub"])
+        # "typ" absent = jeton emis avant l'introduction des membres d'equipe :
+        # on suppose "artisan" pour rester compatible avec les sessions en cours.
+        return int(payload["sub"]), payload.get("typ", "artisan")
     except (jwt.PyJWTError, KeyError, ValueError):
         return None
