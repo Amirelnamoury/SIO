@@ -84,12 +84,14 @@ def require_equipe_admin(
     utilisateur: UtilisateurActif = Depends(get_utilisateur_actif),
 ) -> UtilisateurActif:
     """Reserve a la gestion de l'equipe : le proprietaire ou un membre
-    "administrateur", et seulement si l'abonnement est actif (fonction
-    payante, comme chantiers/conformite/analytics)."""
-    if utilisateur.artisan.subscription_status != "active":
+    "administrateur", et seulement sur le plan Business (voir PLAN_ORDRE) -
+    l'equipe multi-utilisateur est la fonction qui differencie Business des
+    plans en-dessous."""
+    plan_actuel = utilisateur.artisan.plan if utilisateur.artisan.plan in PLAN_ORDRE else "gratuit"
+    if utilisateur.artisan.subscription_status != "active" or PLAN_ORDRE.index(plan_actuel) < PLAN_ORDRE.index("business"):
         raise HTTPException(
             status_code=status.HTTP_402_PAYMENT_REQUIRED,
-            detail="La gestion d'equipe fait partie de l'abonnement Suite Artisan. Abonnez-vous pour la debloquer.",
+            detail="La gestion d'equipe fait partie du plan Business. Passez au plan Business pour la debloquer.",
         )
     if utilisateur.role not in ("proprietaire", "administrateur"):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Reserve aux administrateurs de l'equipe")
@@ -99,10 +101,11 @@ def require_equipe_admin(
 def require_active_subscription(
     artisan: Artisan = Depends(get_current_artisan),
 ) -> Artisan:
-    """A utiliser sur les routes reservees aux 3 fonctions payantes de Suite
-    Artisan (relances automatiques, chantiers, conformite). La gestion des
-    devis reste gratuite : c'est la porte d'entree qui donne envie de
-    s'abonner, elle ne doit jamais etre verrouillee."""
+    """A utiliser sur les routes reservees aux fonctions payantes de Suite
+    Artisan (chantiers, conformite, analytics...), quel que soit le plan
+    tant qu'il est actif. La gestion des devis reste gratuite : c'est la
+    porte d'entree qui donne envie de s'abonner, elle ne doit jamais etre
+    verrouillee."""
 
     if artisan.subscription_status != "active":
         raise HTTPException(
@@ -110,6 +113,33 @@ def require_active_subscription(
             detail="Cette fonctionnalite fait partie de l'abonnement Suite Artisan. Abonnez-vous pour la debloquer.",
         )
     return artisan
+
+
+# Hierarchie des 4 plans (section 28 du cahier des charges V4) : chaque plan
+# inclut tout ce que le precedent debloque, plus une couche de valeur en
+# plus. Volontairement seulement 2 frontieres au-dela de gratuit/payant
+# (Pro pour l'automatisation, Business pour l'equipe) - pas une matrice de
+# permissions elaboree, pour rester "simple a comprendre" comme demande.
+PLAN_ORDRE = ["gratuit", "essentiel", "pro", "business"]
+PLAN_LABELS = {"gratuit": "Gratuit", "essentiel": "Essentiel", "pro": "Pro", "business": "Business"}
+
+
+def require_plan(plan_minimum: str):
+    """Fabrique une dependance qui exige un abonnement actif ET un plan au
+    moins egal a plan_minimum dans PLAN_ORDRE. Le message d'erreur nomme le
+    plan requis (jamais juste "non autorise") pour que le paywall vende le
+    palier suivant plutot que d'afficher une interdiction seche."""
+
+    def _dependency(artisan: Artisan = Depends(require_active_subscription)) -> Artisan:
+        plan_actuel = artisan.plan if artisan.plan in PLAN_ORDRE else "gratuit"
+        if PLAN_ORDRE.index(plan_actuel) < PLAN_ORDRE.index(plan_minimum):
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail=f"Cette fonctionnalite fait partie du plan {PLAN_LABELS[plan_minimum]}. Passez au plan {PLAN_LABELS[plan_minimum]} pour la debloquer.",
+            )
+        return artisan
+
+    return _dependency
 
 
 def slugify(value: str) -> str:

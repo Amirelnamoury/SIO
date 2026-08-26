@@ -108,7 +108,7 @@
 @media (max-width: 720px) { .landing-steps { grid-template-columns: 1fr; gap: 34px; } }
 
 /* ---------- Tarifs (reutilise .pricing-plans / .plan-card de style.css) ---------- */
-.landing-pricing-plans { max-width: 720px; margin: 0 auto; }
+.landing-pricing-plans { max-width: 980px; margin: 0 auto; }
 .landing-pricing-plans .plan-card { background: var(--surface); }
 
 /* ---------- FAQ ---------- */

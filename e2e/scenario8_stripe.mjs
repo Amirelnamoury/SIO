@@ -55,13 +55,14 @@ export default async function run() {
   const customerId = `cus_e2e_${me.id}`;
   const checkoutEvent = {
     id: `evt_checkout_${me.id}`, type: "checkout.session.completed",
-    data: { object: { metadata: { artisan_id: String(me.id) }, subscription: `sub_e2e_${me.id}`, customer: customerId } },
+    data: { object: { metadata: { artisan_id: String(me.id), plan: "pro" }, subscription: `sub_e2e_${me.id}`, customer: customerId } },
   };
   const resCheckout = await postWebhookEvent(checkoutEvent);
   assertEqual(resCheckout.status, 200, "le webhook checkout.session.completed doit etre accepte (signature valide)");
   const meApresPaiement = await api.get("/auth/me", token);
-  assertEqual(meApresPaiement.subscription_status, "active", "le paiement doit activer l'abonnement (Pro)");
-  logEtape("upgrade -> paiement -> Pro : abonnement active via webhook");
+  assertEqual(meApresPaiement.subscription_status, "active", "le paiement doit activer l'abonnement");
+  assertEqual(meApresPaiement.plan, "pro", "le plan achete (metadata.plan du webhook) doit etre applique a l'artisan");
+  logEtape("upgrade -> paiement -> Pro : abonnement active et plan correctement mappe via webhook");
 
   await postWebhookEvent(checkoutEvent);
   const meIdempotence = await api.get("/auth/me", token);
@@ -72,6 +73,14 @@ export default async function run() {
   const chantier = await api.post("/chantiers", { client_id: client.id, titre: "Chantier apres upgrade" }, token);
   assert(!!chantier.id, "l'acces premium doit fonctionner reellement apres paiement");
   logEtape("acces premium reellement debloque (creation de chantier reussie)");
+
+  // Fonctionnalite specifiquement reservee au plan Pro (pas juste "abonne") :
+  // verifie que le plan achete via ce webhook debloque bien la bonne frontiere.
+  const devis = await api.post("/devis", { client_id: client.id, titre: "Devis E2E Stripe", taux_tva: 20, lignes: [{ description: "x", quantite: 1, prix_unitaire_ht: 100 }] }, token);
+  await api.patch(`/devis/${devis.id}`, { statut: "envoye" }, token);
+  const devisRelance = await api.post(`/devis/${devis.id}/relancer`, undefined, token);
+  assert(!!devisRelance.id, "le plan Pro achete doit reellement debloquer la relance manuelle de devis");
+  logEtape("fonctionnalite specifique au plan Pro (relance devis) verifiee reellement debloquee");
 
   await postWebhookEvent({ id: `evt_fail_${me.id}`, type: "customer.subscription.updated", data: { object: { customer: customerId, status: "past_due" } } });
   const meEchec = await api.get("/auth/me", token);

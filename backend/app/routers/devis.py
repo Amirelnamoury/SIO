@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
-from app.deps import get_current_artisan, require_active_subscription
+from app.deps import get_current_artisan, require_plan
 from app.models import Artisan, Client, Devis, LigneDevis
 from app.pdf import generate_devis_pdf
 from app.schemas import DevisCreate, DevisOut, DevisUpdate
@@ -261,10 +261,11 @@ def envoyer_devis(
 def relancer_devis(
     devis_id: int,
     db: Session = Depends(get_db),
-    artisan: Artisan = Depends(require_active_subscription),
+    artisan: Artisan = Depends(require_plan("pro")),
 ):
     """Passe le devis a l'etape de relance suivante (envoye -> J+3 -> J+7 -> J+15).
-    Fonction payante : necessite un abonnement actif."""
+    Fonction du plan Pro (relance manuelle comme automatique, meme
+    frontiere - voir scheduler.py)."""
     devis = _get_devis_or_404(db, artisan, devis_id)
     if devis.statut not in STATUT_SUIVANT:
         raise HTTPException(

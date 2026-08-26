@@ -18,23 +18,38 @@ def _stripe_pret() -> bool:
     return stripe is not None and bool(settings.stripe_secret_key)
 
 
+def _prix_par_plan() -> dict[str, str | None]:
+    """stripe_price_id reste le nom historique (compatibilite) : c'est le
+    prix du plan "essentiel", le premier palier payant."""
+    return {
+        "essentiel": settings.stripe_price_id,
+        "pro": settings.stripe_price_id_pro,
+        "business": settings.stripe_price_id_business,
+    }
+
+
 @router.post("/checkout-session")
 def creer_session_paiement(
+    plan: str = "essentiel",
     db: Session = Depends(get_db),
     artisan: Artisan = Depends(get_current_artisan),
 ):
-    """Cree une session Stripe Checkout pour l'abonnement mensuel Suite Artisan.
-    Si Stripe n'est pas configure (cles absentes), renvoie une erreur claire
-    sans faire planter le reste de l'application."""
+    """Cree une session Stripe Checkout pour l'un des 3 plans payants de
+    Suite Artisan (essentiel/pro/business). Si Stripe n'est pas configure
+    (cles absentes) ou que le prix du plan demande n'est pas defini, renvoie
+    une erreur claire sans faire planter le reste de l'application."""
+    if plan not in ("essentiel", "pro", "business"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="plan doit etre l'un de : essentiel, pro, business")
     if not _stripe_pret():
         raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
             detail="Stripe n'est pas configure (STRIPE_SECRET_KEY manquant). Contactez l'administrateur.",
         )
-    if not settings.stripe_price_id:
+    price_id = _prix_par_plan()[plan]
+    if not price_id:
         raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="Stripe n'est pas configure (STRIPE_PRICE_ID manquant).",
+            detail=f"Stripe n'est pas configure pour le plan {plan} (prix manquant).",
         )
 
     stripe.api_key = settings.stripe_secret_key
@@ -47,10 +62,10 @@ def creer_session_paiement(
     session = stripe.checkout.Session.create(
         customer=artisan.stripe_customer_id,
         mode="subscription",
-        line_items=[{"price": settings.stripe_price_id, "quantity": 1}],
+        line_items=[{"price": price_id, "quantity": 1}],
         success_url=f"{settings.app_base_url}/?abonnement=succes",
         cancel_url=f"{settings.app_base_url}/?abonnement=annule",
-        metadata={"artisan_id": str(artisan.id)},
+        metadata={"artisan_id": str(artisan.id), "plan": plan},
     )
     return {"checkout_url": session.url}
 
@@ -82,6 +97,9 @@ async def webhook(request: Request, db: Session = Depends(get_db)):
             if artisan:
                 artisan.subscription_status = "active"
                 artisan.stripe_subscription_id = data.get("subscription")
+                plan = data.get("metadata", {}).get("plan")
+                if plan in ("essentiel", "pro", "business"):
+                    artisan.plan = plan
                 # Toujours resynchroniser depuis l'evenement webhook (source
                 # de verite Stripe), plutot que de dependre uniquement de
                 # l'ecriture faite a la creation de la session de paiement -

@@ -56,6 +56,13 @@ async function withErrorToast(promiseFn) {
     return await promiseFn();
   } catch (err) {
     showToast(err.message || "Une erreur est survenue.", true);
+    // Un 402 "plan requis" (voir app/deps.py, require_plan) est un moment
+    // d'upgrade, pas juste une erreur : on ouvre directement la modale des
+    // tarifs a la place de laisser l'utilisateur deviner ou aller (section
+    // "moments d'upgrade" du cahier des charges V4).
+    if (err.message && err.message.includes("fait partie du plan")) {
+      setTimeout(() => openPricingModal(), 400);
+    }
     throw err;
   }
 }
@@ -289,22 +296,32 @@ function isSubscriptionActive() {
   return currentArtisan && currentArtisan.subscription_status === "active";
 }
 
-function renderUpgradeCard(title, description) {
-  const pro = PRICING.pro;
+// Doit rester le miroir exact de PLAN_ORDRE / require_plan cote backend
+// (app/deps.py) : c'est juste pour eviter d'afficher un ecran qui va
+// echouer au clic, jamais la source de verite (toujours revalidee par
+// l'API a chaque action).
+function hasPlan(minimum) {
+  if (!isSubscriptionActive()) return false;
+  const planActuel = PRICING_ORDRE.includes(currentArtisan.plan) ? currentArtisan.plan : "gratuit";
+  return PRICING_ORDRE.indexOf(planActuel) >= PRICING_ORDRE.indexOf(minimum);
+}
+
+function renderUpgradeCard(title, description, minPlan = "essentiel") {
+  const plan = PRICING[minPlan];
   return `
   <div class="upgrade-card">
     <div class="upgrade-icon">&#128274;</div>
     <h3>${escapeHtml(title)}</h3>
-    <p>${escapeHtml(description)} A partir de ${pro.prix}&nbsp;&euro; ${pro.mention}.</p>
+    <p>${escapeHtml(description)} A partir du plan ${escapeHtml(plan.nom)}, ${plan.prix}&nbsp;&euro; ${plan.mention}.</p>
     <button type="button" class="btn-primary" data-action="upgrade-subscription">Voir les tarifs</button>
   </div>`;
 }
 
-async function attemptUpgrade() {
-  const btn = document.querySelector('[data-action="confirm-upgrade"]');
+async function attemptUpgrade(plan) {
+  const btn = document.querySelector(`[data-action="confirm-upgrade"][data-plan="${plan}"]`);
   if (btn) btn.disabled = true;
   try {
-    const data = await Api.checkoutSession();
+    const data = await Api.checkoutSession(plan);
     window.location.href = data.checkout_url;
   } catch (err) {
     if (err.message.toLowerCase().includes("stripe")) {
@@ -320,6 +337,7 @@ async function attemptUpgrade() {
 // ===================== Modale des tarifs =====================
 function planCardHtml(key, plan) {
   const isPro = key === "pro";
+  const isGratuit = key === "gratuit";
   const priceHtml = plan.prix === 0
     ? '<div class="plan-price">Gratuit</div>'
     : `<div class="plan-price">${plan.prix}&nbsp;&euro; <span class="period">/ ${plan.periode}</span></div>`;
@@ -333,9 +351,9 @@ function planCardHtml(key, plan) {
     <ul class="plan-features">
       ${plan.fonctionnalites.map((f) => `<li>${escapeHtml(f)}</li>`).join("")}
     </ul>
-    ${isPro
-      ? '<button type="button" class="btn-primary" data-action="confirm-upgrade">S\'abonner a Suite Artisan Pro</button>'
-      : '<button type="button" class="btn-secondary" data-action="close-pricing">Rester sur le plan Gratuit</button>'}
+    ${isGratuit
+      ? '<button type="button" class="btn-secondary" data-action="close-pricing">Rester sur le plan Gratuit</button>'
+      : `<button type="button" class="btn-primary" data-action="confirm-upgrade" data-plan="${key}">S'abonner a ${escapeHtml(plan.nom)}</button>`}
   </div>`;
 }
 
@@ -352,7 +370,7 @@ document.addEventListener("click", (e) => {
   if (e.target.closest('[data-action="upgrade-subscription"]')) {
     openPricingModal();
   } else if (e.target.closest('[data-action="confirm-upgrade"]')) {
-    attemptUpgrade();
+    attemptUpgrade(e.target.closest('[data-action="confirm-upgrade"]').dataset.plan);
   } else if (e.target.closest('[data-action="close-pricing"]') || e.target.id === "pricing-modal") {
     closePricingModal();
   }
@@ -394,7 +412,7 @@ const ONBOARDING_STEPS = [
   {
     icon: "&#128274;",
     title: "Pour aller plus loin",
-    body: `Suite ${PRICING.pro.nom.replace("Suite ", "")} (${PRICING.pro.prix}€ ${PRICING.pro.mention}) ajoute le suivi de chantiers, la conformite et les statistiques. Vous pourrez l'activer a tout moment depuis votre profil.`,
+    body: `Le plan ${PRICING.essentiel.nom} (${PRICING.essentiel.prix}€ ${PRICING.essentiel.mention}) ajoute le suivi de chantiers, la conformite et les statistiques. Vous pourrez vous abonner a tout moment depuis votre profil.`,
   },
 ];
 let onboardingStepIndex = 0;
@@ -668,6 +686,15 @@ const MEMBRE_ROLE_LABELS = { administrateur: "Administrateur", salarie: "Salarie
 async function loadEquipe() {
   const list = document.getElementById("equipe-list");
   const addBtn = document.getElementById("btn-show-membre-form");
+  if (!hasPlan("business")) {
+    addBtn.hidden = true;
+    list.innerHTML = renderUpgradeCard(
+      "Gerez votre equipe",
+      "Affectez vos chantiers et vos taches a vos collaborateurs, avec des roles et permissions.",
+      "business"
+    );
+    return;
+  }
   addBtn.hidden = !estAdministrateur();
   list.innerHTML = skeletonCards();
   try {
@@ -1527,12 +1554,37 @@ function santeWidgetHtml(sante) {
   </div>`;
 }
 
+function activationChecklistHtml(activation) {
+  if (!activation || activation.entierement_active) return "";
+  const etapes = [
+    { fait: activation.entreprise_configuree, label: "Entreprise (logo, telephone)", view: "entreprise" },
+    { fait: activation.premier_client, label: "Premier client", view: "prospects" },
+    { fait: activation.premier_devis, label: "Premier devis", view: "devis" },
+    { fait: activation.premier_devis_envoye, label: "Premier devis envoye", view: "devis" },
+    { fait: activation.premier_chantier, label: "Premier chantier", view: "chantiers" },
+    { fait: activation.premiere_facture, label: "Premiere facture", view: "factures" },
+  ];
+  const nbFaites = etapes.filter((e) => e.fait).length;
+  return `
+  <div class="dash-section">
+    <h3>Votre compte (${nbFaites}/${etapes.length})</h3>
+    <div class="sante-barre" style="margin-bottom:12px;"><div class="remplissage" style="width:${Math.round(nbFaites / etapes.length * 100)}%;background:var(--accent);"></div></div>
+    <div class="list" style="gap:6px;">
+      ${etapes.map((e) => `
+        <div class="checklist-item" style="cursor:${e.fait ? "default" : "pointer"};" ${e.fait ? "" : `data-action="voir-notification" data-view="${e.view}"`}>
+          <span class="checklist-check" style="${e.fait ? "background:var(--success);border-color:var(--success);" : ""}">${e.fait ? "&#10003;" : ""}</span>
+          <span style="${e.fait ? "text-decoration:line-through;color:var(--text-muted);" : ""}">${escapeHtml(e.label)}</span>
+        </div>`).join("")}
+    </div>
+  </div>`;
+}
+
 async function loadDashboard() {
   const container = document.getElementById("dashboard-content");
   container.innerHTML = skeletonCards();
   try {
-    const [d, recommandations, sante] = await Promise.all([
-      Api.dashboard(), Api.dashboardRecommandations(), Api.dashboardSante(),
+    const [d, recommandations, sante, activation] = await Promise.all([
+      Api.dashboard(), Api.dashboardRecommandations(), Api.dashboardSante(), Api.dashboardActivation(),
     ]);
     const stats = [
       { label: "CA ce mois-ci", value: fmtEuro(d.finances.ca_mois) },
@@ -1576,6 +1628,7 @@ async function loadDashboard() {
       <div class="dash-grid">
         ${stats.map((s) => `<div class="dash-stat"><div class="value">${s.value}</div><div class="label">${s.label}</div></div>`).join("")}
       </div>
+      ${activationChecklistHtml(activation)}
       <div class="dash-section">
         <h3>Priorites du jour</h3>
         ${prioriteItems.length ? prioriteItems.map(prioriteRowHtml).join("") : '<div class="dash-empty">Rien qui necessite votre attention aujourd\'hui.</div>'}
@@ -2603,10 +2656,11 @@ const CONTRAT_STATUT_META = {
 
 async function loadContrats() {
   const list = document.getElementById("contrats-list");
-  if (!isSubscriptionActive()) {
+  if (!hasPlan("pro")) {
     list.innerHTML = renderUpgradeCard(
-      "Contrats recurrents reserves aux abonnes",
-      "La facturation automatique des contrats d'entretien/maintenance fait partie de l'abonnement mensuel Suite Artisan."
+      "Contrats recurrents reserves au plan Pro",
+      "La facturation automatique des contrats d'entretien/maintenance fait partie du plan Pro.",
+      "pro"
     );
     return;
   }

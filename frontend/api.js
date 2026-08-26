@@ -172,6 +172,7 @@ const Api = {
   dashboard: () => apiFetch("/dashboard"),
   dashboardRecommandations: () => apiFetch("/dashboard/recommandations"),
   dashboardSante: () => apiFetch("/dashboard/sante"),
+  dashboardActivation: () => apiFetch("/dashboard/activation"),
   analytics: () => apiFetch("/analytics"),
 
   // ---------- Recherche globale ----------
@@ -197,7 +198,7 @@ const Api = {
   deleteDocument: (id) => apiFetch(`/documents/${id}`, { method: "DELETE" }),
 
   // ---------- Abonnement ----------
-  checkoutSession: () => apiFetch("/stripe/checkout-session", { method: "POST" }),
+  checkoutSession: (plan = "essentiel") => apiFetch(`/stripe/checkout-session?plan=${encodeURIComponent(plan)}`, { method: "POST" }),
 };
 
 // Definie dans app.js : appelee quand le serveur renvoie 401 (token expire/invalide).

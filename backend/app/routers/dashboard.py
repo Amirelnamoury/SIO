@@ -13,6 +13,7 @@ from app.routers.conformite import SEUIL_ALERTE_JOURS, _to_out as conformite_to_
 from app.routers.devis import JOURS_SEUIL_STATUTS, relance_due, _to_out as devis_to_out
 from app.routers.factures import _to_out as facture_to_out
 from app.schemas import (
+    ActivationOut,
     DashboardAujourdhui,
     DashboardCommercial,
     DashboardFinances,
@@ -408,4 +409,33 @@ def obtenir_sante_entreprise(
         score_global=score_global, raison_absence_globale=raison_absence_globale,
         commercial=commercial, tresorerie=tresorerie, chantiers=chantiers_score,
         conformite=conformite, organisation=organisation,
+    )
+
+
+@router.get("/activation", response_model=ActivationOut)
+def obtenir_activation(
+    db: Session = Depends(get_db),
+    artisan: Artisan = Depends(get_current_artisan),
+):
+    """Checklist de progression (section 30) : chaque etape est un fait
+    reellement constate en base, jamais un flag qu'on coche a la main.
+    Se reduit/disparait naturellement cote frontend une fois entierement_active."""
+    entreprise_configuree = bool(artisan.nom_entreprise) and bool(artisan.telephone) and bool(artisan.logo_url)
+    premier_client = db.query(Client).filter(Client.artisan_id == artisan.id).first() is not None
+    premier_devis = db.query(Devis).filter(Devis.artisan_id == artisan.id).first() is not None
+    premier_devis_envoye = db.query(Devis).filter(Devis.artisan_id == artisan.id, Devis.statut != "nouveau").first() is not None
+    premier_chantier = db.query(Chantier).filter(Chantier.artisan_id == artisan.id).first() is not None
+    premiere_facture = db.query(Facture).filter(Facture.artisan_id == artisan.id).first() is not None
+
+    return ActivationOut(
+        entreprise_configuree=entreprise_configuree,
+        premier_client=premier_client,
+        premier_devis=premier_devis,
+        premier_devis_envoye=premier_devis_envoye,
+        premier_chantier=premier_chantier,
+        premiere_facture=premiere_facture,
+        entierement_active=all([
+            entreprise_configuree, premier_client, premier_devis,
+            premier_devis_envoye, premier_chantier, premiere_facture,
+        ]),
     )

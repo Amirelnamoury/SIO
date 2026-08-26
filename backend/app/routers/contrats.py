@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.config import settings
 from app.database import get_db
-from app.deps import require_active_subscription
+from app.deps import require_plan
 from app import email_service
 from app.models import Artisan, Client, Contrat, Facture, LigneFacture
 from app.routers.factures import _generer_numero as _generer_numero_facture
@@ -93,7 +93,7 @@ def generer_facture_pour_contrat(db: Session, artisan: Artisan, contrat: Contrat
 @router.get("", response_model=list[ContratOut])
 def lister_contrats(
     db: Session = Depends(get_db),
-    artisan: Artisan = Depends(require_active_subscription),
+    artisan: Artisan = Depends(require_plan("pro")),
 ):
     contrats = (
         db.query(Contrat)
@@ -109,7 +109,7 @@ def lister_contrats(
 def creer_contrat(
     payload: ContratCreate,
     db: Session = Depends(get_db),
-    artisan: Artisan = Depends(require_active_subscription),
+    artisan: Artisan = Depends(require_plan("pro")),
 ):
     client = db.query(Client).filter(Client.id == payload.client_id, Client.artisan_id == artisan.id).first()
     if client is None:
@@ -126,7 +126,7 @@ def modifier_contrat(
     contrat_id: int,
     payload: ContratUpdate,
     db: Session = Depends(get_db),
-    artisan: Artisan = Depends(require_active_subscription),
+    artisan: Artisan = Depends(require_plan("pro")),
 ):
     contrat = _get_contrat_or_404(db, artisan, contrat_id)
     updates = payload.model_dump(exclude_unset=True)
@@ -141,7 +141,7 @@ def modifier_contrat(
 def supprimer_contrat(
     contrat_id: int,
     db: Session = Depends(get_db),
-    artisan: Artisan = Depends(require_active_subscription),
+    artisan: Artisan = Depends(require_plan("pro")),
 ):
     contrat = _get_contrat_or_404(db, artisan, contrat_id)
     db.delete(contrat)
@@ -152,7 +152,7 @@ def supprimer_contrat(
 def generer_maintenant(
     contrat_id: int,
     db: Session = Depends(get_db),
-    artisan: Artisan = Depends(require_active_subscription),
+    artisan: Artisan = Depends(require_plan("pro")),
 ):
     """Force la generation de la facture d'echeance des maintenant, sans
     attendre le prochain passage du planificateur (utile pour tester ou pour

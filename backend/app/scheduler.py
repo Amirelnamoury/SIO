@@ -29,6 +29,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.config import settings
 from app.database import SessionLocal
 from app import email_service
+from app.deps import PLAN_ORDRE
 from app.models import Artisan, AutomationRun, ConformiteItem, Contrat, Devis, EmailLog, Facture
 from app.routers.conformite import SEUIL_ALERTE_JOURS
 from app.routers.contrats import generer_facture_pour_contrat
@@ -70,10 +71,15 @@ def _palier_devis(statut: str) -> int:
     return {"envoye": 1, "consulte": 1, "relance_j3": 2, "relance_j7": 3}.get(statut, 1)
 
 
+def _plan_au_moins(artisan: Artisan, minimum: str) -> bool:
+    plan_actuel = artisan.plan if artisan.plan in PLAN_ORDRE else "gratuit"
+    return artisan.subscription_status == "active" and PLAN_ORDRE.index(plan_actuel) >= PLAN_ORDRE.index(minimum)
+
+
 def _traiter_devis(db: Session, artisan: Artisan, run: AutomationRun) -> None:
-    # Les relances automatiques sont une fonction payante, comme leur
+    # Les relances automatiques sont une fonction du plan Pro, comme leur
     # equivalent manuel (POST /devis/{id}/relancer) : meme frontiere.
-    if artisan.subscription_status != "active":
+    if not _plan_au_moins(artisan, "pro"):
         return
     candidats = (
         db.query(Devis)
@@ -176,8 +182,10 @@ def _traiter_contrats(db: Session, artisan: Artisan, run: AutomationRun) -> None
     (pas besoin de _tentative_recente) : generer_facture_pour_contrat avance
     prochaine_echeance dans la meme transaction, ce qui rend la condition
     fausse au prochain passage - un contrat en retard de plusieurs periodes
-    rattrape une periode par passage, jusqu'a etre a jour."""
-    if artisan.subscription_status != "active":
+    rattrape une periode par passage, jusqu'a etre a jour. Contrats
+    recurrents = fonction du plan Pro, meme frontiere que le routeur
+    (voir routers/contrats.py, require_plan("pro"))."""
+    if not _plan_au_moins(artisan, "pro"):
         return
     contrats = (
         db.query(Contrat)

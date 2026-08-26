@@ -1044,6 +1044,20 @@ class SanteEntrepriseOut(BaseModel):
     organisation: SousScoreOut
 
 
+class ActivationOut(BaseModel):
+    """Suivi d'activation (section 30/31 du cahier des charges V4) : chaque
+    etape est deduite de donnees reellement presentes, jamais d'un flag
+    fabrique - un artisan qui a un vrai client a coche "premier_client",
+    point final."""
+    entreprise_configuree: bool
+    premier_client: bool
+    premier_devis: bool
+    premier_devis_envoye: bool
+    premier_chantier: bool
+    premiere_facture: bool
+    entierement_active: bool
+
+
 # ---------- Recherche globale ----------
 
 class SearchResult(BaseModel):
