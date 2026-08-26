@@ -35,6 +35,22 @@ export default async function run() {
   assert(espace.chantiers.length === 1, "le chantier doit etre visible dans le portail");
   logEtape("acces au portail : devis, facture et chantier tous visibles");
 
+  // --- Fuite de donnees (V5 section 17) : le portail ne doit JAMAIS exposer
+  // les infos internes (budget, marge, notes privees) ni les donnees d'un
+  // autre client. Verifie sur le JSON brut, pas juste sur le schema. ---
+  const chantierId = (await api.get("/chantiers", token)).find((c) => c.titre === "Chantier portail").id;
+  await api.patch(`/chantiers/${chantierId}`, { budget: 20000 }, token);
+  await api.post(`/chantiers/${chantierId}/depenses`, { libelle: "Materiaux secret ultra confidentiel", montant: 5000, date_depense: "2026-08-20" }, token);
+  await api.patch(`/clients/${client.id}`, { notes: "NOTE PRIVEE ARTISAN : ne jamais montrer au client" }, token);
+  const autreClient = await api.post("/clients", { nom: "Client Portail Autre Personne" }, token);
+
+  const espaceApresDonneesInternes = await api.get(`/pub/portail/${portailToken.token_portail}`);
+  const brut = JSON.stringify(espaceApresDonneesInternes).toLowerCase();
+  for (const termeInterdit of ["budget", "materiaux secret", "note privee", "20000", "5000", "client portail autre personne"]) {
+    assert(!brut.includes(termeInterdit.toLowerCase()), `le portail ne doit jamais exposer "${termeInterdit}" (budget/depenses/notes internes/autre client)`);
+  }
+  logEtape("aucune fuite de donnees internes (budget, depenses, notes privees, autre client) verifiee sur la reponse brute");
+
   // --- Messagerie : le client ecrit, l'artisan voit et repond ---
   await api.post(`/pub/portail/${portailToken.token_portail}/messages`, { texte: "Bonjour, une question sur le chantier." });
   const messagesVusParArtisan = await api.get(`/clients/${client.id}/messages`, token);
