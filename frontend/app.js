@@ -2842,6 +2842,19 @@ function progressionHtml(c) {
     </div>`;
 }
 
+function aujourdhuiChantierHtml(c) {
+  // Qui travaille sur ce chantier aujourd'hui : vue "cockpit" (section 15),
+  // deduite des heures reellement saisies pour la date du jour - jamais une
+  // affectation fictive.
+  const today = new Date().toISOString().slice(0, 10);
+  const heuresAujourdhui = (c.heures || []).filter((h) => h.date_travail === today);
+  if (!heuresAujourdhui.length) return "";
+  const items = heuresAujourdhui
+    .map((h) => `<strong>${escapeHtml(h.nom_intervenant)}</strong>${h.note ? " — " + escapeHtml(h.note) : ""}`)
+    .join(" · ");
+  return `<div class="item-meta" style="margin-top:2px;">🔧 Aujourd'hui : ${items}</div>`;
+}
+
 function checklistHtml(c) {
   if (!c.taches || c.taches.length === 0) return "";
   const items = c.taches.map((t) => {
@@ -2933,6 +2946,7 @@ function renderChantierCard(c) {
       <span class="badge ${(CHANTIER_STATUT_META[c.statut] || {}).badge || "badge-gray"}">${(CHANTIER_STATUT_META[c.statut] || {}).label || c.statut}</span>
     </div>
     ${c.statut === "termine" ? `<div class="moment-banner"><span class="moment-icon">✅</span><span>Chantier termine ! Cloturez-le pour generer la facture finale, demander un avis client et archiver le dossier.</span></div>` : ""}
+    ${aujourdhuiChantierHtml(c)}
     <div class="item-meta">
       Debut : ${fmtDate(c.date_debut)}
       ${c.budget !== null ? ` · Budget : ${fmtEuro(c.budget)}` : ""}
@@ -2950,6 +2964,7 @@ function renderChantierCard(c) {
       <button type="button" class="btn-sm" data-action="toggle-depense-form" data-id="${c.id}">+ Ajouter une depense</button>
       <button type="button" class="btn-sm" data-action="toggle-heures-form" data-id="${c.id}">+ Ajouter des heures</button>
       <button type="button" class="btn-sm" data-action="chantier-document" data-id="${c.id}">+ Ajouter un document</button>
+      <button type="button" class="btn-sm" data-action="planifier-intervention" data-id="${c.id}">Planifier une intervention</button>
       ${!["termine", "facture", "paye"].includes(c.statut) ? `<button type="button" class="btn-sm" data-action="terminer-chantier" data-id="${c.id}">Marquer termine</button>` : ""}
       ${["termine", "facture", "paye"].includes(c.statut) ? `<button type="button" class="btn-sm" data-action="toggle-reception-form" data-id="${c.id}">${c.date_reception ? "Modifier la reception" : "Enregistrer la reception"}</button>` : ""}
       ${c.statut === "termine" ? `<button type="button" class="btn-sm btn-sm-primary" data-action="toggle-cloturer-form" data-id="${c.id}">Cloturer le chantier</button>` : ""}
@@ -3102,6 +3117,15 @@ function setupChantiersView() {
     if (btn.dataset.action === "chantier-document") {
       switchView("documents");
       setTimeout(() => showDocumentForm(id), 50);
+    } else if (btn.dataset.action === "planifier-intervention") {
+      const chantier = chantiersCache.find((c) => c.id === id);
+      switchView("planning");
+      setTimeout(() => window.showEvenementForm({
+        titre: `Intervention - ${chantier ? chantier.titre : ""}`,
+        type: "intervention",
+        chantierId: id,
+        clientId: chantier ? chantier.client_id : null,
+      }), 100);
     } else if (btn.dataset.action === "toggle-reception-form") {
       const chantier = chantiersCache.find((c) => c.id === id);
       showReceptionForm(id, chantier);
@@ -3670,27 +3694,27 @@ async function loadPlanning() {
 }
 
 function setupPlanningView() {
-  document.querySelector('[data-action="show-evenement-form"]').addEventListener("click", async () => {
+  async function showEvenementForm(prefill = {}) {
     const container = document.getElementById("evenement-form-container");
     await ensureClientsCache();
     container.innerHTML = `
       <div class="form-box">
-        <h3>Nouveau rendez-vous</h3>
+        <h3>${prefill.titre ? "Planifier une intervention" : "Nouveau rendez-vous"}</h3>
         <form id="evenement-form">
           <div class="form-grid">
-            <div><label for="ev-titre">Titre *</label><input type="text" id="ev-titre" required></div>
+            <div><label for="ev-titre">Titre *</label><input type="text" id="ev-titre" value="${escapeHtml(prefill.titre || "")}" required></div>
             <div>
               <label for="ev-type">Type</label>
               <select id="ev-type">
-                <option value="rdv">Rendez-vous</option>
-                <option value="visite">Visite</option>
-                <option value="intervention">Intervention</option>
-                <option value="autre">Autre</option>
+                <option value="rdv" ${prefill.type === "rdv" ? "selected" : ""}>Rendez-vous</option>
+                <option value="visite" ${prefill.type === "visite" ? "selected" : ""}>Visite</option>
+                <option value="intervention" ${prefill.type === "intervention" ? "selected" : ""}>Intervention</option>
+                <option value="autre" ${prefill.type === "autre" ? "selected" : ""}>Autre</option>
               </select>
             </div>
             <div><label for="ev-date">Date *</label><input type="date" id="ev-date" required></div>
             <div><label for="ev-heure">Heure</label><input type="time" id="ev-heure" value="09:00"></div>
-            <div><label for="ev-client">Client (optionnel)</label><select id="ev-client"><option value="">Aucun</option>${clientOptionsHtml()}</select></div>
+            <div><label for="ev-client">Client (optionnel)</label><select id="ev-client"><option value="">Aucun</option>${clientOptionsHtml(prefill.clientId)}</select></div>
             <div><label for="ev-lieu">Lieu</label><input type="text" id="ev-lieu"></div>
           </div>
           <p class="field-error" id="evenement-form-error" hidden></p>
@@ -3717,6 +3741,7 @@ function setupPlanningView() {
           date_debut: new Date(`${dateVal}T${heureVal}:00`).toISOString(),
           lieu: emptyToNull(document.getElementById("ev-lieu").value),
           client_id: clientVal ? parseInt(clientVal, 10) : null,
+          chantier_id: prefill.chantierId || null,
         });
         showToast("Rendez-vous cree.");
         container.hidden = true;
@@ -3727,7 +3752,10 @@ function setupPlanningView() {
         errorBox.textContent = err.message;
       }
     });
-  });
+  }
+  window.showEvenementForm = showEvenementForm;
+
+  document.querySelector('[data-action="show-evenement-form"]').addEventListener("click", () => showEvenementForm());
 
   document.getElementById("evenement-form-container").addEventListener("click", (e) => {
     if (e.target.closest('[data-action="cancel-evenement-form"]')) {
