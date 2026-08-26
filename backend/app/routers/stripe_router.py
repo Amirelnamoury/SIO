@@ -82,6 +82,13 @@ async def webhook(request: Request, db: Session = Depends(get_db)):
             if artisan:
                 artisan.subscription_status = "active"
                 artisan.stripe_subscription_id = data.get("subscription")
+                # Toujours resynchroniser depuis l'evenement webhook (source
+                # de verite Stripe), plutot que de dependre uniquement de
+                # l'ecriture faite a la creation de la session de paiement -
+                # rend customer.subscription.* fiable meme si cette premiere
+                # ecriture avait echoue ou ete contournee.
+                if data.get("customer"):
+                    artisan.stripe_customer_id = data.get("customer")
                 db.commit()
 
     elif event["type"] in ("customer.subscription.deleted", "customer.subscription.updated"):

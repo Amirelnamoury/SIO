@@ -7,6 +7,7 @@ Pour changer de fournisseur plus tard : seule _send_raw() doit changer,
 toute la couche au-dessus (send_devis, send_facture...) reste identique.
 """
 import logging
+import time
 
 import httpx
 from sqlalchemy.orm import Session
@@ -36,27 +37,49 @@ def _log(
     return entry
 
 
+# Un blip reseau ou une erreur 5xx cote fournisseur est generalement
+# transitoire : une seule retentative rapide avant d'abandonner. Volontai-
+# rement borne (1 retry, timeout reduit) pour ne jamais bloquer une requete
+# utilisateur synchrone (ex: "Envoyer le devis") plus de ~20s au pire.
+_MAX_TENTATIVES = 2
+_TIMEOUT_PAR_TENTATIVE = 10.0
+_PAUSE_ENTRE_TENTATIVES = 0.5
+
+
 def _send_raw(destinataire: str, objet: str, html: str) -> tuple[bool, str | None, str | None]:
     """Retourne (succes, provider_id, erreur). Ne leve jamais : toute panne
     reseau ou refus du fournisseur est capturee et remontee proprement."""
-    try:
-        resp = httpx.post(
-            settings.resend_api_url,
-            headers={"Authorization": f"Bearer {settings.resend_api_key}", "Content-Type": "application/json"},
-            json={
-                "from": f"{settings.email_from_nom} <{settings.email_from}>",
-                "to": [destinataire],
-                "subject": objet,
-                "html": html,
-            },
-            timeout=15.0,
-        )
-        if resp.status_code >= 400:
-            return False, None, f"HTTP {resp.status_code} : {resp.text[:300]}"
-        data = resp.json()
-        return True, data.get("id"), None
-    except httpx.HTTPError as exc:
-        return False, None, f"Erreur reseau : {exc}"
+    derniere_erreur = None
+    for tentative in range(1, _MAX_TENTATIVES + 1):
+        try:
+            resp = httpx.post(
+                settings.resend_api_url,
+                headers={"Authorization": f"Bearer {settings.resend_api_key}", "Content-Type": "application/json"},
+                json={
+                    "from": f"{settings.email_from_nom} <{settings.email_from}>",
+                    "to": [destinataire],
+                    "subject": objet,
+                    "html": html,
+                },
+                timeout=_TIMEOUT_PAR_TENTATIVE,
+            )
+            if resp.status_code >= 500:
+                derniere_erreur = f"HTTP {resp.status_code} : {resp.text[:300]}"
+            elif resp.status_code >= 400:
+                # Erreur client (ex: destinataire invalide) : jamais transitoire,
+                # inutile de retenter.
+                return False, None, f"HTTP {resp.status_code} : {resp.text[:300]}"
+            else:
+                data = resp.json()
+                return True, data.get("id"), None
+        except httpx.HTTPError as exc:
+            derniere_erreur = f"Erreur reseau : {exc}"
+
+        if tentative < _MAX_TENTATIVES:
+            logger.info("Tentative %d/%d d'envoi echouee (%s), nouvel essai...", tentative, _MAX_TENTATIVES, derniere_erreur)
+            time.sleep(_PAUSE_ENTRE_TENTATIVES)
+
+    return False, None, derniere_erreur
 
 
 def _envoyer(

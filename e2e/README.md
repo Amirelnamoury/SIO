@@ -19,6 +19,16 @@ cd backend && source .venv/bin/activate && uvicorn app.main:app --port 8000 &
 cd ../e2e && node run_all.mjs
 ```
 
+Pour inclure le scenario Stripe (8), demarrer le backend avec des cles de
+test et passer le meme secret webhook au script :
+
+```bash
+cd backend && source .venv/bin/activate
+STRIPE_SECRET_KEY=sk_test_fake STRIPE_WEBHOOK_SECRET=whsec_test_local STRIPE_PRICE_ID=price_test_fake \
+  uvicorn app.main:app --port 8000 &
+cd ../e2e && STRIPE_TEST_WEBHOOK_SECRET=whsec_test_local node run_all.mjs
+```
+
 Chaque scenario cree ses propres artisans de test avec des emails uniques
 (horodates) : ils peuvent tourner plusieurs fois de suite sans collision,
 et n'interferent pas entre eux (isolation multi-tenant garantie par
@@ -51,6 +61,17 @@ l'application elle-meme, pas par le test).
    reste consultable via ?archive=true, aucune cascade destructrice
    (les devis d'un client archive, les notes/depenses d'un chantier
    archive restent intacts), restauration verifiee.
+8. **scenario8_stripe.mjs** - Free -> upgrade -> paiement -> Pro ->
+   webhook -> echec de paiement (etat coherent, acces re-bloque) ->
+   resolution -> annulation. Signe reellement des evenements webhook en
+   HMAC-SHA256 (meme schema que Stripe) pour tester la verification de
+   signature et la logique metier sans compte Stripe reel. **Necessite
+   un backend demarre avec `STRIPE_WEBHOOK_SECRET` fixe a la meme valeur
+   que la variable d'environnement `STRIPE_TEST_WEBHOOK_SECRET` passee a
+   ce script** (`STRIPE_SECRET_KEY`/`STRIPE_PRICE_ID` peuvent etre des
+   valeurs factices : le webhook ne fait jamais d'appel sortant vers
+   l'API Stripe) - sans cette config, le scenario se saute proprement
+   (ne fait pas echouer la suite).
 
 ## Limites connues
 
