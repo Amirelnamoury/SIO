@@ -322,7 +322,17 @@ async function attemptUpgrade(plan) {
   if (btn) btn.disabled = true;
   try {
     const data = await Api.checkoutSession(plan);
-    window.location.href = data.checkout_url;
+    if (data.plan_change_immediat) {
+      // Abonnement deja actif : le changement de plan a ete applique
+      // directement (proration Stripe), pas besoin de repasser par une
+      // page de paiement externe.
+      showToast("Votre plan a ete mis a jour.");
+      closePricingModal();
+      currentArtisan = await Api.me();
+      switchView(document.querySelector(".nav-link.active")?.dataset.view || "dashboard");
+    } else {
+      window.location.href = data.checkout_url;
+    }
   } catch (err) {
     if (err.message.toLowerCase().includes("stripe")) {
       showToast("Le paiement en ligne n'est pas encore active sur ce compte. Contactez l'administrateur pour activer votre abonnement.", true);

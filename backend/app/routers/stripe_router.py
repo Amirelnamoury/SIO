@@ -28,6 +28,17 @@ def _prix_par_plan() -> dict[str, str | None]:
     }
 
 
+def _plan_pour_price_id(price_id: str | None) -> str | None:
+    """Sens inverse de _prix_par_plan() : retrouve le plan a partir d'un
+    price_id Stripe recu dans un evenement webhook."""
+    if not price_id:
+        return None
+    for plan, pid in _prix_par_plan().items():
+        if pid == price_id:
+            return plan
+    return None
+
+
 @router.post("/checkout-session")
 def creer_session_paiement(
     plan: str = "essentiel",
@@ -59,6 +70,29 @@ def creer_session_paiement(
         artisan.stripe_customer_id = customer.id
         db.commit()
 
+    # Changer de plan alors qu'un abonnement Stripe est deja actif doit
+    # modifier CET abonnement (avec proration), jamais en creer un second en
+    # parallele : une nouvelle session Checkout en mode "subscription"
+    # creerait un deuxieme abonnement Stripe et facturerait l'artisan deux
+    # fois. Ce cas ne se produisait pas dans les tests (toujours un artisan
+    # tout juste passe de Free a un plan payant) mais se produit reellement
+    # des qu'un abonne change de palier.
+    if artisan.stripe_subscription_id and artisan.subscription_status in ("active", "past_due"):
+        abonnement = stripe.Subscription.retrieve(artisan.stripe_subscription_id)
+        item_id = abonnement["items"]["data"][0]["id"]
+        stripe.Subscription.modify(
+            artisan.stripe_subscription_id,
+            items=[{"id": item_id, "price": price_id}],
+            proration_behavior="create_prorations",
+            metadata={"artisan_id": str(artisan.id), "plan": plan},
+        )
+        # Applique tout de suite (le webhook customer.subscription.updated
+        # resynchronisera aussi, en filet de securite si cette ecriture
+        # echouait pour une raison quelconque).
+        artisan.plan = plan
+        db.commit()
+        return {"checkout_url": None, "plan_change_immediat": True}
+
     session = stripe.checkout.Session.create(
         customer=artisan.stripe_customer_id,
         mode="subscription",
@@ -67,7 +101,7 @@ def creer_session_paiement(
         cancel_url=f"{settings.app_base_url}/?abonnement=annule",
         metadata={"artisan_id": str(artisan.id), "plan": plan},
     )
-    return {"checkout_url": session.url}
+    return {"checkout_url": session.url, "plan_change_immediat": False}
 
 
 @router.post("/webhook")
@@ -114,6 +148,16 @@ async def webhook(request: Request, db: Session = Depends(get_db)):
         artisan = db.query(Artisan).filter(Artisan.stripe_customer_id == customer_id).first()
         if artisan:
             artisan.subscription_status = data.get("status", artisan.subscription_status)
+            # Resynchronise aussi le plan depuis le price Stripe reellement
+            # actif sur l'abonnement : source de verite unique, que le
+            # changement vienne de /checkout-session, d'une modification
+            # manuelle dans le dashboard Stripe, ou d'un futur portail
+            # client self-service.
+            items = data.get("items", {}).get("data", [])
+            if items:
+                plan = _plan_pour_price_id(items[0].get("price", {}).get("id"))
+                if plan:
+                    artisan.plan = plan
             db.commit()
 
     return {"received": True}

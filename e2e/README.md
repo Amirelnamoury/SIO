@@ -25,8 +25,9 @@ test et passer le meme secret webhook au script :
 ```bash
 cd backend && source .venv/bin/activate
 STRIPE_SECRET_KEY=sk_test_fake STRIPE_WEBHOOK_SECRET=whsec_test_local STRIPE_PRICE_ID=price_test_fake \
+  STRIPE_PRICE_ID_PRO=price_test_pro STRIPE_PRICE_ID_BUSINESS=price_test_business \
   uvicorn app.main:app --port 8000 &
-cd ../e2e && STRIPE_TEST_WEBHOOK_SECRET=whsec_test_local node run_all.mjs
+cd ../e2e && STRIPE_TEST_WEBHOOK_SECRET=whsec_test_local STRIPE_PRICE_ID_BUSINESS=price_test_business node run_all.mjs
 ```
 
 Chaque scenario cree ses propres artisans de test avec des emails uniques
@@ -71,7 +72,19 @@ l'application elle-meme, pas par le test).
    ce script** (`STRIPE_SECRET_KEY`/`STRIPE_PRICE_ID` peuvent etre des
    valeurs factices : le webhook ne fait jamais d'appel sortant vers
    l'API Stripe) - sans cette config, le scenario se saute proprement
-   (ne fait pas echouer la suite).
+   (ne fait pas echouer la suite). Verifie aussi (V5) que le plan se
+   resynchronise depuis le price_id d'un evenement `customer.subscription.updated`
+   independant du checkout initial - necessite en plus `STRIPE_PRICE_ID_BUSINESS`
+   (peut aussi etre une valeur factice), sinon seule cette sous-verification
+   est sautee.
+
+   Ce que ce scenario NE teste PAS (necessite un vrai compte Stripe Test
+   Mode, non configure ici a la demande du proprietaire du produit) : le
+   changement de plan d'un artisan deja abonne via `POST /stripe/checkout-session`
+   (`stripe.Subscription.retrieve`/`modify`, code review uniquement) et la
+   creation reelle d'une session Checkout / d'un client Stripe. Voir le
+   rapport final V5 pour la distinction complete entre "teste en Test Mode",
+   "teste en simulation locale" et "non teste faute de configuration".
 9. **scenario9_securite.mjs** - changement de mot de passe (proprietaire
    et membre d'equipe, avec verification qu'un mauvais mot de passe actuel
    ne provoque jamais de deconnexion forcee), isolation multi-tenant sur

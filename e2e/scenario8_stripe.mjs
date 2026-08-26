@@ -99,6 +99,25 @@ export default async function run() {
   assertEqual(meResolu.subscription_status, "active", "la resolution du paiement doit restaurer l'acces");
   logEtape("paiement resolu : acces restaure");
 
+  // V5 section 6 : un changement de plan doit se refleter meme quand il ne
+  // vient pas de checkout.session.completed (ex: modifie directement sur
+  // l'abonnement Stripe existant - c'est le webhook customer.subscription.updated
+  // qui est desormais la source de verite pour le plan, pas seulement pour
+  // le statut). Necessite STRIPE_PRICE_ID_BUSINESS pour verifier le mapping
+  // price -> plan (peut etre une valeur factice, le webhook ne fait aucun
+  // appel sortant vers Stripe).
+  if (process.env.STRIPE_PRICE_ID_BUSINESS) {
+    await postWebhookEvent({
+      id: `evt_changement_plan_${me.id}`, type: "customer.subscription.updated",
+      data: { object: { customer: customerId, status: "active", items: { data: [{ price: { id: process.env.STRIPE_PRICE_ID_BUSINESS } }] } } },
+    });
+    const meApresChangement = await api.get("/auth/me", token);
+    assertEqual(meApresChangement.plan, "business", "le plan doit se resynchroniser depuis le price_id de l'evenement webhook, pas seulement a la souscription initiale");
+    logEtape("changement de plan via webhook (hors checkout initial) : plan resynchronise depuis le price_id");
+  } else {
+    logEtape("SAUTE (partiel) : STRIPE_PRICE_ID_BUSINESS non defini, resynchronisation du plan via webhook non verifiee");
+  }
+
   await postWebhookEvent({ id: `evt_cancel_${me.id}`, type: "customer.subscription.deleted", data: { object: { customer: customerId, status: "canceled" } } });
   const meAnnule = await api.get("/auth/me", token);
   assertEqual(meAnnule.subscription_status, "canceled", "l'annulation doit se refleter dans l'etat de l'artisan");
