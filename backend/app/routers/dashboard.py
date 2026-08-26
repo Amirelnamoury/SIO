@@ -179,9 +179,13 @@ def obtenir_dashboard(
         if (c.created_at if c.created_at.tzinfo is not None else c.created_at.replace(tzinfo=timezone.utc)) >= il_y_a_30j
     )
     nb_clients_gagnes_site = sum(1 for c in clients_site if c.statut == "gagne")
-    ca_genere_site = round(sum(
-        float(p.montant) for c in clients_site for f in c.factures for p in f.paiements
-    ), 2)
+    montants_site = (
+        db.query(Paiement.montant)
+        .join(Facture, Paiement.facture_id == Facture.id)
+        .filter(Facture.client_id.in_([c.id for c in clients_site]))
+        .all()
+    ) if clients_site else []
+    ca_genere_site = round(sum(float(m[0]) for m in montants_site), 2)
     taux_conversion_site = round(nb_clients_gagnes_site / nb_demandes_total * 100, 1) if nb_demandes_total else None
 
     presence_site = DashboardPresenceSite(

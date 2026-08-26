@@ -74,17 +74,17 @@
 
 <!-- ===================== TABLEAU DE BORD ===================== -->
 <!-- ---------- Modale tarifs / abonnement ---------- -->
-<div id="pricing-modal" class="search-modal" hidden>
+<div id="pricing-modal" class="search-modal" hidden role="dialog" aria-modal="true" aria-labelledby="pricing-modal-title">
   <div class="pricing-modal-box">
-    <button type="button" class="side-panel-close" data-action="close-pricing">&times;</button>
-    <h3>Choisissez votre plan</h3>
+    <button type="button" class="side-panel-close" data-action="close-pricing" aria-label="Fermer">&times;</button>
+    <h3 id="pricing-modal-title">Choisissez votre plan</h3>
     <p class="pricing-modal-sub">Chaque plan inclut tout ce qui precede, plus une nouvelle couche de valeur.</p>
     <div id="pricing-plans" class="pricing-plans"></div>
   </div>
 </div>
 
 <!-- ---------- Onboarding (premiere connexion) ---------- -->
-<div id="onboarding-modal" class="search-modal" hidden>
+<div id="onboarding-modal" class="search-modal" hidden role="dialog" aria-modal="true">
   <div class="onboarding-box">
     <div id="onboarding-steps"></div>
     <div class="onboarding-nav">
@@ -98,7 +98,7 @@
 </div>
 
 <!-- ---------- Confirmation (remplace window.confirm natif) ---------- -->
-<div id="confirm-dialog" class="search-modal" hidden>
+<div id="confirm-dialog" class="search-modal" hidden role="dialog" aria-modal="true" aria-labelledby="confirm-dialog-title">
   <div class="confirm-dialog-box">
     <h3 id="confirm-dialog-title">Confirmer</h3>
     <p id="confirm-dialog-message"></p>
@@ -110,9 +110,9 @@
 </div>
 
 <!-- ---------- Recherche globale (Ctrl+K) ---------- -->
-<div id="search-modal" class="search-modal" hidden>
+<div id="search-modal" class="search-modal" hidden role="dialog" aria-modal="true" aria-label="Recherche">
   <div class="search-modal-box">
-    <input type="text" id="search-input" placeholder="Rechercher un client, un devis, une facture, un chantier..." autocomplete="off">
+    <input type="text" id="search-input" aria-label="Rechercher un client, un devis, une facture, un chantier" placeholder="Rechercher un client, un devis, une facture, un chantier..." autocomplete="off">
     <div id="search-results"></div>
   </div>
 </div>
@@ -188,18 +188,18 @@
   <main class="content">
 
     <!-- ---------- Profil (panneau discret) ---------- -->
-    <div id="panel-profil" class="side-panel" hidden>
+    <div id="panel-profil" class="side-panel" hidden role="dialog" aria-modal="true">
       <div class="side-panel-box">
-        <button type="button" class="side-panel-close" data-action="close-profil">&times;</button>
+        <button type="button" class="side-panel-close" data-action="close-profil" aria-label="Fermer">&times;</button>
         <h3>Mon profil</h3>
         <div id="profil-content"></div>
       </div>
     </div>
 
     <!-- ---------- Panneau timeline client ---------- -->
-    <div id="panel-timeline" class="side-panel" hidden>
+    <div id="panel-timeline" class="side-panel" hidden role="dialog" aria-modal="true">
       <div class="side-panel-box">
-        <button type="button" class="side-panel-close" data-action="close-timeline">&times;</button>
+        <button type="button" class="side-panel-close" data-action="close-timeline" aria-label="Fermer">&times;</button>
         <h3 id="timeline-titre">Historique</h3>
         <div id="timeline-content"></div>
       </div>

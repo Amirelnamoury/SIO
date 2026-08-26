@@ -464,6 +464,16 @@ document.addEventListener("click", (e) => {
   }
 });
 
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !document.getElementById("onboarding-modal").hidden) finishOnboarding();
+  if (e.key === "Escape") {
+    ["panel-profil", "panel-timeline"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el && !el.hidden) el.hidden = true;
+    });
+  }
+});
+
 function switchView(view) {
   document.querySelectorAll(".nav-link").forEach((btn) => btn.classList.toggle("active", btn.dataset.view === view));
   // Sur mobile, la nav devient une rangee horizontale scrollable : sans ca,
@@ -1718,7 +1728,7 @@ function renderClientCard(c) {
     ${c.prochaine_action ? `<div class="kanban-card-next">→ ${escapeHtml(c.prochaine_action)}</div>` : ""}
     <div class="kanban-card-actions">
       <select data-action="changer-statut-client" data-id="${c.id}">${statutOptions}</select>
-      <button type="button" class="btn-sm btn-sm-danger" data-action="delete-client" data-id="${c.id}" title="Archiver">&times;</button>
+      <button type="button" class="btn-sm btn-sm-danger" data-action="delete-client" data-id="${c.id}" title="Archiver" aria-label="Archiver">&times;</button>
     </div>
   </div>`;
 }
@@ -2026,7 +2036,7 @@ function ligneRowHtml(ligne) {
     <input type="number" step="0.01" min="0" class="ligne-quantite" placeholder="Qte" value="${l.quantite ?? 1}">
     <input type="text" class="ligne-unite" placeholder="Unite" value="${escapeHtml(l.unite || "forfait")}">
     <input type="number" step="0.01" min="0" class="ligne-prix" placeholder="PU HT" value="${l.prix_unitaire_ht !== undefined && l.prix_unitaire_ht !== null ? l.prix_unitaire_ht : ""}">
-    <button type="button" class="btn-sm btn-sm-danger" data-action="remove-ligne" title="Retirer">&times;</button>
+    <button type="button" class="btn-sm btn-sm-danger" data-action="remove-ligne" title="Retirer" aria-label="Retirer cette ligne">&times;</button>
   </div>`;
 }
 
@@ -2870,7 +2880,7 @@ function heuresHtml(c) {
     .map((h) => `
       <div class="item-sub" style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
         <span>${fmtDate(h.date_travail)} · ${escapeHtml(h.nom_intervenant)} · ${parseFloat(h.duree_heures).toFixed(2).replace(/\.00$/, "")}h${h.cout !== null ? " · " + fmtEuro(h.cout) : ""}${h.note ? " · " + escapeHtml(h.note) : ""}</span>
-        <button type="button" class="btn-sm btn-sm-danger" style="padding:2px 8px;flex-shrink:0;" data-action="delete-heure" data-id="${c.id}" data-heure-id="${h.id}">&times;</button>
+        <button type="button" class="btn-sm btn-sm-danger" style="padding:2px 8px;flex-shrink:0;" data-action="delete-heure" data-id="${c.id}" data-heure-id="${h.id}" title="Supprimer" aria-label="Supprimer cette entree d'heures">&times;</button>
       </div>`)
     .join("");
   return `<div class="dash-section" style="margin:12px 0;">
