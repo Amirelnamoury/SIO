@@ -1,8 +1,9 @@
+import mimetypes
 import uuid
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, status
-from fastapi.responses import FileResponse
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -10,6 +11,7 @@ from app.database import get_db
 from app.deps import get_current_artisan
 from app.models import Artisan, Document
 from app.schemas import DOCUMENT_TYPES, DocumentCreate, DocumentOut
+from app.storage import get_storage
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -18,12 +20,6 @@ EXTENSIONS_AUTORISEES = {
     ".pdf", ".jpg", ".jpeg", ".png", ".heic", ".heif",
     ".doc", ".docx", ".xls", ".xlsx", ".odt", ".txt",
 }
-
-
-def _uploads_root() -> Path:
-    root = Path(settings.uploads_dir)
-    root.mkdir(parents=True, exist_ok=True)
-    return root
 
 
 @router.get("", response_model=list[DocumentOut])
@@ -73,7 +69,9 @@ async def uploader_document(
     db: Session = Depends(get_db),
     artisan: Artisan = Depends(get_current_artisan),
 ):
-    """Uploade reellement un fichier et le stocke sur disque (pas de faux lien)."""
+    """Uploade reellement un fichier et le stocke (pas de faux lien). Passe
+    par l'abstraction de stockage (app/storage.py) : disque local pour
+    l'instant, migrable vers un stockage objet sans toucher ce router."""
     if type not in DOCUMENT_TYPES:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"type doit etre l'un de : {sorted(DOCUMENT_TYPES)}")
 
@@ -91,11 +89,12 @@ async def uploader_document(
     if len(contenu) == 0:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Fichier vide")
 
-    artisan_dir = _uploads_root() / str(artisan.id)
-    artisan_dir.mkdir(parents=True, exist_ok=True)
+    # Cle relative (jamais le nom fourni par l'utilisateur) : prefixee par
+    # l'artisan pour qu'un meme uuid ne puisse jamais collisionner entre
+    # deux entreprises, et pour rester lisible si on inspecte le stockage.
     nom_disque = f"{uuid.uuid4().hex}{extension}"
-    chemin = artisan_dir / nom_disque
-    chemin.write_bytes(contenu)
+    cle = f"{artisan.id}/{nom_disque}"
+    get_storage().save(cle, contenu)
 
     document = Document(
         artisan_id=artisan.id,
@@ -105,7 +104,7 @@ async def uploader_document(
         facture_id=facture_id,
         nom=nom or file.filename or nom_disque,
         type=type,
-        chemin_fichier=str(chemin),
+        chemin_fichier=cle,
         nom_original=file.filename,
         taille_octets=len(contenu),
     )
@@ -121,15 +120,21 @@ def telecharger_document(
     db: Session = Depends(get_db),
     artisan: Artisan = Depends(get_current_artisan),
 ):
+    """Jamais de fichier expose directement (pas de mount statique) : cet
+    endpoint verifie la propriete avant de streamer le contenu, quel que
+    soit le backend de stockage derriere get_storage()."""
     document = db.query(Document).filter(Document.id == document_id, Document.artisan_id == artisan.id).first()
     if document is None or not document.chemin_fichier:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Fichier introuvable")
-    chemin = Path(document.chemin_fichier)
-    if not chemin.is_file():
+    contenu = get_storage().read(document.chemin_fichier)
+    if contenu is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Fichier introuvable")
-    return FileResponse(
-        path=chemin,
-        filename=document.nom_original or document.nom,
+    nom_fichier = document.nom_original or document.nom
+    type_mime = mimetypes.guess_type(nom_fichier)[0] or "application/octet-stream"
+    return Response(
+        content=contenu,
+        media_type=type_mime,
+        headers={"Content-Disposition": f'attachment; filename="{nom_fichier}"'},
     )
 
 
@@ -143,8 +148,6 @@ def supprimer_document(
     if document is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document introuvable")
     if document.chemin_fichier:
-        chemin = Path(document.chemin_fichier)
-        if chemin.is_file():
-            chemin.unlink()
+        get_storage().delete(document.chemin_fichier)
     db.delete(document)
     db.commit()
