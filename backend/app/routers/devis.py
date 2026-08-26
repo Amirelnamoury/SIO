@@ -26,6 +26,13 @@ router = APIRouter(prefix="/devis", tags=["devis"])
 STATUT_SUIVANT = {"envoye": "relance_j3", "consulte": "relance_j3", "relance_j3": "relance_j7", "relance_j7": "relance_j15"}
 JOURS_SEUIL_STATUTS = ("envoye", "consulte", "relance_j3", "relance_j7")
 
+# Source unique (V5 section 10) : dashboard.py et analytics.py importent
+# cette constante plutot que de la redefinir chacun de leur cote - deux
+# copies identiques aujourd'hui auraient pu diverger silencieusement au
+# prochain changement et faire afficher un pipeline different au tableau
+# de bord et dans les statistiques pour les memes donnees.
+DEVIS_STATUTS_FINAUX = ("signe", "perdu", "expire")
+
 
 def _jours_seuil(artisan: Artisan) -> dict:
     return {

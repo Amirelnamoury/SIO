@@ -8,11 +8,10 @@ from sqlalchemy.orm import Session, joinedload
 from app.database import get_db
 from app.deps import require_active_subscription
 from app.models import Artisan, Client, Devis, Facture, Paiement
+from app.routers.devis import DEVIS_STATUTS_FINAUX
 from app.schemas import AnalyticsMois, AnalyticsOut, AnalyticsSource, FunnelEtapeOut
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
-
-DEVIS_STATUTS_FINAUX = ("signe", "perdu", "expire")
 
 
 @router.get("", response_model=AnalyticsOut)

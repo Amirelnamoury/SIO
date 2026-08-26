@@ -10,7 +10,7 @@ from app.deps import get_current_artisan
 from app.models import Artisan, Chantier, Client, ConformiteItem, Devis, Evenement, Facture, Paiement, Tache
 from app.routers.chantiers import _to_out as chantier_to_out
 from app.routers.conformite import SEUIL_ALERTE_JOURS, _to_out as conformite_to_out
-from app.routers.devis import JOURS_SEUIL_STATUTS, relance_due, _to_out as devis_to_out
+from app.routers.devis import DEVIS_STATUTS_FINAUX, JOURS_SEUIL_STATUTS, relance_due, _to_out as devis_to_out
 from app.routers.factures import _to_out as facture_to_out
 from app.schemas import (
     ActivationOut,
@@ -27,7 +27,6 @@ from app.schemas import (
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
 DEVIS_STATUTS_EN_ATTENTE = ("envoye", "consulte", "relance_j3", "relance_j7", "relance_j15")
-DEVIS_STATUTS_FINAUX = ("signe", "perdu", "expire")
 
 
 @router.get("", response_model=DashboardOut)
