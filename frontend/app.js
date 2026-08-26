@@ -2514,6 +2514,21 @@ function tresorerieHeaderHtml(factures) {
 async function loadFactures() {
   const list = document.getElementById("factures-list");
   const tresorerie = document.getElementById("factures-tresorerie");
+  const newBtn = document.querySelector('[data-action="show-facture-form"]');
+  const formContainer = document.getElementById("facture-form-container");
+
+  if (!isSubscriptionActive()) {
+    if (newBtn) newBtn.hidden = true;
+    if (formContainer) { formContainer.hidden = true; formContainer.innerHTML = ""; }
+    tresorerie.innerHTML = "";
+    list.innerHTML = renderUpgradeCard(
+      "Facturation reservee aux abonnes",
+      "Les factures, acomptes et suivi des paiements font partie de l'abonnement mensuel Suite Artisan."
+    );
+    return;
+  }
+  if (newBtn) newBtn.hidden = false;
+
   list.innerHTML = skeletonCards();
   try {
     const [factures, aRelancer] = await Promise.all([Api.listFactures(), Api.facturesARelancer()]);

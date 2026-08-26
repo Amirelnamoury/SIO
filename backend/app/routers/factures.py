@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
-from app.deps import get_current_artisan
+from app.deps import require_active_subscription
 from app import email_service
 from app.models import Artisan, Client, Devis, Facture, LigneFacture, Paiement
 from app.numerotation import generer_numero
@@ -87,7 +87,7 @@ def lister_factures(
     client_id: Optional[int] = None,
     archive: bool = False,
     db: Session = Depends(get_db),
-    artisan: Artisan = Depends(get_current_artisan),
+    artisan: Artisan = Depends(require_active_subscription),
 ):
     query = (
         db.query(Facture)
@@ -108,7 +108,7 @@ def lister_factures(
 @router.get("/a-relancer", response_model=list[FactureOut])
 def factures_a_relancer(
     db: Session = Depends(get_db),
-    artisan: Artisan = Depends(get_current_artisan),
+    artisan: Artisan = Depends(require_active_subscription),
 ):
     """Factures impayees dont la prochaine relance est due (voir relance_facture_due)."""
     factures = (
@@ -127,7 +127,7 @@ def factures_a_relancer(
 def relancer_facture(
     facture_id: int,
     db: Session = Depends(get_db),
-    artisan: Artisan = Depends(get_current_artisan),
+    artisan: Artisan = Depends(require_active_subscription),
 ):
     """Enregistre qu'une relance a ete envoyee au client pour cette facture impayee."""
     facture = _get_facture_or_404(db, artisan, facture_id)
@@ -144,7 +144,7 @@ def relancer_facture(
 def creer_facture(
     payload: FactureCreate,
     db: Session = Depends(get_db),
-    artisan: Artisan = Depends(get_current_artisan),
+    artisan: Artisan = Depends(require_active_subscription),
 ):
     client = db.query(Client).filter(Client.id == payload.client_id, Client.artisan_id == artisan.id).first()
     if client is None:
@@ -177,7 +177,7 @@ def creer_facture_depuis_devis(
     devis_id: int,
     type: str = "standard",
     db: Session = Depends(get_db),
-    artisan: Artisan = Depends(get_current_artisan),
+    artisan: Artisan = Depends(require_active_subscription),
 ):
     """Convertit un devis signe en facture : reprend le client et les lignes."""
     devis = (
@@ -215,7 +215,7 @@ def creer_facture_depuis_devis(
 def obtenir_facture(
     facture_id: int,
     db: Session = Depends(get_db),
-    artisan: Artisan = Depends(get_current_artisan),
+    artisan: Artisan = Depends(require_active_subscription),
 ):
     facture = _get_facture_or_404(db, artisan, facture_id)
     _recalculer_statut(facture)
@@ -227,7 +227,7 @@ def obtenir_facture(
 def telecharger_facture_pdf(
     facture_id: int,
     db: Session = Depends(get_db),
-    artisan: Artisan = Depends(get_current_artisan),
+    artisan: Artisan = Depends(require_active_subscription),
 ):
     facture = _get_facture_or_404(db, artisan, facture_id)
     if not facture.lignes:
@@ -244,7 +244,7 @@ def modifier_facture(
     facture_id: int,
     payload: FactureUpdate,
     db: Session = Depends(get_db),
-    artisan: Artisan = Depends(get_current_artisan),
+    artisan: Artisan = Depends(require_active_subscription),
 ):
     facture = _get_facture_or_404(db, artisan, facture_id)
     updates = payload.model_dump(exclude_unset=True, exclude={"lignes"})
@@ -267,7 +267,7 @@ def modifier_facture(
 def supprimer_facture(
     facture_id: int,
     db: Session = Depends(get_db),
-    artisan: Artisan = Depends(get_current_artisan),
+    artisan: Artisan = Depends(require_active_subscription),
 ):
     """Archive la facture plutot que de la supprimer definitivement (section 44) :
     jamais de perte d'un document financier, meme retire des listes actives."""
@@ -280,7 +280,7 @@ def supprimer_facture(
 def restaurer_facture(
     facture_id: int,
     db: Session = Depends(get_db),
-    artisan: Artisan = Depends(get_current_artisan),
+    artisan: Artisan = Depends(require_active_subscription),
 ):
     facture = _get_facture_or_404(db, artisan, facture_id)
     facture.archive = False
@@ -294,7 +294,7 @@ def ajouter_paiement(
     facture_id: int,
     payload: PaiementCreate,
     db: Session = Depends(get_db),
-    artisan: Artisan = Depends(get_current_artisan),
+    artisan: Artisan = Depends(require_active_subscription),
 ):
     facture = _get_facture_or_404(db, artisan, facture_id)
     paiement = Paiement(facture_id=facture.id, **payload.model_dump())

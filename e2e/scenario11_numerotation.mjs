@@ -5,12 +5,13 @@
 // factures. Cree N devis et N factures en parallele et verifie que tous
 // les numeros generes sont uniques (regression du bug corrige dans
 // app/numerotation.py).
-import { api, assert, creerArtisanTest, logEtape } from "./helpers.mjs";
+import { api, assert, activerAbonnement, creerArtisanTest, logEtape } from "./helpers.mjs";
 
 const N = 15;
 
 export default async function run() {
-  const { token } = await creerArtisanTest("scenario11");
+  const { token, email } = await creerArtisanTest("scenario11");
+  await activerAbonnement(email); // les factures font partie de l'abonnement (V5 section 8)
   const client = await api.post("/clients", { nom: "Client Numerotation" }, token);
 
   const devisPromises = Array.from({ length: N }, (_, i) =>
