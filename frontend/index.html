@@ -402,6 +402,15 @@
         <form id="entreprise-form">
           <div class="form-grid">
             <div><label for="ent-nom-entreprise">Nom de l'entreprise</label><input type="text" id="ent-nom-entreprise" required></div>
+            <div><label for="ent-metier">Metier</label>
+              <select id="ent-metier" required>
+                <option value="plombier">Plombier</option>
+                <option value="electricien">Electricien</option>
+                <option value="macon">Macon</option>
+                <option value="peintre">Peintre</option>
+                <option value="general">Autre (artisan du BTP)</option>
+              </select>
+            </div>
             <div><label for="ent-telephone">Telephone</label><input type="tel" id="ent-telephone"></div>
             <div><label for="ent-ville">Ville</label><input type="text" id="ent-ville"></div>
             <div><label for="ent-code-postal">Code postal</label><input type="text" id="ent-code-postal"></div>
@@ -486,6 +495,8 @@
   </main>
 </div>
 
+<script src="env.js"></script>
+<script src="config.js"></script>
 <script src="pricing.js"></script>
 <script src="api.js"></script>
 <script src="app.js"></script>

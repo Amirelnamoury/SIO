@@ -403,7 +403,7 @@ const ONBOARDING_STEPS = [
   {
     icon: "&#128075;",
     title: "Bienvenue sur Suite Artisan",
-    body: "Un seul outil pour ne plus perdre de prospects, relancer vos devis automatiquement et garder une vue claire sur votre activite. Tout ce dont vous avez besoin pour demarrer est deja gratuit.",
+    body: "Un seul outil pour ne plus perdre de prospects, suivre vos devis et garder une vue claire sur votre activite. Tout ce dont vous avez besoin pour demarrer est deja gratuit.",
   },
   {
     icon: "&#128203;",
@@ -411,7 +411,7 @@ const ONBOARDING_STEPS = [
     list: [
       "Ajoutez un client ou un prospect",
       "Creez un devis avec vos lignes de prestation, envoyez le PDF",
-      "Suite Artisan vous rappelle quand relancer",
+      `Suite Artisan repere les devis a relancer et vous le signale — l'envoi automatique de la relance fait partie du plan ${PRICING.pro.nom}`,
     ],
   },
   {
@@ -615,6 +615,7 @@ function setupProfilPanel() {
 // ===================== Entreprise (infos + conformite) =====================
 function loadEntrepriseForm() {
   document.getElementById("ent-nom-entreprise").value = currentArtisan.nom_entreprise || "";
+  document.getElementById("ent-metier").value = currentArtisan.metier || "general";
   document.getElementById("ent-telephone").value = currentArtisan.telephone || "";
   document.getElementById("ent-ville").value = currentArtisan.ville || "";
   document.getElementById("ent-code-postal").value = currentArtisan.code_postal || "";
@@ -638,6 +639,7 @@ function setupEntrepriseForm() {
     try {
       currentArtisan = await Api.updateMe({
         nom_entreprise: document.getElementById("ent-nom-entreprise").value,
+        metier: document.getElementById("ent-metier").value,
         telephone: emptyToNull(document.getElementById("ent-telephone").value),
         ville: emptyToNull(document.getElementById("ent-ville").value),
         code_postal: emptyToNull(document.getElementById("ent-code-postal").value),
@@ -2288,12 +2290,11 @@ async function showDevisForm(devis, preselectClientId) {
   const isEdit = !!devis;
   await Promise.all([ensureClientsCache(), ensurePrestationsCache()]);
 
-  if (!isEdit && clientsCache.length === 0) {
-    container.innerHTML = `<div class="form-box"><p>Vous n'avez pas encore de client. Ajoutez d'abord un contact dans l'onglet <strong>Clients &amp; prospects</strong>, puis revenez creer un devis.</p>
-      <div class="form-actions"><button type="button" class="btn-sm" data-action="cancel-devis-form">Fermer</button></div></div>`;
-    container.hidden = false;
-    return;
-  }
+  // Un nouvel artisan sans aucun client ne doit pas etre bloque hors de cet
+  // ecran pour en creer un : le backend supporte deja la creation a la volee
+  // (DevisCreate.nouveau_client), on demarre donc directement en mode
+  // "nouveau client" plutot que d'afficher un select vide.
+  const demarrerEnNouveauClient = !isEdit && clientsCache.length === 0;
 
   container.dataset.editingId = isEdit ? devis.id : "";
   container.innerHTML = `
@@ -2305,7 +2306,18 @@ async function showDevisForm(devis, preselectClientId) {
             <label for="df-client">Client *</label>
             ${isEdit
               ? `<input type="text" value="${escapeHtml(devis.client_nom)}" disabled>`
-              : `<select id="df-client" required><option value="">Choisir...</option>${clientOptionsHtml(preselectClientId)}</select>`
+              : `
+              <div id="df-client-existant" ${demarrerEnNouveauClient ? "hidden" : ""}>
+                <select id="df-client" ${demarrerEnNouveauClient ? "" : "required"}><option value="">Choisir...</option>${clientOptionsHtml(preselectClientId)}</select>
+                ${clientsCache.length > 0 ? `<button type="button" class="btn-sm" data-action="toggle-nouveau-client-devis" style="margin-top:6px;">+ Nouveau client</button>` : ""}
+              </div>
+              <div id="df-client-nouveau" ${demarrerEnNouveauClient ? "" : "hidden"}>
+                <input type="text" id="df-nouveau-client-nom" placeholder="Nom du client *" ${demarrerEnNouveauClient ? "required" : ""}>
+                <input type="email" id="df-nouveau-client-email" placeholder="Email (optionnel)" style="margin-top:6px;">
+                <input type="tel" id="df-nouveau-client-telephone" placeholder="Telephone (optionnel)" style="margin-top:6px;">
+                ${clientsCache.length > 0 ? `<button type="button" class="btn-sm" data-action="toggle-nouveau-client-devis" style="margin-top:6px;">Choisir un client existant</button>` : ""}
+              </div>
+              `
             }
           </div>
           <div>
@@ -2344,6 +2356,19 @@ async function showDevisForm(devis, preselectClientId) {
   const formEl = document.getElementById("devis-form");
   attacherEditeurLignes(formEl);
 
+  if (!isEdit) {
+    const btnExistant = document.getElementById("df-client-existant");
+    const btnNouveau = document.getElementById("df-client-nouveau");
+    formEl.addEventListener("click", (e) => {
+      if (!e.target.closest('[data-action="toggle-nouveau-client-devis"]')) return;
+      const versNouveau = btnNouveau.hidden;
+      btnExistant.hidden = versNouveau;
+      btnNouveau.hidden = !versNouveau;
+      document.getElementById("df-client").required = !versNouveau;
+      document.getElementById("df-nouveau-client-nom").required = versNouveau;
+    });
+  }
+
   formEl.addEventListener("submit", async (e) => {
     e.preventDefault();
     const errorBox = document.getElementById("devis-form-error");
@@ -2361,7 +2386,22 @@ async function showDevisForm(devis, preselectClientId) {
       lignes: lireLignes("df-lignes"),
     };
     if (!isEdit) {
-      payload.client_id = parseInt(document.getElementById("df-client").value, 10);
+      const enModeNouveauClient = document.getElementById("df-client-nouveau").hidden === false;
+      if (enModeNouveauClient) {
+        const nom = document.getElementById("df-nouveau-client-nom").value.trim();
+        if (!nom) {
+          errorBox.hidden = false;
+          errorBox.textContent = "Indiquez le nom du nouveau client.";
+          return;
+        }
+        payload.nouveau_client = {
+          nom,
+          email: emptyToNull(document.getElementById("df-nouveau-client-email").value),
+          telephone: emptyToNull(document.getElementById("df-nouveau-client-telephone").value),
+        };
+      } else {
+        payload.client_id = parseInt(document.getElementById("df-client").value, 10);
+      }
     }
 
     try {

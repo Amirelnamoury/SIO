@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
 from app.deps import get_current_artisan
-from app.models import Artisan, Chantier, Client, ConformiteItem, Devis, Evenement, Facture, Paiement, Tache
+from app.models import Artisan, Avis, Chantier, Client, ConformiteItem, Devis, Evenement, Facture, Paiement, Tache
 from app.routers.chantiers import _to_out as chantier_to_out
 from app.routers.conformite import SEUIL_ALERTE_JOURS, _to_out as conformite_to_out
 from app.routers.devis import DEVIS_STATUTS_FINAUX, JOURS_SEUIL_STATUTS, relance_due, _to_out as devis_to_out
@@ -277,6 +277,36 @@ def obtenir_recommandations(
             message=f"Vous avez {nb_en_retard} facture{'s' if nb_en_retard > 1 else ''} en retard de paiement.",
             urgence="haute", view="factures",
         ))
+
+    # ---------- Factures soldees sans demande d'avis ----------
+    # Reutilise le mecanisme de recommandations existant plutot que d'ajouter
+    # un nouveau systeme de notification (section demandee : nudge, pas
+    # fonctionnalite a part). Ne redemande jamais deux fois : on filtre sur
+    # les clients pour qui aucune demande d'avis n'a encore ete generee
+    # (Client.token_avis) ni aucun avis deja enregistre.
+    clients_avis_demande_ou_avis = {
+        c_id for (c_id,) in db.query(Client.id).filter(Client.artisan_id == artisan.id, Client.token_avis.isnot(None))
+    } | {
+        c_id for (c_id,) in db.query(Avis.client_id).filter(Avis.artisan_id == artisan.id, Avis.client_id.isnot(None))
+    }
+    factures_payees = (
+        db.query(Facture)
+        .filter(Facture.artisan_id == artisan.id, Facture.statut == "payee", Facture.archive.is_(False))
+        .all()
+    )
+    clients_a_solliciter = {
+        f.client_id for f in factures_payees
+        if f.client_id is not None and f.client_id not in clients_avis_demande_ou_avis
+    }
+    if clients_a_solliciter:
+        noms = [
+            c.nom for c in db.query(Client).filter(Client.id.in_(clients_a_solliciter)).all()
+        ]
+        if len(noms) == 1:
+            message = f"La facture de {noms[0]} est soldee : c'est le bon moment pour demander un avis."
+        else:
+            message = f"{len(noms)} clients ont une facture soldee sans demande d'avis envoyee."
+        recommandations.append(RecommandationOut(message=message, urgence="basse", view="clients"))
 
     # ---------- Conformite (expiree ou proche de l'expiration) ----------
     seuil_conformite = aujourdhui + timedelta(days=SEUIL_ALERTE_JOURS)

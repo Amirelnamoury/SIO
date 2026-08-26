@@ -1,5 +1,7 @@
-// Adresse du backend Suite Artisan. A changer une fois l'API deployee en prod.
-const API_BASE = "http://localhost:8000";
+// Adresse du backend Suite Artisan : resolue par config.js (source unique de
+// verite, voir frontend/config.js et frontend/env.example.js), charge avant
+// ce fichier dans index.html.
+const API_BASE = window.SUITE_ARTISAN_API_BASE;
 
 const TOKEN_KEY = "suite_artisan_token";
 

@@ -91,7 +91,7 @@ def _resoudre_client(db: Session, artisan: Artisan, payload: DevisCreate) -> Cli
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client introuvable")
         return client
     if payload.nouveau_client is not None:
-        client = Client(artisan_id=artisan.id, source="manuel", **payload.nouveau_client.model_dump())
+        client = Client(artisan_id=artisan.id, **payload.nouveau_client.model_dump())
         db.add(client)
         db.flush()
         return client

@@ -75,6 +75,7 @@ class PasswordChange(BaseModel):
 
 class ArtisanUpdate(BaseModel):
     nom_entreprise: Optional[str] = None
+    metier: Optional[str] = None
     telephone: Optional[str] = None
     ville: Optional[str] = None
     code_postal: Optional[str] = None
@@ -87,6 +88,13 @@ class ArtisanUpdate(BaseModel):
     relance_devis_j2: Optional[int] = None
     relance_devis_j3: Optional[int] = None
     relance_facture_jours: Optional[int] = None
+
+    @field_validator("metier")
+    @classmethod
+    def metier_valide(cls, v):
+        if v is not None and v not in METIERS_VALIDES:
+            raise ValueError(f"metier doit etre l'un de : {sorted(METIERS_VALIDES)}")
+        return v
 
     @model_validator(mode="after")
     def delais_relance_valides(self):
