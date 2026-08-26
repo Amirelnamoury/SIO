@@ -1737,7 +1737,7 @@ function renderClientCard(c) {
     ${infosComplementaires.map((t) => `<div class="kanban-card-sub">${escapeHtml(t)}</div>`).join("")}
     ${c.prochaine_action ? `<div class="kanban-card-next">→ ${escapeHtml(c.prochaine_action)}</div>` : ""}
     <div class="kanban-card-actions">
-      <select data-action="changer-statut-client" data-id="${c.id}">${statutOptions}</select>
+      <select data-action="changer-statut-client" data-id="${c.id}" aria-label="Statut de ${escapeHtml(c.nom)}">${statutOptions}</select>
       <button type="button" class="btn-sm btn-sm-danger" data-action="delete-client" data-id="${c.id}" title="Archiver" aria-label="Archiver">&times;</button>
     </div>
   </div>`;
@@ -1836,7 +1836,7 @@ function messagesPanelHtml(messages) {
     <h3>Messages</h3>
     <div id="client-messages-list">${listHtml}</div>
     <form id="client-message-form" style="margin-top:12px;">
-      <textarea id="client-message-texte" placeholder="Repondre au client..." required></textarea>
+      <textarea id="client-message-texte" placeholder="Repondre au client..." aria-label="Votre reponse au client" required></textarea>
       <p class="field-error" id="client-message-error" hidden></p>
       <div class="form-actions"><button type="submit" class="btn-sm btn-sm-primary">Envoyer</button></div>
     </form>
@@ -2140,10 +2140,10 @@ function ligneRowHtml(ligne) {
   const l = ligne || { description: "", quantite: 1, unite: "forfait", prix_unitaire_ht: "" };
   return `
   <div class="ligne-row">
-    <input type="text" class="ligne-description" list="prestations-datalist" placeholder="Description de la prestation (recherchez votre catalogue)" value="${escapeHtml(l.description || "")}">
-    <input type="number" step="0.01" min="0" class="ligne-quantite" placeholder="Qte" value="${l.quantite ?? 1}">
-    <input type="text" class="ligne-unite" placeholder="Unite" value="${escapeHtml(l.unite || "forfait")}">
-    <input type="number" step="0.01" min="0" class="ligne-prix" placeholder="PU HT" value="${l.prix_unitaire_ht !== undefined && l.prix_unitaire_ht !== null ? l.prix_unitaire_ht : ""}">
+    <input type="text" class="ligne-description" list="prestations-datalist" placeholder="Description de la prestation (recherchez votre catalogue)" aria-label="Description de la prestation" value="${escapeHtml(l.description || "")}">
+    <input type="number" step="0.01" min="0" class="ligne-quantite" placeholder="Qte" aria-label="Quantite" value="${l.quantite ?? 1}">
+    <input type="text" class="ligne-unite" placeholder="Unite" aria-label="Unite" value="${escapeHtml(l.unite || "forfait")}">
+    <input type="number" step="0.01" min="0" class="ligne-prix" placeholder="PU HT" aria-label="Prix unitaire HT" value="${l.prix_unitaire_ht !== undefined && l.prix_unitaire_ht !== null ? l.prix_unitaire_ht : ""}">
     <button type="button" class="btn-sm btn-sm-danger" data-action="remove-ligne" title="Retirer" aria-label="Retirer cette ligne">&times;</button>
   </div>`;
 }

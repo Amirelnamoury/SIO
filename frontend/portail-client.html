@@ -128,7 +128,7 @@ function render(p) {
       <h3>Messages</h3>
       <div id="messages-list">${p.messages.length ? p.messages.map(messageItemHtml).join("") : '<div class="empty-state">Aucun message pour le moment.</div>'}</div>
       <form id="message-form" class="portail-message-form">
-        <textarea id="message-texte" placeholder="Ecrire un message..." required></textarea>
+        <textarea id="message-texte" placeholder="Ecrire un message..." aria-label="Votre message" required></textarea>
         <p class="field-error" id="message-error" hidden></p>
         <button type="submit" class="btn-primary">Envoyer</button>
       </form>
