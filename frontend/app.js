@@ -448,6 +448,11 @@ document.addEventListener("click", (e) => {
 
 function switchView(view) {
   document.querySelectorAll(".nav-link").forEach((btn) => btn.classList.toggle("active", btn.dataset.view === view));
+  // Sur mobile, la nav devient une rangee horizontale scrollable : sans ca,
+  // l'onglet actif peut rester hors champ apres un changement de vue
+  // programmatique (recherche globale, palette de commandes...).
+  const activeLink = document.querySelector(`.nav-link[data-view="${view}"]`);
+  if (activeLink) activeLink.scrollIntoView({ inline: "center", block: "nearest" });
   document.querySelectorAll(".view").forEach((section) => {
     section.hidden = section.id !== `view-${view}`;
   });

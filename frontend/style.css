@@ -140,6 +140,12 @@ h3 { margin: 0 0 12px; }
   .nav-link span:not(.badge-count), .nav-link { font-size: 0.82rem; }
   .sidebar-footer { flex: 0 0 auto; flex-direction: row; border-top: 1px solid rgba(255,255,255,0.1); padding: 8px 12px; }
   .content { padding: 20px 16px 50px; }
+
+  /* Le pipeline Kanban (9 colonnes) est illisible en scroll horizontal sur
+     un ecran de telephone : colonnes empilees verticalement, pleine largeur
+     (section 43 du cahier des charges V4 - "pas de tableaux illisibles"). */
+  .kanban { flex-direction: column; overflow-x: visible; }
+  .kanban-column { width: 100%; }
 }
 
 /* ---------- Filtres ---------- */
