@@ -78,6 +78,11 @@ l'application elle-meme, pas par le test).
    9 endpoints representatifs (clients/devis/factures/chantiers/
    fournisseurs/taches, en lecture comme en ecriture), acces a un
    endpoint public avec un jeton invalide.
+10. **scenario10_portail_client.mjs** - generation du lien de portail ->
+    acces public (devis/facture/chantier visibles, jamais les donnees
+    internes) -> messagerie bidirectionnelle (client -> artisan ->
+    client) -> regeneration du jeton = revocation immediate de l'ancien
+    lien.
 
 ## Limites connues
 
