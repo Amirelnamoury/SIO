@@ -46,6 +46,11 @@ l'application elle-meme, pas par le test).
    plusieurs intervenants (avec et sans taux horaire) -> cout de main
    d'oeuvre reel -> marge estimee mise a jour -> isolation multi-tenant ->
    suppression (le total et le cout se recalculent, jamais un flag fige).
+7. **scenario7_archivage.mjs** - "Supprimer" un client/devis/facture/
+   chantier archive au lieu d'effacer : disparait des listes actives,
+   reste consultable via ?archive=true, aucune cascade destructrice
+   (les devis d'un client archive, les notes/depenses d'un chantier
+   archive restent intacts), restauration verifiee.
 
 ## Limites connues
 

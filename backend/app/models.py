@@ -12,6 +12,7 @@ from sqlalchemy import (
     Text,
 )
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import false as sql_false
 
 from app.database import Base
 
@@ -133,6 +134,12 @@ class Client(Base):
     token_portail = Column(String, unique=True, index=True, nullable=True)
     token_portail_genere_le = Column(DateTime(timezone=True), nullable=True)
 
+    # Archivage plutot que suppression definitive (section 44 du cahier des
+    # charges V4) : "Supprimer" un client n'efface plus rien, il disparait
+    # juste des listes actives. Ses devis/factures/chantiers restent
+    # intacts - jamais de perte de donnees financieres ou historiques.
+    archive = Column(Boolean, nullable=False, default=False, server_default=sql_false())
+
     created_at = Column(DateTime(timezone=True), default=utcnow)
     updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 
@@ -176,6 +183,11 @@ class Devis(Base):
     token = Column(String, unique=True, index=True, nullable=True)
 
     source = Column(String, default="manuel")  # manuel ou site_vitrine
+
+    # Archivage plutot que suppression definitive (section 44) : un devis
+    # supprime par l'artisan disparait des listes actives mais reste en base
+    # (historique commercial, references depuis un chantier/une facture).
+    archive = Column(Boolean, nullable=False, default=False, server_default=sql_false())
 
     created_at = Column(DateTime(timezone=True), default=utcnow)
 
@@ -266,6 +278,10 @@ class Facture(Base):
     # la creation, permet au client d'ouvrir sa facture sans compte.
     token = Column(String, unique=True, index=True, nullable=True)
 
+    # Archivage plutot que suppression definitive (section 44) : jamais
+    # perdre une facture, meme retiree des listes actives.
+    archive = Column(Boolean, nullable=False, default=False, server_default=sql_false())
+
     created_at = Column(DateTime(timezone=True), default=utcnow)
 
     artisan = relationship("Artisan", back_populates="factures")
@@ -354,6 +370,10 @@ class Chantier(Base):
     # Reception : constatee reellement par l'artisan (jamais deduite automatiquement).
     date_reception = Column(Date, nullable=True)
     reserves = Column(Text, nullable=True)
+
+    # Archivage plutot que suppression definitive (section 44) : garde
+    # l'historique de chantier (depenses, heures, factures liees).
+    archive = Column(Boolean, nullable=False, default=False, server_default=sql_false())
 
     created_at = Column(DateTime(timezone=True), default=utcnow)
 

@@ -32,10 +32,14 @@ def _get_client_or_404(db: Session, artisan: Artisan, client_id: int) -> Client:
 @router.get("", response_model=list[ClientOut])
 def lister_clients(
     statut: str | None = None,
+    archive: bool = False,
     db: Session = Depends(get_db),
     artisan: Artisan = Depends(get_current_artisan),
 ):
-    query = db.query(Client).filter(Client.artisan_id == artisan.id)
+    """Par defaut, seuls les contacts actifs (non archives) sont renvoyes.
+    Passer archive=true pour lister ceux qui ont ete "supprimes" (archives,
+    voir supprimer_client) - rien n'est jamais perdu definitivement."""
+    query = db.query(Client).filter(Client.artisan_id == artisan.id, Client.archive.is_(archive))
     if statut:
         query = query.filter(Client.statut == statut)
     return query.order_by(Client.created_at.desc()).all()
@@ -85,9 +89,25 @@ def supprimer_client(
     db: Session = Depends(get_db),
     artisan: Artisan = Depends(get_current_artisan),
 ):
+    """Archive le contact plutot que de le supprimer definitivement (section 44
+    du cahier des charges V4) : il disparait des listes actives mais ses
+    devis/factures/chantiers restent intacts (aucune cascade destructrice)."""
     client = _get_client_or_404(db, artisan, client_id)
-    db.delete(client)
+    client.archive = True
     db.commit()
+
+
+@router.post("/{client_id}/restaurer", response_model=ClientOut)
+def restaurer_client(
+    client_id: int,
+    db: Session = Depends(get_db),
+    artisan: Artisan = Depends(get_current_artisan),
+):
+    client = _get_client_or_404(db, artisan, client_id)
+    client.archive = False
+    db.commit()
+    db.refresh(client)
+    return client
 
 
 @router.get("/{client_id}/resume", response_model=ClientResume)

@@ -74,13 +74,14 @@ def _to_out(chantier: Chantier) -> ChantierOut:
 
 @router.get("", response_model=list[ChantierOut])
 def lister_chantiers(
+    archive: bool = False,
     db: Session = Depends(get_db),
     artisan: Artisan = Depends(require_active_subscription),
 ):
     chantiers = (
         db.query(Chantier)
         .options(joinedload(Chantier.notes), joinedload(Chantier.depenses).joinedload(Depense.fournisseur), joinedload(Chantier.heures), joinedload(Chantier.client), joinedload(Chantier.factures), joinedload(Chantier.taches))
-        .filter(Chantier.artisan_id == artisan.id)
+        .filter(Chantier.artisan_id == artisan.id, Chantier.archive.is_(archive))
         .order_by(Chantier.created_at.desc())
         .all()
     )
@@ -218,8 +219,10 @@ def supprimer_chantier(
     db: Session = Depends(get_db),
     artisan: Artisan = Depends(require_active_subscription),
 ):
+    """Archive le chantier plutot que de le supprimer definitivement
+    (section 44) : conserve depenses, heures et factures liees."""
     chantier = _get_chantier_or_404(db, artisan, chantier_id)
-    db.delete(chantier)
+    chantier.archive = True
     db.commit()
 
 

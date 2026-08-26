@@ -99,10 +99,15 @@ def _resoudre_client(db: Session, artisan: Artisan, payload: DevisCreate) -> Cli
 def lister_devis(
     statut: Optional[str] = None,
     client_id: Optional[int] = None,
+    archive: bool = False,
     db: Session = Depends(get_db),
     artisan: Artisan = Depends(get_current_artisan),
 ):
-    query = db.query(Devis).options(joinedload(Devis.lignes), joinedload(Devis.client)).filter(Devis.artisan_id == artisan.id)
+    query = (
+        db.query(Devis)
+        .options(joinedload(Devis.lignes), joinedload(Devis.client))
+        .filter(Devis.artisan_id == artisan.id, Devis.archive.is_(archive))
+    )
     if statut:
         query = query.filter(Devis.statut == statut)
     if client_id:
@@ -280,6 +285,9 @@ def supprimer_devis(
     db: Session = Depends(get_db),
     artisan: Artisan = Depends(get_current_artisan),
 ):
+    """Archive le devis plutot que de le supprimer definitivement (section 44) :
+    disparait des listes actives, reste consultable en base (historique
+    commercial, references depuis un chantier/une facture)."""
     devis = _get_devis_or_404(db, artisan, devis_id)
-    db.delete(devis)
+    devis.archive = True
     db.commit()

@@ -97,6 +97,18 @@
   </div>
 </div>
 
+<!-- ---------- Confirmation (remplace window.confirm natif) ---------- -->
+<div id="confirm-dialog" class="search-modal" hidden>
+  <div class="confirm-dialog-box">
+    <h3 id="confirm-dialog-title">Confirmer</h3>
+    <p id="confirm-dialog-message"></p>
+    <div class="confirm-dialog-actions">
+      <button type="button" class="btn-secondary" id="confirm-dialog-cancel">Annuler</button>
+      <button type="button" class="btn-primary" id="confirm-dialog-ok" style="margin-top:0;">Confirmer</button>
+    </div>
+  </div>
+</div>
+
 <!-- ---------- Recherche globale (Ctrl+K) ---------- -->
 <div id="search-modal" class="search-modal" hidden>
   <div class="search-modal-box">

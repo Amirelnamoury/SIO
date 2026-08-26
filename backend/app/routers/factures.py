@@ -86,13 +86,14 @@ def _recalculer_statut(facture: Facture) -> None:
 def lister_factures(
     statut: Optional[str] = None,
     client_id: Optional[int] = None,
+    archive: bool = False,
     db: Session = Depends(get_db),
     artisan: Artisan = Depends(get_current_artisan),
 ):
     query = (
         db.query(Facture)
         .options(joinedload(Facture.lignes), joinedload(Facture.paiements), joinedload(Facture.client))
-        .filter(Facture.artisan_id == artisan.id)
+        .filter(Facture.artisan_id == artisan.id, Facture.archive.is_(archive))
     )
     if statut:
         query = query.filter(Facture.statut == statut)
@@ -269,8 +270,10 @@ def supprimer_facture(
     db: Session = Depends(get_db),
     artisan: Artisan = Depends(get_current_artisan),
 ):
+    """Archive la facture plutot que de la supprimer definitivement (section 44) :
+    jamais de perte d'un document financier, meme retire des listes actives."""
     facture = _get_facture_or_404(db, artisan, facture_id)
-    db.delete(facture)
+    facture.archive = True
     db.commit()
 
 

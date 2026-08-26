@@ -60,6 +60,41 @@ async function withErrorToast(promiseFn) {
   }
 }
 
+// Remplace window.confirm() (bloquant, non stylé) par une modale coherente
+// avec le design system. Resout true/false selon le choix de l'utilisateur.
+function confirmDialog(message, { title = "Confirmer", confirmLabel = "Confirmer", danger = false } = {}) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById("confirm-dialog");
+    const box = modal.querySelector(".confirm-dialog-box");
+    document.getElementById("confirm-dialog-title").textContent = title;
+    document.getElementById("confirm-dialog-message").textContent = message;
+    const okBtn = document.getElementById("confirm-dialog-ok");
+    const cancelBtn = document.getElementById("confirm-dialog-cancel");
+    okBtn.textContent = confirmLabel;
+    box.classList.toggle("is-danger", danger);
+    modal.hidden = false;
+
+    function cleanup(result) {
+      modal.hidden = true;
+      okBtn.removeEventListener("click", onOk);
+      cancelBtn.removeEventListener("click", onCancel);
+      modal.removeEventListener("click", onBackdrop);
+      document.removeEventListener("keydown", onKeydown);
+      resolve(result);
+    }
+    function onOk() { cleanup(true); }
+    function onCancel() { cleanup(false); }
+    function onBackdrop(e) { if (e.target === modal) cleanup(false); }
+    function onKeydown(e) { if (e.key === "Escape") cleanup(false); }
+
+    okBtn.addEventListener("click", onOk);
+    cancelBtn.addEventListener("click", onCancel);
+    modal.addEventListener("click", onBackdrop);
+    document.addEventListener("keydown", onKeydown);
+    okBtn.focus();
+  });
+}
+
 // ===================== Constantes d'affichage =====================
 const METIER_LABELS = {
   plombier: "Plombier",
@@ -713,7 +748,7 @@ function setupEquipeView() {
         loadEquipe();
       });
     } else if (btn.dataset.action === "delete-membre") {
-      if (!confirm("Supprimer ce membre de l'equipe ?")) return;
+      if (!(await confirmDialog("Supprimer ce membre de l'equipe ?", { danger: true }))) return;
       await withErrorToast(async () => {
         await Api.deleteMembre(id);
         showToast("Membre supprime.");
@@ -825,7 +860,7 @@ function setupPrestationsView() {
   document.getElementById("prestations-list").addEventListener("click", async (e) => {
     const btn = e.target.closest('[data-action="delete-prestation"]');
     if (!btn) return;
-    if (!confirm("Supprimer cette prestation du catalogue ?")) return;
+    if (!(await confirmDialog("Supprimer cette prestation du catalogue ?", { danger: true }))) return;
     await withErrorToast(async () => {
       await Api.deletePrestation(parseInt(btn.dataset.id, 10));
       showToast("Prestation supprimee.");
@@ -956,7 +991,7 @@ function setupFournisseursView() {
   document.getElementById("fournisseurs-list").addEventListener("click", async (e) => {
     const btn = e.target.closest('[data-action="delete-fournisseur"]');
     if (!btn) return;
-    if (!confirm("Supprimer ce fournisseur ?")) return;
+    if (!(await confirmDialog("Supprimer ce fournisseur ?", { danger: true }))) return;
     await withErrorToast(async () => {
       await Api.deleteFournisseur(parseInt(btn.dataset.id, 10));
       showToast("Fournisseur supprime.");
@@ -1147,7 +1182,7 @@ function setupAvisView() {
   document.getElementById("avis-list").addEventListener("click", async (e) => {
     const deleteBtn = e.target.closest('[data-action="delete-avis"]');
     if (deleteBtn) {
-      if (!confirm("Supprimer cet avis ?")) return;
+      if (!(await confirmDialog("Supprimer cet avis ?", { danger: true }))) return;
       await withErrorToast(async () => {
         await Api.deleteAvis(parseInt(deleteBtn.dataset.id, 10));
         showToast("Avis supprime.");
@@ -1569,7 +1604,7 @@ function renderClientCard(c) {
     ${c.prochaine_action ? `<div class="kanban-card-next">→ ${escapeHtml(c.prochaine_action)}</div>` : ""}
     <div class="kanban-card-actions">
       <select data-action="changer-statut-client" data-id="${c.id}">${statutOptions}</select>
-      <button type="button" class="btn-sm btn-sm-danger" data-action="delete-client" data-id="${c.id}" title="Supprimer">&times;</button>
+      <button type="button" class="btn-sm btn-sm-danger" data-action="delete-client" data-id="${c.id}" title="Archiver">&times;</button>
     </div>
   </div>`;
 }
@@ -1755,10 +1790,10 @@ function setupClientsView() {
     const id = parseInt(btn.dataset.id, 10);
 
     if (btn.dataset.action === "delete-client") {
-      if (!confirm("Supprimer ce contact ? Ses devis, factures et chantiers seront supprimes aussi.")) return;
+      if (!(await confirmDialog("Archiver ce contact ? Il disparaitra de vos listes actives. Ses devis, factures et chantiers restent intacts et consultables.", { confirmLabel: "Archiver", danger: true }))) return;
       await withErrorToast(async () => {
         await Api.deleteClient(id);
-        showToast("Contact supprime.");
+        showToast("Contact archive.");
         loadClients();
       });
     } else if (btn.dataset.action === "voir-timeline") {
@@ -1992,7 +2027,7 @@ function renderDevisCard(d) {
     actions += `<button type="button" class="btn-sm" data-action="copier-lien-devis" data-token="${escapeHtml(d.token)}">Copier le lien client</button>`;
   }
   actions += `<button type="button" class="btn-sm" data-action="dupliquer-devis" data-id="${d.id}">Dupliquer</button>`;
-  actions += `<button type="button" class="btn-sm btn-sm-danger" data-action="delete-devis" data-id="${d.id}">Supprimer</button>`;
+  actions += `<button type="button" class="btn-sm btn-sm-danger" data-action="delete-devis" data-id="${d.id}">Archiver</button>`;
 
   return `
   <div class="item-card ${isDue ? "is-due" : ""}">
@@ -2154,10 +2189,10 @@ function setupDevisView() {
         refreshBadges();
       });
     } else if (btn.dataset.action === "delete-devis") {
-      if (!confirm("Supprimer ce devis ?")) return;
+      if (!(await confirmDialog("Archiver ce devis ? Il disparaitra de vos listes actives mais reste conserve.", { confirmLabel: "Archiver", danger: true }))) return;
       await withErrorToast(async () => {
         await Api.deleteDevis(id);
-        showToast("Devis supprime.");
+        showToast("Devis archive.");
         loadDevis();
         refreshBadges();
       });
@@ -2291,7 +2326,7 @@ function renderFactureCard(f) {
     actions += `<button type="button" class="btn-sm" data-action="copier-lien-facture" data-token="${escapeHtml(f.token)}">Copier le lien client</button>`;
   }
   actions += `<button type="button" class="btn-sm" data-action="pdf-facture" data-id="${f.id}">Telecharger le PDF</button>`;
-  actions += `<button type="button" class="btn-sm btn-sm-danger" data-action="delete-facture" data-id="${f.id}">Supprimer</button>`;
+  actions += `<button type="button" class="btn-sm btn-sm-danger" data-action="delete-facture" data-id="${f.id}">Archiver</button>`;
 
   const paiementsHtml = (f.paiements || [])
     .map((p) => `<div class="item-sub">${fmtDate(p.date_paiement)} · ${fmtEuro(p.montant)} · ${p.moyen}${p.reference ? " · Ref : " + escapeHtml(p.reference) : ""}</div>`)
@@ -2470,10 +2505,10 @@ function setupFacturesView() {
         errorBox.textContent = err.message;
       }
     } else if (btn.dataset.action === "delete-facture") {
-      if (!confirm("Supprimer cette facture ?")) return;
+      if (!(await confirmDialog("Archiver cette facture ? Elle disparaitra de vos listes actives mais reste conservee (document financier).", { confirmLabel: "Archiver", danger: true }))) return;
       await withErrorToast(async () => {
         await Api.deleteFacture(id);
-        showToast("Facture supprimee.");
+        showToast("Facture archivee.");
         loadFactures();
       });
     } else if (btn.dataset.action === "pdf-facture") {
@@ -2646,7 +2681,7 @@ function setupContratsView() {
         loadContrats();
       });
     } else if (btn.dataset.action === "resilier-contrat") {
-      if (!confirm("Resilier ce contrat ? Plus aucune facture ne sera generee.")) return;
+      if (!(await confirmDialog("Resilier ce contrat ? Plus aucune facture ne sera generee.", { danger: true }))) return;
       await withErrorToast(async () => {
         await Api.updateContrat(id, { statut: "resilie" });
         showToast("Contrat resilie.");
@@ -2882,7 +2917,7 @@ function renderChantierCard(c) {
       ${["termine", "facture", "paye"].includes(c.statut) ? `<button type="button" class="btn-sm" data-action="toggle-reception-form" data-id="${c.id}">${c.date_reception ? "Modifier la reception" : "Enregistrer la reception"}</button>` : ""}
       ${c.statut === "termine" ? `<button type="button" class="btn-sm btn-sm-primary" data-action="toggle-cloturer-form" data-id="${c.id}">Cloturer le chantier</button>` : ""}
       <button type="button" class="btn-sm" data-action="rapport-chantier" data-id="${c.id}">Telecharger le rapport</button>
-      <button type="button" class="btn-sm btn-sm-danger" data-action="delete-chantier" data-id="${c.id}">Supprimer</button>
+      <button type="button" class="btn-sm btn-sm-danger" data-action="delete-chantier" data-id="${c.id}">Archiver</button>
     </div>
     <div id="note-form-${c.id}"></div>
     <div id="depense-form-${c.id}"></div>
@@ -3171,10 +3206,10 @@ function setupChantiersView() {
     } else if (btn.dataset.action === "rapport-chantier") {
       await withErrorToast(() => ouvrirPdf(`/chantiers/${id}/rapport-pdf`));
     } else if (btn.dataset.action === "delete-chantier") {
-      if (!confirm("Supprimer ce chantier et toutes ses notes ?")) return;
+      if (!(await confirmDialog("Archiver ce chantier ? Il disparaitra de vos listes actives. Ses notes, depenses, heures et factures liees restent intactes.", { confirmLabel: "Archiver", danger: true }))) return;
       await withErrorToast(async () => {
         await Api.deleteChantier(id);
-        showToast("Chantier supprime.");
+        showToast("Chantier archive.");
         loadChantiers();
       });
     }
@@ -3310,7 +3345,7 @@ function setupTachesView() {
         loadTaches();
       });
     } else if (btn.dataset.action === "delete-tache") {
-      if (!confirm("Supprimer cette tache ?")) return;
+      if (!(await confirmDialog("Supprimer cette tache ?", { danger: true }))) return;
       await withErrorToast(async () => {
         await Api.deleteTache(id);
         showToast("Tache supprimee.");
@@ -3466,7 +3501,7 @@ function setupDocumentsView() {
     if (btn.dataset.action === "telecharger-document") {
       await withErrorToast(() => telechargerDocument(id, btn.dataset.nom));
     } else if (btn.dataset.action === "delete-document") {
-      if (!confirm("Supprimer ce document ?")) return;
+      if (!(await confirmDialog("Supprimer ce document ?", { danger: true }))) return;
       await withErrorToast(async () => {
         await Api.deleteDocument(id);
         showToast("Document supprime.");
@@ -3866,7 +3901,7 @@ function setupConformiteView() {
   document.getElementById("conformite-list").addEventListener("click", async (e) => {
     const btn = e.target.closest('[data-action="delete-conformite"]');
     if (!btn) return;
-    if (!confirm("Supprimer cet element de conformite ?")) return;
+    if (!(await confirmDialog("Supprimer cet element de conformite ?", { danger: true }))) return;
     const id = parseInt(btn.dataset.id, 10);
     await withErrorToast(async () => {
       await Api.deleteConformite(id);
