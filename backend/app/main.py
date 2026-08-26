@@ -50,6 +50,13 @@ from app.routers import (
     taches,
 )
 
+# Filet de securite pour le developpement local (cree les tables manquantes
+# sur une base neuve). Ne gere PAS les evolutions de schema d'une base
+# existante (ajout de colonne, etc.) : c'est le role d'Alembic desormais
+# (voir backend/migrations/). En production, le schema doit etre gere par
+# "alembic upgrade head", pas par cet appel - create_all() est deliberement
+# laisse ici seulement parce qu'il est inoffensif sur une base a jour
+# (idempotent : ne touche jamais les tables deja existantes).
 Base.metadata.create_all(bind=engine)
 
 

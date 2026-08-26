@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
 from app.models import Artisan, Avis, Chantier, Client, Devis, Document, Facture, Message
+from app.rate_limit import rate_limiter
 from app.routers.clients import PORTAIL_VALIDITE_JOURS
 from app.schemas import (
     AvisPublicIn,
@@ -57,7 +58,7 @@ def _to_public_out(devis: Devis) -> DevisPublicOut:
     )
 
 
-@router.post("/{slug}/demande-devis", status_code=status.HTTP_201_CREATED)
+@router.post("/{slug}/demande-devis", status_code=status.HTTP_201_CREATED, dependencies=[Depends(rate_limiter(5, 60))])
 def demande_devis(
     slug: str,
     payload: ClientPublicCreate,
@@ -86,7 +87,7 @@ def demande_devis(
     return {"message": "Demande envoyee avec succes", "client_id": client.id}
 
 
-@router.get("/{slug}/avis", response_model=list[AvisPublicSiteOut])
+@router.get("/{slug}/avis", response_model=list[AvisPublicSiteOut], dependencies=[Depends(rate_limiter(30, 60))])
 def avis_publies_pour_site(slug: str, db: Session = Depends(get_db)):
     """Endpoint PUBLIC : avis que l'artisan a explicitement choisi de
     publier sur son site vitrine (voir PATCH /avis/{id}). Consomme par
@@ -108,7 +109,7 @@ def avis_publies_pour_site(slug: str, db: Session = Depends(get_db)):
     ]
 
 
-@router.get("/devis/{token}", response_model=DevisPublicOut)
+@router.get("/devis/{token}", response_model=DevisPublicOut, dependencies=[Depends(rate_limiter(30, 60))])
 def voir_devis_public(token: str, db: Session = Depends(get_db)):
     """Endpoint PUBLIC : ce que le client voit en ouvrant le lien de son
     devis (envoye par l'artisan, pas par email automatique - on n'a pas
@@ -123,7 +124,7 @@ def voir_devis_public(token: str, db: Session = Depends(get_db)):
     return _to_public_out(devis)
 
 
-@router.post("/devis/{token}/accepter", response_model=DevisPublicOut)
+@router.post("/devis/{token}/accepter", response_model=DevisPublicOut, dependencies=[Depends(rate_limiter(10, 60))])
 def accepter_devis_public(token: str, payload: DevisAccepterIn, db: Session = Depends(get_db)):
     """Endpoint PUBLIC : le client accepte le devis en tapant son nom (la
     mention "bon pour accord" est deja sur le PDF/la page). Ce n'est pas une
@@ -147,7 +148,7 @@ def accepter_devis_public(token: str, payload: DevisAccepterIn, db: Session = De
     return _to_public_out(devis)
 
 
-@router.get("/facture/{token}", response_model=FacturePublicOut)
+@router.get("/facture/{token}", response_model=FacturePublicOut, dependencies=[Depends(rate_limiter(30, 60))])
 def voir_facture_public(token: str, db: Session = Depends(get_db)):
     """Endpoint PUBLIC : ce que le client voit en ouvrant le lien de sa
     facture (envoye par l'artisan ou par une relance automatique)."""
@@ -183,7 +184,7 @@ def _get_client_avis_or_404(db: Session, token: str) -> Client:
     return client
 
 
-@router.get("/avis/{token}", response_model=AvisPublicStatutOut)
+@router.get("/avis/{token}", response_model=AvisPublicStatutOut, dependencies=[Depends(rate_limiter(30, 60))])
 def voir_demande_avis(token: str, db: Session = Depends(get_db)):
     """Endpoint PUBLIC : page que le client ouvre pour laisser un avis."""
     client = _get_client_avis_or_404(db, token)
@@ -193,7 +194,7 @@ def voir_demande_avis(token: str, db: Session = Depends(get_db)):
     )
 
 
-@router.post("/avis/{token}", status_code=status.HTTP_201_CREATED)
+@router.post("/avis/{token}", status_code=status.HTTP_201_CREATED, dependencies=[Depends(rate_limiter(3, 60))])
 def soumettre_avis_public(token: str, payload: AvisPublicIn, db: Session = Depends(get_db)):
     """Endpoint PUBLIC : soumission reelle de l'avis par le client. Un seul
     avis par lien de demande (pas de spam ni de doublon accidentel)."""
@@ -231,7 +232,7 @@ def _get_client_portail_or_404(db: Session, token: str) -> Client:
     return client
 
 
-@router.get("/portail/{token}", response_model=PortailClientOut)
+@router.get("/portail/{token}", response_model=PortailClientOut, dependencies=[Depends(rate_limiter(30, 60))])
 def voir_portail_client(token: str, db: Session = Depends(get_db)):
     """Endpoint PUBLIC : espace limite du client (jamais les donnees d'un
     autre client, jamais les infos internes de l'artisan - marges, notes,
@@ -285,7 +286,7 @@ def voir_portail_client(token: str, db: Session = Depends(get_db)):
     )
 
 
-@router.post("/portail/{token}/messages", response_model=MessageOut, status_code=status.HTTP_201_CREATED)
+@router.post("/portail/{token}/messages", response_model=MessageOut, status_code=status.HTTP_201_CREATED, dependencies=[Depends(rate_limiter(10, 60))])
 def envoyer_message_portail(token: str, payload: MessageCreate, db: Session = Depends(get_db)):
     """Endpoint PUBLIC : le client envoie un message a l'artisan depuis son
     portail. Marque non lu jusqu'a ce que l'artisan ouvre le fil (voir
@@ -300,7 +301,7 @@ def envoyer_message_portail(token: str, payload: MessageCreate, db: Session = De
     return message
 
 
-@router.get("/portail/{token}/photos/{document_id}")
+@router.get("/portail/{token}/photos/{document_id}", dependencies=[Depends(rate_limiter(60, 60))])
 def voir_photo_portail(token: str, document_id: int, db: Session = Depends(get_db)):
     """Endpoint PUBLIC : sert une photo de chantier, apres avoir verifie
     qu'elle appartient bien a un chantier de CE client (jamais la photo d'un
