@@ -9,11 +9,34 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
 from app.deps import get_current_artisan
-from app.models import Artisan, Document
+from app.models import Artisan, Chantier, Client, Devis, Document, Facture
 from app.schemas import DOCUMENT_TYPES, DocumentCreate, DocumentOut
 from app.storage import get_storage
 
 router = APIRouter(prefix="/documents", tags=["documents"])
+
+
+def _verifier_proprietaire(
+    db: Session, artisan: Artisan,
+    client_id: int | None, chantier_id: int | None, devis_id: int | None, facture_id: int | None,
+) -> None:
+    """Un document rattache a un client/chantier/devis/facture doit
+    referencer une ressource appartenant a l'artisan qui cree le document -
+    sinon un artisan pourrait injecter un document (visible dans le portail
+    client ou la galerie photo d'un chantier) dans l'entreprise d'un autre
+    artisan simplement en devinant un identifiant."""
+    verifications = (
+        (client_id, Client, "Client"),
+        (chantier_id, Chantier, "Chantier"),
+        (devis_id, Devis, "Devis"),
+        (facture_id, Facture, "Facture"),
+    )
+    for valeur, modele, nom in verifications:
+        if valeur is None:
+            continue
+        existe = db.query(modele).filter(modele.id == valeur, modele.artisan_id == artisan.id).first()
+        if existe is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"{nom} introuvable")
 
 # Extensions acceptees pour l'upload : documents administratifs et photos de chantier usuels.
 EXTENSIONS_AUTORISEES = {
@@ -54,6 +77,7 @@ def creer_document(
     artisan: Artisan = Depends(get_current_artisan),
 ):
     """Enregistre un document sous forme de lien externe (ex: Google Drive)."""
+    _verifier_proprietaire(db, artisan, payload.client_id, payload.chantier_id, payload.devis_id, payload.facture_id)
     document = Document(artisan_id=artisan.id, **payload.model_dump())
     db.add(document)
     db.commit()
@@ -78,6 +102,7 @@ async def uploader_document(
     l'instant, migrable vers un stockage objet sans toucher ce router."""
     if type not in DOCUMENT_TYPES:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"type doit etre l'un de : {sorted(DOCUMENT_TYPES)}")
+    _verifier_proprietaire(db, artisan, client_id, chantier_id, devis_id, facture_id)
 
     extension = Path(file.filename or "").suffix.lower()
     if extension not in EXTENSIONS_AUTORISEES:

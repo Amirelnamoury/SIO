@@ -48,6 +48,7 @@ export default async function run() {
   const chantier = await api.post("/chantiers", { client_id: client.id, titre: "Chantier isolation" }, proprietaireToken);
   const fournisseur = await api.post("/fournisseurs", { nom: "Fournisseur isolation" }, proprietaireToken);
   const tache = await api.post("/taches", { titre: "Tache isolation" }, proprietaireToken);
+  const document = await api.post("/documents", { nom: "Document isolation", type: "autre", url: "https://x.test/d.pdf", client_id: client.id }, proprietaireToken);
 
   const { token: autreToken, email: autreEmail } = await creerArtisanTest("scenario9-autre");
   await activerAbonnement(autreEmail);
@@ -57,11 +58,14 @@ export default async function run() {
     ["GET", `/devis/${devis.id}`],
     ["GET", `/factures/${facture.id}`],
     ["GET", `/chantiers/${chantier.id}`],
+    ["GET", `/documents/${document.id}/fichier`],
     ["PATCH", `/fournisseurs/${fournisseur.id}`, { nom: "Vole" }],
     ["PATCH", `/taches/${tache.id}`, { titre: "Vole" }],
     ["DELETE", `/clients/${client.id}`],
     ["DELETE", `/devis/${devis.id}`],
     ["DELETE", `/chantiers/${chantier.id}`],
+    ["DELETE", `/documents/${document.id}`],
+    ["POST", `/documents/${document.id}/restaurer`],
   ];
   for (const [methode, chemin, corps] of cibles) {
     let refuse = false;
@@ -69,12 +73,49 @@ export default async function run() {
       if (methode === "GET") await api.get(chemin, autreToken);
       else if (methode === "PATCH") await api.patch(chemin, corps, autreToken);
       else if (methode === "DELETE") await api.del(chemin, autreToken);
+      else if (methode === "POST") await api.post(chemin, corps, autreToken);
     } catch (err) {
       refuse = err.message.includes("HTTP 404");
     }
     assert(refuse, `${methode} ${chemin} doit etre invisible/inaccessible pour un autre artisan (404 attendu)`);
   }
-  logEtape(`isolation multi-tenant verifiee sur ${cibles.length} endpoints (clients/devis/factures/chantiers/fournisseurs/taches)`);
+  logEtape(`isolation multi-tenant verifiee sur ${cibles.length} endpoints (clients/devis/factures/chantiers/fournisseurs/taches/documents)`);
+
+  // --- Injection cross-tenant a la creation : un artisan ne doit jamais
+  // pouvoir rattacher un document qu'il cree a un client/chantier/devis/
+  // facture d'un AUTRE artisan (trouve en auditant creer_document/
+  // uploader_document, qui ne validaient aucune des references fournies -
+  // un document ainsi injecte apparaissait dans le portail client ou la
+  // galerie photo du chantier de l'artisan victime). ---
+  let injectionRefusee = false;
+  try {
+    await api.post("/documents", { nom: "Document injecte", type: "autre", url: "https://evil.test/x.pdf", client_id: client.id }, autreToken);
+  } catch (err) {
+    injectionRefusee = err.message.includes("HTTP 404");
+  }
+  assert(injectionRefusee, "creer un document rattache au client_id d'un AUTRE artisan doit etre refuse (404)");
+  logEtape("injection cross-tenant a la creation de document (client_id d'un autre artisan) correctement refusee");
+
+  // Meme classe de bug trouvee dans taches.py et planning.py : une tache ou
+  // un evenement rattache au chantier d'un autre artisan apparaissait dans
+  // SON tableau de bord chantier (Chantier.taches n'est jamais filtre par
+  // artisan_id, un chantier n'ayant par construction qu'un seul proprietaire).
+  let tacheInjecteeRefusee = false;
+  try {
+    await api.post("/taches", { titre: "Tache injectee", chantier_id: chantier.id }, autreToken);
+  } catch (err) {
+    tacheInjecteeRefusee = err.message.includes("HTTP 404");
+  }
+  assert(tacheInjecteeRefusee, "creer une tache rattachee au chantier_id d'un AUTRE artisan doit etre refuse (404)");
+
+  let evenementInjecteRefuse = false;
+  try {
+    await api.post("/evenements", { titre: "RDV injecte", date_debut: "2026-09-01T10:00:00Z", chantier_id: chantier.id }, autreToken);
+  } catch (err) {
+    evenementInjecteRefuse = err.message.includes("HTTP 404");
+  }
+  assert(evenementInjecteRefuse, "creer un evenement rattache au chantier_id d'un AUTRE artisan doit etre refuse (404)");
+  logEtape("injection cross-tenant a la creation de tache/evenement (chantier_id d'un autre artisan) correctement refusee");
 
   // --- Endpoints publics : jeton invalide ---
   let publicRefuse = false;

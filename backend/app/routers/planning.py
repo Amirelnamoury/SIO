@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.deps import get_current_artisan
-from app.models import Artisan, Chantier, Evenement, Tache
+from app.models import Artisan, Chantier, Client, Evenement, Tache
 from app.schemas import EvenementCreate, EvenementOut, EvenementUpdate, PlanningItem
 
 router = APIRouter(tags=["planning"])
@@ -16,6 +16,15 @@ def _get_evenement_or_404(db: Session, artisan: Artisan, evenement_id: int) -> E
     if evenement is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Evenement introuvable")
     return evenement
+
+
+def _verifier_proprietaire(db: Session, artisan: Artisan, client_id: int | None, chantier_id: int | None) -> None:
+    """Meme principe que taches.py : un evenement rattache a un client/
+    chantier doit appartenir a l'artisan qui le cree."""
+    if client_id is not None and db.query(Client).filter(Client.id == client_id, Client.artisan_id == artisan.id).first() is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client introuvable")
+    if chantier_id is not None and db.query(Chantier).filter(Chantier.id == chantier_id, Chantier.artisan_id == artisan.id).first() is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chantier introuvable")
 
 
 @router.get("/evenements", response_model=list[EvenementOut])
@@ -32,6 +41,7 @@ def creer_evenement(
     db: Session = Depends(get_db),
     artisan: Artisan = Depends(get_current_artisan),
 ):
+    _verifier_proprietaire(db, artisan, payload.client_id, payload.chantier_id)
     evenement = Evenement(artisan_id=artisan.id, **payload.model_dump())
     db.add(evenement)
     db.commit()
