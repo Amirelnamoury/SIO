@@ -42,6 +42,10 @@ l'application elle-meme, pas par le test).
 5. **scenario5_equipe_permissions.mjs** - invitation d'un salarie ->
    donnees partagees au niveau de l'entreprise -> permissions verifiees
    (un salarie ne peut pas gerer l'equipe, un administrateur le peut).
+6. **scenario6_heures_main_oeuvre.mjs** - chantier -> heures saisies pour
+   plusieurs intervenants (avec et sans taux horaire) -> cout de main
+   d'oeuvre reel -> marge estimee mise a jour -> isolation multi-tenant ->
+   suppression (le total et le cout se recalculent, jamais un flag fige).
 
 ## Limites connues
 

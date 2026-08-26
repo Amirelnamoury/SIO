@@ -627,6 +627,36 @@ class DepenseOut(BaseModel):
     fournisseur_nom: Optional[str] = None
 
 
+class HeureTravailCreate(BaseModel):
+    nom_intervenant: str
+    membre_id: Optional[int] = None
+    date_travail: date
+    duree_heures: float
+    taux_horaire: Optional[float] = None
+    note: Optional[str] = None
+
+    @field_validator("duree_heures")
+    @classmethod
+    def duree_positive(cls, v):
+        if v <= 0:
+            raise ValueError("La duree doit etre superieure a 0.")
+        return v
+
+
+class HeureTravailOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    chantier_id: int
+    membre_id: Optional[int] = None
+    nom_intervenant: str
+    date_travail: date
+    duree_heures: float
+    taux_horaire: Optional[float] = None
+    cout: Optional[float] = None
+    note: Optional[str] = None
+
+
 FOURNISSEUR_CATEGORIES = {"materiaux", "sous_traitance", "outillage", "autre"}
 
 
@@ -718,6 +748,8 @@ class ChantierOut(BaseModel):
     date_fin_prevue: Optional[date] = None
     budget: Optional[float] = None
     total_depenses: float
+    total_heures: Optional[float] = None
+    cout_main_oeuvre: Optional[float] = None
     marge_estimee: Optional[float] = None
     montant_facture: Optional[float] = None
     montant_encaisse: Optional[float] = None
@@ -728,6 +760,7 @@ class ChantierOut(BaseModel):
     created_at: datetime
     notes: list[ChantierNoteOut] = []
     depenses: list[DepenseOut] = []
+    heures: list[HeureTravailOut] = []
     taches: "list[TacheOut]" = []
 
 

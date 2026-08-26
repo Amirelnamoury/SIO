@@ -1,8 +1,10 @@
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.config import settings
 from app.database import Base, engine
@@ -84,10 +86,41 @@ app.add_middleware(
     # sans grande consequence tant que l'auth reste par token en en-tete, pas
     # par cookie), soit ajouter explicitement chaque domaine de site vitrine
     # livre a la liste.
-    allow_credentials=True,
+    # allow_credentials=True n'a de sens qu'avec des cookies de session : le
+    # frontend n'utilise jamais credentials:'include' (auth par header Bearer
+    # uniquement). Combine a allow_origins=["*"] ce serait de toute facon une
+    # config CORS invalide (rejetee par le navigateur) : on ne l'active donc
+    # que si des origines precises sont configurees.
+    allow_credentials=_cors_origins != ["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    # Les HTTPException levees volontairement dans les routers portent deja un
+    # message clair pour l'utilisateur (ex: "Client introuvable") : on les
+    # laisse passer telles quelles, juste normalisees en JSON {"detail": ...}.
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail}, headers=getattr(exc, "headers", None))
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(status_code=422, content={"detail": "Donnees invalides. Verifiez les champs du formulaire."})
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    # Regle section 41 (cahier des charges V4) : aucune erreur technique brute
+    # ne doit atteindre l'utilisateur. Le detail complet (type, message, trace)
+    # part dans les logs serveur pour le diagnostic ; l'utilisateur ne voit
+    # qu'un message actionnable.
+    logger.exception("Erreur non geree sur %s %s", request.method, request.url.path)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Une erreur inattendue s'est produite. Reessayez. Si le probleme persiste, contactez le support."},
+    )
 
 app.include_router(auth.router)
 app.include_router(clients.router)

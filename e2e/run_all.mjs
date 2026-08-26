@@ -5,6 +5,7 @@ import scenario2 from "./scenario2_preparation_cloture.mjs";
 import scenario3 from "./scenario3_automation_facture.mjs";
 import scenario4 from "./scenario4_conformite.mjs";
 import scenario5 from "./scenario5_equipe_permissions.mjs";
+import scenario6 from "./scenario6_heures_main_oeuvre.mjs";
 
 const scenarios = [
   ["1. Devis -> ... -> avis", scenario1],
@@ -12,6 +13,7 @@ const scenarios = [
   ["3. Automatisation facture impayee", scenario3],
   ["4. Conformite : expiration -> notification -> renouvellement", scenario4],
   ["5. Equipe : invitation -> attribution -> permissions", scenario5],
+  ["6. Heures de main d'oeuvre -> cout reel -> rentabilite", scenario6],
 ];
 
 let echecs = 0;

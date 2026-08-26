@@ -363,17 +363,44 @@ class Chantier(Base):
     taches = relationship("Tache", back_populates="chantier")
     factures = relationship("Facture", back_populates="chantier")
     depenses = relationship("Depense", back_populates="chantier", cascade="all, delete-orphan")
+    heures = relationship("HeureTravail", back_populates="chantier", cascade="all, delete-orphan")
 
     @property
     def total_depenses(self):
         return round(sum(d.montant for d in self.depenses), 2)
 
     @property
+    def total_heures(self):
+        if not self.heures:
+            return None
+        return round(float(sum(h.duree_heures for h in self.heures)), 2)
+
+    @property
+    def cout_main_oeuvre(self):
+        """Cout reel de main d'oeuvre = somme des (heures x taux horaire) des
+        entrees qui ont un taux renseigne. None si aucune entree n'a de taux
+        (rien a calculer), jamais une estimation inventee sur les entrees qui
+        n'en ont pas."""
+        couts = [h.cout for h in self.heures if h.cout is not None]
+        if not couts:
+            return None
+        return round(sum(couts), 2)
+
+    @property
+    def _cout_total_engage(self):
+        """Depenses materiaux/sous-traitance + main d'oeuvre reelle (quand
+        connue) : base commune pour marge_estimee et marge_reelle."""
+        total = self.total_depenses
+        if self.cout_main_oeuvre is not None:
+            total += self.cout_main_oeuvre
+        return total
+
+    @property
     def marge_estimee(self):
         """Marge par rapport au budget prevu (avant meme d'avoir facture quoi que ce soit)."""
         if self.budget is None:
             return None
-        return round(self.budget - self.total_depenses, 2)
+        return round(self.budget - self._cout_total_engage, 2)
 
     @property
     def _factures_actives(self):
@@ -396,13 +423,14 @@ class Chantier(Base):
 
     @property
     def marge_reelle(self):
-        """Marge reelle : ce qui a ete facture moins les depenses engagees.
-        Contrairement a marge_estimee (basee sur le budget previsionnel), reflete
-        l'argent effectivement engage sur le chantier."""
+        """Marge reelle : ce qui a ete facture moins les couts engages (depenses
+        + main d'oeuvre reelle quand elle est renseignee). Contrairement a
+        marge_estimee (basee sur le budget previsionnel), reflete l'argent
+        effectivement engage sur le chantier."""
         facture = self.montant_facture
         if facture is None:
             return None
-        return round(facture - self.total_depenses, 2)
+        return round(facture - self._cout_total_engage, 2)
 
     @property
     def progression(self):
@@ -435,6 +463,47 @@ class Depense(Base):
     @property
     def fournisseur_nom(self):
         return self.fournisseur.nom if self.fournisseur_id and self.fournisseur else None
+
+
+class HeureTravail(Base):
+    """Une plage d'heures travaillees par un intervenant (l'artisan lui-meme,
+    un membre de l'equipe ou un sous-traitant sans compte) sur un chantier :
+    alimente le cout de main d'oeuvre reel et la rentabilite (voir
+    Chantier.cout_main_oeuvre). Volontairement simple - pas de pointeuse, pas
+    de gestion RH, juste "combien d'heures et pour quel cout ce chantier
+    consomme reellement"."""
+
+    __tablename__ = "heures_travail"
+
+    id = Column(Integer, primary_key=True, index=True)
+    chantier_id = Column(Integer, ForeignKey("chantiers.id"), nullable=False, index=True)
+    membre_id = Column(Integer, ForeignKey("membres.id"), nullable=True, index=True)
+
+    # Toujours renseigne (denormalise depuis le membre au moment de la saisie
+    # si membre_id est fourni) : reste lisible meme si le membre est plus tard
+    # retire de l'equipe, et permet de saisir un intervenant sans compte
+    # (l'artisan lui-meme, un sous-traitant).
+    nom_intervenant = Column(String, nullable=False)
+    date_travail = Column(Date, default=date.today)
+    duree_heures = Column(Numeric(6, 2), nullable=False)
+    # Cout horaire charge (optionnel) : sans lui, les heures sont quand meme
+    # comptabilisees (total_heures) mais aucun cout n'est invente.
+    taux_horaire = Column(MONTANT, nullable=True)
+    note = Column(String, nullable=True)
+
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+
+    chantier = relationship("Chantier", back_populates="heures")
+    membre = relationship("Membre")
+
+    @property
+    def cout(self):
+        if self.taux_horaire is None:
+            return None
+        # Reste en Decimal (comme MONTANT partout ailleurs) pour pouvoir
+        # s'additionner sans conversion avec total_depenses/budget/facture
+        # dans Chantier._cout_total_engage.
+        return round(self.duree_heures * self.taux_horaire, 2)
 
 
 class ChantierNote(Base):

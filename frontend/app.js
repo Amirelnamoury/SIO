@@ -846,6 +846,16 @@ async function ensureFournisseursCache() {
   return fournisseursCache;
 }
 
+let equipeCache = [];
+async function ensureEquipeCache() {
+  try {
+    equipeCache = await Api.listEquipe();
+  } catch (err) {
+    equipeCache = [];
+  }
+  return equipeCache;
+}
+
 async function loadFournisseurs() {
   const list = document.getElementById("fournisseurs-list");
   list.innerHTML = skeletonCards();
@@ -2679,16 +2689,75 @@ async function loadChantiers() {
 }
 
 function rentabiliteHtml(c) {
-  if (c.total_depenses === 0 && c.montant_facture === null) return "";
+  if (c.total_depenses === 0 && c.montant_facture === null && !c.total_heures) return "";
   const margeTxt = c.marge_reelle !== null
     ? `<span style="${c.marge_reelle < 0 ? "color:var(--danger);" : ""}">${fmtEuro(c.marge_reelle)}</span>`
     : "-";
+  const depensesLabel = c.cout_main_oeuvre !== null
+    ? `${fmtEuro(c.total_depenses)} + ${fmtEuro(c.cout_main_oeuvre)} main d'oeuvre`
+    : fmtEuro(c.total_depenses);
   return `
     <div class="dash-grid" style="margin:12px 0;">
-      <div class="dash-stat"><div class="value">${fmtEuro(c.total_depenses)}</div><div class="label">Depenses</div></div>
+      <div class="dash-stat"><div class="value">${depensesLabel}</div><div class="label">Depenses</div></div>
       <div class="dash-stat"><div class="value">${c.montant_facture !== null ? fmtEuro(c.montant_facture) : "-"}</div><div class="label">Facture</div></div>
       <div class="dash-stat"><div class="value">${c.montant_encaisse !== null ? fmtEuro(c.montant_encaisse) : "-"}</div><div class="label">Encaisse</div></div>
       <div class="dash-stat"><div class="value">${margeTxt}</div><div class="label">Marge reelle</div></div>
+    </div>`;
+}
+
+function heuresHtml(c) {
+  if (!c.heures || c.heures.length === 0) return "";
+  const parIntervenant = {};
+  for (const h of c.heures) {
+    parIntervenant[h.nom_intervenant] = (parIntervenant[h.nom_intervenant] || 0) + parseFloat(h.duree_heures);
+  }
+  const resume = Object.entries(parIntervenant)
+    .map(([nom, heures]) => `<div class="item-sub">${escapeHtml(nom)} · ${heures.toFixed(2).replace(/\.00$/, "")}h</div>`)
+    .join("");
+  const totalTxt = `${c.total_heures.toFixed(2).replace(/\.00$/, "")}h au total${c.cout_main_oeuvre !== null ? " · " + fmtEuro(c.cout_main_oeuvre) + " de main d'oeuvre" : ""}`;
+  const detail = c.heures
+    .map((h) => `
+      <div class="item-sub" style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <span>${fmtDate(h.date_travail)} · ${escapeHtml(h.nom_intervenant)} · ${parseFloat(h.duree_heures).toFixed(2).replace(/\.00$/, "")}h${h.cout !== null ? " · " + fmtEuro(h.cout) : ""}${h.note ? " · " + escapeHtml(h.note) : ""}</span>
+        <button type="button" class="btn-sm btn-sm-danger" style="padding:2px 8px;flex-shrink:0;" data-action="delete-heure" data-id="${c.id}" data-heure-id="${h.id}">&times;</button>
+      </div>`)
+    .join("");
+  return `<div class="dash-section" style="margin:12px 0;">
+    <h3 style="font-size:0.88rem;">Heures de main d'oeuvre</h3>
+    <div class="item-sub" style="font-weight:700;margin-bottom:4px;">${totalTxt}</div>
+    ${detail}
+  </div>`;
+}
+
+function showHeuresForm(chantierId) {
+  const container = document.getElementById(`heures-form-${chantierId}`);
+  if (!container) return;
+  const today = new Date().toISOString().slice(0, 10);
+  const membreOptions = equipeCache.map((m) => `<option value="${m.id}" data-nom="${escapeHtml(m.nom)}">${escapeHtml(m.nom)}</option>`).join("");
+  container.innerHTML = `
+    <div class="form-box" style="margin-top:12px;">
+      <div class="form-grid">
+        <div>
+          <label for="heure-membre-${chantierId}">Intervenant</label>
+          <select id="heure-membre-${chantierId}">
+            <option value="">Autre / vous-meme...</option>
+            ${membreOptions}
+          </select>
+        </div>
+        <div id="heure-nom-libre-wrap-${chantierId}">
+          <label for="heure-nom-${chantierId}">Nom (si "Autre")</label>
+          <input type="text" id="heure-nom-${chantierId}" placeholder="Ex: Vous-meme, sous-traitant...">
+        </div>
+        <div><label for="heure-duree-${chantierId}">Duree (heures) *</label><input type="number" step="0.25" min="0.25" id="heure-duree-${chantierId}" placeholder="Ex: 6.5"></div>
+        <div><label for="heure-date-${chantierId}">Date</label><input type="date" id="heure-date-${chantierId}" value="${today}"></div>
+        <div><label for="heure-taux-${chantierId}">Cout horaire charge (optionnel)</label><input type="number" step="0.01" min="0" id="heure-taux-${chantierId}" placeholder="Ex: 35"></div>
+        <div><label for="heure-note-${chantierId}">Note (optionnel)</label><input type="text" id="heure-note-${chantierId}" placeholder="Ex: pose carrelage"></div>
+      </div>
+      <p class="field-error" id="heures-error-${chantierId}" hidden></p>
+      <div class="form-actions">
+        <button type="button" class="btn-sm btn-sm-primary" data-action="submit-heures" data-id="${chantierId}">Ajouter</button>
+        <button type="button" class="btn-sm" data-action="cancel-heures-form" data-id="${chantierId}">Annuler</button>
+      </div>
     </div>`;
 }
 
@@ -2801,11 +2870,13 @@ function renderChantierCard(c) {
     ${checklistHtml(c)}
     ${rentabiliteHtml(c)}
     ${depensesHtml ? `<div class="item-meta">${depensesHtml}</div>` : ""}
+    ${heuresHtml(c)}
     <div class="notes-list">${notesHtml || '<div class="item-sub">Aucune note pour le moment.</div>'}</div>
     ${receptionHtml(c)}
     <div class="item-actions">
       <button type="button" class="btn-sm btn-sm-primary" data-action="toggle-note-form" data-id="${c.id}">+ Ajouter une note</button>
       <button type="button" class="btn-sm" data-action="toggle-depense-form" data-id="${c.id}">+ Ajouter une depense</button>
+      <button type="button" class="btn-sm" data-action="toggle-heures-form" data-id="${c.id}">+ Ajouter des heures</button>
       <button type="button" class="btn-sm" data-action="chantier-document" data-id="${c.id}">+ Ajouter un document</button>
       ${!["termine", "facture", "paye"].includes(c.statut) ? `<button type="button" class="btn-sm" data-action="terminer-chantier" data-id="${c.id}">Marquer termine</button>` : ""}
       ${["termine", "facture", "paye"].includes(c.statut) ? `<button type="button" class="btn-sm" data-action="toggle-reception-form" data-id="${c.id}">${c.date_reception ? "Modifier la reception" : "Enregistrer la reception"}</button>` : ""}
@@ -2815,6 +2886,7 @@ function renderChantierCard(c) {
     </div>
     <div id="note-form-${c.id}"></div>
     <div id="depense-form-${c.id}"></div>
+    <div id="heures-form-${c.id}"></div>
     <div id="reception-form-${c.id}"></div>
     <div id="cloturer-form-${c.id}"></div>
   </div>`;
@@ -3019,6 +3091,49 @@ function setupChantiersView() {
         errorBox.hidden = false;
         errorBox.textContent = err.message;
       }
+    } else if (btn.dataset.action === "toggle-heures-form") {
+      await ensureEquipeCache();
+      showHeuresForm(id);
+    } else if (btn.dataset.action === "cancel-heures-form") {
+      document.getElementById(`heures-form-${id}`).innerHTML = "";
+    } else if (btn.dataset.action === "submit-heures") {
+      const membreSelect = document.getElementById(`heure-membre-${id}`);
+      const membreId = membreSelect.value;
+      const nomLibre = document.getElementById(`heure-nom-${id}`).value.trim();
+      const nomIntervenant = membreId
+        ? membreSelect.options[membreSelect.selectedIndex].dataset.nom
+        : nomLibre;
+      const duree = document.getElementById(`heure-duree-${id}`).value;
+      const dateTravail = document.getElementById(`heure-date-${id}`).value;
+      const taux = document.getElementById(`heure-taux-${id}`).value;
+      const note = document.getElementById(`heure-note-${id}`).value.trim();
+      const errorBox = document.getElementById(`heures-error-${id}`);
+      if (!nomIntervenant || !duree) {
+        errorBox.hidden = false;
+        errorBox.textContent = "Intervenant (ou nom) et duree sont obligatoires.";
+        return;
+      }
+      try {
+        await Api.addChantierHeures(id, {
+          membre_id: membreId ? parseInt(membreId, 10) : null,
+          nom_intervenant: nomIntervenant,
+          duree_heures: parseFloat(duree), date_travail: dateTravail,
+          taux_horaire: taux ? parseFloat(taux) : null,
+          note: emptyToNull(note),
+        });
+        showToast("Heures ajoutees.");
+        loadChantiers();
+      } catch (err) {
+        errorBox.hidden = false;
+        errorBox.textContent = err.message;
+      }
+    } else if (btn.dataset.action === "delete-heure") {
+      const heureId = parseInt(btn.dataset.heureId, 10);
+      await withErrorToast(async () => {
+        await Api.deleteChantierHeures(id, heureId);
+        showToast("Heures supprimees.");
+        loadChantiers();
+      });
     } else if (btn.dataset.action === "terminer-chantier") {
       await withErrorToast(async () => {
         await Api.updateChantier(id, { statut: "termine" });

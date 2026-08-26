@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.database import get_db
 from app.deps import require_active_subscription
 from app import email_service
-from app.models import Artisan, Chantier, ChantierNote, Client, Depense, Devis, Document, Facture, Fournisseur, LigneFacture, Tache
+from app.models import Artisan, Chantier, ChantierNote, Client, Depense, Devis, Document, Facture, Fournisseur, HeureTravail, LigneFacture, Membre, Tache
 from app.pdf import generate_chantier_report_pdf
 from app.routers.factures import _generer_numero as _generer_numero_facture
 from app.routers.factures import _to_out as _facture_to_out
@@ -22,6 +22,8 @@ from app.schemas import (
     CloturerChantierOut,
     DepenseCreate,
     DepenseOut,
+    HeureTravailCreate,
+    HeureTravailOut,
     PreparerChantierIn,
     PreparerChantierOut,
 )
@@ -44,7 +46,7 @@ CHECKLIST_PREPARATION = [
 def _get_chantier_or_404(db: Session, artisan: Artisan, chantier_id: int) -> Chantier:
     chantier = (
         db.query(Chantier)
-        .options(joinedload(Chantier.notes), joinedload(Chantier.depenses).joinedload(Depense.fournisseur), joinedload(Chantier.client), joinedload(Chantier.factures), joinedload(Chantier.taches))
+        .options(joinedload(Chantier.notes), joinedload(Chantier.depenses).joinedload(Depense.fournisseur), joinedload(Chantier.heures), joinedload(Chantier.client), joinedload(Chantier.factures), joinedload(Chantier.taches))
         .filter(Chantier.id == chantier_id, Chantier.artisan_id == artisan.id)
         .first()
     )
@@ -59,11 +61,13 @@ def _to_out(chantier: Chantier) -> ChantierOut:
         client_nom=chantier.client.nom, devis_id=chantier.devis_id, titre=chantier.titre,
         adresse=chantier.adresse, statut=chantier.statut, date_debut=chantier.date_debut,
         date_fin_prevue=chantier.date_fin_prevue, budget=chantier.budget,
-        total_depenses=chantier.total_depenses, marge_estimee=chantier.marge_estimee,
+        total_depenses=chantier.total_depenses, total_heures=chantier.total_heures,
+        cout_main_oeuvre=chantier.cout_main_oeuvre, marge_estimee=chantier.marge_estimee,
         montant_facture=chantier.montant_facture, montant_encaisse=chantier.montant_encaisse,
         marge_reelle=chantier.marge_reelle, progression=chantier.progression,
         date_reception=chantier.date_reception, reserves=chantier.reserves,
         created_at=chantier.created_at, notes=chantier.notes, depenses=chantier.depenses,
+        heures=sorted(chantier.heures, key=lambda h: h.date_travail, reverse=True),
         taches=sorted(chantier.taches, key=lambda t: t.id),
     )
 
@@ -75,7 +79,7 @@ def lister_chantiers(
 ):
     chantiers = (
         db.query(Chantier)
-        .options(joinedload(Chantier.notes), joinedload(Chantier.depenses).joinedload(Depense.fournisseur), joinedload(Chantier.client), joinedload(Chantier.factures), joinedload(Chantier.taches))
+        .options(joinedload(Chantier.notes), joinedload(Chantier.depenses).joinedload(Depense.fournisseur), joinedload(Chantier.heures), joinedload(Chantier.client), joinedload(Chantier.factures), joinedload(Chantier.taches))
         .filter(Chantier.artisan_id == artisan.id)
         .order_by(Chantier.created_at.desc())
         .all()
@@ -253,6 +257,43 @@ def ajouter_depense(
     db.commit()
     db.refresh(depense)
     return depense
+
+
+@router.post("/{chantier_id}/heures", response_model=HeureTravailOut, status_code=status.HTTP_201_CREATED)
+def ajouter_heures(
+    chantier_id: int,
+    payload: HeureTravailCreate,
+    db: Session = Depends(get_db),
+    artisan: Artisan = Depends(require_active_subscription),
+):
+    """Enregistre des heures de main d'oeuvre sur un chantier (section 16 :
+    suivi simple, pas de pointeuse). Alimente Chantier.total_heures et
+    Chantier.cout_main_oeuvre, donc la marge reelle/estimee."""
+    chantier = _get_chantier_or_404(db, artisan, chantier_id)
+    if payload.membre_id is not None:
+        membre = db.query(Membre).filter(Membre.id == payload.membre_id, Membre.artisan_id == artisan.id).first()
+        if membre is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Membre introuvable")
+    heure = HeureTravail(chantier_id=chantier.id, **payload.model_dump())
+    db.add(heure)
+    db.commit()
+    db.refresh(heure)
+    return heure
+
+
+@router.delete("/{chantier_id}/heures/{heure_id}", status_code=status.HTTP_204_NO_CONTENT)
+def supprimer_heures(
+    chantier_id: int,
+    heure_id: int,
+    db: Session = Depends(get_db),
+    artisan: Artisan = Depends(require_active_subscription),
+):
+    chantier = _get_chantier_or_404(db, artisan, chantier_id)
+    heure = db.query(HeureTravail).filter(HeureTravail.id == heure_id, HeureTravail.chantier_id == chantier.id).first()
+    if heure is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Entree d'heures introuvable")
+    db.delete(heure)
+    db.commit()
 
 
 @router.post("/{chantier_id}/cloturer", response_model=CloturerChantierOut)
