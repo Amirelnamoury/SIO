@@ -226,6 +226,19 @@ def supprimer_chantier(
     db.commit()
 
 
+@router.post("/{chantier_id}/restaurer", response_model=ChantierOut)
+def restaurer_chantier(
+    chantier_id: int,
+    db: Session = Depends(get_db),
+    artisan: Artisan = Depends(require_active_subscription),
+):
+    chantier = _get_chantier_or_404(db, artisan, chantier_id)
+    chantier.archive = False
+    db.commit()
+    chantier = _get_chantier_or_404(db, artisan, chantier_id)
+    return _to_out(chantier)
+
+
 @router.post("/{chantier_id}/notes", response_model=ChantierNoteOut, status_code=status.HTTP_201_CREATED)
 def ajouter_note(
     chantier_id: int,

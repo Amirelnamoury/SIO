@@ -292,3 +292,16 @@ def supprimer_devis(
     devis = _get_devis_or_404(db, artisan, devis_id)
     devis.archive = True
     db.commit()
+
+
+@router.post("/{devis_id}/restaurer", response_model=DevisOut)
+def restaurer_devis(
+    devis_id: int,
+    db: Session = Depends(get_db),
+    artisan: Artisan = Depends(get_current_artisan),
+):
+    devis = _get_devis_or_404(db, artisan, devis_id)
+    devis.archive = False
+    db.commit()
+    devis = _get_devis_or_404(db, artisan, devis_id)
+    return _to_out(devis)

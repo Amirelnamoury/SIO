@@ -28,10 +28,14 @@ def lister_documents(
     chantier_id: int | None = None,
     devis_id: int | None = None,
     facture_id: int | None = None,
+    archive: bool = False,
     db: Session = Depends(get_db),
     artisan: Artisan = Depends(get_current_artisan),
 ):
-    query = db.query(Document).filter(Document.artisan_id == artisan.id)
+    """Par defaut, seuls les documents actifs (non archives) sont renvoyes.
+    Passer archive=true pour lister ceux qui ont ete "supprimes" (archives,
+    voir supprimer_document) - le fichier n'est jamais perdu."""
+    query = db.query(Document).filter(Document.artisan_id == artisan.id, Document.archive.is_(archive))
     if client_id:
         query = query.filter(Document.client_id == client_id)
     if chantier_id:
@@ -144,10 +148,26 @@ def supprimer_document(
     db: Session = Depends(get_db),
     artisan: Artisan = Depends(get_current_artisan),
 ):
+    """Archive le document plutot que de le supprimer definitivement (meme
+    principe que clients/devis/factures/chantiers) : le fichier reste sur le
+    stockage et la ligne reste en base, restaurable via /restaurer."""
     document = db.query(Document).filter(Document.id == document_id, Document.artisan_id == artisan.id).first()
     if document is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document introuvable")
-    if document.chemin_fichier:
-        get_storage().delete(document.chemin_fichier)
-    db.delete(document)
+    document.archive = True
     db.commit()
+
+
+@router.post("/{document_id}/restaurer", response_model=DocumentOut)
+def restaurer_document(
+    document_id: int,
+    db: Session = Depends(get_db),
+    artisan: Artisan = Depends(get_current_artisan),
+):
+    document = db.query(Document).filter(Document.id == document_id, Document.artisan_id == artisan.id).first()
+    if document is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document introuvable")
+    document.archive = False
+    db.commit()
+    db.refresh(document)
+    return document

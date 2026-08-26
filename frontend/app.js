@@ -467,7 +467,7 @@ document.addEventListener("click", (e) => {
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && !document.getElementById("onboarding-modal").hidden) finishOnboarding();
   if (e.key === "Escape") {
-    ["panel-profil", "panel-timeline"].forEach((id) => {
+    ["panel-profil", "panel-timeline", "panel-archives"].forEach((id) => {
       const el = document.getElementById(id);
       if (el && !el.hidden) el.hidden = true;
     });
@@ -1974,6 +1974,104 @@ function setupClientsView() {
     if (btn) showTimeline(parseInt(btn.dataset.id, 10));
   });
 }
+
+// ===================== Archives (clients/devis/factures/chantiers/documents) =====================
+// Rien n'est jamais supprime definitivement (V5 section 3-4) : ce panneau
+// generique liste les elements archives d'un type donne et permet de les
+// restaurer, quelle que soit la vue depuis laquelle on l'ouvre.
+const ARCHIVE_ENTITES = {
+  client: {
+    titre: "Clients archives",
+    lister: () => Api.listClients(null, true),
+    restaurer: (id) => Api.restaurerClient(id),
+    ligne: (c) => `${escapeHtml(c.nom)}${c.societe ? " · " + escapeHtml(c.societe) : ""}`,
+    recharger: () => { loadClients(); loadClientsDirectory(); },
+  },
+  devis: {
+    titre: "Devis archives",
+    lister: () => Api.listDevis(null, true),
+    restaurer: (id) => Api.restaurerDevis(id),
+    ligne: (d) => `${escapeHtml(d.numero || "Devis #" + d.id)} · ${escapeHtml(d.client_nom || "")} · ${fmtEuro(d.montant_ttc)}`,
+    recharger: () => loadDevis(),
+  },
+  facture: {
+    titre: "Factures archivees",
+    lister: () => Api.listFactures(null, true),
+    restaurer: (id) => Api.restaurerFacture(id),
+    ligne: (f) => `${escapeHtml(f.numero || "Facture #" + f.id)} · ${escapeHtml(f.client_nom || "")} · ${fmtEuro(f.montant_ttc)}`,
+    recharger: () => loadFactures(),
+  },
+  chantier: {
+    titre: "Chantiers archives",
+    lister: () => Api.listChantiers(true),
+    restaurer: (id) => Api.restaurerChantier(id),
+    ligne: (c) => `${escapeHtml(c.titre)}${c.client_nom ? " · " + escapeHtml(c.client_nom) : ""}`,
+    recharger: () => loadChantiers(),
+  },
+  document: {
+    titre: "Documents archives",
+    lister: () => Api.listDocuments({ archive: true }),
+    restaurer: (id) => Api.restaurerDocument(id),
+    ligne: (d) => `${escapeHtml(d.nom)}${d.type ? " · " + escapeHtml(d.type) : ""}`,
+    recharger: () => loadDocuments(),
+  },
+};
+
+async function openArchivesPanel(entite) {
+  const config = ARCHIVE_ENTITES[entite];
+  if (!config) return;
+  const panel = document.getElementById("panel-archives");
+  const content = document.getElementById("archives-content");
+  document.getElementById("archives-titre").textContent = config.titre;
+  panel.dataset.entite = entite;
+  panel.hidden = false;
+  content.innerHTML = skeletonCards();
+  try {
+    const items = await config.lister();
+    content.innerHTML = items.length
+      ? items.map((item) => `
+        <div class="item-card">
+          <div class="item-card-top">
+            <div class="item-title">${config.ligne(item)}</div>
+          </div>
+          <div class="item-actions">
+            <button type="button" class="btn-sm btn-sm-primary" data-action="restaurer-archive" data-id="${item.id}">Restaurer</button>
+          </div>
+        </div>`).join("")
+      : `<div class="empty-state">Aucun element archive.</div>`;
+  } catch (err) {
+    content.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function setupArchivesPanel() {
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest('[data-action="voir-archives"]');
+    if (btn) openArchivesPanel(btn.dataset.entite);
+  });
+
+  document.getElementById("panel-archives").addEventListener("click", async (e) => {
+    if (e.target.closest('[data-action="close-archives"]') || e.target.id === "panel-archives") {
+      document.getElementById("panel-archives").hidden = true;
+      return;
+    }
+    const restoreBtn = e.target.closest('[data-action="restaurer-archive"]');
+    if (restoreBtn) {
+      const panel = document.getElementById("panel-archives");
+      const entite = panel.dataset.entite;
+      const config = ARCHIVE_ENTITES[entite];
+      const id = parseInt(restoreBtn.dataset.id, 10);
+      await withErrorToast(async () => {
+        await config.restaurer(id);
+        showToast("Element restaure.");
+        config.recharger();
+        openArchivesPanel(entite);
+      });
+    }
+  });
+}
+
+window.openArchivesPanel = openArchivesPanel;
 
 // ===================== Clients (annuaire des affaires gagnees) =====================
 async function loadClientsDirectory() {
@@ -4080,6 +4178,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupGlobalSearch();
   setupDashboardView();
   setupClientsView();
+  setupArchivesPanel();
   setupEntrepriseForm();
   setupAutomatisationForm();
   setupEquipeView();

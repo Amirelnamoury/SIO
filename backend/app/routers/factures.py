@@ -277,6 +277,19 @@ def supprimer_facture(
     db.commit()
 
 
+@router.post("/{facture_id}/restaurer", response_model=FactureOut)
+def restaurer_facture(
+    facture_id: int,
+    db: Session = Depends(get_db),
+    artisan: Artisan = Depends(get_current_artisan),
+):
+    facture = _get_facture_or_404(db, artisan, facture_id)
+    facture.archive = False
+    db.commit()
+    facture = _get_facture_or_404(db, artisan, facture_id)
+    return _to_out(facture)
+
+
 @router.post("/{facture_id}/paiements", response_model=FactureOut, status_code=status.HTTP_201_CREATED)
 def ajouter_paiement(
     facture_id: int,

@@ -647,6 +647,7 @@ class Document(Base):
     chemin_fichier = Column(String, nullable=True)
     nom_original = Column(String, nullable=True)
     taille_octets = Column(Integer, nullable=True)
+    archive = Column(Boolean, nullable=False, default=False, server_default=sql_false())
 
     created_at = Column(DateTime(timezone=True), default=utcnow)
 

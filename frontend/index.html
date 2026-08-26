@@ -205,6 +205,16 @@
       </div>
     </div>
 
+    <!-- ---------- Panneau archives (clients/devis/factures/chantiers/documents) ---------- -->
+    <div id="panel-archives" class="side-panel" hidden role="dialog" aria-modal="true" aria-labelledby="archives-titre">
+      <div class="side-panel-box">
+        <button type="button" class="side-panel-close" data-action="close-archives" aria-label="Fermer">&times;</button>
+        <h3 id="archives-titre">Archives</h3>
+        <p class="section-hint">Rien n'est jamais supprime definitivement : restaurez un element pour le remettre dans les listes actives.</p>
+        <div id="archives-content"></div>
+      </div>
+    </div>
+
     <!-- ---------- Section Tableau de bord ---------- -->
     <section id="view-dashboard" class="view">
       <div class="view-header"><h2>Bonjour 👋</h2></div>
@@ -227,6 +237,7 @@
     <section id="view-clients" class="view" hidden>
       <div class="view-header">
         <h2>Clients</h2>
+        <button type="button" class="btn-archives" data-action="voir-archives" data-entite="client">Archives</button>
       </div>
       <div id="clients-directory" class="list"></div>
     </section>
@@ -235,7 +246,10 @@
     <section id="view-devis" class="view" hidden>
       <div class="view-header">
         <h2>Devis &amp; relances</h2>
-        <button type="button" class="btn-primary" data-action="show-devis-form">+ Nouveau devis</button>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <button type="button" class="btn-archives" data-action="voir-archives" data-entite="devis">Archives</button>
+          <button type="button" class="btn-primary" data-action="show-devis-form">+ Nouveau devis</button>
+        </div>
       </div>
 
       <div id="devis-form-container" hidden></div>
@@ -255,7 +269,10 @@
     <section id="view-factures" class="view" hidden>
       <div class="view-header">
         <h2>Factures</h2>
-        <button type="button" class="btn-primary" data-action="show-facture-form">+ Nouvelle facture</button>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <button type="button" class="btn-archives" data-action="voir-archives" data-entite="facture">Archives</button>
+          <button type="button" class="btn-primary" data-action="show-facture-form">+ Nouvelle facture</button>
+        </div>
       </div>
 
       <div id="facture-form-container" hidden></div>
@@ -289,7 +306,10 @@
     <section id="view-chantiers" class="view" hidden>
       <div class="view-header">
         <h2>Chantiers</h2>
-        <button type="button" class="btn-primary" data-action="show-chantier-form">+ Nouveau chantier</button>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <button type="button" class="btn-archives" data-action="voir-archives" data-entite="chantier">Archives</button>
+          <button type="button" class="btn-primary" data-action="show-chantier-form">+ Nouveau chantier</button>
+        </div>
       </div>
 
       <div id="chantier-form-container" hidden></div>
@@ -330,7 +350,10 @@
     <section id="view-documents" class="view" hidden>
       <div class="view-header">
         <h2>Documents</h2>
-        <button type="button" class="btn-primary" data-action="show-document-form">+ Ajouter un document</button>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <button type="button" class="btn-archives" data-action="voir-archives" data-entite="document">Archives</button>
+          <button type="button" class="btn-primary" data-action="show-document-form">+ Ajouter un document</button>
+        </div>
       </div>
 
       <div id="document-form-container" hidden></div>

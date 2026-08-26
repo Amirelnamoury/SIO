@@ -279,6 +279,11 @@ h3 { margin: 0 0 12px; }
 .btn-sm-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 .btn-sm-danger { color: var(--danger); border-color: #f2c6c6; }
 .btn-sm-danger:hover { background: var(--danger-bg); }
+.btn-archives {
+  background: none; border: none; color: var(--text-muted); font-size: 0.85rem; font-weight: 600;
+  padding: 6px 4px; text-decoration: underline; text-underline-offset: 3px;
+}
+.btn-archives:hover { color: var(--text); }
 
 /* ---------- Formulaires inline ---------- */
 .form-box {

@@ -85,10 +85,17 @@ const Api = {
   deleteMembre: (id) => apiFetch(`/equipe/${id}`, { method: "DELETE" }),
 
   // ---------- Clients (CRM : prospects + clients, meme pipeline) ----------
-  listClients: (statut) => apiFetch("/clients" + (statut ? `?statut=${encodeURIComponent(statut)}` : "")),
+  listClients: (statut, archive) => {
+    const params = new URLSearchParams();
+    if (statut) params.set("statut", statut);
+    if (archive) params.set("archive", "true");
+    const qs = params.toString();
+    return apiFetch("/clients" + (qs ? `?${qs}` : ""));
+  },
   createClient: (payload) => apiFetch("/clients", { method: "POST", body: payload }),
   updateClient: (id, payload) => apiFetch(`/clients/${id}`, { method: "PATCH", body: payload }),
   deleteClient: (id) => apiFetch(`/clients/${id}`, { method: "DELETE" }),
+  restaurerClient: (id) => apiFetch(`/clients/${id}/restaurer`, { method: "POST" }),
   clientTimeline: (id) => apiFetch(`/clients/${id}/timeline`),
   clientResume: (id) => apiFetch(`/clients/${id}/resume`),
 
@@ -99,7 +106,13 @@ const Api = {
   deletePrestation: (id) => apiFetch(`/prestations/${id}`, { method: "DELETE" }),
 
   // ---------- Devis ----------
-  listDevis: (statut) => apiFetch("/devis" + (statut ? `?statut=${encodeURIComponent(statut)}` : "")),
+  listDevis: (statut, archive) => {
+    const params = new URLSearchParams();
+    if (statut) params.set("statut", statut);
+    if (archive) params.set("archive", "true");
+    const qs = params.toString();
+    return apiFetch("/devis" + (qs ? `?${qs}` : ""));
+  },
   devisARelancer: () => apiFetch("/devis/a-relancer"),
   createDevis: (payload) => apiFetch("/devis", { method: "POST", body: payload }),
   updateDevis: (id, payload) => apiFetch(`/devis/${id}`, { method: "PATCH", body: payload }),
@@ -107,12 +120,14 @@ const Api = {
   relancerDevis: (id) => apiFetch(`/devis/${id}/relancer`, { method: "POST" }),
   dupliquerDevis: (id) => apiFetch(`/devis/${id}/dupliquer`, { method: "POST" }),
   deleteDevis: (id) => apiFetch(`/devis/${id}`, { method: "DELETE" }),
+  restaurerDevis: (id) => apiFetch(`/devis/${id}/restaurer`, { method: "POST" }),
 
   // ---------- Chantiers ----------
-  listChantiers: () => apiFetch("/chantiers"),
+  listChantiers: (archive) => apiFetch("/chantiers" + (archive ? "?archive=true" : "")),
   createChantier: (payload) => apiFetch("/chantiers", { method: "POST", body: payload }),
   updateChantier: (id, payload) => apiFetch(`/chantiers/${id}`, { method: "PATCH", body: payload }),
   deleteChantier: (id) => apiFetch(`/chantiers/${id}`, { method: "DELETE" }),
+  restaurerChantier: (id) => apiFetch(`/chantiers/${id}/restaurer`, { method: "POST" }),
   addChantierNote: (id, payload) => apiFetch(`/chantiers/${id}/notes`, { method: "POST", body: payload }),
   addChantierDepense: (id, payload) => apiFetch(`/chantiers/${id}/depenses`, { method: "POST", body: payload }),
   addChantierHeures: (id, payload) => apiFetch(`/chantiers/${id}/heures`, { method: "POST", body: payload }),
@@ -140,12 +155,19 @@ const Api = {
   deleteConformite: (id) => apiFetch(`/conformite/${id}`, { method: "DELETE" }),
 
   // ---------- Factures ----------
-  listFactures: (statut) => apiFetch("/factures" + (statut ? `?statut=${encodeURIComponent(statut)}` : "")),
+  listFactures: (statut, archive) => {
+    const params = new URLSearchParams();
+    if (statut) params.set("statut", statut);
+    if (archive) params.set("archive", "true");
+    const qs = params.toString();
+    return apiFetch("/factures" + (qs ? `?${qs}` : ""));
+  },
   facturesARelancer: () => apiFetch("/factures/a-relancer"),
   createFacture: (payload) => apiFetch("/factures", { method: "POST", body: payload }),
   factureDepuisDevis: (devisId, type) => apiFetch(`/factures/depuis-devis/${devisId}?type=${encodeURIComponent(type || "standard")}`, { method: "POST" }),
   updateFacture: (id, payload) => apiFetch(`/factures/${id}`, { method: "PATCH", body: payload }),
   deleteFacture: (id) => apiFetch(`/factures/${id}`, { method: "DELETE" }),
+  restaurerFacture: (id) => apiFetch(`/factures/${id}/restaurer`, { method: "POST" }),
   relancerFacture: (id) => apiFetch(`/factures/${id}/relancer`, { method: "POST" }),
   ajouterPaiement: (id, payload) => apiFetch(`/factures/${id}/paiements`, { method: "POST", body: payload }),
 
@@ -196,6 +218,7 @@ const Api = {
   createDocument: (payload) => apiFetch("/documents", { method: "POST", body: payload }),
   uploadDocument: (formData) => uploadFetch("/documents/upload", formData),
   deleteDocument: (id) => apiFetch(`/documents/${id}`, { method: "DELETE" }),
+  restaurerDocument: (id) => apiFetch(`/documents/${id}/restaurer`, { method: "POST" }),
 
   // ---------- Abonnement ----------
   checkoutSession: (plan = "essentiel") => apiFetch(`/stripe/checkout-session?plan=${encodeURIComponent(plan)}`, { method: "POST" }),

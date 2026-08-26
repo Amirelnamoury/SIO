@@ -961,6 +961,7 @@ class DocumentOut(BaseModel):
     url: Optional[str] = None
     nom_original: Optional[str] = None
     taille_octets: Optional[int] = None
+    archive: bool = False
     created_at: datetime
 
 
