@@ -19,9 +19,11 @@ verifier l'etat reel.
 """
 import logging
 import secrets
+from contextlib import contextmanager
 from datetime import date, datetime, timedelta, timezone
 
 from apscheduler.schedulers.background import BackgroundScheduler
+from sqlalchemy import text
 from sqlalchemy.orm import Session, joinedload
 
 from app.config import settings
@@ -34,6 +36,11 @@ from app.routers.devis import JOURS_SEUIL_STATUTS, STATUT_SUIVANT, relance_due
 from app.routers.factures import relance_facture_due
 
 logger = logging.getLogger("suite_artisan.scheduler")
+
+# Cle arbitraire (mais fixe) pour le verrou consultatif Postgres qui protege
+# run_automation_cycle en deploiement multi-instance : voir _cycle_lock() ci-
+# dessous pour le detail de la strategie et sa limite documentee.
+_ADVISORY_LOCK_KEY = 875_321_001
 
 # En dessous de ce delai, on ne retente pas une notification qui a deja
 # echoue/ete non-configuree pour la meme cible : evite de spammer EmailLog
@@ -188,6 +195,32 @@ def _traiter_contrats(db: Session, artisan: Artisan, run: AutomationRun) -> None
             run.nb_erreurs += 1
 
 
+@contextmanager
+def _cycle_lock(db: Session):
+    """Verrou consultatif Postgres (pg_advisory_lock) : garantit qu'un seul
+    passage d'automatisation s'execute a la fois meme si l'API tourne en
+    plusieurs instances partageant la meme base. Le max_instances=1 passe a
+    APScheduler (voir start_scheduler) ne protege qu'un seul process contre
+    lui-meme, pas plusieurs replicas qui demarrent chacun leur propre
+    scheduler en tache de fond.
+
+    Sur SQLite (dev, mono-process par nature) le verrou n'a pas de sens :
+    on l'ignore purement et simplement (yield True). C'est la strategie
+    multi-instance retenue plutot qu'une file de taches separee (Celery/RQ,
+    qui demanderait Redis en plus) - disproportionnee tant qu'un seul verrou
+    partage suffit a eviter les doublons. A revisiter si le volume justifie
+    un jour un vrai worker dedie."""
+    if db.bind.dialect.name != "postgresql":
+        yield True
+        return
+    acquired = bool(db.execute(text("SELECT pg_try_advisory_lock(:k)"), {"k": _ADVISORY_LOCK_KEY}).scalar())
+    try:
+        yield acquired
+    finally:
+        if acquired:
+            db.execute(text("SELECT pg_advisory_unlock(:k)"), {"k": _ADVISORY_LOCK_KEY})
+
+
 def run_automation_cycle() -> AutomationRun:
     """Un passage complet du moteur d'automatisation, pour tous les artisans.
     Fonction pure (pas de dependance FastAPI) : appelable directement par les
@@ -197,20 +230,28 @@ def run_automation_cycle() -> AutomationRun:
     db.add(run)
     db.commit()
     try:
-        artisans = db.query(Artisan).all()
-        for artisan in artisans:
-            _traiter_devis(db, artisan, run)
-            _traiter_factures(db, artisan, run)
-            _traiter_conformite(db, artisan, run)
-            _traiter_contrats(db, artisan, run)
-        run.finished_at = datetime.now(timezone.utc)
-        db.commit()
-        logger.info(
-            "Cycle d'automatisation termine : %s devis relances, %s factures relancees, "
-            "%s alertes conformite, %s factures de contrats generees, %s emails envoyes, %s non configures, %s erreurs",
-            run.nb_devis_relances, run.nb_factures_relancees, run.nb_alertes_conformite,
-            run.nb_contrats_factures, run.nb_emails_envoyes, run.nb_emails_non_configures, run.nb_erreurs,
-        )
+        with _cycle_lock(db) as acquired:
+            if not acquired:
+                logger.info("Cycle d'automatisation saute : une autre instance l'execute deja (verrou non acquis).")
+                run.finished_at = datetime.now(timezone.utc)
+                run.erreur = "saute : verrou deja pris par une autre instance"
+                db.commit()
+                return run
+
+            artisans = db.query(Artisan).all()
+            for artisan in artisans:
+                _traiter_devis(db, artisan, run)
+                _traiter_factures(db, artisan, run)
+                _traiter_conformite(db, artisan, run)
+                _traiter_contrats(db, artisan, run)
+            run.finished_at = datetime.now(timezone.utc)
+            db.commit()
+            logger.info(
+                "Cycle d'automatisation termine : %s devis relances, %s factures relancees, "
+                "%s alertes conformite, %s factures de contrats generees, %s emails envoyes, %s non configures, %s erreurs",
+                run.nb_devis_relances, run.nb_factures_relancees, run.nb_alertes_conformite,
+                run.nb_contrats_factures, run.nb_emails_envoyes, run.nb_emails_non_configures, run.nb_erreurs,
+            )
     except Exception as exc:  # le scheduler ne doit jamais mourir silencieusement
         logger.exception("Cycle d'automatisation interrompu par une erreur")
         run.finished_at = datetime.now(timezone.utc)
