@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.deps import UtilisateurActif, generate_unique_slug, get_current_artisan, get_utilisateur_actif
 from app.models import Artisan, Membre
-from app.schemas import ArtisanCreate, ArtisanLogin, ArtisanOut, ArtisanUpdate, MoiOut, Token
+from app.schemas import ArtisanCreate, ArtisanLogin, ArtisanOut, ArtisanUpdate, MoiOut, PasswordChange, Token
 from app.security import create_access_token, hash_password, verify_password
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -93,3 +93,26 @@ def modifier_profil(
     db.commit()
     db.refresh(current_artisan)
     return ArtisanOut.model_validate(current_artisan)
+
+
+@router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
+def changer_mot_de_passe(
+    payload: PasswordChange,
+    db: Session = Depends(get_db),
+    utilisateur: UtilisateurActif = Depends(get_utilisateur_actif),
+):
+    """Marche pour le proprietaire comme pour un membre de l'equipe (chacun
+    a ses propres identifiants). Le mot de passe actuel est toujours requis
+    - jamais de changement de mot de passe sans le prouver, meme en etant
+    deja connecte (un JWT vole ne doit pas suffire a prendre le compte).
+
+    400 et non 401 pour un mot de passe actuel incorrect : le token JWT de
+    la requete, lui, reste parfaitement valide (l'utilisateur EST bien
+    connecte). Renvoyer 401 declencherait la deconnexion forcee globale
+    cote frontend (apiFetch traite tout 401 comme "session expiree"),
+    ce qui serait un comportement absurde pour une simple erreur de saisie."""
+    cible = utilisateur.membre if utilisateur.membre is not None else utilisateur.artisan
+    if not verify_password(payload.current_password, cible.password_hash):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Mot de passe actuel incorrect")
+    cible.password_hash = hash_password(payload.new_password)
+    db.commit()

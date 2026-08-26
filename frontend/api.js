@@ -76,6 +76,7 @@ const Api = {
   me: () => apiFetch("/auth/me"),
   moi: () => apiFetch("/auth/moi"),
   updateMe: (payload) => apiFetch("/auth/me", { method: "PATCH", body: payload }),
+  changerMotDePasse: (payload) => apiFetch("/auth/change-password", { method: "POST", body: payload }),
 
   // ---------- Equipe ----------
   listEquipe: () => apiFetch("/equipe"),

@@ -61,6 +61,18 @@ class ArtisanLogin(BaseModel):
     password: str
 
 
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def new_password_min_longueur(cls, v):
+        if len(v) < 8:
+            raise ValueError("le nouveau mot de passe doit faire au moins 8 caracteres")
+        return v
+
+
 class ArtisanUpdate(BaseModel):
     nom_entreprise: Optional[str] = None
     telephone: Optional[str] = None

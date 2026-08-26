@@ -72,6 +72,12 @@ l'application elle-meme, pas par le test).
    valeurs factices : le webhook ne fait jamais d'appel sortant vers
    l'API Stripe) - sans cette config, le scenario se saute proprement
    (ne fait pas echouer la suite).
+9. **scenario9_securite.mjs** - changement de mot de passe (proprietaire
+   et membre d'equipe, avec verification qu'un mauvais mot de passe actuel
+   ne provoque jamais de deconnexion forcee), isolation multi-tenant sur
+   9 endpoints representatifs (clients/devis/factures/chantiers/
+   fournisseurs/taches, en lecture comme en ecriture), acces a un
+   endpoint public avec un jeton invalide.
 
 ## Limites connues
 

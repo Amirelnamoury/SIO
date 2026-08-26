@@ -533,8 +533,34 @@ function setupProfilPanel() {
         </div>
         ${!isSubscriptionActive() ? '<button type="button" class="btn-primary" data-action="upgrade-subscription" style="margin-top:10px;width:100%;">Voir les tarifs</button>' : ""}
       </div>
+      <div class="dash-section" style="margin-top:20px;">
+        <h3 style="font-size:0.95rem;">Changer le mot de passe</h3>
+        <form id="password-change-form" class="form-box" style="padding:0;border:none;">
+          <label for="pwd-actuel">Mot de passe actuel</label>
+          <input type="password" id="pwd-actuel" required autocomplete="current-password">
+          <label for="pwd-nouveau" style="margin-top:10px;">Nouveau mot de passe</label>
+          <input type="password" id="pwd-nouveau" required autocomplete="new-password" minlength="8">
+          <p class="field-error" id="password-change-error" hidden></p>
+          <div class="form-actions"><button type="submit" class="btn-sm btn-sm-primary">Mettre a jour</button></div>
+        </form>
+      </div>
     `;
     document.getElementById("panel-profil").hidden = false;
+    document.getElementById("password-change-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const errorBox = document.getElementById("password-change-error");
+      errorBox.hidden = true;
+      const current_password = document.getElementById("pwd-actuel").value;
+      const new_password = document.getElementById("pwd-nouveau").value;
+      try {
+        await Api.changerMotDePasse({ current_password, new_password });
+        showToast("Mot de passe mis a jour.");
+        document.getElementById("password-change-form").reset();
+      } catch (err) {
+        errorBox.hidden = false;
+        errorBox.textContent = err.message;
+      }
+    });
   });
   document.getElementById("panel-profil").addEventListener("click", (e) => {
     if (e.target.closest('[data-action="close-profil"]') || e.target.id === "panel-profil") {
