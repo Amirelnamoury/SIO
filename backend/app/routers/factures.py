@@ -9,6 +9,7 @@ from app.database import get_db
 from app.deps import get_current_artisan
 from app import email_service
 from app.models import Artisan, Client, Devis, Facture, LigneFacture, Paiement
+from app.numerotation import generer_numero
 from app.pdf import generate_facture_pdf
 from app.schemas import FactureCreate, FactureOut, FactureUpdate, PaiementCreate, PaiementOut
 
@@ -62,9 +63,7 @@ def relance_facture_due(facture: Facture, artisan: Artisan) -> bool:
 
 
 def _generer_numero(db: Session, artisan: Artisan) -> str:
-    annee = datetime.now().year
-    count = db.query(Facture).filter(Facture.artisan_id == artisan.id).count()
-    return f"FAC-{annee}-{count + 1:04d}"
+    return generer_numero(db, artisan.id, "facture", "FAC")
 
 
 def _recalculer_statut(facture: Facture) -> None:

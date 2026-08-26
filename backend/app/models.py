@@ -10,6 +10,7 @@ from sqlalchemy import (
     Date,
     ForeignKey,
     Text,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import false as sql_false
@@ -846,3 +847,22 @@ class Message(Base):
 
     artisan = relationship("Artisan", back_populates="messages")
     client = relationship("Client", back_populates="messages")
+
+
+class NumeroSequence(Base):
+    """Compteur par artisan/type de document/annee, utilise pour generer des
+    numeros de devis/factures reglementaires (DEV-2026-0001, FAC-2026-0001...).
+    Ne jamais deriver un numero d'un simple COUNT(*) : deux creations
+    concurrentes liraient le meme compte et produiraient le meme numero.
+    L'incrementation se fait via un UPDATE ... SET dernier_numero =
+    dernier_numero + 1 (voir app/numerotation.py), atomique par verrouillage
+    de ligne sur SQLite comme sur PostgreSQL."""
+
+    __tablename__ = "numero_sequences"
+    __table_args__ = (UniqueConstraint("artisan_id", "type_document", "annee", name="uq_numero_sequence_artisan_type_annee"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    artisan_id = Column(Integer, ForeignKey("artisans.id"), nullable=False, index=True)
+    type_document = Column(String, nullable=False)  # "devis" ou "facture"
+    annee = Column(Integer, nullable=False)
+    dernier_numero = Column(Integer, nullable=False, default=0)

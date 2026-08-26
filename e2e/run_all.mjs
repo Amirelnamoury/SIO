@@ -10,6 +10,7 @@ import scenario7 from "./scenario7_archivage.mjs";
 import scenario8 from "./scenario8_stripe.mjs";
 import scenario9 from "./scenario9_securite.mjs";
 import scenario10 from "./scenario10_portail_client.mjs";
+import scenario11 from "./scenario11_numerotation.mjs";
 
 const scenarios = [
   ["1. Devis -> ... -> avis", scenario1],
@@ -22,6 +23,7 @@ const scenarios = [
   ["8. Stripe : Free -> paiement -> Pro -> webhook -> echec -> annulation", scenario8],
   ["9. Securite : mot de passe, isolation multi-tenant, jetons publics", scenario9],
   ["10. Portail client : invitation -> acces -> messagerie -> revocation", scenario10],
+  ["11. Numerotation devis/factures : concurrence sans doublon", scenario11],
 ];
 
 let echecs = 0;

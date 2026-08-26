@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.database import get_db
 from app.deps import get_current_artisan, require_plan
 from app.models import Artisan, Client, Devis, LigneDevis
+from app.numerotation import generer_numero
 from app.pdf import generate_devis_pdf
 from app.schemas import DevisCreate, DevisOut, DevisUpdate
 
@@ -73,9 +74,7 @@ def _to_out(devis: Devis) -> DevisOut:
 
 
 def _generer_numero(db: Session, artisan: Artisan) -> str:
-    annee = datetime.now().year
-    count = db.query(Devis).filter(Devis.artisan_id == artisan.id).count()
-    return f"DEV-{annee}-{count + 1:04d}"
+    return generer_numero(db, artisan.id, "devis", "DEV")
 
 
 def _resoudre_client(db: Session, artisan: Artisan, payload: DevisCreate) -> Client:
