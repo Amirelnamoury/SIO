@@ -1247,10 +1247,31 @@ function setupNotificationsView() {
 }
 
 function setupDashboardView() {
-  document.getElementById("dashboard-content").addEventListener("click", (e) => {
-    const btn = e.target.closest('[data-action="voir-notification"]');
-    if (!btn) return;
-    switchView(btn.dataset.view);
+  document.getElementById("dashboard-content").addEventListener("click", async (e) => {
+    const voirBtn = e.target.closest('[data-action="voir-notification"]');
+    if (voirBtn) {
+      switchView(voirBtn.dataset.view);
+      return;
+    }
+    const relanceDevisBtn = e.target.closest('[data-action="relancer-devis"]');
+    if (relanceDevisBtn) {
+      const id = parseInt(relanceDevisBtn.dataset.id, 10);
+      await withErrorToast(async () => {
+        await Api.relancerDevis(id);
+        showToast("Relance envoyee.");
+        loadDashboard();
+      });
+      return;
+    }
+    const relanceFactureBtn = e.target.closest('[data-action="relancer-facture"]');
+    if (relanceFactureBtn) {
+      const id = parseInt(relanceFactureBtn.dataset.id, 10);
+      await withErrorToast(async () => {
+        await Api.relancerFacture(id);
+        showToast("Relance envoyee.");
+        loadDashboard();
+      });
+    }
   });
 }
 
@@ -1418,10 +1439,17 @@ const URGENCE_META = {
 
 function prioriteRowHtml(item) {
   const meta = URGENCE_META[item.urgence] || URGENCE_META.info;
+  // Action en un clic quand elle est sans ambiguite (relancer directement) :
+  // pas besoin de traverser un autre ecran pour un geste deja evident
+  // (section "UX one click" du cahier des charges).
+  const actionBtn = item.action
+    ? `<button type="button" class="btn-sm btn-sm-primary" data-action="${item.action}" data-id="${item.actionId}">${item.actionLabel}</button>`
+    : "";
+  const voirBtn = item.view ? `<button type="button" class="btn-sm" data-action="voir-notification" data-view="${item.view}">Voir</button>` : "";
   return `
   <div class="priorite-row ${meta.classe}">
     <div class="priorite-texte"><span class="priorite-icone">${meta.icone}</span><span>${item.label}</span></div>
-    ${item.view ? `<button type="button" class="btn-sm" data-action="voir-notification" data-view="${item.view}">Voir</button>` : ""}
+    <span style="display:flex;gap:6px;flex-shrink:0;">${actionBtn}${voirBtn}</span>
   </div>`;
 }
 
@@ -1488,6 +1516,7 @@ async function loadDashboard() {
       ...d.aujourdhui.factures_en_retard.map((f) => ({
         urgence: "haute", view: "factures",
         label: `${escapeHtml(f.numero)} · ${escapeHtml(f.client_nom)} · ${fmtEuro(f.montant_restant)} en retard`,
+        action: "relancer-facture", actionId: f.id, actionLabel: "Relancer",
       })),
       ...d.alertes_conformite.map((c) => ({
         urgence: c.jours_restants < 7 ? "haute" : "moyenne", view: "entreprise",
@@ -1496,6 +1525,7 @@ async function loadDashboard() {
       ...d.aujourdhui.devis_a_relancer.map((dv) => ({
         urgence: "moyenne", view: "devis",
         label: `Relancer ${escapeHtml(dv.client_nom)} (${escapeHtml(dv.numero || "devis #" + dv.id)})`,
+        action: "relancer-devis", actionId: dv.id, actionLabel: "Relancer",
       })),
       ...d.aujourdhui.taches.map((t) => ({
         urgence: "moyenne", view: "taches",
@@ -2038,6 +2068,7 @@ function renderDevisCard(d) {
       </div>
       <span class="badge ${meta.badge}">${meta.label}</span>
     </div>
+    ${d.statut === "signe" ? `<div class="moment-banner"><span class="moment-icon">🎉</span><span>Devis accepte ! ${fmtEuro(d.montant_ttc)}${d.nom_signataire ? " · signe par " + escapeHtml(d.nom_signataire) : ""} — prêt a demarrer le projet avec "Tout preparer".</span></div>` : ""}
     <div class="item-meta">
       ${montantTxt}${d.numero ? " · " + escapeHtml(d.numero) : ""}
       ${d.remise_montant ? ` · Remise ${d.remise_pourcentage}%` : ""}
@@ -2896,6 +2927,7 @@ function renderChantierCard(c) {
       </div>
       <span class="badge ${(CHANTIER_STATUT_META[c.statut] || {}).badge || "badge-gray"}">${(CHANTIER_STATUT_META[c.statut] || {}).label || c.statut}</span>
     </div>
+    ${c.statut === "termine" ? `<div class="moment-banner"><span class="moment-icon">✅</span><span>Chantier termine ! Cloturez-le pour generer la facture finale, demander un avis client et archiver le dossier.</span></div>` : ""}
     <div class="item-meta">
       Debut : ${fmtDate(c.date_debut)}
       ${c.budget !== null ? ` · Budget : ${fmtEuro(c.budget)}` : ""}
