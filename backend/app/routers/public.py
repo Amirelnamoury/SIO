@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
+import mimetypes
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.responses import FileResponse
+from fastapi.responses import Response
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
@@ -25,6 +25,7 @@ from app.schemas import (
     PortailFactureOut,
     PortailPhotoOut,
 )
+from app.storage import get_storage
 
 router = APIRouter(prefix="/pub", tags=["public"])
 
@@ -239,18 +240,25 @@ def voir_portail_client(token: str, db: Session = Depends(get_db)):
     autres prospects...). Tout est filtre explicitement par client_id."""
     client = _get_client_portail_or_404(db, token)
 
-    devis_list = db.query(Devis).filter(Devis.client_id == client.id).order_by(Devis.created_at.desc()).all()
+    devis_list = db.query(Devis).filter(
+        Devis.client_id == client.id,
+        Devis.artisan_id == client.artisan_id,
+    ).order_by(Devis.created_at.desc()).all()
     factures_list = (
         db.query(Facture)
         .options(joinedload(Facture.lignes), joinedload(Facture.paiements))
-        .filter(Facture.client_id == client.id, Facture.statut != "brouillon")
+        .filter(
+            Facture.client_id == client.id,
+            Facture.artisan_id == client.artisan_id,
+            Facture.statut != "brouillon",
+        )
         .order_by(Facture.created_at.desc())
         .all()
     )
     chantiers_list = (
         db.query(Chantier)
         .options(joinedload(Chantier.taches))
-        .filter(Chantier.client_id == client.id)
+        .filter(Chantier.client_id == client.id, Chantier.artisan_id == client.artisan_id)
         .order_by(Chantier.created_at.desc())
         .all()
     )
@@ -258,7 +266,13 @@ def voir_portail_client(token: str, db: Session = Depends(get_db)):
     for c in chantiers_list:
         photos = (
             db.query(Document)
-            .filter(Document.chantier_id == c.id, Document.type == "photo", Document.chemin_fichier.isnot(None))
+            .filter(
+                Document.chantier_id == c.id,
+                Document.artisan_id == client.artisan_id,
+                Document.type == "photo",
+                Document.chemin_fichier.isnot(None),
+                Document.archive.is_(False),
+            )
             .order_by(Document.created_at)
             .all()
         )
@@ -266,6 +280,11 @@ def voir_portail_client(token: str, db: Session = Depends(get_db)):
             titre=c.titre, statut=c.statut, date_debut=c.date_debut, date_fin_prevue=c.date_fin_prevue,
             progression=c.progression, photos=[PortailPhotoOut(id=p.id, nom=p.nom) for p in photos],
         ))
+
+    messages = db.query(Message).filter(
+        Message.client_id == client.id,
+        Message.artisan_id == client.artisan_id,
+    ).order_by(Message.created_at).all()
 
     return PortailClientOut(
         artisan_nom_entreprise=client.artisan.nom_entreprise, artisan_telephone=client.artisan.telephone,
@@ -282,7 +301,7 @@ def voir_portail_client(token: str, db: Session = Depends(get_db)):
             for f in factures_list
         ],
         chantiers=chantiers_out,
-        messages=client.messages,
+        messages=messages,
     )
 
 
@@ -310,12 +329,21 @@ def voir_photo_portail(token: str, document_id: int, db: Session = Depends(get_d
     document = (
         db.query(Document)
         .join(Chantier, Document.chantier_id == Chantier.id)
-        .filter(Document.id == document_id, Document.type == "photo", Chantier.client_id == client.id)
+        .filter(
+            Document.id == document_id,
+            Document.artisan_id == client.artisan_id,
+            Document.type == "photo",
+            Document.archive.is_(False),
+            Chantier.client_id == client.id,
+            Chantier.artisan_id == client.artisan_id,
+        )
         .first()
     )
     if document is None or not document.chemin_fichier:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Photo introuvable")
-    chemin = Path(document.chemin_fichier)
-    if not chemin.is_file():
+    contenu = get_storage().read(document.chemin_fichier)
+    if contenu is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Photo introuvable")
-    return FileResponse(path=chemin)
+    nom_fichier = document.nom_original or document.nom
+    type_mime = mimetypes.guess_type(nom_fichier)[0] or "application/octet-stream"
+    return Response(content=contenu, media_type=type_mime)

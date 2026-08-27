@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.database import get_db
 from app.deps import require_active_subscription
 from app import email_service
-from app.models import Artisan, Client, Devis, Facture, LigneFacture, Paiement
+from app.models import Artisan, Chantier, Client, Devis, Facture, LigneFacture, Paiement
 from app.numerotation import generer_numero
 from app.pdf import generate_facture_pdf
 from app.schemas import FactureCreate, FactureOut, FactureUpdate, PaiementCreate, PaiementOut
@@ -150,10 +150,23 @@ def creer_facture(
     if client is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client introuvable")
 
+    devis = None
     if payload.devis_id is not None:
         devis = db.query(Devis).filter(Devis.id == payload.devis_id, Devis.artisan_id == artisan.id).first()
         if devis is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Devis introuvable")
+        if devis.client_id != client.id:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Le devis ne correspond pas au client de la facture")
+
+    chantier = None
+    if payload.chantier_id is not None:
+        chantier = db.query(Chantier).filter(Chantier.id == payload.chantier_id, Chantier.artisan_id == artisan.id).first()
+        if chantier is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chantier introuvable")
+        if chantier.client_id != client.id:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Le chantier ne correspond pas au client de la facture")
+        if devis is not None and chantier.devis_id is not None and chantier.devis_id != devis.id:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Le chantier ne correspond pas au devis de la facture")
 
     numero = _generer_numero(db, artisan)
     facture = Facture(
@@ -182,12 +195,14 @@ def creer_facture_depuis_devis(
     """Convertit un devis signe en facture : reprend le client et les lignes."""
     devis = (
         db.query(Devis)
-        .options(joinedload(Devis.lignes))
+        .options(joinedload(Devis.lignes), joinedload(Devis.client))
         .filter(Devis.id == devis_id, Devis.artisan_id == artisan.id)
         .first()
     )
     if devis is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Devis introuvable")
+    if devis.client is None or devis.client.artisan_id != artisan.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client introuvable")
     if devis.statut != "signe":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Seul un devis signe peut etre facture")
 

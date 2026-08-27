@@ -125,9 +125,11 @@ def preparer_chantier_depuis_devis(
     )
     if devis is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Devis introuvable")
+    if devis.client is None or devis.client.artisan_id != artisan.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client introuvable")
     if devis.statut != "signe":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Seul un devis signe peut etre prepare en chantier")
-    if db.query(Chantier).filter(Chantier.devis_id == devis.id).first() is not None:
+    if db.query(Chantier).filter(Chantier.devis_id == devis.id, Chantier.artisan_id == artisan.id).first() is not None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Un chantier existe deja pour ce devis")
 
     chantier = Chantier(
@@ -179,7 +181,7 @@ def preparer_chantier_depuis_devis(
     if facture_acompte is not None:
         facture_acompte = db.query(Facture).options(
             joinedload(Facture.lignes), joinedload(Facture.paiements), joinedload(Facture.client),
-        ).filter(Facture.id == facture_acompte.id).first()
+        ).filter(Facture.id == facture_acompte.id, Facture.artisan_id == artisan.id).first()
 
     return PreparerChantierOut(
         chantier=_to_out(chantier),
@@ -327,9 +329,22 @@ def cloturer_chantier(
     if chantier.statut != "termine":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Seul un chantier marque termine peut etre cloture")
 
+    client = db.query(Client).filter(Client.id == chantier.client_id, Client.artisan_id == artisan.id).first()
+    if client is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client introuvable")
+
     devis = None
     if chantier.devis_id:
-        devis = db.query(Devis).options(joinedload(Devis.lignes)).filter(Devis.id == chantier.devis_id).first()
+        devis = (
+            db.query(Devis)
+            .options(joinedload(Devis.lignes))
+            .filter(Devis.id == chantier.devis_id, Devis.artisan_id == artisan.id)
+            .first()
+        )
+        if devis is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Devis introuvable")
+        if devis.client_id != client.id:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Le devis du chantier ne correspond pas a son client")
 
     facture_finale = None
     facture_finale_email_statut = None
@@ -351,7 +366,11 @@ def cloturer_chantier(
             # encore en brouillon (ex: creee par "Tout preparer" et jamais
             # envoyee) represente quand meme un montant deja engage envers le
             # client - l'ignorer doublerait la facturation du chantier.
-            deja_facture = round(sum(float(f.montant_ttc or 0) for f in chantier.factures if f.statut != "annulee"), 2)
+            factures_du_chantier = db.query(Facture).filter(
+                Facture.chantier_id == chantier.id,
+                Facture.artisan_id == artisan.id,
+            ).all()
+            deja_facture = round(sum(float(f.montant_ttc or 0) for f in factures_du_chantier if f.statut != "annulee"), 2)
             reste_ttc = round(montant_total - deja_facture, 2)
             if reste_ttc <= 0:
                 facture_finale_raison_absence = "Ce chantier est deja entierement facture"
@@ -373,7 +392,7 @@ def cloturer_chantier(
                 db.commit()
                 facture = db.query(Facture).options(
                     joinedload(Facture.lignes), joinedload(Facture.paiements), joinedload(Facture.client),
-                ).filter(Facture.id == facture.id).first()
+                ).filter(Facture.id == facture.id, Facture.artisan_id == artisan.id).first()
                 url = f"{settings.app_base_url}/facture-public.html?t={facture.token}"
                 log = email_service.send_facture(db, facture, artisan, url)
                 facture_finale_email_statut = log.statut
@@ -382,7 +401,6 @@ def cloturer_chantier(
     avis_demande = False
     avis_email_statut = None
     if payload.demander_avis:
-        client = db.query(Client).filter(Client.id == chantier.client_id).first()
         if client.token_avis is None:
             client.token_avis = secrets.token_urlsafe(24)
             db.commit()

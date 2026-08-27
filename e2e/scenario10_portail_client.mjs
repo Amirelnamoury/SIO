@@ -1,7 +1,7 @@
 // Scenario 10 (cahier des charges V4, section 39 "E2E 7 - Portail") :
 // generation du lien -> acces -> devis/facture visibles -> messagerie
 // bidirectionnelle -> revocation par regeneration du jeton.
-import { api, assert, assertEqual, creerArtisanTest, activerAbonnement, logEtape } from "./helpers.mjs";
+import { api, API_BASE, assert, assertEqual, creerArtisanTest, activerAbonnement, logEtape } from "./helpers.mjs";
 
 export default async function run() {
   const { token, email } = await creerArtisanTest("scenario10");
@@ -17,7 +17,20 @@ export default async function run() {
   // Le portail n'affiche jamais une facture encore en brouillon (pas
   // envoyee au client) - on l'envoie pour refleter un usage reel.
   await api.patch(`/factures/${facture.id}`, { statut: "envoyee" }, token);
-  await api.post(`/chantiers`, { client_id: client.id, titre: "Chantier portail" }, token);
+  const chantier = await api.post(`/chantiers`, { client_id: client.id, titre: "Chantier portail" }, token);
+
+  const contenuPhoto = `photo-portail-${Date.now()}`;
+  const formulairePhoto = new FormData();
+  formulairePhoto.append("file", new Blob([contenuPhoto], { type: "image/jpeg" }), "chantier-portail.jpg");
+  formulairePhoto.append("type", "photo");
+  formulairePhoto.append("chantier_id", String(chantier.id));
+  const uploadPhoto = await fetch(`${API_BASE}/documents/upload`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: formulairePhoto,
+  });
+  assertEqual(uploadPhoto.status, 201, "l'upload d'une photo de chantier doit reussir");
+  const photo = await uploadPhoto.json();
 
   // --- Invitation : generer le lien du portail ---
   const portailToken = await api.post(`/clients/${client.id}/portail/generer`, {}, token);
@@ -33,6 +46,10 @@ export default async function run() {
   assert(espace.devis.some((d) => d.numero === devis.numero), "le devis doit etre visible dans le portail");
   assert(espace.factures.some((f) => f.numero === facture.numero), "la facture doit etre visible dans le portail");
   assert(espace.chantiers.length === 1, "le chantier doit etre visible dans le portail");
+  assert(espace.chantiers[0].photos.some((p) => p.id === photo.id), "la photo du chantier doit etre visible dans le portail");
+  const photoPublique = await fetch(`${API_BASE}/pub/portail/${portailToken.token_portail}/photos/${photo.id}`);
+  assertEqual(photoPublique.status, 200, "la photo du chantier doit etre servie depuis le stockage securise");
+  assertEqual(await photoPublique.text(), contenuPhoto, "le portail doit renvoyer le contenu exact de la photo uploadee");
   logEtape("acces au portail : devis, facture et chantier tous visibles");
 
   // --- Fuite de donnees (V5 section 17) : le portail ne doit JAMAIS exposer

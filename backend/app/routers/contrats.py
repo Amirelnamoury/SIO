@@ -62,6 +62,12 @@ def generer_facture_pour_contrat(db: Session, artisan: Artisan, contrat: Contrat
     disponibilite du fournisseur d'email (meme logique que la facture finale
     de cloturer_chantier). Renvoie (facture, email_log) pour que l'appelant
     puisse suivre honnetement ce qui a reellement ete envoye."""
+    if contrat.artisan_id != artisan.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contrat introuvable")
+    client = db.query(Client).filter(Client.id == contrat.client_id, Client.artisan_id == artisan.id).first()
+    if client is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client introuvable")
+
     facture = Facture(
         artisan_id=artisan.id, client_id=contrat.client_id, contrat_id=contrat.id, statut="envoyee",
         type="standard", taux_tva=contrat.taux_tva,
@@ -82,7 +88,7 @@ def generer_facture_pour_contrat(db: Session, artisan: Artisan, contrat: Contrat
     facture = (
         db.query(Facture)
         .options(joinedload(Facture.lignes), joinedload(Facture.paiements), joinedload(Facture.client))
-        .filter(Facture.id == facture.id)
+        .filter(Facture.id == facture.id, Facture.artisan_id == artisan.id)
         .first()
     )
     url = f"{settings.app_base_url}/facture-public.html?t={facture.token}"

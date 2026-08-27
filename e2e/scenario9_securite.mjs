@@ -96,6 +96,22 @@ export default async function run() {
   assert(injectionRefusee, "creer un document rattache au client_id d'un AUTRE artisan doit etre refuse (404)");
   logEtape("injection cross-tenant a la creation de document (client_id d'un autre artisan) correctement refusee");
 
+  const clientAutreArtisan = await api.post("/clients", { nom: "Client autre artisan" }, autreToken);
+  let factureInjecteeRefusee = false;
+  try {
+    await api.post("/factures", {
+      client_id: clientAutreArtisan.id,
+      chantier_id: chantier.id,
+      type: "standard",
+      taux_tva: 20,
+      lignes: [{ description: "Facture injectee", quantite: 1, prix_unitaire_ht: 100 }],
+    }, autreToken);
+  } catch (err) {
+    factureInjecteeRefusee = err.message.includes("HTTP 404");
+  }
+  assert(factureInjecteeRefusee, "creer une facture rattachee au chantier_id d'un AUTRE artisan doit etre refuse (404)");
+  logEtape("injection cross-tenant de facture via chantier_id correctement refusee");
+
   // Meme classe de bug trouvee dans taches.py et planning.py : une tache ou
   // un evenement rattache au chantier d'un autre artisan apparaissait dans
   // SON tableau de bord chantier (Chantier.taches n'est jamais filtre par
