@@ -36,14 +36,24 @@ from pathlib import Path
 
 import requests
 
-from themes import (
-    GOOGLE_FONTS,
-    get_hero_motif,
-    get_palette,
-    get_theme,
-    trade_icon_svg,
-    ui_icon_svg,
-)
+try:
+    from .themes import (
+        GOOGLE_FONTS,
+        get_hero_motif,
+        get_palette,
+        get_theme,
+        trade_icon_svg,
+        ui_icon_svg,
+    )
+except ImportError:  # execution directe historique : python site_generator.py
+    from themes import (
+        GOOGLE_FONTS,
+        get_hero_motif,
+        get_palette,
+        get_theme,
+        trade_icon_svg,
+        ui_icon_svg,
+    )
 
 POURQUOI_NOUS_CHOISIR = [
     ("shield", "Assurance decennale", "Tous nos chantiers sont couverts, en toute tranquillite."),

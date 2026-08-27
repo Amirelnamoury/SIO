@@ -29,6 +29,7 @@ if settings.jwt_secret == _DEFAULT_JWT_SECRET:
             "(JWT_SECRET dans l'environnement) avant de demarrer."
         )
 from app.routers import (
+    admin,
     analytics,
     automation,
     auth,
@@ -64,8 +65,15 @@ Base.metadata.create_all(bind=engine)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    from app.admin_service import ensure_bootstrap_admin
+    from app.database import SessionLocal
     from app.scheduler import start_scheduler, stop_scheduler
 
+    db = SessionLocal()
+    try:
+        ensure_bootstrap_admin(db)
+    finally:
+        db.close()
     start_scheduler()
     yield
     stop_scheduler()
@@ -123,6 +131,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
     )
 
 app.include_router(auth.router)
+app.include_router(admin.router)
 app.include_router(clients.router)
 app.include_router(devis.router)
 app.include_router(factures.router)

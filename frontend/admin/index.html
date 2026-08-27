@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin Suite Artisan</title>
+  <link rel="stylesheet" href="/admin/assets/admin.css">
+</head>
+<body class="admin-page">
+  <div class="admin-layout">
+    <aside class="sidebar">
+      <div class="sidebar-brand"><span class="brand-mark">SA</span><div><strong>ADMIN</strong><small>SUITE ARTISAN</small></div></div>
+      <nav class="sidebar-nav" aria-label="Navigation admin">
+        <button class="nav-item active" data-view="dashboard">Dashboard</button>
+        <button class="nav-item" data-view="artisans">Artisans</button>
+        <button class="nav-item" data-view="sites">Sites vitrines</button>
+      </nav>
+      <div class="sidebar-account">
+        <span id="admin-name">Administration</span>
+        <button id="logout-button" class="button button-quiet" type="button">Déconnexion</button>
+      </div>
+    </aside>
+
+    <main class="admin-main">
+      <header class="topbar">
+        <div><p class="eyebrow">ADMIN SUITE ARTISAN</p><h1 id="page-title">Dashboard</h1></div>
+        <span class="environment-badge">INTERNE</span>
+      </header>
+
+      <section id="view-dashboard" class="view active">
+        <div id="metric-grid" class="metric-grid"></div>
+        <div class="dashboard-band">
+          <div><h2>Répartition des plans</h2><div id="plan-breakdown" class="plan-breakdown"></div></div>
+          <div><h2>Production des sites</h2><div id="site-pipeline" class="pipeline-list"></div></div>
+        </div>
+      </section>
+
+      <section id="view-artisans" class="view">
+        <div class="section-toolbar">
+          <div><h2>Artisans</h2><p id="artisan-count" class="muted"></p></div>
+          <label class="search-field"><span>Recherche</span><input id="artisan-search" type="search" placeholder="Entreprise, email, ville ou slug"></label>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>Entreprise</th><th>Métier</th><th>Ville</th><th>Plan</th><th>Abonnement</th><th>Site</th><th>Inscription</th></tr></thead><tbody id="artisan-table"></tbody></table></div>
+      </section>
+
+      <section id="view-sites" class="view">
+        <div class="section-toolbar">
+          <div><h2>Sites vitrines</h2><p id="site-count" class="muted"></p></div>
+          <label class="search-field"><span>Recherche</span><input id="site-search" type="search" placeholder="Entreprise, domaine ou slug"></label>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>Entreprise</th><th>Métier</th><th>Statut</th><th>Domaine</th><th>URL publique</th><th>Inscription</th></tr></thead><tbody id="site-table"></tbody></table></div>
+      </section>
+
+      <section id="view-detail" class="view">
+        <div class="detail-heading">
+          <button id="detail-back" class="button button-secondary" type="button">Retour</button>
+          <div><p class="eyebrow">FICHE ARTISAN</p><h2 id="detail-title"></h2><p id="detail-meta" class="muted"></p></div>
+          <span id="detail-site-status" class="status-pill"></span>
+        </div>
+
+        <div class="detail-stats" id="detail-stats"></div>
+
+        <form id="artisan-form" class="form-section">
+          <div class="section-heading"><div><h3>Entreprise</h3><p>Informations métier utilisées par le SaaS et le site.</p></div><button class="button button-secondary" type="submit">Enregistrer</button></div>
+          <div class="form-grid">
+            <label>Entreprise<input name="nom_entreprise" required></label>
+            <label>Métier<select name="metier"><option value="plombier">Plombier</option><option value="electricien">Électricien</option><option value="macon">Maçon</option><option value="peintre">Peintre</option><option value="general">Général</option></select></label>
+            <label>Email<input name="email" type="email" required></label>
+            <label>Téléphone<input name="telephone" type="tel"></label>
+            <label>Ville<input name="ville"></label>
+            <label>Code postal<input name="code_postal"></label>
+            <label class="span-2">Adresse<input name="adresse"></label>
+            <label>SIRET<input name="siret"></label>
+            <label>Assurance décennale<input name="assurance_decennale_nom"></label>
+          </div>
+        </form>
+
+        <form id="site-form" class="form-section site-section">
+          <div class="section-heading"><div><p class="eyebrow">SITE VITRINE</p><h3>Production</h3><p>Configuration du rendu et suivi de la livraison réelle.</p></div><button class="button button-secondary" type="submit">Enregistrer</button></div>
+          <div class="site-identity"><div><span>Slug</span><strong id="site-slug"></strong></div><div><span>Dernière génération</span><strong id="site-generated-at">Jamais</strong></div><div><span>Publication</span><strong id="site-published-at">Jamais</strong></div></div>
+          <div class="form-grid">
+            <label class="span-2">Tagline<input name="tagline" maxlength="180"></label>
+            <label class="span-2">Prestations<textarea name="services" rows="6" placeholder="Une prestation par ligne"></textarea></label>
+            <label class="span-2">Chiffres clés<textarea name="stats" rows="3" placeholder="12 ans | d'expérience"></textarea></label>
+            <label>Variante couleur<select name="variante_couleur"><option value="">Automatique</option><option value="0">Variante 1</option><option value="1">Variante 2</option><option value="2">Variante 3</option></select></label>
+            <label>Motif hero<select name="variante_motif" id="motif-select"></select></label>
+            <label>Domaine<input name="domaine" placeholder="artisan.fr"></label>
+            <label>URL publique<input name="url_publique" type="url" placeholder="https://artisan.fr"></label>
+          </div>
+          <div class="workflow-bar">
+            <button id="generate-button" class="button button-primary" type="button">Générer la preview</button>
+            <button id="preview-button" class="button button-secondary" type="button">Voir la preview</button>
+            <button id="ready-button" class="button button-secondary" type="button">Marquer prêt</button>
+            <button id="publish-button" class="button button-success" type="button">Marquer publié</button>
+          </div>
+          <p class="publication-note">Le statut publié enregistre une livraison existante. Aucun déploiement, DNS ou certificat HTTPS n’est déclenché automatiquement.</p>
+        </form>
+      </section>
+    </main>
+  </div>
+  <div id="toast" class="toast" role="status"></div>
+  <script src="/admin/assets/admin.js"></script>
+</body>
+</html>

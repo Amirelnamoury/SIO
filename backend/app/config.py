@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+from pydantic import EmailStr
 
 
 class Settings(BaseSettings):
@@ -9,6 +10,14 @@ class Settings(BaseSettings):
     jwt_secret: str = "dev-secret-change-me-in-production"
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60 * 24 * 7  # 7 jours
+
+    # Compte interne Admin Suite Artisan. Au premier demarrage, si les deux
+    # valeurs sont definies, le compte est cree en base sans exposer de route
+    # d'inscription admin. Le cookie Secure doit etre active en production.
+    admin_email: EmailStr | None = None
+    admin_password: str | None = None
+    admin_name: str = "Administrateur Suite Artisan"
+    admin_cookie_secure: bool = False
 
     # Stripe est optionnel : si les cles ne sont pas configurees, les endpoints
     # /stripe/* renvoient une erreur claire au lieu de faire planter l'appli.

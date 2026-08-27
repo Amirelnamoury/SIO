@@ -3,15 +3,16 @@ import unicodedata
 from dataclasses import dataclass
 from typing import Optional
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Artisan, Membre
+from app.models import AdminUser, Artisan, Membre
 from app.security import decode_access_token
 
 bearer_scheme = HTTPBearer(auto_error=False)
+ADMIN_COOKIE_NAME = "suite_artisan_admin"
 
 
 def _resolve_subject(credentials: Optional[HTTPAuthorizationCredentials], db: Session):
@@ -48,6 +49,31 @@ def get_current_artisan(
     artisan.id, ce qui garantit l'isolation stricte entre tenants."""
     artisan, _membre = _resolve_subject(credentials, db)
     return artisan
+
+
+def require_admin(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
+    db: Session = Depends(get_db),
+) -> AdminUser:
+    """Autorise uniquement un compte interne Admin Suite Artisan.
+
+    L'interface utilise un cookie HTTP-only. Les tests et outils internes
+    peuvent aussi fournir le meme JWT dans un header Bearer.
+    """
+    token = credentials.credentials if credentials is not None else request.cookies.get(ADMIN_COOKIE_NAME)
+    if not token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentification admin requise")
+    resultat = decode_access_token(token)
+    if resultat is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session admin invalide ou expiree")
+    subject_id, subject_type = resultat
+    if subject_type != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Reserve a l'administration Suite Artisan")
+    admin = db.query(AdminUser).filter(AdminUser.id == subject_id, AdminUser.actif.is_(True)).first()
+    if admin is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Compte admin introuvable ou desactive")
+    return admin
 
 
 @dataclass

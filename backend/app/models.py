@@ -10,6 +10,7 @@ from sqlalchemy import (
     Date,
     ForeignKey,
     Text,
+    JSON,
     UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
@@ -83,6 +84,45 @@ class Artisan(Base):
     fournisseurs = relationship("Fournisseur", back_populates="artisan", cascade="all, delete-orphan")
     contrats = relationship("Contrat", back_populates="artisan", cascade="all, delete-orphan")
     messages = relationship("Message", back_populates="artisan", cascade="all, delete-orphan")
+    site_vitrine = relationship("SiteVitrine", back_populates="artisan", cascade="all, delete-orphan", uselist=False)
+
+
+class AdminUser(Base):
+    """Compte interne Suite Artisan, totalement separe des tenants artisans."""
+
+    __tablename__ = "admin_users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    password_hash = Column(String, nullable=False)
+    nom = Column(String, nullable=False)
+    actif = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    last_login_at = Column(DateTime(timezone=True), nullable=True)
+
+
+class SiteVitrine(Base):
+    """Etat d'exploitation d'un site livre par Suite Artisan.
+
+    Les coordonnees et informations metier restent sur Artisan. Seules la
+    configuration propre au rendu et les metadonnees de livraison vivent ici.
+    """
+
+    __tablename__ = "sites_vitrines"
+
+    id = Column(Integer, primary_key=True, index=True)
+    artisan_id = Column(Integer, ForeignKey("artisans.id"), unique=True, nullable=False, index=True)
+    statut = Column(String, nullable=False, default="brouillon")
+    domaine = Column(String, nullable=True)
+    url_publique = Column(String, nullable=True)
+    storage_key = Column(String, nullable=True)
+    config = Column(JSON, nullable=False, default=dict)
+    date_generation = Column(DateTime(timezone=True), nullable=True)
+    date_publication = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+    artisan = relationship("Artisan", back_populates="site_vitrine")
 
 
 # Pipeline commercial : de la premiere demande jusqu'a la signature (ou la perte).
