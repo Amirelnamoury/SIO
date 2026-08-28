@@ -1,33 +1,41 @@
 import logging
+import sys
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy import text
 
 from app.config import settings
-from app.database import Base, engine
+from app.database import Base, SessionLocal, engine
+from app.startup_checks import valider_configuration
 from app import models  # noqa: F401  (necessaire pour que les tables soient enregistrees)
 
+# Logs vers stdout/stderr (pas de fichier, pas de plateforme externe) : c'est
+# l'attente standard d'un environnement de deploiement conteneurise, qui
+# collecte les logs process par process plutot que par fichier.
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    stream=sys.stdout,
+)
 logger = logging.getLogger("suite_artisan")
 
-_DEFAULT_JWT_SECRET = "dev-secret-change-me-in-production"
-if settings.jwt_secret == _DEFAULT_JWT_SECRET:
-    if settings.database_url.startswith("sqlite"):
-        logger.warning(
-            "JWT_SECRET n'est pas configure (valeur de developpement utilisee). "
-            "A definir avant tout deploiement reel."
-        )
-    else:
-        # Base de donnees non-sqlite = deploiement qui se veut serieux (Postgres...).
-        # Continuer avec le secret de dev par defaut permettrait a n'importe qui
-        # de forger un token valide pour n'importe quel compte : on refuse de demarrer.
-        raise RuntimeError(
-            "JWT_SECRET utilise encore la valeur de developpement par defaut alors que "
-            "DATABASE_URL pointe vers une base non-sqlite. Definissez un vrai secret "
-            "(JWT_SECRET dans l'environnement) avant de demarrer."
-        )
+# Refuse de demarrer sur une configuration manifestement dangereuse (secret de
+# dev en production, SQLite en production, S3 demande mais incomplet...) -
+# voir app/startup_checks.py pour le detail de chaque verification.
+valider_configuration(settings)
+
+logger.info(
+    "Demarrage Suite Artisan - environnement=%s, base=%s, storage=%s, scheduler=%s",
+    settings.app_env,
+    "sqlite" if settings.database_url.startswith("sqlite") else "postgresql",
+    settings.storage_backend,
+    "enabled" if settings.scheduler_enabled else "disabled",
+)
+
 from app.routers import (
     admin,
     analytics,
@@ -56,17 +64,21 @@ from app.routers import (
 # Filet de securite pour le developpement local (cree les tables manquantes
 # sur une base neuve). Ne gere PAS les evolutions de schema d'une base
 # existante (ajout de colonne, etc.) : c'est le role d'Alembic desormais
-# (voir backend/migrations/). En production, le schema doit etre gere par
-# "alembic upgrade head", pas par cet appel - create_all() est deliberement
-# laisse ici seulement parce qu'il est inoffensif sur une base a jour
-# (idempotent : ne touche jamais les tables deja existantes).
-Base.metadata.create_all(bind=engine)
+# (voir backend/migrations/). Conditionne au mode developpement : en
+# production, le schema doit etre gere exclusivement par
+# "alembic upgrade head" (voir docs/PRODUCTION.md), jamais par cet appel -
+# meme si create_all() est idempotent (ne touche jamais les tables deja
+# existantes), executer les deux mecanismes en parallele en production
+# n'apporte rien et ajoute une source de confusion en cas de derive du schema.
+if settings.app_env == "production":
+    logger.info("APP_ENV=production : schema gere par Alembic uniquement (create_all() non execute).")
+else:
+    Base.metadata.create_all(bind=engine)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from app.admin_service import ensure_bootstrap_admin
-    from app.database import SessionLocal
     from app.scheduler import start_scheduler, stop_scheduler
 
     db = SessionLocal()
@@ -74,9 +86,15 @@ async def lifespan(app: FastAPI):
         ensure_bootstrap_admin(db)
     finally:
         db.close()
-    start_scheduler()
+
+    if settings.scheduler_enabled:
+        logger.info("Scheduler enabled")
+        start_scheduler()
+    else:
+        logger.info("Scheduler disabled")
     yield
-    stop_scheduler()
+    if settings.scheduler_enabled:
+        stop_scheduler()
 
 
 app = FastAPI(title="Suite Artisan API", version="0.1.0", lifespan=lifespan)
@@ -157,3 +175,31 @@ app.include_router(stripe_router.router)
 @app.get("/")
 def health():
     return {"status": "ok", "service": "suite-artisan-api"}
+
+
+@app.get("/health")
+def health_check():
+    """Healthcheck processus : repond des que le serveur HTTP tourne, sans
+    toucher a la DB ni au storage. Pour un hebergeur qui veut juste savoir si
+    le process est vivant avant de router du trafic dessus."""
+    return {"status": "ok"}
+
+
+@app.get("/ready")
+def readiness_check():
+    """Readiness : verifie que la DB repond reellement (SELECT 1, jamais
+    d'ecriture). N'interroge jamais le storage S3/R2 - un healthcheck qui
+    ferait un appel reseau externe a chaque probe serait lui-meme une source
+    d'indisponibilite. Ne renvoie jamais le detail technique de l'erreur
+    (DATABASE_URL, message d'exception...) : juste un statut, le detail part
+    dans les logs serveur."""
+    try:
+        db = SessionLocal()
+        try:
+            db.execute(text("SELECT 1"))
+        finally:
+            db.close()
+    except Exception:
+        logger.exception("Readiness check : la base de donnees ne repond pas")
+        return JSONResponse(status_code=503, content={"status": "unavailable"})
+    return {"status": "ok"}

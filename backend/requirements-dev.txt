@@ -1,0 +1,5 @@
+# Dependances supplementaires pour les tests uniquement (jamais installees en
+# production). pytest est le seul ajout : les tests S3 utilisent unittest.mock
+# (stdlib) plutot qu'une dependance de mock S3 supplementaire.
+-r requirements.txt
+pytest==8.3.3
