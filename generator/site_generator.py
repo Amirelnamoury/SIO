@@ -56,9 +56,9 @@ except ImportError:  # execution directe historique : python site_generator.py
     )
 
 POURQUOI_NOUS_CHOISIR = [
-    ("shield", "Assurance decennale", "Tous nos chantiers sont couverts, en toute tranquillite."),
-    ("document", "Devis gratuit", "Un devis clair et detaille, sans engagement, sous 48h."),
-    ("clock", "Reactivite", "Intervention rapide, y compris en urgence."),
+    ("shield", "Assurance décennale", "Tous nos chantiers sont couverts, en toute tranquillité."),
+    ("document", "Devis gratuit", "Un devis clair et détaillé, sans engagement, sous 48h."),
+    ("clock", "Réactivité", "Intervention rapide, y compris en urgence."),
 ]
 
 # Blocs CSS du hero : chaque motif definit .hero (fond) et ses pseudo-elements
@@ -280,8 +280,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>__NOM_ENTREPRISE__ - __METIER_LABEL__ a __VILLE__</title>
-<meta name="description" content="__NOM_ENTREPRISE__, __METIER_LABEL__ a __VILLE__ et environs. Devis gratuit sous 48h.">
+<title>__NOM_ENTREPRISE__ - __METIER_LABEL__ à __VILLE__</title>
+<meta name="description" content="__NOM_ENTREPRISE__, __METIER_LABEL__ à __VILLE__ et environs. Devis gratuit sous 48h.">
 __GOOGLE_FONT_LINK__
 <style>
 __CSS__
@@ -309,7 +309,7 @@ __CSS__
     <div class="hero-icon-badge">__ICON_HERO__</div>
     <h1>__NOM_ENTREPRISE__</h1>
     <p class="tagline">__TAGLINE__</p>
-    <p class="zone">Intervention a __VILLE__ (__CODE_POSTAL__) et dans les environs</p>
+    <p class="zone">Intervention à __VILLE__ (__CODE_POSTAL__) et dans les environs</p>
     __PALETTE_SWATCHES__
     <div class="hero-actions">
       <a class="btn-cta" href="#devis">Demander un devis gratuit</a>
@@ -345,17 +345,17 @@ __AVIS_SECTION__
     <h2>Demander un devis gratuit</h2>
     <div class="devis-box">
       <form id="devis-form">
-        <label for="client_nom">Nom et prenom *</label>
+        <label for="client_nom">Nom et prénom *</label>
         <input type="text" id="client_nom" name="client_nom" required>
 
-        <label for="client_telephone">Telephone</label>
+        <label for="client_telephone">Téléphone</label>
         <input type="tel" id="client_telephone" name="client_telephone">
 
         <label for="client_email">Email</label>
         <input type="email" id="client_email" name="client_email">
 
-        <label for="description">Decrivez votre projet</label>
-        <textarea id="description" name="description" placeholder="Ex: fuite d'eau sous l'evier de la cuisine..."></textarea>
+        <label for="description">Décrivez votre projet</label>
+        <textarea id="description" name="description" placeholder="Ex: fuite d'eau sous l'évier de la cuisine..."></textarea>
 
         <button type="submit" id="devis-submit">Envoyer ma demande</button>
       </form>
@@ -373,12 +373,12 @@ __AVIS_SECTION__
         <p>Tel : __TELEPHONE__</p>
       </div>
       <div>
-        <h4>Informations legales</h4>
+        <h4>Informations légales</h4>
         <p>SIRET __SIRET__</p>
-        <p>Assurance decennale : __ASSURANCE_DECENNALE__</p>
+        <p>Assurance décennale : __ASSURANCE_DECENNALE__</p>
       </div>
     </div>
-    <div class="footer-bottom">&copy; __ANNEE__ __NOM_ENTREPRISE__. Tous droits reserves.</div>
+    <div class="footer-bottom">&copy; __ANNEE__ __NOM_ENTREPRISE__. Tous droits réservés.</div>
   </div>
 </footer>
 
@@ -413,7 +413,7 @@ __AVIS_SECTION__
         return response.json();
       })
       .then(function () {
-        messageBox.textContent = "Merci ! Votre demande a bien ete envoyee, nous vous recontactons rapidement.";
+        messageBox.textContent = "Merci ! Votre demande a bien été envoyée, nous vous recontactons rapidement.";
         messageBox.className = "form-message success";
         form.reset();
       })

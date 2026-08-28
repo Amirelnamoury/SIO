@@ -17,17 +17,17 @@ ADMIN_COOKIE_NAME = "suite_artisan_admin"
 
 def _resolve_subject(credentials: Optional[HTTPAuthorizationCredentials], db: Session):
     if credentials is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Non authentifie")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Non authentifié")
 
     resultat = decode_access_token(credentials.credentials)
     if resultat is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token invalide ou expire")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token invalide ou expiré")
     subject_id, subject_type = resultat
 
     if subject_type == "membre":
         membre = db.query(Membre).filter(Membre.id == subject_id).first()
         if membre is None or not membre.actif:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Compte introuvable ou desactive")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Compte introuvable ou désactivé")
         artisan = db.query(Artisan).filter(Artisan.id == membre.artisan_id).first()
         if artisan is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Entreprise introuvable")
@@ -66,13 +66,13 @@ def require_admin(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentification admin requise")
     resultat = decode_access_token(token)
     if resultat is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session admin invalide ou expiree")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session admin invalide ou expirée")
     subject_id, subject_type = resultat
     if subject_type != "admin":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Reserve a l'administration Suite Artisan")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Réservé à l'administration Suite Artisan")
     admin = db.query(AdminUser).filter(AdminUser.id == subject_id, AdminUser.actif.is_(True)).first()
     if admin is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Compte admin introuvable ou desactive")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Compte admin introuvable ou désactivé")
     return admin
 
 
@@ -117,10 +117,10 @@ def require_equipe_admin(
     if utilisateur.artisan.subscription_status != "active" or PLAN_ORDRE.index(plan_actuel) < PLAN_ORDRE.index("business"):
         raise HTTPException(
             status_code=status.HTTP_402_PAYMENT_REQUIRED,
-            detail="La gestion d'equipe fait partie du plan Business. Passez au plan Business pour la debloquer.",
+            detail="La gestion d'équipe fait partie du plan Business. Passez au plan Business pour la débloquer.",
         )
     if utilisateur.role not in ("proprietaire", "administrateur"):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Reserve aux administrateurs de l'equipe")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Réservé aux administrateurs de l'équipe")
     return utilisateur
 
 
@@ -136,7 +136,7 @@ def require_active_subscription(
     if artisan.subscription_status != "active":
         raise HTTPException(
             status_code=status.HTTP_402_PAYMENT_REQUIRED,
-            detail="Cette fonctionnalite fait partie de l'abonnement Suite Artisan. Abonnez-vous pour la debloquer.",
+            detail="Cette fonctionnalité fait partie de l'abonnement Suite Artisan. Abonnez-vous pour la débloquer.",
         )
     return artisan
 
@@ -161,7 +161,7 @@ def require_plan(plan_minimum: str):
         if PLAN_ORDRE.index(plan_actuel) < PLAN_ORDRE.index(plan_minimum):
             raise HTTPException(
                 status_code=status.HTTP_402_PAYMENT_REQUIRED,
-                detail=f"Cette fonctionnalite fait partie du plan {PLAN_LABELS[plan_minimum]}. Passez au plan {PLAN_LABELS[plan_minimum]} pour la debloquer.",
+                detail=f"Cette fonctionnalité fait partie du plan {PLAN_LABELS[plan_minimum]}. Passez au plan {PLAN_LABELS[plan_minimum]} pour la débloquer.",
             )
         return artisan
 

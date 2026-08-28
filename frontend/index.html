@@ -13,7 +13,7 @@
 <!-- ===================== ECRAN CONNEXION / INSCRIPTION ===================== -->
 <div id="auth-screen" class="auth-screen">
   <div class="auth-box">
-    <a href="landing.html" class="auth-back">&larr; Retour a l'accueil</a>
+    <a href="landing.html" class="auth-back">&larr; Retour à l'accueil</a>
     <div class="auth-logo">Suite Artisan</div>
 
     <div class="auth-tabs">
@@ -37,11 +37,11 @@
       <label for="reg-nom-entreprise">Nom de l'entreprise *</label>
       <input type="text" id="reg-nom-entreprise" required>
 
-      <label for="reg-metier">Metier *</label>
+      <label for="reg-metier">Métier *</label>
       <select id="reg-metier" required>
         <option value="plombier">Plombier</option>
-        <option value="electricien">Electricien</option>
-        <option value="macon">Macon</option>
+        <option value="electricien">Électricien</option>
+        <option value="macon">Maçon</option>
         <option value="peintre">Peintre</option>
         <option value="general">Autre (artisan du BTP)</option>
       </select>
@@ -49,10 +49,10 @@
       <label for="reg-email">Email *</label>
       <input type="email" id="reg-email" required autocomplete="username">
 
-      <label for="reg-password">Mot de passe * (8 caracteres minimum)</label>
+      <label for="reg-password">Mot de passe * (8 caractères minimum)</label>
       <input type="password" id="reg-password" required minlength="8" autocomplete="new-password">
 
-      <label for="reg-telephone">Telephone</label>
+      <label for="reg-telephone">Téléphone</label>
       <input type="tel" id="reg-telephone">
 
       <label for="reg-ville">Ville</label>
@@ -64,10 +64,10 @@
       <label for="reg-siret">SIRET</label>
       <input type="text" id="reg-siret">
 
-      <label for="reg-assurance">Assureur decennale</label>
+      <label for="reg-assurance">Assureur décennale</label>
       <input type="text" id="reg-assurance" placeholder="Ex: AXA">
 
-      <button type="submit" class="btn-primary">Creer mon compte</button>
+      <button type="submit" class="btn-primary">Créer mon compte</button>
     </form>
   </div>
 </div>
@@ -78,7 +78,7 @@
   <div class="pricing-modal-box">
     <button type="button" class="side-panel-close" data-action="close-pricing" aria-label="Fermer">&times;</button>
     <h3 id="pricing-modal-title">Choisissez votre plan</h3>
-    <p class="pricing-modal-sub">Chaque plan inclut tout ce qui precede, plus une nouvelle couche de valeur.</p>
+    <p class="pricing-modal-sub">Chaque plan inclut tout ce qui précède, plus une nouvelle couche de valeur.</p>
     <div id="pricing-plans" class="pricing-plans"></div>
     <div id="pricing-site-offer"></div>
   </div>
@@ -115,6 +115,20 @@
   <div class="search-modal-box">
     <input type="text" id="search-input" aria-label="Rechercher un client, un devis, une facture, un chantier" placeholder="Rechercher un client, un devis, une facture, un chantier..." autocomplete="off">
     <div id="search-results"></div>
+  </div>
+</div>
+
+<!-- ---------- Detail d'un rendez-vous du Planning ---------- -->
+<div id="evenement-detail-modal" class="search-modal" hidden role="dialog" aria-modal="true" aria-labelledby="evenement-detail-titre">
+  <div class="confirm-dialog-box">
+    <button type="button" class="side-panel-close" data-action="close-evenement-detail" aria-label="Fermer">&times;</button>
+    <h3 id="evenement-detail-titre"></h3>
+    <div id="evenement-detail-body" class="profil-content"></div>
+    <div class="confirm-dialog-actions">
+      <button type="button" class="btn-secondary" data-action="close-evenement-detail">Fermer</button>
+      <button type="button" class="btn-secondary" data-action="supprimer-evenement" style="color:var(--danger);">Supprimer</button>
+      <button type="button" class="btn-primary" data-action="modifier-evenement" style="margin-top:0;">Modifier</button>
+    </div>
   </div>
 </div>
 
@@ -157,7 +171,7 @@
       </button>
       <button type="button" class="nav-link" data-view="taches">
         <svg viewBox="0 0 24 24" class="nav-icon"><rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M7.5 12l3 3 6-6"/></svg>
-        Taches
+        Tâches
       </button>
       <button type="button" class="nav-link" data-view="documents">
         <svg viewBox="0 0 24 24" class="nav-icon"><path d="M7 2h7l5 5v15H7z"/><path d="M14 2v5h5"/></svg>
@@ -182,7 +196,7 @@
     </nav>
     <div class="sidebar-footer">
       <button type="button" id="btn-profil" class="btn-ghost-small">Mon profil</button>
-      <button type="button" id="btn-logout" class="btn-ghost-small">Deconnexion</button>
+      <button type="button" id="btn-logout" class="btn-ghost-small">Déconnexion</button>
     </div>
   </aside>
 
@@ -211,7 +225,7 @@
       <div class="side-panel-box">
         <button type="button" class="side-panel-close" data-action="close-archives" aria-label="Fermer">&times;</button>
         <h3 id="archives-titre">Archives</h3>
-        <p class="section-hint">Rien n'est jamais supprime definitivement : restaurez un element pour le remettre dans les listes actives.</p>
+        <p class="section-hint">Rien n'est jamais supprimé définitivement : restaurez un élément pour le remettre dans les listes actives.</p>
         <div id="archives-content"></div>
       </div>
     </div>
@@ -258,8 +272,8 @@
       <div class="filters" id="devis-filters">
         <button type="button" class="filter-chip active" data-statut="">Tous</button>
         <button type="button" class="filter-chip" data-statut="nouveau">Nouvelles demandes</button>
-        <button type="button" class="filter-chip" data-statut="envoye">Envoyes</button>
-        <button type="button" class="filter-chip" data-statut="signe">Signes</button>
+        <button type="button" class="filter-chip" data-statut="envoye">Envoyés</button>
+        <button type="button" class="filter-chip" data-statut="signe">Signés</button>
         <button type="button" class="filter-chip" data-statut="perdu">Perdus</button>
       </div>
 
@@ -282,21 +296,21 @@
 
       <div class="filters" id="facture-filters">
         <button type="button" class="filter-chip active" data-statut="">Toutes</button>
-        <button type="button" class="filter-chip" data-statut="a_encaisser">A encaisser</button>
+        <button type="button" class="filter-chip" data-statut="a_encaisser">À encaisser</button>
         <button type="button" class="filter-chip" data-statut="brouillon">Brouillons</button>
-        <button type="button" class="filter-chip" data-statut="envoyee">Envoyees</button>
-        <button type="button" class="filter-chip" data-statut="partiellement_payee">Partiellement payees</button>
-        <button type="button" class="filter-chip" data-statut="payee">Payees</button>
+        <button type="button" class="filter-chip" data-statut="envoyee">Envoyées</button>
+        <button type="button" class="filter-chip" data-statut="partiellement_payee">Partiellement payées</button>
+        <button type="button" class="filter-chip" data-statut="payee">Payées</button>
         <button type="button" class="filter-chip" data-statut="en_retard">En retard</button>
       </div>
 
       <div id="factures-list" class="list"></div>
 
       <div class="view-header" style="margin-top:36px;">
-        <h2 style="font-size:1.15rem;">Contrats recurrents</h2>
+        <h2 style="font-size:1.15rem;">Contrats récurrents</h2>
         <button type="button" class="btn-primary" data-action="show-contrat-form">+ Nouveau contrat</button>
       </div>
-      <p class="section-hint">Entretien, maintenance... la facture d'echeance est generee et envoyee automatiquement, sans intervention.</p>
+      <p class="section-hint">Entretien, maintenance... la facture d'échéance est générée et envoyée automatiquement, sans intervention.</p>
 
       <div id="contrat-form-container" hidden></div>
 
@@ -330,17 +344,17 @@
       <div id="planning-content"></div>
     </section>
 
-    <!-- ---------- Section Taches ---------- -->
+    <!-- ---------- Section Tâches ---------- -->
     <section id="view-taches" class="view" hidden>
       <div class="view-header">
-        <h2>Taches</h2>
-        <button type="button" class="btn-primary" data-action="show-tache-form">+ Nouvelle tache</button>
+        <h2>Tâches</h2>
+        <button type="button" class="btn-primary" data-action="show-tache-form">+ Nouvelle tâche</button>
       </div>
 
       <div id="tache-form-container" hidden></div>
 
       <div class="filters" id="tache-filters">
-        <button type="button" class="filter-chip active" data-statut="a_faire">A faire</button>
+        <button type="button" class="filter-chip active" data-statut="a_faire">À faire</button>
         <button type="button" class="filter-chip" data-statut="faite">Faites</button>
       </div>
 
@@ -385,7 +399,7 @@
         <h2>Avis clients</h2>
         <button type="button" class="btn-primary" data-action="show-avis-form">+ Saisir un avis</button>
       </div>
-      <p class="section-hint">Avis recus par telephone, Google, en personne... ou soumis directement par vos clients via un lien que vous leur envoyez depuis leur fiche.</p>
+      <p class="section-hint">Avis reçus par téléphone, Google, en personne... ou soumis directement par vos clients via un lien que vous leur envoyez depuis leur fiche.</p>
 
       <div id="avis-resume"></div>
 
@@ -403,21 +417,21 @@
         <form id="entreprise-form">
           <div class="form-grid">
             <div><label for="ent-nom-entreprise">Nom de l'entreprise</label><input type="text" id="ent-nom-entreprise" required></div>
-            <div><label for="ent-metier">Metier</label>
+            <div><label for="ent-metier">Métier</label>
               <select id="ent-metier" required>
                 <option value="plombier">Plombier</option>
-                <option value="electricien">Electricien</option>
-                <option value="macon">Macon</option>
+                <option value="electricien">Électricien</option>
+                <option value="macon">Maçon</option>
                 <option value="peintre">Peintre</option>
                 <option value="general">Autre (artisan du BTP)</option>
               </select>
             </div>
-            <div><label for="ent-telephone">Telephone</label><input type="tel" id="ent-telephone"></div>
+            <div><label for="ent-telephone">Téléphone</label><input type="tel" id="ent-telephone"></div>
             <div><label for="ent-ville">Ville</label><input type="text" id="ent-ville"></div>
             <div><label for="ent-code-postal">Code postal</label><input type="text" id="ent-code-postal"></div>
             <div><label for="ent-adresse">Adresse</label><input type="text" id="ent-adresse"></div>
             <div><label for="ent-siret">SIRET</label><input type="text" id="ent-siret"></div>
-            <div><label for="ent-assurance">Assureur decennale</label><input type="text" id="ent-assurance"></div>
+            <div><label for="ent-assurance">Assureur décennale</label><input type="text" id="ent-assurance"></div>
           </div>
           <p class="field-error" id="entreprise-form-error" hidden></p>
           <div class="form-actions">
@@ -428,13 +442,13 @@
 
       <div class="form-box" id="automatisation-form-box" style="margin-top:24px;">
         <h3>Automatisation des relances</h3>
-        <p class="section-hint">Delais avant qu'une relance ne devienne "a faire" dans vos notifications.</p>
+        <p class="section-hint">Délais avant qu'une relance ne devienne "à faire" dans vos notifications.</p>
         <form id="automatisation-form">
           <div class="form-grid">
-            <div><label for="auto-devis-j1">Devis : 1ere relance apres (jours)</label><input type="number" min="1" id="auto-devis-j1" required></div>
-            <div><label for="auto-devis-j2">Devis : 2e relance apres (jours)</label><input type="number" min="1" id="auto-devis-j2" required></div>
-            <div><label for="auto-devis-j3">Devis : 3e relance apres (jours)</label><input type="number" min="1" id="auto-devis-j3" required></div>
-            <div><label for="auto-facture-jours">Facture impayee : relancer tous les (jours)</label><input type="number" min="1" id="auto-facture-jours" required></div>
+            <div><label for="auto-devis-j1">Devis : 1ère relance après (jours)</label><input type="number" min="1" id="auto-devis-j1" required></div>
+            <div><label for="auto-devis-j2">Devis : 2e relance après (jours)</label><input type="number" min="1" id="auto-devis-j2" required></div>
+            <div><label for="auto-devis-j3">Devis : 3e relance après (jours)</label><input type="number" min="1" id="auto-devis-j3" required></div>
+            <div><label for="auto-facture-jours">Facture impayée : relancer tous les (jours)</label><input type="number" min="1" id="auto-facture-jours" required></div>
           </div>
           <p class="field-error" id="automatisation-form-error" hidden></p>
           <div class="form-actions">
@@ -446,10 +460,10 @@
       <div id="automatisation-paywall" hidden></div>
 
       <div class="view-header" style="margin-top:36px;">
-        <h2 style="font-size:1.15rem;">Equipe</h2>
+        <h2 style="font-size:1.15rem;">Équipe</h2>
         <button type="button" class="btn-primary" data-action="show-membre-form" id="btn-show-membre-form">+ Ajouter un membre</button>
       </div>
-      <p class="section-hint">Donnez acces a Suite Artisan a vos salaries. Un "administrateur" peut gerer l'equipe, un "salarie" non.</p>
+      <p class="section-hint">Donnez accès à Suite Artisan à vos salariés. Un "administrateur" peut gérer l'équipe, un "salarié" non.</p>
 
       <div id="membre-form-container" hidden></div>
 
@@ -459,7 +473,7 @@
         <h2 style="font-size:1.15rem;">Catalogue de prestations</h2>
         <button type="button" class="btn-primary" data-action="show-prestation-form">+ Nouvelle prestation</button>
       </div>
-      <p class="section-hint">Vos prestations types, pour les retrouver en tapant leur nom lors de la creation d'un devis.</p>
+      <p class="section-hint">Vos prestations types, pour les retrouver en tapant leur nom lors de la création d'un devis.</p>
 
       <div id="prestation-form-container" hidden></div>
 
@@ -469,14 +483,14 @@
         <h2 style="font-size:1.15rem;">Fournisseurs</h2>
         <button type="button" class="btn-primary" data-action="show-fournisseur-form">+ Nouveau fournisseur</button>
       </div>
-      <p class="section-hint">Vos fournisseurs de materiaux, sous-traitants et loueurs d'outillage, pour les lier a vos depenses de chantier.</p>
+      <p class="section-hint">Vos fournisseurs de matériaux, sous-traitants et loueurs d'outillage, pour les lier à vos dépenses de chantier.</p>
 
       <div id="fournisseur-form-container" hidden></div>
 
       <div id="fournisseurs-list" class="list"></div>
 
       <div class="view-header" style="margin-top:36px;">
-        <h2 style="font-size:1.15rem;">Conformite</h2>
+        <h2 style="font-size:1.15rem;">Conformité</h2>
         <button type="button" class="btn-primary" data-action="show-conformite-form">+ Nouvel element</button>
       </div>
 
@@ -490,7 +504,7 @@
     <!-- ---------- Section Notifications ---------- -->
     <section id="view-notifications" class="view" hidden>
       <div class="view-header"><h2>Notifications</h2></div>
-      <p class="section-hint">Devis a relancer, factures impayees et echeances de conformite, regroupes ici.</p>
+      <p class="section-hint">Devis à relancer, factures impayées et échéances de conformité, regroupés ici.</p>
       <div id="notifications-list" class="list"></div>
     </section>
 

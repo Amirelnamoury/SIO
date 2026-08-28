@@ -299,6 +299,18 @@ h3 { margin: 0 0 12px; }
 .form-box input:focus, .form-box select:focus, .form-box textarea:focus { outline: none; border-color: var(--accent); }
 .form-actions { display: flex; gap: 10px; margin-top: 18px; }
 
+/* Une checkbox n'est pas un champ texte : sans cette regle, elle heritait de
+   .form-box input { width:100%; padding:9px 12px; border:1.5px... } ci-dessus
+   et s'affichait comme une grosse boite rectangulaire eloignee de son
+   libelle (case "Tout preparer" mal alignee). */
+.form-box label.checkbox-option {
+  display: flex; align-items: center; gap: 8px; font-weight: 500;
+  margin-top: 10px; margin-bottom: 0; cursor: pointer;
+}
+.form-box input[type="checkbox"] {
+  width: 18px; height: 18px; flex-shrink: 0; padding: 0; margin: 0; accent-color: var(--accent);
+}
+
 /* ---------- Editeur de lignes (devis / factures) ---------- */
 .lignes-editor { margin-top: 16px; }
 .lignes-editor label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; }
@@ -513,6 +525,10 @@ h3 { margin: 0 0 12px; }
 .confirm-dialog-box.is-danger #confirm-dialog-ok { background: var(--danger); }
 .confirm-dialog-box.is-danger #confirm-dialog-ok:hover { background: #991b1b; }
 .confirm-dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
+
+/* ---------- Detail d'un rendez-vous (Planning) ---------- */
+#evenement-detail-modal .confirm-dialog-box { position: relative; max-width: 440px; }
+#evenement-detail-modal .profil-row { margin-bottom: 10px; }
 
 /* ---------- Toast ---------- */
 #toast {

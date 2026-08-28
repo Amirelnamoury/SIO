@@ -50,17 +50,17 @@ def creer_session_paiement(
     (cles absentes) ou que le prix du plan demande n'est pas defini, renvoie
     une erreur claire sans faire planter le reste de l'application."""
     if plan not in ("essentiel", "pro", "business"):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="plan doit etre l'un de : essentiel, pro, business")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="plan doit être l'un de : essentiel, pro, business")
     if not _stripe_pret():
         raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="Stripe n'est pas configure (STRIPE_SECRET_KEY manquant). Contactez l'administrateur.",
+            detail="Stripe n'est pas configuré (STRIPE_SECRET_KEY manquant). Contactez l'administrateur.",
         )
     price_id = _prix_par_plan()[plan]
     if not price_id:
         raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail=f"Stripe n'est pas configure pour le plan {plan} (prix manquant).",
+            detail=f"Stripe n'est pas configuré pour le plan {plan} (prix manquant).",
         )
 
     stripe.api_key = settings.stripe_secret_key
@@ -111,7 +111,7 @@ async def webhook(request: Request, db: Session = Depends(get_db)):
     if not _stripe_pret() or not settings.stripe_webhook_secret:
         raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="Stripe n'est pas configure (cles webhook manquantes).",
+            detail="Stripe n'est pas configuré (clés webhook manquantes).",
         )
 
     payload = await request.body()

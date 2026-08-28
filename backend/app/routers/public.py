@@ -134,7 +134,7 @@ def accepter_devis_public(token: str, payload: DevisAccepterIn, db: Session = De
     la main par l'artisan sans aucune confirmation du client."""
     devis = _get_devis_public_or_404(db, token)
     if devis.statut == "signe":
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ce devis a deja ete accepte")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ce devis a déjà été accepté")
     if devis.statut in ("perdu", "expire"):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ce devis n'est plus disponible")
     if not payload.nom_signataire.strip():
@@ -202,7 +202,7 @@ def soumettre_avis_public(token: str, payload: AvisPublicIn, db: Session = Depen
     client = _get_client_avis_or_404(db, token)
     deja_soumis = db.query(Avis).filter(Avis.client_id == client.id, Avis.source == "lien_public").first() is not None
     if deja_soumis:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Un avis a deja ete transmis pour ce lien")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Un avis a déjà été transmis pour ce lien")
 
     avis = Avis(
         artisan_id=client.artisan_id, client_id=client.id, note=payload.note,

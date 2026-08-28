@@ -16,7 +16,7 @@
   <div id="avis-public-content" class="devis-public-card">
     <div class="empty-state">Chargement...</div>
   </div>
-  <p class="devis-public-footer">Page geree via <strong>Suite Artisan</strong></p>
+  <p class="devis-public-footer">Page gérée via <strong>Suite Artisan</strong></p>
 </div>
 
 <script src="env.js"></script>
@@ -39,7 +39,7 @@ let noteChoisie = 0;
 function starsHtml() {
   let html = '<div class="avis-stars" id="avis-stars">';
   for (let i = 1; i <= 5; i++) {
-    html += `<button type="button" class="avis-star" data-note="${i}" aria-label="${i} etoile(s)">&#9733;</button>`;
+    html += `<button type="button" class="avis-star" data-note="${i}" aria-label="${i} étoile(s)">&#9733;</button>`;
   }
   html += "</div>";
   return html;
@@ -57,12 +57,12 @@ function renderForm(statut) {
       <div><div class="devis-public-artisan">${escapeHtml(statut.artisan_nom_entreprise)}</div></div>
     </div>
     <h1>Votre avis compte</h1>
-    <p class="section-hint">Bonjour ${escapeHtml(statut.client_nom)}, merci de partager votre experience avec ${escapeHtml(statut.artisan_nom_entreprise)}.</p>
+    <p class="section-hint">Bonjour ${escapeHtml(statut.client_nom)}, merci de partager votre expérience avec ${escapeHtml(statut.artisan_nom_entreprise)}.</p>
 
     <div class="avis-public-form">
       ${starsHtml()}
       <label for="avis-commentaire" style="margin-top:18px;display:block;">Commentaire (optionnel)</label>
-      <textarea id="avis-commentaire" placeholder="Votre experience en quelques mots..."></textarea>
+      <textarea id="avis-commentaire" placeholder="Votre expérience en quelques mots..."></textarea>
       <p class="field-error" id="avis-error" hidden></p>
       <button type="button" class="btn-primary" id="avis-submit" style="width:100%;margin-top:14px;">Envoyer mon avis</button>
     </div>
@@ -80,7 +80,7 @@ function renderForm(statut) {
     errorBox.hidden = true;
     if (noteChoisie === 0) {
       errorBox.hidden = false;
-      errorBox.textContent = "Choisissez une note de 1 a 5 etoiles.";
+      errorBox.textContent = "Choisissez une note de 1 à 5 étoiles.";
       return;
     }
     const btn = document.getElementById("avis-submit");
@@ -97,7 +97,7 @@ function renderForm(statut) {
       }
       contentEl.innerHTML = `
         <div class="devis-public-banner is-success">
-          <strong>Merci pour votre avis !</strong> Il a bien ete transmis.
+          <strong>Merci pour votre avis !</strong> Il a bien été transmis.
         </div>`;
     } catch (err) {
       errorBox.hidden = false;
@@ -115,20 +115,20 @@ async function load() {
   try {
     const res = await fetch(`${API_BASE}/pub/avis/${token}`);
     if (!res.ok) {
-      contentEl.innerHTML = '<div class="empty-state">Ce lien est introuvable ou a expire.</div>';
+      contentEl.innerHTML = '<div class="empty-state">Ce lien est introuvable ou a expiré.</div>';
       return;
     }
     const statut = await res.json();
     if (statut.deja_soumis) {
       contentEl.innerHTML = `
         <div class="devis-public-banner is-muted">
-          Un avis a deja ete transmis pour ${escapeHtml(statut.client_nom)}. Merci !
+          Un avis a déjà été transmis pour ${escapeHtml(statut.client_nom)}. Merci !
         </div>`;
       return;
     }
     renderForm(statut);
   } catch (err) {
-    contentEl.innerHTML = '<div class="empty-state">Impossible de contacter le serveur. Verifiez votre connexion.</div>';
+    contentEl.innerHTML = '<div class="empty-state">Impossible de contacter le serveur. Vérifiez votre connexion.</div>';
   }
 }
 

@@ -128,9 +128,9 @@ def preparer_chantier_depuis_devis(
     if devis.client is None or devis.client.artisan_id != artisan.id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client introuvable")
     if devis.statut != "signe":
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Seul un devis signe peut etre prepare en chantier")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Seul un devis signé peut être préparé en chantier")
     if db.query(Chantier).filter(Chantier.devis_id == devis.id, Chantier.artisan_id == artisan.id).first() is not None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Un chantier existe deja pour ce devis")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Un chantier existe déjà pour ce devis")
 
     chantier = Chantier(
         artisan_id=artisan.id, client_id=devis.client_id, devis_id=devis.id,
@@ -309,7 +309,7 @@ def supprimer_heures(
     chantier = _get_chantier_or_404(db, artisan, chantier_id)
     heure = db.query(HeureTravail).filter(HeureTravail.id == heure_id, HeureTravail.chantier_id == chantier.id).first()
     if heure is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Entree d'heures introuvable")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Entrée d'heures introuvable")
     db.delete(heure)
     db.commit()
 
@@ -327,7 +327,7 @@ def cloturer_chantier(
     qu'elle a reussi a faire (voir *_email_statut, *_raison_absence)."""
     chantier = _get_chantier_or_404(db, artisan, chantier_id)
     if chantier.statut != "termine":
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Seul un chantier marque termine peut etre cloture")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Seul un chantier marqué terminé peut être clôturé")
 
     client = db.query(Client).filter(Client.id == chantier.client_id, Client.artisan_id == artisan.id).first()
     if client is None:

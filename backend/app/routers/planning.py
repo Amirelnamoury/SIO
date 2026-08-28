@@ -99,7 +99,7 @@ def obtenir_planning(
     for e in evenements:
         items.append(PlanningItem(
             date=e.date_debut, type=e.type, titre=e.titre,
-            reference_id=e.id, client_id=e.client_id, chantier_id=e.chantier_id,
+            reference_id=e.id, client_id=e.client_id, chantier_id=e.chantier_id, lieu=e.lieu,
         ))
 
     taches = (

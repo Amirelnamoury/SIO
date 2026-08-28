@@ -15,12 +15,12 @@ def register(payload: ArtisanCreate, db: Session = Depends(get_db)):
     existing = db.query(Artisan).filter(Artisan.email == payload.email).first()
     existing_membre = db.query(Membre).filter(Membre.email == payload.email).first()
     if existing is not None or existing_membre is not None:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Un compte existe deja avec cet email")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Un compte existe déjà avec cet email")
 
     slug = payload.slug.strip().lower() if payload.slug else None
     if slug:
         if db.query(Artisan).filter(Artisan.slug == slug).first() is not None:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Ce slug est deja pris")
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Ce slug est déjà pris")
     else:
         slug = generate_unique_slug(db, payload.nom_entreprise)
 

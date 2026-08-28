@@ -30,7 +30,7 @@ def creer_membre(
     existing = db.query(Artisan).filter(Artisan.email == payload.email).first()
     existing_membre = db.query(Membre).filter(Membre.email == payload.email).first()
     if existing is not None or existing_membre is not None:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Un compte existe deja avec cet email")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Un compte existe déjà avec cet email")
 
     membre = Membre(
         artisan_id=utilisateur.artisan.id, nom=payload.nom, email=payload.email,

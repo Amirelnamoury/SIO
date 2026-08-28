@@ -15,7 +15,7 @@
   <div id="devis-public-content" class="devis-public-card">
     <div class="empty-state">Chargement du devis...</div>
   </div>
-  <p class="devis-public-footer">Devis genere et transmis via <strong>Suite Artisan</strong></p>
+  <p class="devis-public-footer">Devis généré et transmis via <strong>Suite Artisan</strong></p>
 </div>
 
 <script src="env.js"></script>
@@ -42,15 +42,15 @@ const token = new URLSearchParams(window.location.search).get("t");
 const contentEl = document.getElementById("devis-public-content");
 
 const STATUT_LABELS = {
-  nouveau: "Nouveau", envoye: "Envoye", consulte: "Consulte",
+  nouveau: "Nouveau", envoye: "Envoyé", consulte: "Consulté",
   relance_j3: "En attente de retour", relance_j7: "En attente de retour", relance_j15: "En attente de retour",
-  signe: "Accepte", perdu: "Perdu", expire: "Expire",
+  signe: "Accepté", perdu: "Perdu", expire: "Expiré",
 };
 
 function lignesTableHtml(lignes) {
   return `
   <table class="devis-public-table">
-    <thead><tr><th>Description</th><th>Qte</th><th>Unite</th><th>PU HT</th><th>Total HT</th></tr></thead>
+    <thead><tr><th>Description</th><th>Qte</th><th>Unité</th><th>PU HT</th><th>Total HT</th></tr></thead>
     <tbody>
       ${lignes.map((l) => `<tr>
         <td>${escapeHtml(l.description)}</td>
@@ -72,7 +72,7 @@ function totauxHtml(d) {
   rows.push(["Total HT", fmtEuro(d.montant_ht)]);
   rows.push([`TVA (${d.taux_tva}%)`, fmtEuro((d.montant_ttc || 0) - (d.montant_ht || 0))]);
   rows.push(["Total TTC", fmtEuro(d.montant_ttc)]);
-  rows.push([`Acompte a la commande (${d.acompte_pourcentage}%)`, fmtEuro((d.montant_ttc || 0) * d.acompte_pourcentage / 100)]);
+  rows.push([`Acompte à la commande (${d.acompte_pourcentage}%)`, fmtEuro((d.montant_ttc || 0) * d.acompte_pourcentage / 100)]);
   return `<div class="devis-public-totaux">
     ${rows.map(([l, v], i) => `<div class="devis-public-total-row ${i === rows.length - 2 ? "is-total" : ""}"><span>${l}</span><strong>${v}</strong></div>`).join("")}
   </div>`;
@@ -85,18 +85,18 @@ function renderDevis(d) {
 
   if (d.statut === "signe") {
     statusBanner = `<div class="devis-public-banner is-success">
-      <strong>Devis accepte</strong> le ${fmtDate(d.date_signature)}${d.nom_signataire ? " par " + escapeHtml(d.nom_signataire) : ""}.
+      <strong>Devis accepté</strong> le ${fmtDate(d.date_signature)}${d.nom_signataire ? " par " + escapeHtml(d.nom_signataire) : ""}.
     </div>`;
   } else if (d.statut === "perdu" || d.statut === "expire") {
     statusBanner = `<div class="devis-public-banner is-muted">Ce devis n'est plus disponible (${statutLabel.toLowerCase()}).</div>`;
   } else {
     actionZone = `
     <div class="devis-public-accept">
-      <h3>Vous etes d'accord avec ce devis ?</h3>
+      <h3>Vous êtes d'accord avec ce devis ?</h3>
       <p class="section-hint">En acceptant, vous confirmez avoir pris connaissance du devis ci-dessus et donnez votre accord ("bon pour accord").</p>
       <form id="accept-form">
         <label for="nom-signataire">Votre nom complet</label>
-        <input type="text" id="nom-signataire" required placeholder="Prenom Nom">
+        <input type="text" id="nom-signataire" required placeholder="Prénom Nom">
         <p class="field-error" id="accept-error" hidden></p>
         <button type="submit" class="btn-primary" style="width:100%;">Accepter ce devis</button>
       </form>
@@ -117,7 +117,7 @@ function renderDevis(d) {
     ${statusBanner}
 
     <h1>${escapeHtml(d.titre || "Devis")} ${d.numero ? `<span class="devis-public-numero">${escapeHtml(d.numero)}</span>` : ""}</h1>
-    <p class="section-hint">Devis etabli pour ${escapeHtml(d.client_nom)}</p>
+    <p class="section-hint">Devis établi pour ${escapeHtml(d.client_nom)}</p>
     ${d.description ? `<p>${escapeHtml(d.description)}</p>` : ""}
 
     ${lignesTableHtml(d.lignes)}
@@ -126,8 +126,8 @@ function renderDevis(d) {
     ${actionZone}
 
     <p class="devis-public-mentions">
-      Acompte de ${d.acompte_pourcentage}% a la signature, solde exigible a la fin des travaux.
-      ${d.artisan_assurance_decennale_nom ? `Entreprise couverte par une assurance de responsabilite civile decennale souscrite aupres de ${escapeHtml(d.artisan_assurance_decennale_nom)}.` : ""}
+      Acompte de ${d.acompte_pourcentage}% à la signature, solde exigible à la fin des travaux.
+      ${d.artisan_assurance_decennale_nom ? `Entreprise couverte par une assurance de responsabilité civile décennale souscrite auprès de ${escapeHtml(d.artisan_assurance_decennale_nom)}.` : ""}
       ${d.artisan_siret ? `SIRET : ${escapeHtml(d.artisan_siret)}.` : ""}
     </p>
   `;
@@ -169,12 +169,12 @@ async function load() {
   try {
     const res = await fetch(`${API_BASE}/pub/devis/${token}`);
     if (!res.ok) {
-      contentEl.innerHTML = '<div class="empty-state">Ce devis est introuvable. Verifiez le lien recu.</div>';
+      contentEl.innerHTML = '<div class="empty-state">Ce devis est introuvable. Vérifiez le lien reçu.</div>';
       return;
     }
     renderDevis(await res.json());
   } catch (err) {
-    contentEl.innerHTML = '<div class="empty-state">Impossible de contacter le serveur. Verifiez votre connexion.</div>';
+    contentEl.innerHTML = '<div class="empty-state">Impossible de contacter le serveur. Vérifiez votre connexion.</div>';
   }
 }
 

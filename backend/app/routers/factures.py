@@ -132,7 +132,7 @@ def relancer_facture(
     """Enregistre qu'une relance a ete envoyee au client pour cette facture impayee."""
     facture = _get_facture_or_404(db, artisan, facture_id)
     if facture.montant_restant <= 0 or facture.statut in ("brouillon", "annulee"):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cette facture n'a pas d'impaye a relancer")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cette facture n'a pas d'impayé à relancer")
     facture.date_derniere_relance = datetime.now(timezone.utc)
     facture.nb_relances += 1
     db.commit()

@@ -47,17 +47,17 @@ const token = new URLSearchParams(window.location.search).get("t");
 const contentEl = document.getElementById("portail-content");
 
 const DEVIS_STATUT_LABELS = {
-  nouveau: "Nouveau", envoye: "Envoye", consulte: "Consulte",
+  nouveau: "Nouveau", envoye: "Envoyé", consulte: "Consulté",
   relance_j3: "En attente de retour", relance_j7: "En attente de retour", relance_j15: "En attente de retour",
-  signe: "Accepte", perdu: "Perdu", expire: "Expire",
+  signe: "Accepté", perdu: "Perdu", expire: "Expiré",
 };
 const FACTURE_STATUT_LABELS = {
-  envoyee: "A regler", partiellement_payee: "Partiellement reglee", payee: "Reglee",
-  en_retard: "En retard", annulee: "Annulee",
+  envoyee: "À régler", partiellement_payee: "Partiellement réglée", payee: "Réglée",
+  en_retard: "En retard", annulee: "Annulée",
 };
 const CHANTIER_STATUT_LABELS = {
-  a_preparer: "En preparation", planifie: "Planifie", en_cours: "En cours",
-  en_pause: "En pause", termine: "Termine", facture: "Facture", paye: "Solde",
+  a_preparer: "En préparation", planifie: "Planifié", en_cours: "En cours",
+  en_pause: "En pause", termine: "Terminé", facture: "Facturé", paye: "Soldé",
 };
 
 function devisRowHtml(d) {
@@ -73,7 +73,7 @@ function factureRowHtml(f) {
   const badge = f.statut === "payee" ? "badge-green" : f.est_en_retard ? "badge-red" : "badge-blue";
   return `
   <a class="portail-row" href="facture-public.html?t=${escapeHtml(f.token || "")}">
-    <div><div class="portail-row-title">${escapeHtml(f.numero)}</div><div class="section-hint" style="margin:0;">Echeance : ${fmtDate(f.date_echeance)}</div></div>
+    <div><div class="portail-row-title">${escapeHtml(f.numero)}</div><div class="section-hint" style="margin:0;">Échéance : ${fmtDate(f.date_echeance)}</div></div>
     <div class="portail-row-right"><strong>${fmtEuro(f.montant_ttc)}</strong><span class="badge ${badge}">${FACTURE_STATUT_LABELS[f.statut] || f.statut}</span></div>
   </a>`;
 }
@@ -90,8 +90,8 @@ function chantierCardHtml(c) {
     <div class="portail-row-title">${escapeHtml(c.titre)}</div>
     <div class="section-hint" style="margin:2px 0 8px;">
       ${CHANTIER_STATUT_LABELS[c.statut] || c.statut}
-      ${c.date_debut ? " · Debut : " + fmtDate(c.date_debut) : ""}
-      ${c.date_fin_prevue ? " · Fin prevue : " + fmtDate(c.date_fin_prevue) : ""}
+      ${c.date_debut ? " · Début : " + fmtDate(c.date_debut) : ""}
+      ${c.date_fin_prevue ? " · Fin prévue : " + fmtDate(c.date_fin_prevue) : ""}
     </div>
     ${progressionHtml}
     ${photosHtml}
@@ -120,7 +120,7 @@ function render(p) {
       </div>
     </div>
     <h1>Bonjour ${escapeHtml(p.client_nom)}</h1>
-    <p class="section-hint">Retrouvez ici vos devis, factures, chantiers et echanges avec ${escapeHtml(p.artisan_nom_entreprise)}.</p>
+    <p class="section-hint">Retrouvez ici vos devis, factures, chantiers et échanges avec ${escapeHtml(p.artisan_nom_entreprise)}.</p>
 
     ${sectionHtml("Vos chantiers", p.chantiers.map(chantierCardHtml).join(""), "Aucun chantier pour le moment.")}
     ${sectionHtml("Vos devis", p.devis.map(devisRowHtml).join(""), "Aucun devis pour le moment.")}
@@ -130,7 +130,7 @@ function render(p) {
       <h3>Messages</h3>
       <div id="messages-list">${p.messages.length ? p.messages.map(messageItemHtml).join("") : '<div class="empty-state">Aucun message pour le moment.</div>'}</div>
       <form id="message-form" class="portail-message-form">
-        <textarea id="message-texte" placeholder="Ecrire un message..." aria-label="Votre message" required></textarea>
+        <textarea id="message-texte" placeholder="Écrire un message..." aria-label="Votre message" required></textarea>
         <p class="field-error" id="message-error" hidden></p>
         <button type="submit" class="btn-primary">Envoyer</button>
       </form>
@@ -172,12 +172,12 @@ async function load() {
   try {
     const res = await fetch(`${API_BASE}/pub/portail/${token}`);
     if (!res.ok) {
-      contentEl.innerHTML = '<div class="empty-state">Cet espace est introuvable ou le lien a expire. Demandez un nouveau lien a votre artisan.</div>';
+      contentEl.innerHTML = '<div class="empty-state">Cet espace est introuvable ou le lien a expiré. Demandez un nouveau lien à votre artisan.</div>';
       return;
     }
     render(await res.json());
   } catch (err) {
-    contentEl.innerHTML = '<div class="empty-state">Impossible de contacter le serveur. Verifiez votre connexion.</div>';
+    contentEl.innerHTML = '<div class="empty-state">Impossible de contacter le serveur. Vérifiez votre connexion.</div>';
   }
 }
 

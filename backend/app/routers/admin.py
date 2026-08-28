@@ -244,7 +244,7 @@ def admin_artisan_update(
         collision = collision or db.query(Membre).filter(Membre.email == email).first()
         collision = collision or db.query(AdminUser).filter(AdminUser.email == email, AdminUser.id != admin.id).first()
         if collision is not None:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Un compte existe deja avec cet email")
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Un compte existe déjà avec cet email")
         updates["email"] = email
     changed = {field: value for field, value in updates.items() if getattr(artisan, field) != value}
     for field, value in changed.items():

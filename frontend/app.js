@@ -105,42 +105,42 @@ function confirmDialog(message, { title = "Confirmer", confirmLabel = "Confirmer
 // ===================== Constantes d'affichage =====================
 const METIER_LABELS = {
   plombier: "Plombier",
-  electricien: "Electricien",
-  macon: "Macon",
+  electricien: "Électricien",
+  macon: "Maçon",
   peintre: "Peintre",
   general: "Artisan du BTP",
 };
 
 const DEVIS_STATUT_META = {
   nouveau: { label: "Nouvelle demande", badge: "badge-gray" },
-  envoye: { label: "Envoye", badge: "badge-blue" },
-  consulte: { label: "Consulte", badge: "badge-blue" },
+  envoye: { label: "Envoyé", badge: "badge-blue" },
+  consulte: { label: "Consulté", badge: "badge-blue" },
   relance_j3: { label: "Relance J+3", badge: "badge-orange" },
   relance_j7: { label: "Relance J+7", badge: "badge-orange" },
   relance_j15: { label: "Relance J+15", badge: "badge-red" },
-  signe: { label: "Signe", badge: "badge-green" },
+  signe: { label: "Signé", badge: "badge-green" },
   perdu: { label: "Perdu", badge: "badge-gray" },
-  expire: { label: "Expire", badge: "badge-gray" },
+  expire: { label: "Expiré", badge: "badge-gray" },
 };
 
 const CLIENT_STATUT_META = {
   nouveau: { label: "Nouveau", badge: "badge-gray" },
-  contacte: { label: "Contacte", badge: "badge-blue" },
+  contacte: { label: "Contacté", badge: "badge-blue" },
   qualification: { label: "Qualification", badge: "badge-blue" },
-  visite_prevue: { label: "Visite prevue", badge: "badge-blue" },
-  devis_a_faire: { label: "Devis a faire", badge: "badge-orange" },
-  devis_envoye: { label: "Devis envoye", badge: "badge-orange" },
-  negociation: { label: "Negociation", badge: "badge-orange" },
-  gagne: { label: "Gagne", badge: "badge-green" },
+  visite_prevue: { label: "Visite prévue", badge: "badge-blue" },
+  devis_a_faire: { label: "Devis à faire", badge: "badge-orange" },
+  devis_envoye: { label: "Devis envoyé", badge: "badge-orange" },
+  negociation: { label: "Négociation", badge: "badge-orange" },
+  gagne: { label: "Gagné", badge: "badge-green" },
   perdu: { label: "Perdu", badge: "badge-gray" },
 };
 
 const CLIENT_SOURCE_LABELS = {
-  manuel: "Ajoute manuellement",
+  manuel: "Ajouté manuellement",
   site_vitrine: "Site vitrine",
   google: "Google",
   recommandation: "Recommandation",
-  telephone: "Telephone",
+  telephone: "Téléphone",
   facebook: "Facebook",
   instagram: "Instagram",
   ancien_client: "Ancien client",
@@ -149,21 +149,21 @@ const CLIENT_SOURCE_LABELS = {
 
 const FACTURE_STATUT_META = {
   brouillon: { label: "Brouillon", badge: "badge-gray" },
-  envoyee: { label: "Envoyee", badge: "badge-blue" },
-  partiellement_payee: { label: "Partiellement payee", badge: "badge-orange" },
-  payee: { label: "Payee", badge: "badge-green" },
+  envoyee: { label: "Envoyée", badge: "badge-blue" },
+  partiellement_payee: { label: "Partiellement payée", badge: "badge-orange" },
+  payee: { label: "Payée", badge: "badge-green" },
   en_retard: { label: "En retard", badge: "badge-red" },
-  annulee: { label: "Annulee", badge: "badge-gray" },
+  annulee: { label: "Annulée", badge: "badge-gray" },
 };
 
 const CHANTIER_STATUT_META = {
-  a_preparer: { label: "A preparer", badge: "badge-gray" },
-  planifie: { label: "Planifie", badge: "badge-blue" },
+  a_preparer: { label: "À préparer", badge: "badge-gray" },
+  planifie: { label: "Planifié", badge: "badge-blue" },
   en_cours: { label: "En cours", badge: "badge-blue" },
   en_pause: { label: "En pause", badge: "badge-orange" },
-  termine: { label: "Termine", badge: "badge-green" },
-  facture: { label: "Facture", badge: "badge-green" },
-  paye: { label: "Paye", badge: "badge-green" },
+  termine: { label: "Terminé", badge: "badge-green" },
+  facture: { label: "Facturé", badge: "badge-green" },
+  paye: { label: "Payé", badge: "badge-green" },
 };
 
 // Cache simple des clients pour remplir les listes deroulantes des formulaires
@@ -198,9 +198,9 @@ function prestationsDatalistHtml() {
     .join("")}</datalist>`;
 }
 
-const PHASE_LABELS = { avant: "Avant", pendant: "Pendant", apres: "Apres" };
+const PHASE_LABELS = { avant: "Avant", pendant: "Pendant", apres: "Après" };
 const CONFORMITE_TYPE_LABELS = {
-  assurance_decennale: "Assurance decennale",
+  assurance_decennale: "Assurance décennale",
   qualibat: "Qualibat",
   rge: "RGE",
   autre: "Autre",
@@ -326,7 +326,7 @@ async function attemptUpgrade(plan) {
       // Abonnement deja actif : le changement de plan a ete applique
       // directement (proration Stripe), pas besoin de repasser par une
       // page de paiement externe.
-      showToast("Votre plan a ete mis a jour.");
+      showToast("Votre plan a été mis à jour.");
       closePricingModal();
       currentArtisan = await Api.me();
       switchView(document.querySelector(".nav-link.active")?.dataset.view || "dashboard");
@@ -421,26 +421,26 @@ const ONBOARDING_STEPS = [
   {
     icon: "&#128075;",
     title: "Bienvenue sur Suite Artisan",
-    body: "Un seul outil pour ne plus perdre de prospects, suivre vos devis et garder une vue claire sur votre activite. Tout ce dont vous avez besoin pour demarrer est deja gratuit.",
+    body: "Un seul outil pour ne plus perdre de prospects, suivre vos devis et garder une vue claire sur votre activité. Tout ce dont vous avez besoin pour démarrer est déjà gratuit.",
   },
   {
     icon: "&#128203;",
-    title: "Comment ca marche",
+    title: "Comment ça marche",
     list: [
       "Ajoutez un client ou un prospect",
-      "Creez un devis avec vos lignes de prestation, envoyez le PDF",
-      `Suite Artisan repere les devis a relancer et vous le signale — l'envoi automatique de la relance fait partie du plan ${PRICING.pro.nom}`,
+      "Créez un devis avec vos lignes de prestation, envoyez le PDF",
+      `Suite Artisan repère les devis à relancer et vous le signale — l'envoi automatique de la relance fait partie du plan ${PRICING.pro.nom}`,
     ],
   },
   {
     icon: "&#127970;",
     title: "Votre site vitrine",
-    body: "Si vous avez commande un site vitrine, il apparaitra dans votre tableau de bord des qu'il sera livre, avec les demandes recues automatiquement dans vos prospects.",
+    body: "Si vous avez commandé un site vitrine, il apparaîtra dans votre tableau de bord dès qu'il sera livré, avec les demandes reçues automatiquement dans vos prospects.",
   },
   {
     icon: "&#128274;",
     title: "Pour aller plus loin",
-    body: `Le plan ${PRICING.essentiel.nom} (${PRICING.essentiel.prix}€ ${PRICING.essentiel.mention}) ajoute le suivi de chantiers, la conformite et les statistiques. Vous pourrez vous abonner a tout moment depuis votre profil.`,
+    body: `Le plan ${PRICING.essentiel.nom} (${PRICING.essentiel.prix}€ ${PRICING.essentiel.mention}) ajoute le suivi de chantiers, la conformité et les statistiques. Vous pourrez vous abonner à tout moment depuis votre profil.`,
   },
 ];
 let onboardingStepIndex = 0;
@@ -574,14 +574,18 @@ async function refreshBadges() {
 function setupProfilPanel() {
   document.getElementById("btn-profil").addEventListener("click", () => {
     const content = document.getElementById("profil-content");
-    const publicUrl = `${API_BASE}/pub/${currentArtisan.slug}/demande-devis`;
+    // Le slug (currentArtisan.slug) sert toujours a construire l'URL technique
+    // POST /pub/{slug}/demande-devis appelee par le futur site vitrine - il
+    // reste disponible cote donnees, simplement plus affiche ici comme un
+    // lien a copier : cette URL attend un POST, un artisan qui la colle dans
+    // son navigateur (GET) recoit une 405 Method Not Allowed. Ce n'est pas
+    // une page publique partageable.
     content.innerHTML = `
       <div class="profil-row"><div class="label">Entreprise</div><div class="value">${escapeHtml(currentArtisan.nom_entreprise)}</div></div>
-      <div class="profil-row"><div class="label">Metier</div><div class="value">${escapeHtml(METIER_LABELS[currentArtisan.metier] || currentArtisan.metier)}</div></div>
+      <div class="profil-row"><div class="label">Métier</div><div class="value">${escapeHtml(METIER_LABELS[currentArtisan.metier] || currentArtisan.metier)}</div></div>
       <div class="profil-row"><div class="label">Email</div><div class="value">${escapeHtml(currentArtisan.email)}</div></div>
       <div class="profil-row"><div class="label">Ville</div><div class="value">${escapeHtml(currentArtisan.ville || "-")}</div></div>
       <div class="profil-row"><div class="label">SIRET</div><div class="value">${escapeHtml(currentArtisan.siret || "-")}</div></div>
-      <div class="profil-row"><div class="label">Lien public du formulaire de devis</div><div class="value" style="font-weight:400;font-size:0.82rem;">${escapeHtml(publicUrl)}</div></div>
       <div class="profil-row">
         <div class="label">Abonnement Suite Artisan</div>
         <div class="value">
@@ -597,7 +601,7 @@ function setupProfilPanel() {
           <label for="pwd-nouveau" style="margin-top:10px;">Nouveau mot de passe</label>
           <input type="password" id="pwd-nouveau" required autocomplete="new-password" minlength="8">
           <p class="field-error" id="password-change-error" hidden></p>
-          <div class="form-actions"><button type="submit" class="btn-sm btn-sm-primary">Mettre a jour</button></div>
+          <div class="form-actions"><button type="submit" class="btn-sm btn-sm-primary">Mettre à jour</button></div>
         </form>
       </div>
     `;
@@ -610,7 +614,7 @@ function setupProfilPanel() {
       const new_password = document.getElementById("pwd-nouveau").value;
       try {
         await Api.changerMotDePasse({ current_password, new_password });
-        showToast("Mot de passe mis a jour.");
+        showToast("Mot de passe mis à jour.");
         document.getElementById("password-change-form").reset();
       } catch (err) {
         errorBox.hidden = false;
@@ -648,8 +652,8 @@ function loadEntrepriseForm() {
   automationPaywall.hidden = automationDisponible;
   if (!automationDisponible) {
     automationPaywall.innerHTML = renderUpgradeCard(
-      "Automatisations reservees au plan Pro",
-      "Suite Artisan identifie les factures a relancer des le plan Essentiel. Le plan Pro envoie automatiquement les relances de devis et de factures.",
+      "Automatisations réservées au plan Pro",
+      "Suite Artisan identifie les factures à relancer dès le plan Essentiel. Le plan Pro envoie automatiquement les relances de devis et de factures.",
       "pro"
     );
     return;
@@ -739,7 +743,7 @@ async function loadAutomationStatus() {
 }
 
 // ===================== Equipe =====================
-const MEMBRE_ROLE_LABELS = { administrateur: "Administrateur", salarie: "Salarie" };
+const MEMBRE_ROLE_LABELS = { administrateur: "Administrateur", salarie: "Salarié" };
 
 async function loadEquipe() {
   const list = document.getElementById("equipe-list");
@@ -747,8 +751,8 @@ async function loadEquipe() {
   if (!hasPlan("business")) {
     addBtn.hidden = true;
     list.innerHTML = renderUpgradeCard(
-      "Gerez votre equipe",
-      "Affectez vos chantiers et vos taches a vos collaborateurs, avec des roles et permissions.",
+      "Gérez votre équipe",
+      "Affectez vos chantiers et vos tâches à vos collaborateurs, avec des rôles et permissions.",
       "business"
     );
     return;
@@ -758,7 +762,7 @@ async function loadEquipe() {
   try {
     const equipe = await Api.listEquipe();
     if (equipe.length === 0) {
-      list.innerHTML = '<div class="empty-state">Personne dans votre equipe pour le moment. Vous etes seul(e) sur ce compte.</div>';
+      list.innerHTML = '<div class="empty-state">Personne dans votre équipe pour le moment. Vous êtes seul(e) sur ce compte.</div>';
       return;
     }
     list.innerHTML = equipe.map(renderMembreCard).join("");
@@ -773,7 +777,7 @@ function renderMembreCard(m) {
   const estMoi = currentUtilisateur && currentUtilisateur.membre_id === m.id;
   let actions = "";
   if (estAdministrateur()) {
-    actions += `<button type="button" class="btn-sm" data-action="toggle-membre-actif" data-id="${m.id}" data-actif="${m.actif}">${m.actif ? "Desactiver" : "Reactiver"}</button>`;
+    actions += `<button type="button" class="btn-sm" data-action="toggle-membre-actif" data-id="${m.id}" data-actif="${m.actif}">${m.actif ? "Désactiver" : "Réactiver"}</button>`;
     if (!estMoi) {
       actions += `<button type="button" class="btn-sm btn-sm-danger" data-action="delete-membre" data-id="${m.id}">Supprimer</button>`;
     }
@@ -787,7 +791,7 @@ function renderMembreCard(m) {
       </div>
       <span class="badge ${m.role === "administrateur" ? "badge-blue" : "badge-gray"}">${MEMBRE_ROLE_LABELS[m.role] || m.role}</span>
     </div>
-    ${!m.actif ? '<div class="item-meta"><span class="badge badge-gray">Desactive</span></div>' : ""}
+    ${!m.actif ? '<div class="item-meta"><span class="badge badge-gray">Désactivé</span></div>' : ""}
     ${actions ? `<div class="item-actions">${actions}</div>` : ""}
   </div>`;
 }
@@ -801,12 +805,12 @@ function showMembreForm() {
         <div class="form-grid">
           <div><label for="mb-nom">Nom *</label><input type="text" id="mb-nom" required></div>
           <div><label for="mb-email">Email *</label><input type="email" id="mb-email" required></div>
-          <div><label for="mb-password">Mot de passe * (8 caracteres minimum)</label><input type="password" id="mb-password" minlength="8" required></div>
+          <div><label for="mb-password">Mot de passe * (8 caractères minimum)</label><input type="password" id="mb-password" minlength="8" required></div>
           <div>
-            <label for="mb-role">Role</label>
+            <label for="mb-role">Rôle</label>
             <select id="mb-role">
-              <option value="salarie">Salarie (acces normal)</option>
-              <option value="administrateur">Administrateur (peut gerer l'equipe)</option>
+              <option value="salarie">Salarié (accès normal)</option>
+              <option value="administrateur">Administrateur (peut gérer l'équipe)</option>
             </select>
           </div>
         </div>
@@ -831,7 +835,7 @@ function showMembreForm() {
         password: document.getElementById("mb-password").value,
         role: document.getElementById("mb-role").value,
       });
-      showToast("Membre ajoute. Communiquez-lui son email et son mot de passe pour qu'il se connecte.");
+      showToast("Membre ajouté. Communiquez-lui son email et son mot de passe pour qu'il se connecte.");
       container.hidden = true;
       container.innerHTML = "";
       loadEquipe();
@@ -860,14 +864,14 @@ function setupEquipeView() {
       const actif = btn.dataset.actif === "true";
       await withErrorToast(async () => {
         await Api.updateMembre(id, { actif: !actif });
-        showToast(actif ? "Membre desactive." : "Membre reactive.");
+        showToast(actif ? "Membre désactivé." : "Membre réactivé.");
         loadEquipe();
       });
     } else if (btn.dataset.action === "delete-membre") {
-      if (!(await confirmDialog("Supprimer ce membre de l'equipe ?", { danger: true }))) return;
+      if (!(await confirmDialog("Supprimer ce membre de l'équipe ?", { danger: true }))) return;
       await withErrorToast(async () => {
         await Api.deleteMembre(id);
-        showToast("Membre supprime.");
+        showToast("Membre supprimé.");
         loadEquipe();
       });
     }
@@ -875,7 +879,7 @@ function setupEquipeView() {
 }
 
 // ===================== Catalogue de prestations =====================
-const PRESTATION_CATEGORIE_DEFAUT = "Sans categorie";
+const PRESTATION_CATEGORIE_DEFAUT = "Sans catégorie";
 
 async function loadPrestations() {
   const list = document.getElementById("prestations-list");
@@ -886,7 +890,7 @@ async function loadPrestations() {
     if (prestations.length === 0) {
       list.innerHTML = `<div class="empty-state">
         Aucune prestation dans votre catalogue.<br><br>
-        Ajoutez vos prestations types pour les retrouver en tapant leur nom lors de la creation d'un devis.
+        Ajoutez vos prestations types pour les retrouver en tapant leur nom lors de la création d'un devis.
       </div>`;
       return;
     }
@@ -921,13 +925,13 @@ function setupPrestationsView() {
         <form id="prestation-form">
           <div class="form-grid">
             <div><label for="pr-description">Description *</label><input type="text" id="pr-description" required placeholder="Ex: Peinture murale"></div>
-            <div><label for="pr-categorie">Categorie</label><input type="text" id="pr-categorie" placeholder="Ex: Peinture"></div>
-            <div><label for="pr-unite">Unite</label><input type="text" id="pr-unite" value="u" placeholder="u, m2, h, forfait..."></div>
+            <div><label for="pr-categorie">Catégorie</label><input type="text" id="pr-categorie" placeholder="Ex: Peinture"></div>
+            <div><label for="pr-unite">Unité</label><input type="text" id="pr-unite" value="u" placeholder="u, m2, h, forfait..."></div>
             <div><label for="pr-prix">Prix unitaire HT *</label><input type="number" step="0.01" min="0" id="pr-prix" required></div>
             <div>
               <label for="pr-tva">TVA</label>
               <select id="pr-tva">
-                <option value="10">10% (renovation)</option>
+                <option value="10">10% (rénovation)</option>
                 <option value="20">20% (neuf)</option>
               </select>
             </div>
@@ -954,7 +958,7 @@ function setupPrestationsView() {
           prix_unitaire_ht: parseFloat(document.getElementById("pr-prix").value),
           taux_tva: parseFloat(document.getElementById("pr-tva").value),
         });
-        showToast("Prestation ajoutee au catalogue.");
+        showToast("Prestation ajoutée au catalogue.");
         container.hidden = true;
         container.innerHTML = "";
         loadPrestations();
@@ -986,7 +990,7 @@ function setupPrestationsView() {
 }
 
 // ===================== Fournisseurs =====================
-const FOURNISSEUR_CATEGORIE_LABELS = { materiaux: "Materiaux", sous_traitance: "Sous-traitance", outillage: "Outillage", autre: "Autre" };
+const FOURNISSEUR_CATEGORIE_LABELS = { materiaux: "Matériaux", sous_traitance: "Sous-traitance", outillage: "Outillage", autre: "Autre" };
 let fournisseursCache = [];
 async function ensureFournisseursCache() {
   try {
@@ -1014,7 +1018,7 @@ async function loadFournisseurs() {
     const fournisseurs = await Api.listFournisseurs();
     fournisseursCache = fournisseurs;
     if (fournisseurs.length === 0) {
-      list.innerHTML = '<div class="empty-state">Aucun fournisseur pour le moment. Ajoutez vos fournisseurs de materiaux, sous-traitants ou loueurs pour les retrouver lors de la saisie de vos depenses de chantier.</div>';
+      list.innerHTML = '<div class="empty-state">Aucun fournisseur pour le moment. Ajoutez vos fournisseurs de matériaux, sous-traitants ou loueurs pour les retrouver lors de la saisie de vos dépenses de chantier.</div>';
       return;
     }
     list.innerHTML = fournisseurs.map(renderFournisseurCard).join("");
@@ -1030,7 +1034,7 @@ function renderFournisseurCard(f) {
     <div class="item-card-top">
       <div>
         <div class="item-title">${escapeHtml(f.nom)}</div>
-        <div class="item-sub">${contact || "Pas de contact renseigne"}</div>
+        <div class="item-sub">${contact || "Pas de contact renseigné"}</div>
       </div>
       <span class="badge badge-gray">${FOURNISSEUR_CATEGORIE_LABELS[f.categorie] || f.categorie}</span>
     </div>
@@ -1051,11 +1055,11 @@ function setupFournisseursView() {
           <div class="form-grid">
             <div><label for="fo-nom">Nom *</label><input type="text" id="fo-nom" required placeholder="Ex: Point P"></div>
             <div>
-              <label for="fo-categorie">Categorie</label>
+              <label for="fo-categorie">Catégorie</label>
               <select id="fo-categorie">${Object.entries(FOURNISSEUR_CATEGORIE_LABELS).map(([v, l]) => `<option value="${v}" ${v === "autre" ? "selected" : ""}>${l}</option>`).join("")}</select>
             </div>
             <div><label for="fo-contact">Contact</label><input type="text" id="fo-contact"></div>
-            <div><label for="fo-telephone">Telephone</label><input type="tel" id="fo-telephone"></div>
+            <div><label for="fo-telephone">Téléphone</label><input type="tel" id="fo-telephone"></div>
             <div><label for="fo-email">Email</label><input type="email" id="fo-email"></div>
             <div><label for="fo-adresse">Adresse</label><input type="text" id="fo-adresse"></div>
           </div>
@@ -1085,7 +1089,7 @@ function setupFournisseursView() {
           adresse: emptyToNull(document.getElementById("fo-adresse").value),
           notes: emptyToNull(document.getElementById("fo-notes").value),
         });
-        showToast("Fournisseur ajoute.");
+        showToast("Fournisseur ajouté.");
         container.hidden = true;
         container.innerHTML = "";
         loadFournisseurs();
@@ -1122,8 +1126,8 @@ async function loadStatistiques() {
   container.innerHTML = skeletonCards();
   if (!hasPlan("essentiel")) {
     container.innerHTML = renderUpgradeCard(
-      "Statistiques reservees aux abonnes",
-      "Le suivi de la performance commerciale et financiere (CA, taux d'acceptation, impayes, panier moyen) fait partie de l'abonnement mensuel Suite Artisan."
+      "Statistiques réservées aux abonnés",
+      "Le suivi de la performance commerciale et financière (CA, taux d'acceptation, impayés, panier moyen) fait partie de l'abonnement mensuel Suite Artisan."
     );
     return;
   }
@@ -1132,14 +1136,14 @@ async function loadStatistiques() {
     const stats = [
       { label: "CA (12 derniers mois)", value: fmtEuro(a.ca_par_mois.reduce((s, m) => s + m.ca, 0)) },
       { label: "Valeur du pipeline", value: fmtEuro(a.valeur_pipeline) },
-      { label: "Impayes", value: fmtEuro(a.montant_impayes) },
-      { label: "Devis envoyes", value: a.nb_devis_total },
-      { label: "Devis signes", value: a.nb_devis_signes },
+      { label: "Impayés", value: fmtEuro(a.montant_impayes) },
+      { label: "Devis envoyés", value: a.nb_devis_total },
+      { label: "Devis signés", value: a.nb_devis_signes },
       { label: "Taux d'acceptation", value: `${a.taux_acceptation}%` },
       { label: "Panier moyen", value: fmtEuro(a.panier_moyen) },
-      { label: "Delai moyen de paiement", value: a.delai_moyen_paiement_jours !== null ? `${a.delai_moyen_paiement_jours} j` : "-" },
+      { label: "Délai moyen de paiement", value: a.delai_moyen_paiement_jours !== null ? `${a.delai_moyen_paiement_jours} j` : "-" },
       { label: "Clients acquis", value: a.nb_clients_acquis },
-      { label: "Clients recurrents", value: a.nb_clients_recurrents },
+      { label: "Clients récurrents", value: a.nb_clients_recurrents },
     ];
     const statsHtml = stats.map((s) => `<div class="dash-stat"><div class="value">${s.value}</div><div class="label">${escapeHtml(s.label)}</div></div>`).join("");
 
@@ -1178,7 +1182,7 @@ async function loadStatistiques() {
 }
 
 // ===================== Avis clients =====================
-const AVIS_SOURCE_LABELS = { manuel: "Saisi a la main", lien_public: "Envoye par le client" };
+const AVIS_SOURCE_LABELS = { manuel: "Saisi à la main", lien_public: "Envoyé par le client" };
 
 function starsText(note) {
   return "★".repeat(note) + "☆".repeat(5 - note);
@@ -1190,7 +1194,7 @@ function avisResumeHtml(avis) {
   return `
     <div class="dash-grid" style="margin-bottom:20px;">
       <div class="dash-stat"><div class="value">${moyenne.toFixed(1)}/5</div><div class="label">Note moyenne</div></div>
-      <div class="dash-stat"><div class="value">${avis.length}</div><div class="label">Avis recus</div></div>
+      <div class="dash-stat"><div class="value">${avis.length}</div><div class="label">Avis reçus</div></div>
     </div>`;
 }
 
@@ -1224,7 +1228,7 @@ function renderAvisCard(a) {
     ${a.commentaire ? `<div class="item-meta">${escapeHtml(a.commentaire)}</div>` : ""}
     <div class="item-actions">
       <button type="button" class="btn-sm ${a.publie_site ? "btn-sm-primary" : ""}" data-action="toggle-publie-site" data-id="${a.id}" data-publie="${a.publie_site ? "1" : "0"}">
-        ${a.publie_site ? "Publie sur le site ✓" : "Publier sur le site"}
+        ${a.publie_site ? "Publié sur le site ✓" : "Publier sur le site"}
       </button>
       <button type="button" class="btn-sm btn-sm-danger" data-action="delete-avis" data-id="${a.id}">Supprimer</button>
     </div>
@@ -1242,14 +1246,14 @@ function showAvisForm() {
             <label for="av-note">Note</label>
             <select id="av-note">
               <option value="5">5 - Excellent</option>
-              <option value="4">4 - Tres bien</option>
+              <option value="4">4 - Très bien</option>
               <option value="3">3 - Correct</option>
-              <option value="2">2 - Deçu</option>
-              <option value="1">1 - Tres deçu</option>
+              <option value="2">2 - Déçu</option>
+              <option value="1">1 - Très déçu</option>
             </select>
           </div>
           <div><label for="av-client">Client (optionnel)</label><select id="av-client"><option value="">Aucun</option>${clientOptionsHtml()}</select></div>
-          <div><label for="av-nom-auteur">Nom (si pas de client lie)</label><input type="text" id="av-nom-auteur"></div>
+          <div><label for="av-nom-auteur">Nom (si pas de client lié)</label><input type="text" id="av-nom-auteur"></div>
         </div>
         <label for="av-commentaire" style="margin-top:10px;">Commentaire (optionnel)</label>
         <textarea id="av-commentaire" placeholder="Ce que le client a dit..."></textarea>
@@ -1275,7 +1279,7 @@ function showAvisForm() {
         nom_auteur: emptyToNull(document.getElementById("av-nom-auteur").value),
         commentaire: emptyToNull(document.getElementById("av-commentaire").value),
       });
-      showToast("Avis ajoute.");
+      showToast("Avis ajouté.");
       container.hidden = true;
       container.innerHTML = "";
       loadAvis();
@@ -1301,7 +1305,7 @@ function setupAvisView() {
       if (!(await confirmDialog("Supprimer cet avis ?", { danger: true }))) return;
       await withErrorToast(async () => {
         await Api.deleteAvis(parseInt(deleteBtn.dataset.id, 10));
-        showToast("Avis supprime.");
+        showToast("Avis supprimé.");
         loadAvis();
       });
       return;
@@ -1311,7 +1315,7 @@ function setupAvisView() {
       const dejaPublie = publieBtn.dataset.publie === "1";
       await withErrorToast(async () => {
         await Api.updateAvis(parseInt(publieBtn.dataset.id, 10), { publie_site: !dejaPublie });
-        showToast(dejaPublie ? "Avis retire du site." : "Avis publie sur le site.");
+        showToast(dejaPublie ? "Avis retiré du site." : "Avis publié sur le site.");
         loadAvis();
       });
     }
@@ -1320,7 +1324,7 @@ function setupAvisView() {
 
 // ===================== Notifications =====================
 const NOTIFICATION_TYPE_LABELS = {
-  devis_relance: "Devis", facture_relance: "Facture", conformite: "Conformite", message_client: "Message",
+  devis_relance: "Devis", facture_relance: "Facture", conformite: "Conformité", message_client: "Message",
 };
 
 async function loadNotifications() {
@@ -1329,7 +1333,7 @@ async function loadNotifications() {
   try {
     const notifications = await Api.listNotifications();
     if (notifications.length === 0) {
-      list.innerHTML = '<div class="empty-state">Rien a signaler. Tout est a jour.</div>';
+      list.innerHTML = '<div class="empty-state">Rien à signaler. Tout est à jour.</div>';
       return;
     }
     list.innerHTML = notifications.map(renderNotificationCard).join("");
@@ -1374,7 +1378,7 @@ function setupDashboardView() {
       const id = parseInt(relanceDevisBtn.dataset.id, 10);
       await withErrorToast(async () => {
         await Api.relancerDevis(id);
-        showToast("Relance envoyee.");
+        showToast("Relance envoyée.");
         loadDashboard();
       });
       return;
@@ -1384,7 +1388,7 @@ function setupDashboardView() {
       const id = parseInt(relanceFactureBtn.dataset.id, 10);
       await withErrorToast(async () => {
         await Api.relancerFacture(id);
-        showToast("Relance envoyee.");
+        showToast("Relance envoyée.");
         loadDashboard();
       });
     }
@@ -1462,7 +1466,7 @@ async function runSearch(q) {
       return `<div class="search-result-group">${meta.label}</div>${items}`;
     }).join("");
     const combined = quickActionsHtml(actionsMatch) + resultsHtml;
-    resultsBox.innerHTML = combined || '<div class="search-empty">Aucun resultat.</div>';
+    resultsBox.innerHTML = combined || '<div class="search-empty">Aucun résultat.</div>';
   } catch (err) {
     resultsBox.innerHTML = quickActionsHtml(actionsMatch) + `<div class="search-empty">Erreur : ${escapeHtml(err.message)}</div>`;
   }
@@ -1523,7 +1527,7 @@ function setupTabs() {
 
 // ===================== Tableau de bord =====================
 const SITE_STATUT_META = {
-  non_livre: { label: "Pas encore livre", badge: "badge-gray" },
+  non_livre: { label: "Pas encore livré", badge: "badge-gray" },
   en_cours: { label: "En cours de fabrication", badge: "badge-orange" },
   livre: { label: "En ligne", badge: "badge-green" },
 };
@@ -1534,22 +1538,22 @@ function renderPresenceSite(p) {
   if (p.url) {
     rows += `<div class="dash-row"><span>Adresse</span><a href="${escapeHtml(p.url)}" target="_blank" rel="noopener">${escapeHtml(p.url)}</a></div>`;
   }
-  rows += `<div class="dash-row"><span>Demandes recues (30 derniers jours)</span><strong>${p.nb_demandes_30j}</strong></div>`;
-  rows += `<div class="dash-row"><span>Demandes recues (total)</span><strong>${p.nb_demandes_total}</strong></div>`;
+  rows += `<div class="dash-row"><span>Demandes reçues (30 derniers jours)</span><strong>${p.nb_demandes_30j}</strong></div>`;
+  rows += `<div class="dash-row"><span>Demandes reçues (total)</span><strong>${p.nb_demandes_total}</strong></div>`;
   if (p.nb_demandes_total > 0) {
     rows += `<div class="dash-row"><span>Devenues clients</span><strong>${p.nb_clients_gagnes}${p.taux_conversion !== null ? ` (${p.taux_conversion}%)` : ""}</strong></div>`;
-    rows += `<div class="dash-row"><span>CA reellement genere par le site</span><strong>${fmtEuro(p.ca_genere)}</strong></div>`;
+    rows += `<div class="dash-row"><span>CA réellement généré par le site</span><strong>${fmtEuro(p.ca_genere)}</strong></div>`;
   }
   if (p.statut === "non_livre") {
-    rows += `<div class="dash-empty">${escapeHtml(SITE_VITRINE_OFFER.nom)} — ${SITE_VITRINE_OFFER.creation}&nbsp;&euro; HT a la creation + ${SITE_VITRINE_OFFER.mensuel}&nbsp;&euro; HT/mois de gestion &amp; maintenance. C'est nous qui le realisons et le gerons. Cette option est disponible avec tous les plans, y compris Gratuit.</div>`;
+    rows += `<div class="dash-empty">${escapeHtml(SITE_VITRINE_OFFER.nom)} — ${SITE_VITRINE_OFFER.creation}&nbsp;&euro; HT à la création + ${SITE_VITRINE_OFFER.mensuel}&nbsp;&euro; HT/mois de gestion &amp; maintenance. C'est nous qui le réalisons et le gérons. Cette option est disponible avec tous les plans, y compris Gratuit.</div>`;
   }
   return rows;
 }
 
 const URGENCE_META = {
   haute: { label: "Important", icone: "\u{1F534}", classe: "urgence-haute" },
-  moyenne: { label: "A faire", icone: "\u{1F7E0}", classe: "urgence-moyenne" },
-  basse: { label: "Preparation", icone: "\u{1F535}", classe: "urgence-basse" },
+  moyenne: { label: "À faire", icone: "\u{1F7E0}", classe: "urgence-moyenne" },
+  basse: { label: "Préparation", icone: "\u{1F535}", classe: "urgence-basse" },
   info: { label: "Information", icone: "\u{1F7E2}", classe: "urgence-info" },
 };
 
@@ -1569,7 +1573,7 @@ function prioriteRowHtml(item) {
   </div>`;
 }
 
-const RECOMMANDATION_URGENCE_LABELS = { haute: "Important", moyenne: "A surveiller", basse: "Info" };
+const RECOMMANDATION_URGENCE_LABELS = { haute: "Important", moyenne: "À surveiller", basse: "Info" };
 
 function recommandationRowHtml(r) {
   const badgeClasse = r.urgence === "haute" ? "badge-red" : r.urgence === "moyenne" ? "badge-orange" : "badge-blue";
@@ -1587,7 +1591,7 @@ function sousScoreHtml(s) {
   if (s.valeur === null || s.valeur === undefined) {
     return `<div class="sante-sous-score">
       <div class="ligne"><span>${s.label}</span></div>
-      <div class="raison">${escapeHtml(s.raison_absence || "Pas encore assez de donnees.")}</div>
+      <div class="raison">${escapeHtml(s.raison_absence || "Pas encore assez de données.")}</div>
     </div>`;
   }
   const couleur = s.valeur >= 70 ? "var(--success)" : s.valeur >= 40 ? "var(--warning)" : "var(--danger)";
@@ -1604,7 +1608,7 @@ function santeWidgetHtml(sante) {
     <div class="sante-score-global">
       ${sante.score_global !== null && sante.score_global !== undefined
         ? `<div class="chiffre">${sante.score_global}<span class="sur-cent">/100</span></div><div class="libelle">Score global</div>`
-        : `<div class="dash-empty" style="max-width:160px;">${escapeHtml(sante.raison_absence_globale || "Pas assez de donnees.")}</div>`}
+        : `<div class="dash-empty" style="max-width:160px;">${escapeHtml(sante.raison_absence_globale || "Pas assez de données.")}</div>`}
     </div>
     <div class="sante-sous-scores">
       ${sousScores.map(sousScoreHtml).join("")}
@@ -1615,12 +1619,12 @@ function santeWidgetHtml(sante) {
 function activationChecklistHtml(activation) {
   if (!activation || activation.entierement_active) return "";
   const etapes = [
-    { fait: activation.entreprise_configuree, label: "Entreprise (logo, telephone)", view: "entreprise" },
+    { fait: activation.entreprise_configuree, label: "Entreprise (logo, téléphone)", view: "entreprise" },
     { fait: activation.premier_client, label: "Premier client", view: "prospects" },
     { fait: activation.premier_devis, label: "Premier devis", view: "devis" },
-    { fait: activation.premier_devis_envoye, label: "Premier devis envoye", view: "devis" },
+    { fait: activation.premier_devis_envoye, label: "Premier devis envoyé", view: "devis" },
     { fait: activation.premier_chantier, label: "Premier chantier", view: "chantiers" },
-    { fait: activation.premiere_facture, label: "Premiere facture", view: "factures" },
+    { fait: activation.premiere_facture, label: "Première facture", view: "factures" },
   ];
   const nbFaites = etapes.filter((e) => e.fait).length;
   return `
@@ -1688,8 +1692,8 @@ async function loadDashboard() {
       </div>
       ${activationChecklistHtml(activation)}
       <div class="dash-section">
-        <h3>Priorites du jour</h3>
-        ${prioriteItems.length ? prioriteItems.map(prioriteRowHtml).join("") : '<div class="dash-empty">Rien qui necessite votre attention aujourd\'hui.</div>'}
+        <h3>Priorités du jour</h3>
+        ${prioriteItems.length ? prioriteItems.map(prioriteRowHtml).join("") : '<div class="dash-empty">Rien qui nécessite votre attention aujourd\'hui.</div>'}
       </div>
       <div class="dash-section">
         <h3>Recommandations</h3>
@@ -1789,22 +1793,22 @@ function showClientForm() {
       <form id="client-form">
         <div class="form-grid">
           <div><label for="cli-nom">Nom *</label><input type="text" id="cli-nom" required></div>
-          <div><label for="cli-telephone">Telephone</label><input type="tel" id="cli-telephone"></div>
+          <div><label for="cli-telephone">Téléphone</label><input type="tel" id="cli-telephone"></div>
           <div><label for="cli-email">Email</label><input type="email" id="cli-email"></div>
-          <div><label for="cli-societe">Societe</label><input type="text" id="cli-societe"></div>
+          <div><label for="cli-societe">Société</label><input type="text" id="cli-societe"></div>
           <div><label for="cli-adresse">Adresse</label><input type="text" id="cli-adresse"></div>
           <div><label for="cli-ville">Ville</label><input type="text" id="cli-ville"></div>
           <div>
             <label for="cli-source">Source</label>
             <select id="cli-source">${Object.entries(CLIENT_SOURCE_LABELS).map(([v, l]) => `<option value="${v}" ${v === "manuel" ? "selected" : ""}>${l}</option>`).join("")}</select>
           </div>
-          <div><label for="cli-montant-estime">Montant estime (EUR)</label><input type="number" step="0.01" min="0" id="cli-montant-estime"></div>
-          <div><label for="cli-probabilite">Probabilite (%)</label><input type="number" step="1" min="0" max="100" id="cli-probabilite"></div>
+          <div><label for="cli-montant-estime">Montant estimé (EUR)</label><input type="number" step="0.01" min="0" id="cli-montant-estime"></div>
+          <div><label for="cli-probabilite">Probabilité (%)</label><input type="number" step="1" min="0" max="100" id="cli-probabilite"></div>
         </div>
         <label for="cli-prochaine-action" style="margin-top:14px;">Prochaine action</label>
         <input type="text" id="cli-prochaine-action" placeholder="Ex: Rappeler jeudi pour confirmer le RDV">
         <label for="cli-notes" style="margin-top:14px;">Notes</label>
-        <textarea id="cli-notes" placeholder="Contexte, besoin exprime..."></textarea>
+        <textarea id="cli-notes" placeholder="Contexte, besoin exprimé..."></textarea>
         <p class="field-error" id="client-form-error" hidden></p>
         <div class="form-actions">
           <button type="submit" class="btn-sm btn-sm-primary">Ajouter</button>
@@ -1833,7 +1837,7 @@ function showClientForm() {
         prochaine_action: emptyToNull(document.getElementById("cli-prochaine-action").value),
         notes: emptyToNull(document.getElementById("cli-notes").value),
       });
-      showToast("Contact ajoute.");
+      showToast("Contact ajouté.");
       container.hidden = true;
       container.innerHTML = "";
       loadClients();
@@ -1868,13 +1872,13 @@ function messagesPanelHtml(messages) {
         <span class="timeline-icon">${m.expediteur === "client" ? "\u{1F4E9}" : "\u{1F4E4}"}</span>
         <div><div class="timeline-label">${escapeHtml(m.texte)}</div><div class="timeline-date">${fmtDateTime(m.created_at)}</div></div>
       </div>`).join("")
-    : '<div class="empty-state">Aucun message pour le moment. Le client peut vous ecrire depuis son espace client.</div>';
+    : '<div class="empty-state">Aucun message pour le moment. Le client peut vous écrire depuis son espace client.</div>';
   return `
   <div class="dash-section" style="margin-top:24px;">
     <h3>Messages</h3>
     <div id="client-messages-list">${listHtml}</div>
     <form id="client-message-form" style="margin-top:12px;">
-      <textarea id="client-message-texte" placeholder="Repondre au client..." aria-label="Votre reponse au client" required></textarea>
+      <textarea id="client-message-texte" placeholder="Répondre au client..." aria-label="Votre réponse au client" required></textarea>
       <p class="field-error" id="client-message-error" hidden></p>
       <div class="form-actions"><button type="submit" class="btn-sm btn-sm-primary">Envoyer</button></div>
     </form>
@@ -1883,8 +1887,8 @@ function messagesPanelHtml(messages) {
 
 function clientResumeHtml(r) {
   const rows = [
-    { label: "Valeur totale facturee", value: fmtEuro(r.valeur_totale) },
-    { label: "Impayes", value: fmtEuro(r.impayes) },
+    { label: "Valeur totale facturée", value: fmtEuro(r.valeur_totale) },
+    { label: "Impayés", value: fmtEuro(r.impayes) },
     { label: "Chantiers", value: r.nb_chantiers },
     { label: "Dernier contact", value: r.dernier_contact ? fmtDate(r.dernier_contact) : "-" },
     { label: "Dernier devis", value: r.date_dernier_devis ? fmtDate(r.date_dernier_devis) : "-" },
@@ -1951,7 +1955,7 @@ function setupClientsView() {
     const id = parseInt(select.dataset.id, 10);
     await withErrorToast(async () => {
       await Api.updateClient(id, { statut: select.value });
-      showToast("Statut mis a jour.");
+      showToast("Statut mis à jour.");
       loadClients();
     });
   });
@@ -1994,7 +1998,7 @@ function setupClientsView() {
         const url = `${window.location.origin}/avis-public.html?t=${token_avis}`;
         try {
           await navigator.clipboard.writeText(url);
-          showToast("Lien copie. Envoyez-le a votre client par email ou SMS.");
+          showToast("Lien copié. Envoyez-le à votre client par email ou SMS.");
         } catch (err) {
           showToast(url, false);
         }
@@ -2009,7 +2013,7 @@ function setupClientsView() {
         const url = `${window.location.origin}/portail-client.html?t=${token_portail}`;
         try {
           await navigator.clipboard.writeText(url);
-          showToast("Lien copie. Ce lien remplace l'ancien (si un lien avait deja ete envoye, il ne fonctionne plus).");
+          showToast("Lien copié. Ce lien remplace l'ancien (si un lien avait déjà été envoyé, il ne fonctionne plus).");
         } catch (err) {
           showToast(url, false);
         }
@@ -2179,8 +2183,8 @@ function ligneRowHtml(ligne) {
   return `
   <div class="ligne-row">
     <input type="text" class="ligne-description" list="prestations-datalist" placeholder="Description de la prestation (recherchez votre catalogue)" aria-label="Description de la prestation" value="${escapeHtml(l.description || "")}">
-    <input type="number" step="0.01" min="0" class="ligne-quantite" placeholder="Qte" aria-label="Quantite" value="${l.quantite ?? 1}">
-    <input type="text" class="ligne-unite" placeholder="Unite" aria-label="Unite" value="${escapeHtml(l.unite || "forfait")}">
+    <input type="number" step="0.01" min="0" class="ligne-quantite" placeholder="Qte" aria-label="Quantité" value="${l.quantite ?? 1}">
+    <input type="text" class="ligne-unite" placeholder="Unité" aria-label="Unité" value="${escapeHtml(l.unite || "forfait")}">
     <input type="number" step="0.01" min="0" class="ligne-prix" placeholder="PU HT" aria-label="Prix unitaire HT" value="${l.prix_unitaire_ht !== undefined && l.prix_unitaire_ht !== null ? l.prix_unitaire_ht : ""}">
     <button type="button" class="btn-sm btn-sm-danger" data-action="remove-ligne" title="Retirer" aria-label="Retirer cette ligne">&times;</button>
   </div>`;
@@ -2247,18 +2251,18 @@ function showPreparerChantierForm(devisId) {
   const today = new Date().toISOString().slice(0, 10);
   container.innerHTML = `
     <div class="form-box" style="margin-top:12px;">
-      <h3 style="font-size:0.95rem;">Tout preparer</h3>
-      <p class="section-hint">Cree le chantier, l'acompte a facturer et une checklist de preparation.</p>
+      <h3 style="font-size:0.95rem;">Tout préparer</h3>
+      <p class="section-hint">Crée le chantier, l'acompte à facturer et une checklist de préparation.</p>
       <div class="form-grid">
         <div><label for="prep-adresse-${devisId}">Adresse du chantier</label><input type="text" id="prep-adresse-${devisId}"></div>
-        <div><label for="prep-date-${devisId}">Date de debut</label><input type="date" id="prep-date-${devisId}" min="${today}"></div>
+        <div><label for="prep-date-${devisId}">Date de début</label><input type="date" id="prep-date-${devisId}" min="${today}"></div>
         <div><label for="prep-budget-${devisId}">Budget (optionnel, sinon = montant HT du devis)</label><input type="number" step="0.01" min="0" id="prep-budget-${devisId}"></div>
       </div>
-      <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-weight:500;">
-        <input type="checkbox" id="prep-acompte-${devisId}" checked> Creer la facture d'acompte
+      <label class="checkbox-option">
+        <input type="checkbox" id="prep-acompte-${devisId}" checked> Créer la facture d'acompte
       </label>
-      <label style="display:flex;align-items:center;gap:8px;margin-top:6px;font-weight:500;">
-        <input type="checkbox" id="prep-checklist-${devisId}" checked> Creer la checklist de preparation
+      <label class="checkbox-option">
+        <input type="checkbox" id="prep-checklist-${devisId}" checked> Créer la checklist de préparation
       </label>
       <p class="field-error" id="preparer-error-${devisId}" hidden></p>
       <div class="form-actions">
@@ -2271,11 +2275,11 @@ function showPreparerChantierForm(devisId) {
 function renderDevisCard(d) {
   const meta = DEVIS_STATUT_META[d.statut] || { label: d.statut, badge: "badge-gray" };
   const isDue = devisDueIds.has(d.id);
-  const montantTxt = fmtEuro(d.montant_ttc) ? fmtEuro(d.montant_ttc) + " TTC" : "Montant non defini";
+  const montantTxt = fmtEuro(d.montant_ttc) ? fmtEuro(d.montant_ttc) + " TTC" : "Montant non défini";
 
   let actions = "";
   if (d.statut === "nouveau") {
-    actions += `<button type="button" class="btn-sm" data-action="edit-devis" data-id="${d.id}">Editer / chiffrer</button>`;
+    actions += `<button type="button" class="btn-sm" data-action="edit-devis" data-id="${d.id}">Éditer / chiffrer</button>`;
     if (d.montant_ht !== null) {
       actions += `<button type="button" class="btn-sm btn-sm-primary" data-action="envoyer-devis" data-id="${d.id}">Envoyer le devis</button>`;
     }
@@ -2283,15 +2287,15 @@ function renderDevisCard(d) {
     actions += `<button type="button" class="btn-sm btn-sm-primary" data-action="relancer-devis" data-id="${d.id}">Relancer maintenant</button>`;
   }
   if (["envoye", "relance_j3", "relance_j7", "relance_j15"].includes(d.statut)) {
-    actions += `<button type="button" class="btn-sm" data-action="marquer-devis" data-id="${d.id}" data-statut="signe">Marquer signe</button>`;
+    actions += `<button type="button" class="btn-sm" data-action="marquer-devis" data-id="${d.id}" data-statut="signe">Marquer signé</button>`;
     actions += `<button type="button" class="btn-sm" data-action="marquer-devis" data-id="${d.id}" data-statut="perdu">Marquer perdu</button>`;
   }
   if (d.statut === "signe") {
-    actions += `<button type="button" class="btn-sm btn-sm-primary" data-action="preparer-chantier" data-id="${d.id}">Tout preparer</button>`;
+    actions += `<button type="button" class="btn-sm btn-sm-primary" data-action="preparer-chantier" data-id="${d.id}">Tout préparer</button>`;
     actions += `<button type="button" class="btn-sm" data-action="facturer-devis" data-id="${d.id}">Convertir en facture</button>`;
   }
   if (d.lignes && d.lignes.length > 0) {
-    actions += `<button type="button" class="btn-sm" data-action="pdf-devis" data-id="${d.id}">Telecharger le PDF</button>`;
+    actions += `<button type="button" class="btn-sm" data-action="pdf-devis" data-id="${d.id}">Télécharger le PDF</button>`;
   }
   if (d.token && d.statut !== "nouveau") {
     actions += `<button type="button" class="btn-sm" data-action="copier-lien-devis" data-token="${escapeHtml(d.token)}">Copier le lien client</button>`;
@@ -2350,7 +2354,7 @@ async function showDevisForm(devis, preselectClientId) {
               <div id="df-client-nouveau" ${demarrerEnNouveauClient ? "" : "hidden"}>
                 <input type="text" id="df-nouveau-client-nom" placeholder="Nom du client *" ${demarrerEnNouveauClient ? "required" : ""}>
                 <input type="email" id="df-nouveau-client-email" placeholder="Email (optionnel)" style="margin-top:6px;">
-                <input type="tel" id="df-nouveau-client-telephone" placeholder="Telephone (optionnel)" style="margin-top:6px;">
+                <input type="tel" id="df-nouveau-client-telephone" placeholder="Téléphone (optionnel)" style="margin-top:6px;">
                 ${clientsCache.length > 0 ? `<button type="button" class="btn-sm" data-action="toggle-nouveau-client-devis" style="margin-top:6px;">Choisir un client existant</button>` : ""}
               </div>
               `
@@ -2358,17 +2362,17 @@ async function showDevisForm(devis, preselectClientId) {
           </div>
           <div>
             <label for="df-titre">Titre</label>
-            <input type="text" id="df-titre" placeholder="Ex: Renovation salle de bain" value="${isEdit ? escapeHtml(devis.titre || "") : ""}">
+            <input type="text" id="df-titre" placeholder="Ex: Rénovation salle de bain" value="${isEdit ? escapeHtml(devis.titre || "") : ""}">
           </div>
           <div>
             <label for="df-taux-tva">TVA</label>
             <select id="df-taux-tva">
-              <option value="10" ${!isEdit || devis.taux_tva === 10 ? "selected" : ""}>10% (renovation)</option>
+              <option value="10" ${!isEdit || devis.taux_tva === 10 ? "selected" : ""}>10% (rénovation)</option>
               <option value="20" ${isEdit && devis.taux_tva === 20 ? "selected" : ""}>20% (neuf)</option>
             </select>
           </div>
           <div>
-            <label for="df-acompte">Acompte a la signature (%)</label>
+            <label for="df-acompte">Acompte à la signature (%)</label>
             <input type="number" step="1" min="0" max="100" id="df-acompte" value="${isEdit ? devis.acompte_pourcentage : 30}">
           </div>
           <div>
@@ -2381,7 +2385,7 @@ async function showDevisForm(devis, preselectClientId) {
         <textarea id="df-description">${isEdit ? escapeHtml(devis.description || "") : ""}</textarea>
         <p class="field-error" id="devis-form-error" hidden></p>
         <div class="form-actions">
-          <button type="submit" class="btn-sm btn-sm-primary">${isEdit ? "Enregistrer" : "Creer le devis"}</button>
+          <button type="submit" class="btn-sm btn-sm-primary">${isEdit ? "Enregistrer" : "Créer le devis"}</button>
           <button type="button" class="btn-sm" data-action="cancel-devis-form">Annuler</button>
         </div>
       </form>
@@ -2443,10 +2447,10 @@ async function showDevisForm(devis, preselectClientId) {
     try {
       if (isEdit) {
         await Api.updateDevis(devis.id, payload);
-        showToast("Devis mis a jour.");
+        showToast("Devis mis à jour.");
       } else {
         await Api.createDevis(payload);
-        showToast("Devis cree.");
+        showToast("Devis créé.");
       }
       container.hidden = true;
       container.innerHTML = "";
@@ -2479,7 +2483,7 @@ function setupDevisView() {
     } else if (btn.dataset.action === "envoyer-devis") {
       await withErrorToast(async () => {
         await Api.envoyerDevis(id);
-        showToast("Devis envoye. Copiez le lien client pour le transmettre (email, SMS...).");
+        showToast("Devis envoyé. Copiez le lien client pour le transmettre (email, SMS...).");
         loadDevis();
         refreshBadges();
       });
@@ -2493,7 +2497,7 @@ function setupDevisView() {
     } else if (btn.dataset.action === "marquer-devis") {
       await withErrorToast(async () => {
         await Api.updateDevis(id, { statut: btn.dataset.statut });
-        showToast("Statut mis a jour.");
+        showToast("Statut mis à jour.");
         loadDevis();
         refreshBadges();
       });
@@ -2508,7 +2512,7 @@ function setupDevisView() {
     } else if (btn.dataset.action === "facturer-devis") {
       await withErrorToast(async () => {
         await Api.factureDepuisDevis(id, "standard");
-        showToast("Facture creee a partir du devis.");
+        showToast("Facture créée à partir du devis.");
         switchView("factures");
       });
     } else if (btn.dataset.action === "preparer-chantier") {
@@ -2542,7 +2546,7 @@ function setupDevisView() {
       const url = `${window.location.origin}/devis-public.html?t=${btn.dataset.token}`;
       try {
         await navigator.clipboard.writeText(url);
-        showToast("Lien copie. Envoyez-le a votre client par email ou SMS.");
+        showToast("Lien copié. Envoyez-le à votre client par email ou SMS.");
       } catch (err) {
         showToast(url, false);
       }
@@ -2598,7 +2602,7 @@ async function loadFactures() {
     if (formContainer) { formContainer.hidden = true; formContainer.innerHTML = ""; }
     tresorerie.innerHTML = "";
     list.innerHTML = renderUpgradeCard(
-      "Facturation reservee aux abonnes",
+      "Facturation réservée aux abonnés",
       "Les factures, acomptes et suivi des paiements font partie de l'abonnement mensuel Suite Artisan."
     );
     return;
@@ -2621,7 +2625,7 @@ async function loadFactures() {
     }
 
     if (affichees.length === 0) {
-      list.innerHTML = '<div class="empty-state">Aucune facture pour le moment. Convertissez un devis signe, ou creez-en une directement.</div>';
+      list.innerHTML = '<div class="empty-state">Aucune facture pour le moment. Convertissez un devis signé, ou créez-en une directement.</div>';
       return;
     }
     list.innerHTML = affichees.map(renderFactureCard).join("");
@@ -2638,7 +2642,7 @@ function renderFactureCard(f) {
   const retard = joursRetard(f.date_echeance);
   let actions = "";
   if (f.statut === "brouillon") {
-    actions += `<button type="button" class="btn-sm btn-sm-primary" data-action="envoyer-facture" data-id="${f.id}">Marquer envoyee</button>`;
+    actions += `<button type="button" class="btn-sm btn-sm-primary" data-action="envoyer-facture" data-id="${f.id}">Marquer envoyée</button>`;
   }
   if (f.montant_restant > 0 && f.statut !== "brouillon" && f.statut !== "annulee") {
     actions += `<button type="button" class="btn-sm btn-sm-primary" data-action="ajouter-paiement" data-id="${f.id}">+ Enregistrer un paiement</button>`;
@@ -2649,7 +2653,7 @@ function renderFactureCard(f) {
   if (f.token && f.statut !== "brouillon") {
     actions += `<button type="button" class="btn-sm" data-action="copier-lien-facture" data-token="${escapeHtml(f.token)}">Copier le lien client</button>`;
   }
-  actions += `<button type="button" class="btn-sm" data-action="pdf-facture" data-id="${f.id}">Telecharger le PDF</button>`;
+  actions += `<button type="button" class="btn-sm" data-action="pdf-facture" data-id="${f.id}">Télécharger le PDF</button>`;
   actions += `<button type="button" class="btn-sm btn-sm-danger" data-action="delete-facture" data-id="${f.id}">Archiver</button>`;
 
   const paiementsHtml = (f.paiements || [])
@@ -2657,7 +2661,7 @@ function renderFactureCard(f) {
     .join("");
 
   const relanceTxt = f.nb_relances > 0
-    ? `<div class="item-sub">${f.nb_relances} relance${f.nb_relances > 1 ? "s" : ""}${f.date_derniere_relance ? " · derniere le " + fmtDate(f.date_derniere_relance) : ""}</div>`
+    ? `<div class="item-sub">${f.nb_relances} relance${f.nb_relances > 1 ? "s" : ""}${f.date_derniere_relance ? " · dernière le " + fmtDate(f.date_derniere_relance) : ""}</div>`
     : "";
 
   return `
@@ -2670,8 +2674,8 @@ function renderFactureCard(f) {
       <span class="badge ${meta.badge}">${meta.label}</span>
     </div>
     <div class="item-meta">
-      ${fmtEuro(f.montant_ttc)} TTC · Paye : ${fmtEuro(f.montant_paye)} · Restant : ${fmtEuro(f.montant_restant)}
-      ${f.date_echeance ? " · Echeance : " + fmtDate(f.date_echeance) : ""}
+      ${fmtEuro(f.montant_ttc)} TTC · Payé : ${fmtEuro(f.montant_paye)} · Restant : ${fmtEuro(f.montant_restant)}
+      ${f.date_echeance ? " · Échéance : " + fmtDate(f.date_echeance) : ""}
       ${retard !== null ? ` · <span style="color:var(--danger);">${retard} j de retard</span>` : ""}
     </div>
     ${paiementsHtml ? `<div class="item-meta">${paiementsHtml}</div>` : ""}
@@ -2694,13 +2698,13 @@ function showPaiementForm(factureId) {
           <label for="pay-moyen-${factureId}">Moyen</label>
           <select id="pay-moyen-${factureId}">
             <option value="virement">Virement</option>
-            <option value="cheque">Cheque</option>
-            <option value="especes">Especes</option>
+            <option value="cheque">Chèque</option>
+            <option value="especes">Espèces</option>
             <option value="cb">Carte bancaire</option>
             <option value="autre">Autre</option>
           </select>
         </div>
-        <div><label for="pay-reference-${factureId}">Reference (optionnel)</label><input type="text" id="pay-reference-${factureId}" placeholder="N° cheque, ref virement..."></div>
+        <div><label for="pay-reference-${factureId}">Référence (optionnel)</label><input type="text" id="pay-reference-${factureId}" placeholder="N° chèque, réf. virement..."></div>
       </div>
       <p class="field-error" id="paiement-error-${factureId}" hidden></p>
       <div class="form-actions">
@@ -2738,14 +2742,14 @@ function showFactureForm() {
             </div>
             <div>
               <label for="fa-tva">TVA</label>
-              <select id="fa-tva"><option value="10">10% (renovation)</option><option value="20">20% (neuf)</option></select>
+              <select id="fa-tva"><option value="10">10% (rénovation)</option><option value="20">20% (neuf)</option></select>
             </div>
-            <div><label for="fa-echeance">Date d'echeance</label><input type="date" id="fa-echeance"></div>
+            <div><label for="fa-echeance">Date d'échéance</label><input type="date" id="fa-echeance"></div>
           </div>
           ${lignesEditorHtml("fa-lignes", null)}
           <p class="field-error" id="facture-form-error" hidden></p>
           <div class="form-actions">
-            <button type="submit" class="btn-sm btn-sm-primary">Creer</button>
+            <button type="submit" class="btn-sm btn-sm-primary">Créer</button>
             <button type="button" class="btn-sm" data-action="cancel-facture-form">Annuler</button>
           </div>
         </form>
@@ -2768,7 +2772,7 @@ function showFactureForm() {
           date_echeance: emptyToNull(document.getElementById("fa-echeance").value),
           lignes: lireLignes("fa-lignes"),
         });
-        showToast("Facture creee.");
+        showToast("Facture créée.");
         container.hidden = true;
         container.innerHTML = "";
         loadFactures();
@@ -2807,7 +2811,7 @@ function setupFacturesView() {
     if (btn.dataset.action === "envoyer-facture") {
       await withErrorToast(async () => {
         await Api.updateFacture(id, { statut: "envoyee" });
-        showToast("Facture marquee envoyee.");
+        showToast("Facture marquée envoyée.");
         loadFactures();
       });
     } else if (btn.dataset.action === "ajouter-paiement") {
@@ -2847,7 +2851,7 @@ function setupFacturesView() {
       const url = `${window.location.origin}/facture-public.html?t=${btn.dataset.token}`;
       try {
         await navigator.clipboard.writeText(url);
-        showToast("Lien copie. Envoyez-le a votre client par email ou SMS.");
+        showToast("Lien copié. Envoyez-le à votre client par email ou SMS.");
       } catch (err) {
         showToast(url, false);
       }
@@ -2860,14 +2864,14 @@ const CONTRAT_FREQUENCE_LABELS = { mensuel: "Mensuelle", trimestriel: "Trimestri
 const CONTRAT_STATUT_META = {
   actif: { label: "Actif", badge: "badge-green" },
   suspendu: { label: "Suspendu", badge: "badge-orange" },
-  resilie: { label: "Resilie", badge: "badge-gray" },
+  resilie: { label: "Résilié", badge: "badge-gray" },
 };
 
 async function loadContrats() {
   const list = document.getElementById("contrats-list");
   if (!hasPlan("pro")) {
     list.innerHTML = renderUpgradeCard(
-      "Contrats recurrents reserves au plan Pro",
+      "Contrats récurrents réservés au plan Pro",
       "La facturation automatique des contrats d'entretien/maintenance fait partie du plan Pro.",
       "pro"
     );
@@ -2877,7 +2881,7 @@ async function loadContrats() {
   try {
     const contrats = await Api.listContrats();
     if (contrats.length === 0) {
-      list.innerHTML = '<div class="empty-state">Aucun contrat recurrent. Un contrat d\'entretien ou de maintenance genere et envoie automatiquement sa facture a chaque echeance.</div>';
+      list.innerHTML = '<div class="empty-state">Aucun contrat récurrent. Un contrat d\'entretien ou de maintenance génère et envoie automatiquement sa facture à chaque échéance.</div>';
       return;
     }
     list.innerHTML = contrats.map(renderContratCard).join("");
@@ -2898,15 +2902,15 @@ function renderContratCard(c) {
       <span class="badge ${meta.badge}">${meta.label}</span>
     </div>
     <div class="item-meta">
-      Prochaine echeance : ${fmtDate(c.prochaine_echeance)}
-      ${c.derniere_generation ? ` · Derniere facture generee le ${fmtDate(c.derniere_generation)}` : ""}
-      · ${c.nb_factures_generees} facture${c.nb_factures_generees > 1 ? "s" : ""} generee${c.nb_factures_generees > 1 ? "s" : ""}
+      Prochaine échéance : ${fmtDate(c.prochaine_echeance)}
+      ${c.derniere_generation ? ` · Dernière facture générée le ${fmtDate(c.derniere_generation)}` : ""}
+      · ${c.nb_factures_generees} facture${c.nb_factures_generees > 1 ? "s" : ""} générée${c.nb_factures_generees > 1 ? "s" : ""}
     </div>
     <div class="item-actions">
-      ${c.statut === "actif" ? `<button type="button" class="btn-sm" data-action="generer-contrat" data-id="${c.id}">Generer maintenant</button>` : ""}
+      ${c.statut === "actif" ? `<button type="button" class="btn-sm" data-action="generer-contrat" data-id="${c.id}">Générer maintenant</button>` : ""}
       ${c.statut === "actif" ? `<button type="button" class="btn-sm" data-action="suspendre-contrat" data-id="${c.id}">Suspendre</button>` : ""}
-      ${c.statut === "suspendu" ? `<button type="button" class="btn-sm btn-sm-primary" data-action="reactiver-contrat" data-id="${c.id}">Reactiver</button>` : ""}
-      ${c.statut !== "resilie" ? `<button type="button" class="btn-sm btn-sm-danger" data-action="resilier-contrat" data-id="${c.id}">Resilier</button>` : ""}
+      ${c.statut === "suspendu" ? `<button type="button" class="btn-sm btn-sm-primary" data-action="reactiver-contrat" data-id="${c.id}">Réactiver</button>` : ""}
+      ${c.statut !== "resilie" ? `<button type="button" class="btn-sm btn-sm-danger" data-action="resilier-contrat" data-id="${c.id}">Résilier</button>` : ""}
     </div>
   </div>`;
 }
@@ -2924,25 +2928,25 @@ function setupContratsView() {
     const today = new Date().toISOString().slice(0, 10);
     container.innerHTML = `
       <div class="form-box">
-        <h3>Nouveau contrat recurrent</h3>
+        <h3>Nouveau contrat récurrent</h3>
         <form id="contrat-form">
           <div class="form-grid">
-            <div><label for="ct-titre">Titre *</label><input type="text" id="ct-titre" required placeholder="Ex: Contrat d'entretien chaudiere"></div>
+            <div><label for="ct-titre">Titre *</label><input type="text" id="ct-titre" required placeholder="Ex: Contrat d'entretien chaudière"></div>
             <div><label for="ct-client">Client *</label><select id="ct-client" required><option value="">Choisir...</option>${clientOptionsHtml()}</select></div>
-            <div><label for="ct-montant">Montant HT par echeance *</label><input type="number" step="0.01" min="0.01" id="ct-montant" required></div>
+            <div><label for="ct-montant">Montant HT par échéance *</label><input type="number" step="0.01" min="0.01" id="ct-montant" required></div>
             <div>
               <label for="ct-tva">TVA</label>
-              <select id="ct-tva"><option value="10">10% (renovation)</option><option value="20">20% (neuf)</option></select>
+              <select id="ct-tva"><option value="10">10% (rénovation)</option><option value="20">20% (neuf)</option></select>
             </div>
             <div>
-              <label for="ct-frequence">Frequence</label>
+              <label for="ct-frequence">Fréquence</label>
               <select id="ct-frequence">${Object.entries(CONTRAT_FREQUENCE_LABELS).map(([v, l]) => `<option value="${v}" ${v === "mensuel" ? "selected" : ""}>${l}</option>`).join("")}</select>
             </div>
-            <div><label for="ct-echeance">Premiere echeance *</label><input type="date" id="ct-echeance" required value="${today}"></div>
+            <div><label for="ct-echeance">Première échéance *</label><input type="date" id="ct-echeance" required value="${today}"></div>
           </div>
           <p class="field-error" id="contrat-form-error" hidden></p>
           <div class="form-actions">
-            <button type="submit" class="btn-sm btn-sm-primary">Creer</button>
+            <button type="submit" class="btn-sm btn-sm-primary">Créer</button>
             <button type="button" class="btn-sm" data-action="cancel-contrat-form">Annuler</button>
           </div>
         </form>
@@ -2963,7 +2967,7 @@ function setupContratsView() {
           frequence: document.getElementById("ct-frequence").value,
           prochaine_echeance: document.getElementById("ct-echeance").value,
         });
-        showToast("Contrat cree. La facture sera generee et envoyee automatiquement a l'echeance.");
+        showToast("Contrat créé. La facture sera générée et envoyée automatiquement à l'échéance.");
         container.hidden = true;
         container.innerHTML = "";
         loadContrats();
@@ -2990,26 +2994,26 @@ function setupContratsView() {
     if (btn.dataset.action === "generer-contrat") {
       await withErrorToast(async () => {
         await Api.genererContrat(id);
-        showToast("Facture generee et envoyee.");
+        showToast("Facture générée et envoyée.");
         loadContrats();
       });
     } else if (btn.dataset.action === "suspendre-contrat") {
       await withErrorToast(async () => {
         await Api.updateContrat(id, { statut: "suspendu" });
-        showToast("Contrat suspendu : plus aucune facture ne sera generee tant qu'il n'est pas reactive.");
+        showToast("Contrat suspendu : plus aucune facture ne sera générée tant qu'il n'est pas réactivé.");
         loadContrats();
       });
     } else if (btn.dataset.action === "reactiver-contrat") {
       await withErrorToast(async () => {
         await Api.updateContrat(id, { statut: "actif" });
-        showToast("Contrat reactive.");
+        showToast("Contrat réactivé.");
         loadContrats();
       });
     } else if (btn.dataset.action === "resilier-contrat") {
-      if (!(await confirmDialog("Resilier ce contrat ? Plus aucune facture ne sera generee.", { danger: true }))) return;
+      if (!(await confirmDialog("Résilier ce contrat ? Plus aucune facture ne sera générée.", { danger: true }))) return;
       await withErrorToast(async () => {
         await Api.updateContrat(id, { statut: "resilie" });
-        showToast("Contrat resilie.");
+        showToast("Contrat résilié.");
         loadContrats();
       });
     }
@@ -3027,8 +3031,8 @@ async function loadChantiers() {
     formContainer.hidden = true;
     formContainer.innerHTML = "";
     list.innerHTML = renderUpgradeCard(
-      "Chantiers reserve aux abonnes",
-      "Le suivi de chantier (photos et notes avant/pendant/apres) fait partie de l'abonnement mensuel Suite Artisan."
+      "Chantiers réservés aux abonnés",
+      "Le suivi de chantier (photos et notes avant/pendant/après) fait partie de l'abonnement mensuel Suite Artisan."
     );
     return;
   }
@@ -3058,10 +3062,10 @@ function rentabiliteHtml(c) {
     : fmtEuro(c.total_depenses);
   return `
     <div class="dash-grid" style="margin:12px 0;">
-      <div class="dash-stat"><div class="value">${depensesLabel}</div><div class="label">Depenses</div></div>
-      <div class="dash-stat"><div class="value">${c.montant_facture !== null ? fmtEuro(c.montant_facture) : "-"}</div><div class="label">Facture</div></div>
-      <div class="dash-stat"><div class="value">${c.montant_encaisse !== null ? fmtEuro(c.montant_encaisse) : "-"}</div><div class="label">Encaisse</div></div>
-      <div class="dash-stat"><div class="value">${margeTxt}</div><div class="label">Marge reelle</div></div>
+      <div class="dash-stat"><div class="value">${depensesLabel}</div><div class="label">Dépenses</div></div>
+      <div class="dash-stat"><div class="value">${c.montant_facture !== null ? fmtEuro(c.montant_facture) : "-"}</div><div class="label">Facturé</div></div>
+      <div class="dash-stat"><div class="value">${c.montant_encaisse !== null ? fmtEuro(c.montant_encaisse) : "-"}</div><div class="label">Encaissé</div></div>
+      <div class="dash-stat"><div class="value">${margeTxt}</div><div class="label">Marge réelle</div></div>
     </div>`;
 }
 
@@ -3079,7 +3083,7 @@ function heuresHtml(c) {
     .map((h) => `
       <div class="item-sub" style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
         <span>${fmtDate(h.date_travail)} · ${escapeHtml(h.nom_intervenant)} · ${parseFloat(h.duree_heures).toFixed(2).replace(/\.00$/, "")}h${h.cout !== null ? " · " + fmtEuro(h.cout) : ""}${h.note ? " · " + escapeHtml(h.note) : ""}</span>
-        <button type="button" class="btn-sm btn-sm-danger" style="padding:2px 8px;flex-shrink:0;" data-action="delete-heure" data-id="${c.id}" data-heure-id="${h.id}" title="Supprimer" aria-label="Supprimer cette entree d'heures">&times;</button>
+        <button type="button" class="btn-sm btn-sm-danger" style="padding:2px 8px;flex-shrink:0;" data-action="delete-heure" data-id="${c.id}" data-heure-id="${h.id}" title="Supprimer" aria-label="Supprimer cette entrée d'heures">&times;</button>
       </div>`)
     .join("");
   return `<div class="dash-section" style="margin:12px 0;">
@@ -3100,17 +3104,17 @@ function showHeuresForm(chantierId) {
         <div>
           <label for="heure-membre-${chantierId}">Intervenant</label>
           <select id="heure-membre-${chantierId}">
-            <option value="">Autre / vous-meme...</option>
+            <option value="">Autre / vous-même...</option>
             ${membreOptions}
           </select>
         </div>
         <div id="heure-nom-libre-wrap-${chantierId}">
           <label for="heure-nom-${chantierId}">Nom (si "Autre")</label>
-          <input type="text" id="heure-nom-${chantierId}" placeholder="Ex: Vous-meme, sous-traitant...">
+          <input type="text" id="heure-nom-${chantierId}" placeholder="Ex: Vous-même, sous-traitant...">
         </div>
-        <div><label for="heure-duree-${chantierId}">Duree (heures) *</label><input type="number" step="0.25" min="0.25" id="heure-duree-${chantierId}" placeholder="Ex: 6.5"></div>
+        <div><label for="heure-duree-${chantierId}">Durée (heures) *</label><input type="number" step="0.25" min="0.25" id="heure-duree-${chantierId}" placeholder="Ex: 6.5"></div>
         <div><label for="heure-date-${chantierId}">Date</label><input type="date" id="heure-date-${chantierId}" value="${today}"></div>
-        <div><label for="heure-taux-${chantierId}">Cout horaire charge (optionnel)</label><input type="number" step="0.01" min="0" id="heure-taux-${chantierId}" placeholder="Ex: 35"></div>
+        <div><label for="heure-taux-${chantierId}">Coût horaire chargé (optionnel)</label><input type="number" step="0.01" min="0" id="heure-taux-${chantierId}" placeholder="Ex: 35"></div>
         <div><label for="heure-note-${chantierId}">Note (optionnel)</label><input type="text" id="heure-note-${chantierId}" placeholder="Ex: pose carrelage"></div>
       </div>
       <p class="field-error" id="heures-error-${chantierId}" hidden></p>
@@ -3153,14 +3157,14 @@ function checklistHtml(c) {
       <span style="${checked ? "text-decoration:line-through;color:var(--text-muted);" : ""}">${escapeHtml(t.titre)}</span>
     </label>`;
   }).join("");
-  return `<div class="dash-section" style="margin:12px 0;"><h3 style="font-size:0.88rem;">Preparation et taches</h3>${items}</div>`;
+  return `<div class="dash-section" style="margin:12px 0;"><h3 style="font-size:0.88rem;">Préparation et tâches</h3>${items}</div>`;
 }
 
 function receptionHtml(c) {
   if (!c.date_reception) return "";
   return `<div class="item-meta" style="margin:10px 0;">
-    <strong>Reception :</strong> ${fmtDate(c.date_reception)}
-    <div class="item-sub">${c.reserves ? "Reserves : " + escapeHtml(c.reserves) : "Aucune reserve constatee."}</div>
+    <strong>Réception :</strong> ${fmtDate(c.date_reception)}
+    <div class="item-sub">${c.reserves ? "Réserves : " + escapeHtml(c.reserves) : "Aucune réserve constatée."}</div>
   </div>`;
 }
 
@@ -3170,15 +3174,15 @@ function showReceptionForm(chantierId, c) {
   const today = new Date().toISOString().slice(0, 10);
   container.innerHTML = `
     <div class="form-box" style="margin-top:12px;">
-      <h3 style="font-size:0.95rem;">Reception du chantier</h3>
+      <h3 style="font-size:0.95rem;">Réception du chantier</h3>
       <div class="form-grid">
-        <div><label for="recep-date-${chantierId}">Date de reception</label><input type="date" id="recep-date-${chantierId}" value="${c && c.date_reception ? c.date_reception : today}"></div>
+        <div><label for="recep-date-${chantierId}">Date de réception</label><input type="date" id="recep-date-${chantierId}" value="${c && c.date_reception ? c.date_reception : today}"></div>
       </div>
-      <label for="recep-reserves-${chantierId}" style="margin-top:10px;">Reserves constatees (optionnel)</label>
-      <textarea id="recep-reserves-${chantierId}" placeholder="Ex: finition plinthes a reprendre dans la cuisine">${c && c.reserves ? escapeHtml(c.reserves) : ""}</textarea>
+      <label for="recep-reserves-${chantierId}" style="margin-top:10px;">Réserves constatées (optionnel)</label>
+      <textarea id="recep-reserves-${chantierId}" placeholder="Ex: finition plinthes à reprendre dans la cuisine">${c && c.reserves ? escapeHtml(c.reserves) : ""}</textarea>
       <p class="field-error" id="reception-error-${chantierId}" hidden></p>
       <div class="form-actions">
-        <button type="button" class="btn-sm btn-sm-primary" data-action="submit-reception" data-id="${chantierId}">Enregistrer la reception</button>
+        <button type="button" class="btn-sm btn-sm-primary" data-action="submit-reception" data-id="${chantierId}">Enregistrer la réception</button>
         <button type="button" class="btn-sm" data-action="cancel-reception-form" data-id="${chantierId}">Annuler</button>
       </div>
     </div>`;
@@ -3189,16 +3193,16 @@ function showCloturerForm(chantierId) {
   if (!container) return;
   container.innerHTML = `
     <div class="form-box" style="margin-top:12px;">
-      <h3 style="font-size:0.95rem;">Cloturer le chantier</h3>
+      <h3 style="font-size:0.95rem;">Clôturer le chantier</h3>
       <label style="display:flex;align-items:center;gap:8px;margin-top:6px;font-weight:500;">
-        <input type="checkbox" id="clot-facture-${chantierId}" checked> Generer et envoyer la facture finale (solde reellement du)
+        <input type="checkbox" id="clot-facture-${chantierId}" checked> Générer et envoyer la facture finale (solde réellement dû)
       </label>
       <label style="display:flex;align-items:center;gap:8px;margin-top:6px;font-weight:500;">
         <input type="checkbox" id="clot-avis-${chantierId}" checked> Demander un avis au client
       </label>
       <p class="field-error" id="cloturer-error-${chantierId}" hidden></p>
       <div class="form-actions">
-        <button type="button" class="btn-sm btn-sm-primary" data-action="confirmer-cloturer" data-id="${chantierId}">Cloturer et lancer les actions</button>
+        <button type="button" class="btn-sm btn-sm-primary" data-action="confirmer-cloturer" data-id="${chantierId}">Clôturer et lancer les actions</button>
         <button type="button" class="btn-sm" data-action="cancel-cloturer-form" data-id="${chantierId}">Annuler</button>
       </div>
     </div>`;
@@ -3234,12 +3238,12 @@ function renderChantierCard(c) {
       </div>
       <span class="badge ${(CHANTIER_STATUT_META[c.statut] || {}).badge || "badge-gray"}">${(CHANTIER_STATUT_META[c.statut] || {}).label || c.statut}</span>
     </div>
-    ${c.statut === "termine" ? `<div class="moment-banner"><span class="moment-icon">✅</span><span>Chantier termine ! Cloturez-le pour generer la facture finale, demander un avis client et archiver le dossier.</span></div>` : ""}
+    ${c.statut === "termine" ? `<div class="moment-banner"><span class="moment-icon">✅</span><span>Chantier terminé ! Clôturez-le pour générer la facture finale, demander un avis client et archiver le dossier.</span></div>` : ""}
     ${aujourdhuiChantierHtml(c)}
     <div class="item-meta">
-      Debut : ${fmtDate(c.date_debut)}
+      Début : ${fmtDate(c.date_debut)}
       ${c.budget !== null ? ` · Budget : ${fmtEuro(c.budget)}` : ""}
-      ${c.marge_estimee !== null ? ` · Marge estimee : ${fmtEuro(c.marge_estimee)}` : ""}
+      ${c.marge_estimee !== null ? ` · Marge estimée : ${fmtEuro(c.marge_estimee)}` : ""}
     </div>
     ${progressionHtml(c)}
     ${checklistHtml(c)}
@@ -3250,14 +3254,14 @@ function renderChantierCard(c) {
     ${receptionHtml(c)}
     <div class="item-actions">
       <button type="button" class="btn-sm btn-sm-primary" data-action="toggle-note-form" data-id="${c.id}">+ Ajouter une note</button>
-      <button type="button" class="btn-sm" data-action="toggle-depense-form" data-id="${c.id}">+ Ajouter une depense</button>
+      <button type="button" class="btn-sm" data-action="toggle-depense-form" data-id="${c.id}">+ Ajouter une dépense</button>
       <button type="button" class="btn-sm" data-action="toggle-heures-form" data-id="${c.id}">+ Ajouter des heures</button>
       <button type="button" class="btn-sm" data-action="chantier-document" data-id="${c.id}">+ Ajouter un document</button>
       <button type="button" class="btn-sm" data-action="planifier-intervention" data-id="${c.id}">Planifier une intervention</button>
-      ${!["termine", "facture", "paye"].includes(c.statut) ? `<button type="button" class="btn-sm" data-action="terminer-chantier" data-id="${c.id}">Marquer termine</button>` : ""}
-      ${["termine", "facture", "paye"].includes(c.statut) ? `<button type="button" class="btn-sm" data-action="toggle-reception-form" data-id="${c.id}">${c.date_reception ? "Modifier la reception" : "Enregistrer la reception"}</button>` : ""}
-      ${c.statut === "termine" ? `<button type="button" class="btn-sm btn-sm-primary" data-action="toggle-cloturer-form" data-id="${c.id}">Cloturer le chantier</button>` : ""}
-      <button type="button" class="btn-sm" data-action="rapport-chantier" data-id="${c.id}">Telecharger le rapport</button>
+      ${!["termine", "facture", "paye"].includes(c.statut) ? `<button type="button" class="btn-sm" data-action="terminer-chantier" data-id="${c.id}">Marquer terminé</button>` : ""}
+      ${["termine", "facture", "paye"].includes(c.statut) ? `<button type="button" class="btn-sm" data-action="toggle-reception-form" data-id="${c.id}">${c.date_reception ? "Modifier la réception" : "Enregistrer la réception"}</button>` : ""}
+      ${c.statut === "termine" ? `<button type="button" class="btn-sm btn-sm-primary" data-action="toggle-cloturer-form" data-id="${c.id}">Clôturer le chantier</button>` : ""}
+      <button type="button" class="btn-sm" data-action="rapport-chantier" data-id="${c.id}">Télécharger le rapport</button>
       <button type="button" class="btn-sm btn-sm-danger" data-action="delete-chantier" data-id="${c.id}">Archiver</button>
     </div>
     <div id="note-form-${c.id}"></div>
@@ -3276,7 +3280,7 @@ function showDepenseForm(chantierId) {
   container.innerHTML = `
     <div class="form-box" style="margin-top:12px;">
       <div class="form-grid">
-        <div><label for="dep-libelle-${chantierId}">Libelle *</label><input type="text" id="dep-libelle-${chantierId}" placeholder="Ex: Materiaux carrelage"></div>
+        <div><label for="dep-libelle-${chantierId}">Libellé *</label><input type="text" id="dep-libelle-${chantierId}" placeholder="Ex: Matériaux carrelage"></div>
         <div><label for="dep-montant-${chantierId}">Montant (euros) *</label><input type="number" step="0.01" min="0.01" id="dep-montant-${chantierId}"></div>
         <div><label for="dep-date-${chantierId}">Date</label><input type="date" id="dep-date-${chantierId}" value="${today}"></div>
         <div><label for="dep-fournisseur-${chantierId}">Fournisseur (optionnel)</label><select id="dep-fournisseur-${chantierId}"><option value="">Aucun</option>${fournisseurOptions}</select></div>
@@ -3300,7 +3304,7 @@ function showNoteForm(chantierId) {
           <select id="note-phase-${chantierId}">
             <option value="avant">Avant</option>
             <option value="pendant">Pendant</option>
-            <option value="apres">Apres</option>
+            <option value="apres">Après</option>
           </select>
         </div>
         <div>
@@ -3309,7 +3313,7 @@ function showNoteForm(chantierId) {
         </div>
       </div>
       <label for="note-texte-${chantierId}" style="margin-top:14px;">Note</label>
-      <textarea id="note-texte-${chantierId}" placeholder="Ex: demolition terminee, prêt pour le carrelage"></textarea>
+      <textarea id="note-texte-${chantierId}" placeholder="Ex: démolition terminée, prêt pour le carrelage"></textarea>
       <p class="field-error" id="note-error-${chantierId}" hidden></p>
       <div class="form-actions">
         <button type="button" class="btn-sm btn-sm-primary" data-action="submit-note" data-id="${chantierId}">Ajouter</button>
@@ -3338,12 +3342,12 @@ function setupChantiersView() {
             <div><label for="cf-titre">Titre *</label><input type="text" id="cf-titre" required></div>
             <div><label for="cf-client">Client *</label><select id="cf-client" required><option value="">Choisir...</option>${clientOptionsHtml()}</select></div>
             <div><label for="cf-adresse">Adresse</label><input type="text" id="cf-adresse"></div>
-            <div><label for="cf-date">Date de debut</label><input type="date" id="cf-date"></div>
-            <div><label for="cf-budget">Budget prevu (euros)</label><input type="number" step="0.01" min="0" id="cf-budget"></div>
+            <div><label for="cf-date">Date de début</label><input type="date" id="cf-date"></div>
+            <div><label for="cf-budget">Budget prévu (euros)</label><input type="number" step="0.01" min="0" id="cf-budget"></div>
           </div>
           <p class="field-error" id="chantier-form-error" hidden></p>
           <div class="form-actions">
-            <button type="submit" class="btn-sm btn-sm-primary">Creer</button>
+            <button type="submit" class="btn-sm btn-sm-primary">Créer</button>
             <button type="button" class="btn-sm" data-action="cancel-chantier-form">Annuler</button>
           </div>
         </form>
@@ -3364,7 +3368,7 @@ function setupChantiersView() {
           date_debut: emptyToNull(document.getElementById("cf-date").value),
           budget: budgetRaw === "" ? null : parseFloat(budgetRaw),
         });
-        showToast("Chantier cree.");
+        showToast("Chantier créé.");
         container.hidden = true;
         container.innerHTML = "";
         loadChantiers();
@@ -3425,7 +3429,7 @@ function setupChantiersView() {
       const reserves = document.getElementById(`recep-reserves-${id}`).value;
       try {
         await Api.updateChantier(id, { date_reception: emptyToNull(dateReception), reserves: emptyToNull(reserves) });
-        showToast("Reception enregistree.");
+        showToast("Réception enregistrée.");
         loadChantiers();
       } catch (err) {
         const errorBox = document.getElementById(`reception-error-${id}`);
@@ -3442,7 +3446,7 @@ function setupChantiersView() {
       const photoUrl = document.getElementById(`note-photo-${id}`).value;
       try {
         await Api.addChantierNote(id, { phase, texte: emptyToNull(texte), photo_url: emptyToNull(photoUrl) });
-        showToast("Note ajoutee.");
+        showToast("Note ajoutée.");
         loadChantiers();
       } catch (err) {
         const errorBox = document.getElementById(`note-error-${id}`);
@@ -3462,7 +3466,7 @@ function setupChantiersView() {
       const errorBox = document.getElementById(`depense-error-${id}`);
       if (!libelle || !montant) {
         errorBox.hidden = false;
-        errorBox.textContent = "Libelle et montant sont obligatoires.";
+        errorBox.textContent = "Libellé et montant sont obligatoires.";
         return;
       }
       try {
@@ -3470,7 +3474,7 @@ function setupChantiersView() {
           libelle, montant: parseFloat(montant), date_depense: dateDepense,
           fournisseur_id: fournisseurId ? parseInt(fournisseurId, 10) : null,
         });
-        showToast("Depense ajoutee.");
+        showToast("Dépense ajoutée.");
         loadChantiers();
       } catch (err) {
         errorBox.hidden = false;
@@ -3495,7 +3499,7 @@ function setupChantiersView() {
       const errorBox = document.getElementById(`heures-error-${id}`);
       if (!nomIntervenant || !duree) {
         errorBox.hidden = false;
-        errorBox.textContent = "Intervenant (ou nom) et duree sont obligatoires.";
+        errorBox.textContent = "Intervenant (ou nom) et durée sont obligatoires.";
         return;
       }
       try {
@@ -3506,7 +3510,7 @@ function setupChantiersView() {
           taux_horaire: taux ? parseFloat(taux) : null,
           note: emptyToNull(note),
         });
-        showToast("Heures ajoutees.");
+        showToast("Heures ajoutées.");
         loadChantiers();
       } catch (err) {
         errorBox.hidden = false;
@@ -3516,13 +3520,13 @@ function setupChantiersView() {
       const heureId = parseInt(btn.dataset.heureId, 10);
       await withErrorToast(async () => {
         await Api.deleteChantierHeures(id, heureId);
-        showToast("Heures supprimees.");
+        showToast("Heures supprimées.");
         loadChantiers();
       });
     } else if (btn.dataset.action === "terminer-chantier") {
       await withErrorToast(async () => {
         await Api.updateChantier(id, { statut: "termine" });
-        showToast("Chantier marque termine.");
+        showToast("Chantier marqué terminé.");
         loadChantiers();
       });
     } else if (btn.dataset.action === "toggle-cloturer-form") {
@@ -3537,15 +3541,15 @@ function setupChantiersView() {
           generer_facture_finale: document.getElementById(`clot-facture-${id}`).checked,
           demander_avis: document.getElementById(`clot-avis-${id}`).checked,
         });
-        let msg = "Chantier cloture.";
+        let msg = "Chantier clôturé.";
         if (res.facture_finale) {
-          const statutTxt = res.facture_finale_email_statut === "envoye" ? "envoyee par email" : "creee (email non envoye, copiez le lien pour la transmettre)";
+          const statutTxt = res.facture_finale_email_statut === "envoye" ? "envoyée par email" : "créée (email non envoyé, copiez le lien pour la transmettre)";
           msg += ` Facture finale de ${fmtEuro(res.facture_finale.montant_ttc)} ${statutTxt}.`;
         } else if (res.facture_finale_raison_absence) {
           msg += ` Pas de facture finale : ${res.facture_finale_raison_absence}.`;
         }
         if (res.avis_demande) {
-          msg += res.avis_email_statut === "envoye" ? " Demande d'avis envoyee." : " Demande d'avis generee (email non envoye, lien a transmettre manuellement).";
+          msg += res.avis_email_statut === "envoye" ? " Demande d'avis envoyée." : " Demande d'avis générée (email non envoyé, lien à transmettre manuellement).";
         }
         showToast(msg);
         loadChantiers();
@@ -3556,10 +3560,10 @@ function setupChantiersView() {
     } else if (btn.dataset.action === "rapport-chantier") {
       await withErrorToast(() => ouvrirPdf(`/chantiers/${id}/rapport-pdf`));
     } else if (btn.dataset.action === "delete-chantier") {
-      if (!(await confirmDialog("Archiver ce chantier ? Il disparaitra de vos listes actives. Ses notes, depenses, heures et factures liees restent intactes.", { confirmLabel: "Archiver", danger: true }))) return;
+      if (!(await confirmDialog("Archiver ce chantier ? Il disparaîtra de vos listes actives. Ses notes, dépenses, heures et factures liées restent intactes.", { confirmLabel: "Archiver", danger: true }))) return;
       await withErrorToast(async () => {
         await Api.deleteChantier(id);
-        showToast("Chantier archive.");
+        showToast("Chantier archivé.");
         loadChantiers();
       });
     }
@@ -3576,7 +3580,7 @@ async function loadTaches() {
   try {
     const taches = await Api.listTaches(currentTacheFilter);
     if (taches.length === 0) {
-      list.innerHTML = '<div class="empty-state">Aucune tache ici.</div>';
+      list.innerHTML = '<div class="empty-state">Aucune tâche ici.</div>';
       return;
     }
     list.innerHTML = taches.map(renderTacheCard).join("");
@@ -3596,11 +3600,11 @@ function renderTacheCard(t) {
       </div>
       <span class="badge ${TACHE_PRIORITE_BADGE[t.priorite] || "badge-gray"}">${t.priorite}</span>
     </div>
-    <div class="item-meta">${t.echeance ? "Echeance : " + fmtDate(t.echeance) : "Pas d'echeance"}</div>
+    <div class="item-meta">${t.echeance ? "Échéance : " + fmtDate(t.echeance) : "Pas d'échéance"}</div>
     <div class="item-actions">
       ${!estFaite
         ? `<button type="button" class="btn-sm btn-sm-primary" data-action="terminer-tache" data-id="${t.id}">Marquer faite</button>`
-        : `<button type="button" class="btn-sm" data-action="reouvrir-tache" data-id="${t.id}">Reouvrir</button>`}
+        : `<button type="button" class="btn-sm" data-action="reouvrir-tache" data-id="${t.id}">Réouvrir</button>`}
       <button type="button" class="btn-sm btn-sm-danger" data-action="delete-tache" data-id="${t.id}">Supprimer</button>
     </div>
   </div>`;
@@ -3610,13 +3614,13 @@ function showTacheForm() {
   const container = document.getElementById("tache-form-container");
   container.innerHTML = `
     <div class="form-box">
-      <h3>Nouvelle tache</h3>
+      <h3>Nouvelle tâche</h3>
       <form id="tache-form">
         <div class="form-grid">
           <div><label for="ta-titre">Titre *</label><input type="text" id="ta-titre" required></div>
-          <div><label for="ta-echeance">Echeance</label><input type="date" id="ta-echeance"></div>
+          <div><label for="ta-echeance">Échéance</label><input type="date" id="ta-echeance"></div>
           <div>
-            <label for="ta-priorite">Priorite</label>
+            <label for="ta-priorite">Priorité</label>
             <select id="ta-priorite">
               <option value="basse">Basse</option>
               <option value="normale" selected>Normale</option>
@@ -3629,7 +3633,7 @@ function showTacheForm() {
         <textarea id="ta-description"></textarea>
         <p class="field-error" id="tache-form-error" hidden></p>
         <div class="form-actions">
-          <button type="submit" class="btn-sm btn-sm-primary">Creer</button>
+          <button type="submit" class="btn-sm btn-sm-primary">Créer</button>
           <button type="button" class="btn-sm" data-action="cancel-tache-form">Annuler</button>
         </div>
       </form>
@@ -3648,7 +3652,7 @@ function showTacheForm() {
         priorite: document.getElementById("ta-priorite").value,
         description: emptyToNull(document.getElementById("ta-description").value),
       });
-      showToast("Tache creee.");
+      showToast("Tâche créée.");
       container.hidden = true;
       container.innerHTML = "";
       loadTaches();
@@ -3686,7 +3690,7 @@ function setupTachesView() {
     if (btn.dataset.action === "terminer-tache") {
       await withErrorToast(async () => {
         await Api.updateTache(id, { statut: "faite" });
-        showToast("Tache marquee faite.");
+        showToast("Tâche marquée faite.");
         loadTaches();
       });
     } else if (btn.dataset.action === "reouvrir-tache") {
@@ -3695,10 +3699,10 @@ function setupTachesView() {
         loadTaches();
       });
     } else if (btn.dataset.action === "delete-tache") {
-      if (!(await confirmDialog("Supprimer cette tache ?", { danger: true }))) return;
+      if (!(await confirmDialog("Supprimer cette tâche ?", { danger: true }))) return;
       await withErrorToast(async () => {
         await Api.deleteTache(id);
-        showToast("Tache supprimee.");
+        showToast("Tâche supprimée.");
         loadTaches();
       });
     }
@@ -3749,10 +3753,10 @@ function renderDocumentCard(d) {
       </div>
       <span class="badge badge-gray">${DOCUMENT_TYPE_LABELS[d.type] || d.type}</span>
     </div>
-    <div class="item-meta">Ajoute le ${fmtDate(d.created_at)}</div>
+    <div class="item-meta">Ajouté le ${fmtDate(d.created_at)}</div>
     <div class="item-actions">
       ${estFichier
-        ? `<button type="button" class="btn-sm btn-sm-primary" data-action="telecharger-document" data-id="${d.id}" data-nom="${escapeHtml(d.nom_original)}">Telecharger</button>`
+        ? `<button type="button" class="btn-sm btn-sm-primary" data-action="telecharger-document" data-id="${d.id}" data-nom="${escapeHtml(d.nom_original)}">Télécharger</button>`
         : `<a class="btn-sm" href="${escapeHtml(d.url)}" target="_blank" rel="noopener">Ouvrir le lien</a>`}
       <button type="button" class="btn-sm btn-sm-danger" data-action="delete-document" data-id="${d.id}">Supprimer</button>
     </div>
@@ -3772,7 +3776,7 @@ function showDocumentForm(preselectChantierId) {
         <form id="document-form">
           <div class="form-grid">
             <div><label for="doc-fichier">Fichier *</label><input type="file" id="doc-fichier" required accept=".pdf,.jpg,.jpeg,.png,.heic,.heif,.doc,.docx,.xls,.xlsx,.odt,.txt"></div>
-            <div><label for="doc-nom">Nom (optionnel)</label><input type="text" id="doc-nom" placeholder="Par defaut : nom du fichier"></div>
+            <div><label for="doc-nom">Nom (optionnel)</label><input type="text" id="doc-nom" placeholder="Par défaut : nom du fichier"></div>
             <div>
               <label for="doc-type">Type</label>
               <select id="doc-type">${Object.entries(DOCUMENT_TYPE_LABELS).map(([v, l]) => `<option value="${v}">${l}</option>`).join("")}</select>
@@ -3812,7 +3816,7 @@ function showDocumentForm(preselectChantierId) {
 
       try {
         await Api.uploadDocument(formData);
-        showToast("Document ajoute.");
+        showToast("Document ajouté.");
         container.hidden = true;
         container.innerHTML = "";
         loadDocuments();
@@ -3854,7 +3858,7 @@ function setupDocumentsView() {
       if (!(await confirmDialog("Supprimer ce document ?", { danger: true }))) return;
       await withErrorToast(async () => {
         await Api.deleteDocument(id);
-        showToast("Document supprime.");
+        showToast("Document supprimé.");
         loadDocuments();
       });
     }
@@ -3862,14 +3866,40 @@ function setupDocumentsView() {
 }
 
 // ===================== Planning (calendrier jour/semaine/mois, drag & drop reel) =====================
-const PLANNING_TYPE_LABELS = { rdv: "RDV", visite: "Visite", intervention: "Intervention", autre: "Autre", tache: "Tache", chantier_debut: "Debut chantier" };
+const PLANNING_TYPE_LABELS = { rdv: "RDV", visite: "Visite", intervention: "Intervention", autre: "Autre", tache: "Tâche", chantier_debut: "Début chantier" };
 const PLANNING_TYPE_CLASS = { rdv: "planning-item-blue", visite: "planning-item-blue", intervention: "planning-item-orange", autre: "planning-item-gray", tache: "planning-item-gray", chantier_debut: "planning-item-green" };
 
 let planningViewMode = "semaine"; // jour | semaine | mois
 let planningAnchorDate = new Date();
 
+// Fuseau fixe (pas le fuseau ambiant du navigateur) : la cle "jour" d'une
+// date doit rester la meme quel que soit le fuseau systeme de la machine qui
+// affiche l'ecran, et gerer automatiquement le passage heure d'ete/hiver
+// (Intl/IANA, jamais un decalage +1/+2 code en dur). Avant ce correctif,
+// planningToIso() faisait d.toISOString().slice(0, 10) : ca convertit en UTC
+// avant de lire la date, donc un evenement cree a 09:00 a Paris (UTC+2 l'ete)
+// finissait range sur la case du jour suivant dans la grille - exactement le
+// bug "29/08 09:00 affiche 30/08 07:00" remonte par le test manuel.
+const PLANNING_TIMEZONE = "Europe/Paris";
+const _planningIsoFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: PLANNING_TIMEZONE, year: "numeric", month: "2-digit", day: "2-digit",
+});
 function planningToIso(d) {
-  return d.toISOString().slice(0, 10);
+  return _planningIsoFormatter.format(d);
+}
+function planningHeureLocale(d) {
+  return new Date(d).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: PLANNING_TIMEZONE });
+}
+// Decompose une date/heure en {date:"YYYY-MM-DD", heure:"HH:MM"} tels
+// qu'ils doivent apparaitre dans les <input type="date">/<input type="time">
+// du formulaire, evalues en Europe/Paris (jamais le fuseau ambiant) - sert a
+// pre-remplir le formulaire d'edition avec exactement ce que l'artisan a
+// saisi a la creation.
+function planningDateHeureLocale(dateInput) {
+  const d = new Date(dateInput);
+  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: PLANNING_TIMEZONE, hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(d);
+  const get = (t) => parts.find((p) => p.type === t)?.value || "00";
+  return { date: planningToIso(d), heure: `${get("hour")}:${get("minute")}` };
 }
 
 function planningStartOfWeek(d) {
@@ -3928,7 +3958,7 @@ function planningToolbarHtml(debut, fin) {
 }
 
 function planningItemChip(item, compact) {
-  const heure = item.type === "chantier_debut" ? "" : `<span class="planning-item-heure">${new Date(item.date).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</span> `;
+  const heure = item.type === "chantier_debut" ? "" : `<span class="planning-item-heure">${planningHeureLocale(item.date)}</span> `;
   return `<div class="planning-item ${PLANNING_TYPE_CLASS[item.type] || ""}" draggable="true" data-type="${item.type}" data-ref-id="${item.reference_id}" data-current-date="${item.date}" title="${escapeHtml(item.titre)}">
     ${compact ? "" : heure}<span class="planning-item-titre">${escapeHtml(item.titre)}</span>
   </div>`;
@@ -3936,7 +3966,10 @@ function planningItemChip(item, compact) {
 
 function planningDayCellHtml(dateObj, items, { compact = false, showWeekday = true, extraClass = "" } = {}) {
   const iso = planningToIso(dateObj);
-  const dayItems = items.filter((i) => i.date.slice(0, 10) === iso).sort((a, b) => a.date.localeCompare(b.date));
+  // Comparaison sur la cle "jour" calculee en Europe/Paris des deux cotes
+  // (jamais un slice(0,10) direct de la chaine UTC renvoyee par l'API) :
+  // voir le commentaire de planningToIso() pour le bug que ca evite.
+  const dayItems = items.filter((i) => planningToIso(new Date(i.date)) === iso).sort((a, b) => a.date.localeCompare(b.date));
   const isToday = iso === planningToIso(new Date());
   const headerLabel = showWeekday
     ? dateObj.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" })
@@ -3945,7 +3978,7 @@ function planningDayCellHtml(dateObj, items, { compact = false, showWeekday = tr
     <div class="planning-day-cell ${isToday ? "is-today" : ""} ${extraClass}" data-date="${iso}">
       <div class="planning-day-header">${headerLabel}</div>
       <div class="planning-day-items">
-        ${dayItems.map((i) => planningItemChip(i, compact)).join("") || (compact ? "" : '<div class="planning-day-empty">Rien de prevu</div>')}
+        ${dayItems.map((i) => planningItemChip(i, compact)).join("") || (compact ? "" : '<div class="planning-day-empty">Rien de prévu</div>')}
       </div>
     </div>`;
 }
@@ -3970,25 +4003,98 @@ function renderPlanning(debut, fin, items) {
   container.innerHTML = planningToolbarHtml(debut, fin) + gridHtml;
 }
 
+// Derniers items charges, pour retrouver le detail complet (lieu, client_id...)
+// d'un rendez-vous au clic sans re-appeler l'API.
+let planningItemsCache = [];
+
 async function loadPlanning() {
   const container = document.getElementById("planning-content");
   container.innerHTML = skeletonCards();
   try {
     const [debut, fin] = planningRange();
     const items = await Api.planning(planningToIso(debut), planningToIso(fin));
+    planningItemsCache = items;
     renderPlanning(debut, fin, items);
   } catch (err) {
     container.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
   }
 }
 
+// Types de planning correspondant a une ligne Evenement reelle (donc
+// consultable/modifiable/supprimable) - "tache" et "chantier_debut" sont
+// calcules a la volee depuis d'autres tables (voir routers/planning.py) et
+// n'ont pas d'Evenement associe.
+const PLANNING_TYPES_EVENEMENT = new Set(["rdv", "visite", "intervention", "autre"]);
+
+function evenementDetailHtml(item) {
+  const client = item.client_id ? clientsCache.find((c) => c.id === item.client_id) : null;
+  const dateLabel = new Date(item.date).toLocaleDateString("fr-FR", {
+    weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: PLANNING_TIMEZONE,
+  });
+  return `
+    <div class="profil-row"><div class="label">Type</div><div class="value">${escapeHtml(PLANNING_TYPE_LABELS[item.type] || item.type)}</div></div>
+    <div class="profil-row"><div class="label">Date</div><div class="value">${escapeHtml(dateLabel)}</div></div>
+    <div class="profil-row"><div class="label">Heure</div><div class="value">${planningHeureLocale(item.date)}</div></div>
+    ${client ? `<div class="profil-row"><div class="label">Client</div><div class="value">${escapeHtml(client.nom)}</div></div>` : ""}
+    ${item.lieu ? `<div class="profil-row"><div class="label">Lieu</div><div class="value">${escapeHtml(item.lieu)}</div></div>` : ""}
+  `;
+}
+
+let planningEvenementDetailItem = null;
+
+async function ouvrirDetailEvenement(item) {
+  await ensureClientsCache();
+  planningEvenementDetailItem = item;
+  document.getElementById("evenement-detail-titre").textContent = item.titre;
+  document.getElementById("evenement-detail-body").innerHTML = evenementDetailHtml(item);
+  document.getElementById("evenement-detail-modal").hidden = false;
+}
+function fermerDetailEvenement() {
+  document.getElementById("evenement-detail-modal").hidden = true;
+  planningEvenementDetailItem = null;
+}
+
+document.addEventListener("click", async (e) => {
+  if (e.target.closest('[data-action="close-evenement-detail"]') || e.target.id === "evenement-detail-modal") {
+    fermerDetailEvenement();
+  } else if (e.target.closest('[data-action="modifier-evenement"]')) {
+    const item = planningEvenementDetailItem;
+    if (!item) return;
+    fermerDetailEvenement();
+    switchView("planning");
+    setTimeout(() => window.showEvenementForm({
+      evenementId: item.reference_id, titre: item.titre, type: item.type,
+      date: item.date, lieu: item.lieu, clientId: item.client_id, chantierId: item.chantier_id,
+    }), 50);
+  } else if (e.target.closest('[data-action="supprimer-evenement"]')) {
+    const item = planningEvenementDetailItem;
+    if (!item) return;
+    const confirme = await confirmDialog(`Supprimer le rendez-vous "${item.titre}" ?`, { title: "Supprimer", confirmLabel: "Supprimer", danger: true });
+    if (!confirme) return;
+    await withErrorToast(async () => {
+      await Api.deleteEvenement(item.reference_id);
+      showToast("Rendez-vous supprimé.");
+      fermerDetailEvenement();
+      loadPlanning();
+    });
+  }
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !document.getElementById("evenement-detail-modal").hidden) fermerDetailEvenement();
+});
+
 function setupPlanningView() {
   async function showEvenementForm(prefill = {}) {
     const container = document.getElementById("evenement-form-container");
     await ensureClientsCache();
+    const isEdit = !!prefill.evenementId;
+    // Date/heure pre-remplies en Europe/Paris (jamais le fuseau ambiant) :
+    // reouvrir un rendez-vous en edition doit remontrer exactement la date
+    // et l'heure que l'artisan avait saisies, pas un decalage.
+    const { date: dateVal, heure: heureVal } = prefill.date ? planningDateHeureLocale(prefill.date) : { date: "", heure: "09:00" };
     container.innerHTML = `
       <div class="form-box">
-        <h3>${prefill.titre ? "Planifier une intervention" : "Nouveau rendez-vous"}</h3>
+        <h3>${isEdit ? "Modifier le rendez-vous" : prefill.titre ? "Planifier une intervention" : "Nouveau rendez-vous"}</h3>
         <form id="evenement-form">
           <div class="form-grid">
             <div><label for="ev-titre">Titre *</label><input type="text" id="ev-titre" value="${escapeHtml(prefill.titre || "")}" required></div>
@@ -4001,14 +4107,14 @@ function setupPlanningView() {
                 <option value="autre" ${prefill.type === "autre" ? "selected" : ""}>Autre</option>
               </select>
             </div>
-            <div><label for="ev-date">Date *</label><input type="date" id="ev-date" required></div>
-            <div><label for="ev-heure">Heure</label><input type="time" id="ev-heure" value="09:00"></div>
+            <div><label for="ev-date">Date *</label><input type="date" id="ev-date" value="${escapeHtml(dateVal)}" required></div>
+            <div><label for="ev-heure">Heure</label><input type="time" id="ev-heure" value="${escapeHtml(heureVal)}"></div>
             <div><label for="ev-client">Client (optionnel)</label><select id="ev-client"><option value="">Aucun</option>${clientOptionsHtml(prefill.clientId)}</select></div>
-            <div><label for="ev-lieu">Lieu</label><input type="text" id="ev-lieu"></div>
+            <div><label for="ev-lieu">Lieu</label><input type="text" id="ev-lieu" value="${escapeHtml(prefill.lieu || "")}"></div>
           </div>
           <p class="field-error" id="evenement-form-error" hidden></p>
           <div class="form-actions">
-            <button type="submit" class="btn-sm btn-sm-primary">Creer</button>
+            <button type="submit" class="btn-sm btn-sm-primary">${isEdit ? "Enregistrer" : "Créer"}</button>
             <button type="button" class="btn-sm" data-action="cancel-evenement-form">Annuler</button>
           </div>
         </form>
@@ -4023,16 +4129,22 @@ function setupPlanningView() {
       const dateVal = document.getElementById("ev-date").value;
       const heureVal = document.getElementById("ev-heure").value || "09:00";
       const clientVal = document.getElementById("ev-client").value;
+      const payload = {
+        titre: document.getElementById("ev-titre").value,
+        type: document.getElementById("ev-type").value,
+        date_debut: new Date(`${dateVal}T${heureVal}:00`).toISOString(),
+        lieu: emptyToNull(document.getElementById("ev-lieu").value),
+        client_id: clientVal ? parseInt(clientVal, 10) : null,
+        chantier_id: prefill.chantierId || null,
+      };
       try {
-        await Api.createEvenement({
-          titre: document.getElementById("ev-titre").value,
-          type: document.getElementById("ev-type").value,
-          date_debut: new Date(`${dateVal}T${heureVal}:00`).toISOString(),
-          lieu: emptyToNull(document.getElementById("ev-lieu").value),
-          client_id: clientVal ? parseInt(clientVal, 10) : null,
-          chantier_id: prefill.chantierId || null,
-        });
-        showToast("Rendez-vous cree.");
+        if (isEdit) {
+          await Api.updateEvenement(prefill.evenementId, payload);
+          showToast("Rendez-vous mis à jour.");
+        } else {
+          await Api.createEvenement(payload);
+          showToast("Rendez-vous créé.");
+        }
         container.hidden = true;
         container.innerHTML = "";
         loadPlanning();
@@ -4057,6 +4169,14 @@ function setupPlanningView() {
   const planningContent = document.getElementById("planning-content");
 
   planningContent.addEventListener("click", (e) => {
+    const chip = e.target.closest(".planning-item");
+    if (chip) {
+      const item = planningItemsCache.find(
+        (i) => String(i.reference_id) === chip.dataset.refId && i.type === chip.dataset.type,
+      );
+      if (item && PLANNING_TYPES_EVENEMENT.has(item.type)) ouvrirDetailEvenement(item);
+      return;
+    }
     const btn = e.target.closest("[data-action]");
     if (!btn) return;
     if (btn.dataset.action === "planning-prev") {
@@ -4107,7 +4227,9 @@ function setupPlanningView() {
       return;
     }
     const newDate = cell.dataset.date;
-    if (data.currentDate.slice(0, 10) === newDate) return;
+    // planningToIso(...) des deux cotes (jamais un slice(0,10) direct de la
+    // chaine UTC) : voir le commentaire de planningToIso() plus haut.
+    if (planningToIso(new Date(data.currentDate)) === newDate) return;
 
     await withErrorToast(async () => {
       if (data.type === "tache") {
@@ -4140,8 +4262,8 @@ async function loadConformite() {
     formContainer.innerHTML = "";
     banner.hidden = true;
     list.innerHTML = renderUpgradeCard(
-      "Conformite reservee aux abonnes",
-      "Le suivi des echeances (assurance decennale, Qualibat, RGE) et les alertes automatiques font partie de l'abonnement mensuel Suite Artisan."
+      "Conformité réservée aux abonnés",
+      "Le suivi des échéances (assurance décennale, Qualibat, RGE) et les alertes automatiques font partie de l'abonnement mensuel Suite Artisan."
     );
     return;
   }
@@ -4153,13 +4275,13 @@ async function loadConformite() {
 
     if (alertes.length > 0) {
       banner.hidden = false;
-      banner.textContent = `${alertes.length} element(s) de conformite arrivent a echeance dans moins de 30 jours (ou sont deja expires).`;
+      banner.textContent = `${alertes.length} élément(s) de conformité arrivent à échéance dans moins de 30 jours (ou sont déjà expirés).`;
     } else {
       banner.hidden = true;
     }
 
     if (items.length === 0) {
-      list.innerHTML = '<div class="empty-state">Aucun element de conformite enregistre.</div>';
+      list.innerHTML = '<div class="empty-state">Aucun élément de conformité enregistré.</div>';
       return;
     }
     list.innerHTML = items.map(renderConformiteCard).join("");
@@ -4170,7 +4292,7 @@ async function loadConformite() {
 
 function renderConformiteCard(item) {
   const badgeClass = item.alerte ? "badge-red" : "badge-green";
-  const badgeLabel = item.jours_restants < 0 ? "Expire" : item.alerte ? `Expire dans ${item.jours_restants} j` : "A jour";
+  const badgeLabel = item.jours_restants < 0 ? "Expiré" : item.alerte ? `Expire dans ${item.jours_restants} j` : "À jour";
   return `
   <div class="item-card ${item.alerte ? "is-due" : ""}">
     <div class="item-card-top">
@@ -4270,7 +4392,7 @@ function setupConformiteView() {
 document.addEventListener("DOMContentLoaded", async () => {
   onUnauthorized = () => {
     showAuthScreen();
-    showToast("Votre session a expire, merci de vous reconnecter.", true);
+    showToast("Votre session a expiré, merci de vous reconnecter.", true);
   };
 
   setupAuthScreen();
@@ -4313,9 +4435,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       currentUtilisateur = await Api.moi();
       enterDashboard();
       if (abonnement === "succes") {
-        showToast("Paiement recu ! Votre abonnement Pro s'active dans quelques instants.");
+        showToast("Paiement reçu ! Votre abonnement Pro s'active dans quelques instants.");
       } else if (abonnement === "annule") {
-        showToast("Abonnement annule, vous pouvez reessayer a tout moment depuis votre profil.", true);
+        showToast("Abonnement annulé, vous pouvez réessayer à tout moment depuis votre profil.", true);
       }
       return;
     } catch (err) {

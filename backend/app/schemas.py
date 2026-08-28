@@ -982,6 +982,7 @@ class PlanningItem(BaseModel):
     reference_id: Optional[int] = None
     client_id: Optional[int] = None
     chantier_id: Optional[int] = None
+    lieu: Optional[str] = None
 
 
 # ---------- Dashboard ----------

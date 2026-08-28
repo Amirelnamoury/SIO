@@ -38,7 +38,7 @@ assert.equal("planMinimum" in SITE_VITRINE_OFFER, false, "aucun plan minimum ne 
 assert.match(SITE_VITRINE_OFFER.description, /gestion technique/i, "le Site Vitrine doit etre presente comme un service gere");
 assert.match(SITE_VITRINE_OFFER.resumeInclus, /maintenance/i, "la maintenance doit etre explicite");
 assert.match(SITE_VITRINE_OFFER.domaineStandard, /15 EUR HT\/an/, "la limite du domaine standard doit etre precisee");
-assert.match(SITE_VITRINE_OFFER.domaineStandard, /transferable au client/i, "le domaine doit rester transferable au client");
+assert.match(SITE_VITRINE_OFFER.domaineStandard, /transférable au client/i, "le domaine doit rester transferable au client");
 assert.match(SITE_VITRINE_OFFER.horsForfaitResume, /sur devis/i, "les evolutions importantes doivent etre annoncees sur devis");
 assert.doesNotMatch(surfaces, /disponible (?:a|des) partir du plan Essentiel|disponible des Essentiel|Essentiel, Pro et Business/i);
 assert.doesNotMatch(surfaces, /planMinimum/);
@@ -48,7 +48,7 @@ assert.doesNotMatch(surfaces, /\d+[,.]99\s*(?:EUR|&nbsp;|€)/i, "aucun prix psy
 
 assert(PRICING.essentiel.fonctionnalites.includes("Relance manuelle des factures"));
 assert(PRICING.pro.fonctionnalites.includes("Relances automatiques de factures"));
-assert(PRICING.pro.fonctionnalites.includes("Contrats recurrents"));
-assert(PRICING.business.fonctionnalites.includes("Roles et permissions"));
+assert(PRICING.pro.fonctionnalites.includes("Contrats récurrents"));
+assert(PRICING.business.fonctionnalites.includes("Rôles et permissions"));
 
 console.log("Pricing frontend: OK");
