@@ -61,6 +61,7 @@ export default async function run() {
   assert([404, 422].includes(traversalRoute.response.status), "un chemin de traversal doit etre refuse par le routage");
 
   const detailInitial = await api.get(`/admin/api/artisans/${artisanId}`, adminToken);
+  assertEqual(detailInitial.plan, "gratuit", "un nouvel artisan doit rester au plan Gratuit avant la generation de son site");
   assertEqual(detailInitial.site.statut, "non_cree", "un nouvel artisan ne doit pas avoir de faux site");
   assert(detailInitial.site.config.services.length > 0, "les prestations du metier doivent etre pre-remplies");
 
@@ -93,6 +94,7 @@ export default async function run() {
   const genere = await api.post(`/admin/api/artisans/${artisanId}/site/generate`, undefined, adminToken);
   assertEqual(genere.statut, "genere", "la generation doit faire passer le site a genere");
   assertEqual(genere.storage_key, `admin-site-previews/${artisanId}/index.html`, "la cle preview doit etre serveur et deterministe");
+  logEtape("Site Vitrine genere pour un artisan au plan Gratuit");
 
   const preview = await fetch(API_BASE + `/admin/api/artisans/${artisanId}/site/preview`, { headers: { Authorization: `Bearer ${adminToken}` } });
   assertEqual(preview.status, 200, "la preview admin doit etre accessible a l'admin");

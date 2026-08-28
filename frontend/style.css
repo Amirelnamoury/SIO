@@ -387,7 +387,8 @@ h3 { margin: 0 0 12px; }
 .plan-accroche { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 14px; }
 .plan-price { font-size: 1.9rem; font-weight: 800; color: var(--primary); margin-bottom: 2px; }
 .plan-price .period { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); }
-.plan-mention { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 18px; }
+.plan-mention { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 12px; }
+.plan-positionnement { min-height: 3.9em; margin: 0 0 14px; color: var(--text-muted); font-size: 0.82rem; line-height: 1.45; }
 .plan-features { list-style: none; margin: 0 0 20px; padding: 0; flex: 1; }
 .plan-features li { font-size: 0.88rem; padding: 6px 0; padding-left: 22px; position: relative; }
 .plan-features li::before { content: "\2713"; position: absolute; left: 0; color: var(--success); font-weight: 700; }
@@ -399,16 +400,19 @@ h3 { margin: 0 0 12px; }
 }
 .site-offer h3 { margin: 3px 0 7px; font-size: 1.05rem; }
 .site-offer p { margin: 0; color: var(--text-muted); font-size: 0.88rem; }
+.site-offer .site-offer-benefit { margin-bottom: 6px; color: var(--text); font-weight: 700; }
 .site-offer-label { color: var(--accent); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
 .site-offer-price { align-self: center; text-align: right; color: var(--text-muted); font-size: 0.86rem; }
 .site-offer-price strong { display: block; color: var(--primary); font-size: 1.35rem; }
 .site-offer-price span { display: block; margin-top: 3px; font-weight: 700; color: var(--text); }
 .site-offer ul { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 20px; margin: 5px 0 0; padding-left: 20px; }
 .site-offer li { color: var(--text-muted); font-size: 0.84rem; }
+.site-offer .site-offer-summary { grid-column: 1 / -1; padding-top: 2px; font-weight: 600; }
 @media (max-width: 620px) {
   .site-offer { grid-template-columns: 1fr; }
   .site-offer-price { text-align: left; }
   .site-offer ul { grid-column: auto; grid-template-columns: 1fr; }
+  .site-offer .site-offer-summary { grid-column: auto; }
 }
 .btn-secondary {
   background: var(--bg); color: var(--text); border: 1.5px solid var(--border); border-radius: 10px;

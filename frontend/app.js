@@ -346,18 +346,17 @@ async function attemptUpgrade(plan) {
 
 // ===================== Modale des tarifs =====================
 function planCardHtml(key, plan) {
-  const isPro = key === "pro";
+  const isPro = plan.recommande === true;
   const isGratuit = key === "gratuit";
-  const priceHtml = plan.prix === 0
-    ? '<div class="plan-price">Gratuit</div>'
-    : `<div class="plan-price">${plan.prix}&nbsp;&euro; <span class="period">/ ${plan.periode}</span></div>`;
+  const priceHtml = `<div class="plan-price">${plan.prix}&nbsp;&euro; <span class="period">/ ${plan.periode}</span></div>`;
   return `
   <div class="plan-card ${isPro ? "plan-highlight" : ""}">
     ${isPro ? '<span class="plan-badge">Recommande</span>' : ""}
     <div class="plan-name">${escapeHtml(plan.nom)}</div>
     <div class="plan-accroche">${escapeHtml(plan.accroche)}</div>
     ${priceHtml}
-    ${plan.mention ? `<div class="plan-mention">${escapeHtml(plan.mention)}</div>` : '<div class="plan-mention">&nbsp;</div>'}
+    <div class="plan-mention">${escapeHtml(plan.mention || "Sans engagement")}</div>
+    <p class="plan-positionnement">${escapeHtml(plan.positionnement)}</p>
     <ul class="plan-features">
       ${plan.fonctionnalites.map((f) => `<li>${escapeHtml(f)}</li>`).join("")}
     </ul>
@@ -368,19 +367,20 @@ function planCardHtml(key, plan) {
 }
 
 function siteOfferHtml() {
-  const minimum = PRICING[SITE_VITRINE_OFFER.planMinimum];
   return `
   <div class="site-offer">
     <div>
-      <div class="site-offer-label">Service distinct du SaaS · Disponible avec ${escapeHtml(minimum.nom)}, Pro et Business</div>
+      <div class="site-offer-label">Option distincte du SaaS · Disponible avec tous les plans, y compris Gratuit</div>
       <h3>${escapeHtml(SITE_VITRINE_OFFER.nom)}</h3>
+      <p class="site-offer-benefit">${escapeHtml(SITE_VITRINE_OFFER.accroche)}</p>
       <p>${escapeHtml(SITE_VITRINE_OFFER.description)}</p>
     </div>
     <div class="site-offer-price">
       <strong>${SITE_VITRINE_OFFER.creation}&nbsp;&euro; ${SITE_VITRINE_OFFER.mention}</strong> a la creation
-      <span>+ ${SITE_VITRINE_OFFER.mensuel}&nbsp;&euro; ${SITE_VITRINE_OFFER.mention} / mois</span>
+      <span>+ ${SITE_VITRINE_OFFER.mensuel}&nbsp;&euro; ${SITE_VITRINE_OFFER.mention} / mois de gestion &amp; maintenance</span>
     </div>
-    <ul>${SITE_VITRINE_OFFER.recurrentInclut.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+    <ul>${SITE_VITRINE_OFFER.carteInclus.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+    <p class="site-offer-summary">${escapeHtml(SITE_VITRINE_OFFER.resumeInclus)}</p>
   </div>`;
 }
 
@@ -1541,10 +1541,7 @@ function renderPresenceSite(p) {
     rows += `<div class="dash-row"><span>CA reellement genere par le site</span><strong>${fmtEuro(p.ca_genere)}</strong></div>`;
   }
   if (p.statut === "non_livre") {
-    const disponibilite = hasPlan(SITE_VITRINE_OFFER.planMinimum)
-      ? "Vous pouvez demander son ajout a votre compte."
-      : `Ce service est disponible a partir du plan ${escapeHtml(PRICING[SITE_VITRINE_OFFER.planMinimum].nom)}.`;
-    rows += `<div class="dash-empty">${escapeHtml(SITE_VITRINE_OFFER.nom)} — ${SITE_VITRINE_OFFER.creation}&nbsp;&euro; HT a la creation + ${SITE_VITRINE_OFFER.mensuel}&nbsp;&euro; HT/mois. C'est nous qui le realisons et le gerons. ${disponibilite}</div>`;
+    rows += `<div class="dash-empty">${escapeHtml(SITE_VITRINE_OFFER.nom)} — ${SITE_VITRINE_OFFER.creation}&nbsp;&euro; HT a la creation + ${SITE_VITRINE_OFFER.mensuel}&nbsp;&euro; HT/mois de gestion &amp; maintenance. C'est nous qui le realisons et le gerons. Cette option est disponible avec tous les plans, y compris Gratuit.</div>`;
   }
   return rows;
 }

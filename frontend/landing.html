@@ -153,7 +153,23 @@
       </details>
       <details>
         <summary>Le site vitrine (site internet) est-il inclus ?</summary>
-        <p>Non. Le site vitrine professionnel est une prestation separee, disponible a partir du plan Essentiel pour <span id="faq-site-price"></span>. Il est realise et gere par notre equipe, puis connecte au CRM Suite Artisan.</p>
+        <p>Non. Le Site Vitrine professionnel est une prestation optionnelle et separee du SaaS, disponible avec tous les plans Suite Artisan, y compris Gratuit, pour <span id="faq-site-price"></span>. Il est realise et gere par notre equipe, puis connecte au CRM Suite Artisan.</p>
+      </details>
+      <details>
+        <summary>Que couvre la creation initiale du Site Vitrine ?</summary>
+        <ul id="faq-site-creation"></ul>
+      </details>
+      <details>
+        <summary>Que couvre la gestion et maintenance mensuelle ?</summary>
+        <div id="faq-site-maintenance"></div>
+      </details>
+      <details>
+        <summary>Quelles evolutions sont hors forfait ?</summary>
+        <div id="faq-site-hors-forfait"></div>
+      </details>
+      <details>
+        <summary>Le Site Vitrine change-t-il selon mon plan Suite Artisan ?</summary>
+        <p>Non. Son prix et sa qualite sont identiques avec Gratuit, Essentiel, Pro ou Business. Vous pouvez changer de plan SaaS independamment de votre Site Vitrine.</p>
       </details>
       <details>
         <summary>Mes donnees sont-elles visibles par d'autres artisans ?</summary>
@@ -178,17 +194,16 @@
 <script src="pricing.js"></script>
 <script>
   function planCardHtml(key, plan) {
-    const isPro = key === "pro";
-    const priceHtml = plan.prix === 0
-      ? '<div class="plan-price">Gratuit</div>'
-      : `<div class="plan-price">${plan.prix}&nbsp;&euro; <span class="period">/ ${plan.periode}</span></div>`;
+    const isPro = plan.recommande === true;
+    const priceHtml = `<div class="plan-price">${plan.prix}&nbsp;&euro; <span class="period">/ ${plan.periode}</span></div>`;
     return `
     <div class="plan-card ${isPro ? "plan-highlight" : ""}">
       ${isPro ? '<span class="plan-badge">Recommande</span>' : ""}
       <div class="plan-name">${plan.nom}</div>
       <div class="plan-accroche">${plan.accroche}</div>
       ${priceHtml}
-      ${plan.mention ? `<div class="plan-mention">${plan.mention}</div>` : '<div class="plan-mention">&nbsp;</div>'}
+      <div class="plan-mention">${plan.mention || "Sans engagement"}</div>
+      <p class="plan-positionnement">${plan.positionnement}</p>
       <ul class="plan-features">
         ${plan.fonctionnalites.map((f) => `<li>${f}</li>`).join("")}
       </ul>
@@ -200,20 +215,30 @@
   document.getElementById("landing-site-offer").innerHTML = `
     <div class="site-offer">
       <div>
-        <div class="site-offer-label">Service distinct du SaaS · Disponible avec Essentiel, Pro et Business</div>
+        <div class="site-offer-label">Option distincte du SaaS · Disponible avec tous les plans, y compris Gratuit</div>
         <h3>${SITE_VITRINE_OFFER.nom}</h3>
+        <p class="site-offer-benefit">${SITE_VITRINE_OFFER.accroche}</p>
         <p>${SITE_VITRINE_OFFER.description}</p>
       </div>
       <div class="site-offer-price">
         <strong>${SITE_VITRINE_OFFER.creation}&nbsp;&euro; HT</strong> a la creation
-        <span>+ ${SITE_VITRINE_OFFER.mensuel}&nbsp;&euro; HT / mois</span>
+        <span>+ ${SITE_VITRINE_OFFER.mensuel}&nbsp;&euro; HT / mois de gestion &amp; maintenance</span>
       </div>
       <ul>
-        ${SITE_VITRINE_OFFER.recurrentInclut.map((item) => `<li>${item}</li>`).join("")}
+        ${SITE_VITRINE_OFFER.carteInclus.map((item) => `<li>${item}</li>`).join("")}
       </ul>
+      <p class="site-offer-summary">${SITE_VITRINE_OFFER.resumeInclus}</p>
     </div>`;
   document.getElementById("faq-site-price").innerHTML =
-    `${SITE_VITRINE_OFFER.creation}&nbsp;&euro; ${SITE_VITRINE_OFFER.mention} a la creation puis ${SITE_VITRINE_OFFER.mensuel}&nbsp;&euro; ${SITE_VITRINE_OFFER.mention}/mois`;
+    `${SITE_VITRINE_OFFER.creation}&nbsp;&euro; ${SITE_VITRINE_OFFER.mention} a la creation puis ${SITE_VITRINE_OFFER.mensuel}&nbsp;&euro; ${SITE_VITRINE_OFFER.mention}/mois de gestion &amp; maintenance`;
+  document.getElementById("faq-site-creation").innerHTML =
+    SITE_VITRINE_OFFER.creationInclut.map((item) => `<li>${item}</li>`).join("");
+  document.getElementById("faq-site-maintenance").innerHTML = `
+    <ul>${SITE_VITRINE_OFFER.maintenanceInclut.map((item) => `<li>${item}</li>`).join("")}</ul>
+    <p>${SITE_VITRINE_OFFER.domaineStandard}</p>`;
+  document.getElementById("faq-site-hors-forfait").innerHTML = `
+    <p>${SITE_VITRINE_OFFER.horsForfaitResume}</p>
+    <ul>${SITE_VITRINE_OFFER.horsForfait.map((item) => `<li>${item}</li>`).join("")}</ul>`;
 </script>
 </body>
 </html>

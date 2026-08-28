@@ -118,6 +118,8 @@
 }
 .landing-faq summary { font-weight: 600; cursor: pointer; font-size: 0.95rem; }
 .landing-faq p { margin: 10px 0 0; color: var(--text-muted); font-size: 0.9rem; line-height: 1.55; }
+.landing-faq ul { margin: 10px 0 0; padding-left: 20px; color: var(--text-muted); }
+.landing-faq li { margin: 5px 0; font-size: 0.9rem; line-height: 1.45; }
 
 /* ---------- CTA final ---------- */
 .landing-final-cta {
