@@ -96,12 +96,29 @@ l'application elle-meme, pas par le test).
     internes) -> messagerie bidirectionnelle (client -> artisan ->
     client) -> regeneration du jeton = revocation immediate de l'ancien
     lien.
+11. **scenario11_numerotation.mjs** - creation de devis/factures en
+    parallele (concurrence) -> tous les numeros generes sont uniques,
+    numerotation isolee par artisan.
+12. **scenario12_plans_tarifaires.mjs** - matrice fonctionnalite x plan
+    (Gratuit/Essentiel/Pro/Business) : chaque fonctionnalite est debloquee
+    exactement au plan annonce, ni plus tot ni plus tard.
+13. **scenario13_planning_timezone.mjs** - seul scenario qui pilote un
+    vrai navigateur (Chromium via Playwright, contexte regle explicitement
+    sur Europe/Paris) plutot que d'appeler l'API directement : cree un
+    rendez-vous a une heure donnee via le formulaire reel, verifie l'heure
+    affichee, modifie l'heure, verifie a nouveau, **recharge completement
+    la page** et revenifie qu'aucune derive n'apparait. Couvre aussi une
+    date hiver et des heures proches de minuit, en verifiant directement la
+    reponse de l'API (instant UTC explicite, avec "Z"). Necessite en plus
+    Playwright ; se saute proprement si indisponible (comme le scenario 8
+    sans config Stripe).
 
 ## Limites connues
 
-- Ne couvrent pas l'UI (formulaires, rendu) : ce sont des tests de logique
-  metier au niveau de l'API. Le rendu visuel a ete verifie manuellement au
-  fil du developpement (captures d'ecran Playwright, non committees).
+- A l'exception du scenario 13 (voir ci-dessus), les scenarios ne couvrent
+  pas l'UI (formulaires, rendu) : ce sont des tests de logique metier au
+  niveau de l'API. Le rendu visuel a ete verifie manuellement au fil du
+  developpement (captures d'ecran Playwright, non committees).
 - N'incluent pas de test de charge/performance.
 - Le scenario 3 s'adapte a l'environnement (avec ou sans fournisseur email
   configure) plutot que de supposer une configuration particuliere.

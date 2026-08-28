@@ -1,4 +1,4 @@
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from typing import Optional
 
 from pydantic import BaseModel, EmailStr, ConfigDict, field_validator, model_validator
@@ -895,6 +895,23 @@ ChantierOut.model_rebuild()
 
 # ---------- Planning ----------
 
+def _naive_vers_utc(v):
+    """SQLite ne conserve pas le fuseau horaire des colonnes
+    DateTime(timezone=True) : une valeur relue depuis la base revient
+    "naive" (tzinfo=None) alors qu'elle represente en realite un instant
+    UTC (seule convention temporelle du backend - le frontend convertit
+    toujours vers UTC avant l'envoi, voir planningLocalToUtcIso() dans
+    app.js). Sans ce correctif, l'API renvoyait ces dates sans marqueur de
+    fuseau ("Z"/"+00:00"), et le frontend les reinterpretait dans le fuseau
+    AMBIANT du navigateur au lieu d'UTC - d'ou un decalage silencieux a
+    l'affichage. PostgreSQL (production) renvoie deja des datetime "aware" :
+    ce correctif ne fait rien dans ce cas (fonctionne donc dans les deux
+    environnements)."""
+    if isinstance(v, datetime) and v.tzinfo is None:
+        return v.replace(tzinfo=timezone.utc)
+    return v
+
+
 class EvenementCreate(BaseModel):
     titre: str
     type: str = "rdv"
@@ -934,6 +951,11 @@ class EvenementOut(BaseModel):
     date_fin: Optional[datetime] = None
     lieu: Optional[str] = None
     notes: Optional[str] = None
+
+    @field_validator("date_debut", "date_fin", mode="before")
+    @classmethod
+    def _dates_toujours_utc(cls, v):
+        return _naive_vers_utc(v)
 
 
 # ---------- Documents ----------
@@ -983,6 +1005,11 @@ class PlanningItem(BaseModel):
     client_id: Optional[int] = None
     chantier_id: Optional[int] = None
     lieu: Optional[str] = None
+
+    @field_validator("date", mode="before")
+    @classmethod
+    def _date_toujours_utc(cls, v):
+        return _naive_vers_utc(v)
 
 
 # ---------- Dashboard ----------
