@@ -3,6 +3,11 @@
 // stable qu'une automatisation UI pour verifier la logique metier reelle.
 // Necessite un backend demarre sur API_BASE (voir README.md de ce dossier).
 
+import { execFileSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+
 export const API_BASE = process.env.API_BASE || "http://localhost:8000";
 
 export function assert(condition, message) {
@@ -60,10 +65,18 @@ export async function creerArtisanTest(prefixe = "e2e") {
   return { token: data.access_token, email };
 }
 
-/** Active l'abonnement d'un artisan de test (contourne Stripe, comme le script manage_subscription.py). */
-export async function activerAbonnement(email) {
-  const { execSync } = await import("node:child_process");
-  execSync(`cd /home/user/SIO/backend && source .venv/bin/activate && python manage_subscription.py activer "${email}"`, { shell: "/bin/bash" });
+export function executerPythonBackend(args) {
+  const backendDir = fileURLToPath(new URL("../backend/", import.meta.url));
+  const venvPython = process.platform === "win32"
+    ? join(backendDir, ".venv", "Scripts", "python.exe")
+    : join(backendDir, ".venv", "bin", "python");
+  const python = process.env.PYTHON_EXECUTABLE || (existsSync(venvPython) ? venvPython : (process.platform === "win32" ? "python" : "python3"));
+  execFileSync(python, args, { cwd: backendDir, stdio: "pipe" });
+}
+
+/** Active un plan de test sans appeler Stripe. */
+export async function activerAbonnement(email, plan = "business") {
+  executerPythonBackend(["manage_subscription.py", "activer", email, plan]);
 }
 
 export function logEtape(texte) {

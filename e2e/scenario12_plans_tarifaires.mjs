@@ -7,7 +7,7 @@
 // reel : les factures n'etaient gated nulle part (ni backend ni frontend),
 // alors que la page de tarifs les presente comme la fonctionnalite phare du
 // plan Essentiel - corrige dans le meme commit que ce scenario.
-import { api, assert, creerArtisanTest, logEtape } from "./helpers.mjs";
+import { activerAbonnement, api, assert, creerArtisanTest, logEtape } from "./helpers.mjs";
 
 async function attendu402(promesse, message) {
   try {
@@ -41,11 +41,7 @@ export default async function run() {
 
   // ---------- Plan Essentiel : chantiers/factures/conformite/statistiques debloques, Pro/Business toujours bloques ----------
   const { token: tokenEssentiel, email: emailEssentiel } = await creerArtisanTest("scenario12-essentiel");
-  // manage_subscription.py active "business" par defaut (voir helpers.mjs) ;
-  // ce scenario veut specifiquement le plan Essentiel pour verifier que Pro
-  // et Business restent bloques, donc on l'appelle directement avec le plan.
-  const { execSync } = await import("node:child_process");
-  execSync(`cd /home/user/SIO/backend && source .venv/bin/activate && python manage_subscription.py activer "${emailEssentiel}" essentiel`, { shell: "/bin/bash" });
+  await activerAbonnement(emailEssentiel, "essentiel");
 
   const clientE = await api.post("/clients", { nom: "Client Essentiel" }, tokenEssentiel);
   const chantierE = await api.post("/chantiers", { client_id: clientE.id, titre: "Chantier essentiel" }, tokenEssentiel);
@@ -55,7 +51,20 @@ export default async function run() {
     lignes: [{ description: "x", quantite: 1, prix_unitaire_ht: 10 }],
   }, tokenEssentiel);
   assert(!!factureE.id, "un abonne Essentiel doit pouvoir creer une facture");
-  logEtape("plan Essentiel : chantiers et factures reellement debloques");
+  await api.patch(`/factures/${factureE.id}`, { statut: "envoyee" }, tokenEssentiel);
+  const factureRelancee = await api.post(`/factures/${factureE.id}/relancer`, undefined, tokenEssentiel);
+  assert(factureRelancee.nb_relances === 1, "un abonne Essentiel doit pouvoir relancer manuellement une facture");
+
+  const analytics = await api.get("/analytics", tokenEssentiel);
+  assert(Array.isArray(analytics.ca_par_mois), "un abonne Essentiel doit acceder aux analytics");
+  const expiration = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+  const conformite = await api.post("/conformite", {
+    type: "assurance_decennale", libelle: "Assurance E2E Essentiel", date_expiration: expiration,
+  }, tokenEssentiel);
+  assert(!!conformite.id, "un abonne Essentiel doit pouvoir enregistrer sa conformite");
+  const alertes = await api.get("/conformite/alertes", tokenEssentiel);
+  assert(alertes.some((item) => item.id === conformite.id), "un abonne Essentiel doit voir ses alertes de conformite");
+  logEtape("plan Essentiel : factures, relance facture manuelle, chantiers, analytics et conformite debloques");
 
   await attendu402(api.get("/contrats", tokenEssentiel), "les contrats recurrents doivent rester reserves au plan Pro pour un abonne Essentiel");
   const devisE = await api.post("/devis", {

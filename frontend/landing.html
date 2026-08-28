@@ -134,8 +134,9 @@
   <!-- ---------- Tarifs ---------- -->
   <section id="tarifs" class="landing-section">
     <h2 class="landing-section-title">Des tarifs simples</h2>
-    <p class="landing-section-sub">Commencez gratuitement. Passez au plan Pro quand vous en avez besoin, resiliable a tout moment.</p>
+    <p class="landing-section-sub">Commencez gratuitement, puis choisissez le niveau d'accompagnement adapte a votre entreprise.</p>
     <div class="pricing-plans landing-pricing-plans" id="landing-pricing-plans"></div>
+    <div id="landing-site-offer"></div>
   </section>
 
   <!-- ---------- FAQ ---------- -->
@@ -148,11 +149,11 @@
       </details>
       <details>
         <summary>Puis-je annuler mon abonnement Pro a tout moment ?</summary>
-        <p>Oui, l'abonnement est sans engagement. Vous pouvez annuler quand vous le souhaitez depuis votre profil.</p>
+        <p>Oui, les abonnements payants sont sans engagement. Vous pouvez annuler quand vous le souhaitez depuis votre profil.</p>
       </details>
       <details>
         <summary>Le site vitrine (site internet) est-il inclus ?</summary>
-        <p>Le site vitrine professionnel est une prestation separee, realisee et livree par notre equipe. Une fois livre, il se connecte automatiquement a votre compte Suite Artisan : les demandes de devis recues sur le site arrivent directement dans vos prospects.</p>
+        <p>Non. Le site vitrine professionnel est une prestation separee, disponible a partir du plan Essentiel pour <span id="faq-site-price"></span>. Il est realise et gere par notre equipe, puis connecte au CRM Suite Artisan.</p>
       </details>
       <details>
         <summary>Mes donnees sont-elles visibles par d'autres artisans ?</summary>
@@ -196,6 +197,23 @@
   }
   document.getElementById("landing-pricing-plans").innerHTML =
     Object.entries(PRICING).map(([key, plan]) => planCardHtml(key, plan)).join("");
+  document.getElementById("landing-site-offer").innerHTML = `
+    <div class="site-offer">
+      <div>
+        <div class="site-offer-label">Service distinct du SaaS · Disponible avec Essentiel, Pro et Business</div>
+        <h3>${SITE_VITRINE_OFFER.nom}</h3>
+        <p>${SITE_VITRINE_OFFER.description}</p>
+      </div>
+      <div class="site-offer-price">
+        <strong>${SITE_VITRINE_OFFER.creation}&nbsp;&euro; HT</strong> a la creation
+        <span>+ ${SITE_VITRINE_OFFER.mensuel}&nbsp;&euro; HT / mois</span>
+      </div>
+      <ul>
+        ${SITE_VITRINE_OFFER.recurrentInclut.map((item) => `<li>${item}</li>`).join("")}
+      </ul>
+    </div>`;
+  document.getElementById("faq-site-price").innerHTML =
+    `${SITE_VITRINE_OFFER.creation}&nbsp;&euro; ${SITE_VITRINE_OFFER.mention} a la creation puis ${SITE_VITRINE_OFFER.mensuel}&nbsp;&euro; ${SITE_VITRINE_OFFER.mention}/mois`;
 </script>
 </body>
 </html>

@@ -4,14 +4,10 @@
 // (app.scheduler.run_automation_cycle, celui que le planificateur en tache
 // de fond appelle toutes les X minutes) plutot que la relance manuelle, pour
 // verifier le chemin reellement emprunte en production.
-import { execSync } from "node:child_process";
-import { api, assert, assertEqual, creerArtisanTest, activerAbonnement, logEtape } from "./helpers.mjs";
+import { activerAbonnement, api, assert, assertEqual, creerArtisanTest, executerPythonBackend, logEtape } from "./helpers.mjs";
 
 function lancerCycleAutomatisation() {
-  execSync(
-    `cd /home/user/SIO/backend && source .venv/bin/activate && python -c "from app.scheduler import run_automation_cycle; run_automation_cycle()"`,
-    { shell: "/bin/bash" },
-  );
+  executerPythonBackend(["-c", "from app.scheduler import run_automation_cycle; run_automation_cycle()"]);
 }
 
 export default async function run() {

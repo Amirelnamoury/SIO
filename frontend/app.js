@@ -367,9 +367,27 @@ function planCardHtml(key, plan) {
   </div>`;
 }
 
+function siteOfferHtml() {
+  const minimum = PRICING[SITE_VITRINE_OFFER.planMinimum];
+  return `
+  <div class="site-offer">
+    <div>
+      <div class="site-offer-label">Service distinct du SaaS · Disponible avec ${escapeHtml(minimum.nom)}, Pro et Business</div>
+      <h3>${escapeHtml(SITE_VITRINE_OFFER.nom)}</h3>
+      <p>${escapeHtml(SITE_VITRINE_OFFER.description)}</p>
+    </div>
+    <div class="site-offer-price">
+      <strong>${SITE_VITRINE_OFFER.creation}&nbsp;&euro; ${SITE_VITRINE_OFFER.mention}</strong> a la creation
+      <span>+ ${SITE_VITRINE_OFFER.mensuel}&nbsp;&euro; ${SITE_VITRINE_OFFER.mention} / mois</span>
+    </div>
+    <ul>${SITE_VITRINE_OFFER.recurrentInclut.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+  </div>`;
+}
+
 function openPricingModal() {
   const container = document.getElementById("pricing-plans");
   container.innerHTML = Object.entries(PRICING).map(([key, plan]) => planCardHtml(key, plan)).join("");
+  document.getElementById("pricing-site-offer").innerHTML = siteOfferHtml();
   document.getElementById("pricing-modal").hidden = false;
 }
 function closePricingModal() {
@@ -623,6 +641,20 @@ function loadEntrepriseForm() {
   document.getElementById("ent-siret").value = currentArtisan.siret || "";
   document.getElementById("ent-assurance").value = currentArtisan.assurance_decennale_nom || "";
 
+  const automationBox = document.getElementById("automatisation-form-box");
+  const automationPaywall = document.getElementById("automatisation-paywall");
+  const automationDisponible = hasPlan("pro");
+  automationBox.hidden = !automationDisponible;
+  automationPaywall.hidden = automationDisponible;
+  if (!automationDisponible) {
+    automationPaywall.innerHTML = renderUpgradeCard(
+      "Automatisations reservees au plan Pro",
+      "Suite Artisan identifie les factures a relancer des le plan Essentiel. Le plan Pro envoie automatiquement les relances de devis et de factures.",
+      "pro"
+    );
+    return;
+  }
+
   document.getElementById("auto-devis-j1").value = currentArtisan.relance_devis_j1;
   document.getElementById("auto-devis-j2").value = currentArtisan.relance_devis_j2;
   document.getElementById("auto-devis-j3").value = currentArtisan.relance_devis_j3;
@@ -684,6 +716,10 @@ function setupAutomatisationForm() {
 
 async function loadAutomationStatus() {
   const box = document.getElementById("automation-status");
+  if (!hasPlan("pro")) {
+    box.innerHTML = "";
+    return;
+  }
   try {
     const s = await Api.automationStatus();
     const badge = s.email_configure
@@ -1084,7 +1120,7 @@ function setupFournisseursView() {
 async function loadStatistiques() {
   const container = document.getElementById("statistiques-content");
   container.innerHTML = skeletonCards();
-  if (!isSubscriptionActive()) {
+  if (!hasPlan("essentiel")) {
     container.innerHTML = renderUpgradeCard(
       "Statistiques reservees aux abonnes",
       "Le suivi de la performance commerciale et financiere (CA, taux d'acceptation, impayes, panier moyen) fait partie de l'abonnement mensuel Suite Artisan."
@@ -1505,7 +1541,10 @@ function renderPresenceSite(p) {
     rows += `<div class="dash-row"><span>CA reellement genere par le site</span><strong>${fmtEuro(p.ca_genere)}</strong></div>`;
   }
   if (p.statut === "non_livre") {
-    rows += `<div class="dash-empty">Votre site vitrine professionnel n'est pas encore livre. C'est nous qui le fabriquons et vous le connectons a votre compte : contactez-nous pour en discuter.</div>`;
+    const disponibilite = hasPlan(SITE_VITRINE_OFFER.planMinimum)
+      ? "Vous pouvez demander son ajout a votre compte."
+      : `Ce service est disponible a partir du plan ${escapeHtml(PRICING[SITE_VITRINE_OFFER.planMinimum].nom)}.`;
+    rows += `<div class="dash-empty">${escapeHtml(SITE_VITRINE_OFFER.nom)} — ${SITE_VITRINE_OFFER.creation}&nbsp;&euro; HT a la creation + ${SITE_VITRINE_OFFER.mensuel}&nbsp;&euro; HT/mois. C'est nous qui le realisons et le gerons. ${disponibilite}</div>`;
   }
   return rows;
 }
@@ -1621,7 +1660,7 @@ async function loadDashboard() {
       ...d.aujourdhui.factures_en_retard.map((f) => ({
         urgence: "haute", view: "factures",
         label: `${escapeHtml(f.numero)} · ${escapeHtml(f.client_nom)} · ${fmtEuro(f.montant_restant)} en retard`,
-        action: "relancer-facture", actionId: f.id, actionLabel: "Relancer",
+        ...(hasPlan("essentiel") ? { action: "relancer-facture", actionId: f.id, actionLabel: "Relancer" } : {}),
       })),
       ...d.alertes_conformite.map((c) => ({
         urgence: c.jours_restants < 7 ? "haute" : "moyenne", view: "entreprise",
@@ -1630,7 +1669,7 @@ async function loadDashboard() {
       ...d.aujourdhui.devis_a_relancer.map((dv) => ({
         urgence: "moyenne", view: "devis",
         label: `Relancer ${escapeHtml(dv.client_nom)} (${escapeHtml(dv.numero || "devis #" + dv.id)})`,
-        action: "relancer-devis", actionId: dv.id, actionLabel: "Relancer",
+        ...(hasPlan("pro") ? { action: "relancer-devis", actionId: dv.id, actionLabel: "Relancer" } : {}),
       })),
       ...d.aujourdhui.taches.map((t) => ({
         urgence: "moyenne", view: "taches",
@@ -2243,7 +2282,7 @@ function renderDevisCard(d) {
     if (d.montant_ht !== null) {
       actions += `<button type="button" class="btn-sm btn-sm-primary" data-action="envoyer-devis" data-id="${d.id}">Envoyer le devis</button>`;
     }
-  } else if (["envoye", "relance_j3", "relance_j7"].includes(d.statut)) {
+  } else if (["envoye", "relance_j3", "relance_j7"].includes(d.statut) && hasPlan("pro")) {
     actions += `<button type="button" class="btn-sm btn-sm-primary" data-action="relancer-devis" data-id="${d.id}">Relancer maintenant</button>`;
   }
   if (["envoye", "relance_j3", "relance_j7", "relance_j15"].includes(d.statut)) {
@@ -2557,7 +2596,7 @@ async function loadFactures() {
   const newBtn = document.querySelector('[data-action="show-facture-form"]');
   const formContainer = document.getElementById("facture-form-container");
 
-  if (!isSubscriptionActive()) {
+  if (!hasPlan("essentiel")) {
     if (newBtn) newBtn.hidden = true;
     if (formContainer) { formContainer.hidden = true; formContainer.innerHTML = ""; }
     tresorerie.innerHTML = "";
@@ -2986,7 +3025,7 @@ async function loadChantiers() {
   const newBtn = document.querySelector('[data-action="show-chantier-form"]');
   const formContainer = document.getElementById("chantier-form-container");
 
-  if (!isSubscriptionActive()) {
+  if (!hasPlan("essentiel")) {
     newBtn.hidden = true;
     formContainer.hidden = true;
     formContainer.innerHTML = "";
@@ -4098,7 +4137,7 @@ async function loadConformite() {
   const newBtn = document.querySelector('[data-action="show-conformite-form"]');
   const formContainer = document.getElementById("conformite-form-container");
 
-  if (!isSubscriptionActive()) {
+  if (!hasPlan("essentiel")) {
     newBtn.hidden = true;
     formContainer.hidden = true;
     formContainer.innerHTML = "";

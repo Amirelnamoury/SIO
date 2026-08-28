@@ -113,9 +113,10 @@ def _traiter_devis(db: Session, artisan: Artisan, run: AutomationRun) -> None:
 
 
 def _traiter_factures(db: Session, artisan: Artisan, run: AutomationRun) -> None:
-    # Contrairement aux devis, la relance facture manuelle est gratuite
-    # aujourd'hui (POST /factures/{id}/relancer n'exige pas d'abonnement) :
-    # on garde la meme frontiere pour l'automatisation, par coherence.
+    # La relance manuelle reste disponible des Essentiel, mais son execution
+    # automatique est une fonction Pro.
+    if not _plan_au_moins(artisan, "pro"):
+        return
     factures = (
         db.query(Facture)
         .options(joinedload(Facture.client), joinedload(Facture.lignes), joinedload(Facture.paiements))
@@ -147,6 +148,8 @@ def _traiter_factures(db: Session, artisan: Artisan, run: AutomationRun) -> None
 
 
 def _traiter_conformite(db: Session, artisan: Artisan, run: AutomationRun) -> None:
+    if not _plan_au_moins(artisan, "essentiel"):
+        return
     seuil = date.today() + timedelta(days=SEUIL_ALERTE_JOURS)
     items = db.query(ConformiteItem).filter(ConformiteItem.artisan_id == artisan.id, ConformiteItem.date_expiration < seuil).all()
     for item in items:
