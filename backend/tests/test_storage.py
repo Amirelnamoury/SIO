@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 import app.storage as storage_module
-from app.storage import LocalFilesystemStorage, S3CompatibleStorage, get_storage
+from app.storage import LocalFilesystemStorage, S3CompatibleStorage, get_storage, valider_cle_relative
 
 
 @pytest.fixture(autouse=True)
@@ -56,6 +56,32 @@ def test_local_chemin_absolu_refuse(tmp_path):
     s = LocalFilesystemStorage(str(tmp_path))
     with pytest.raises(ValueError):
         s.save("/etc/passwd", b"x")
+
+
+# ---------- valider_cle_relative() : contrat commun Local/S3 ----------
+
+
+@pytest.mark.parametrize("cle", ["3/abc123.png", "admin-site-previews/42/index.html", "a/b/c.txt", "fichier.txt"])
+def test_valider_cle_relative_accepte_les_cles_legitimes(cle):
+    valider_cle_relative(cle)  # ne doit rien lever
+
+
+@pytest.mark.parametrize(
+    "cle",
+    [
+        "",
+        "/etc/passwd",
+        "../../etc/passwd",
+        "a/../b.txt",
+        "..",
+        "C:\\windows\\file",
+        "a//b.txt",
+        "\\etc\\passwd",
+    ],
+)
+def test_valider_cle_relative_refuse_les_cles_dangereuses(cle):
+    with pytest.raises(ValueError):
+        valider_cle_relative(cle)
 
 
 # ---------- get_storage() dispatch ----------
@@ -147,3 +173,38 @@ def test_s3_exists_true_et_false():
 
     client.head_object.side_effect = ClientError({"Error": {"Code": "404"}}, "HeadObject")
     assert s.exists("absent.pdf") is False
+
+
+# ---------- S3CompatibleStorage : cles dangereuses refusees avant tout appel reseau ----------
+
+
+@pytest.mark.parametrize("cle", ["../../secret", "/etc/passwd", "", "a/../b.txt"])
+def test_s3_save_refuse_cle_dangereuse_sans_appel_reseau(cle):
+    s, client, _ = _s3_storage_avec_client_mock()
+    with pytest.raises(ValueError):
+        s.save(cle, b"x")
+    client.put_object.assert_not_called()
+
+
+@pytest.mark.parametrize("cle", ["../../secret", "/etc/passwd", "", "a/../b.txt"])
+def test_s3_read_refuse_cle_dangereuse_sans_appel_reseau(cle):
+    s, client, _ = _s3_storage_avec_client_mock()
+    with pytest.raises(ValueError):
+        s.read(cle)
+    client.get_object.assert_not_called()
+
+
+@pytest.mark.parametrize("cle", ["../../secret", "/etc/passwd", "", "a/../b.txt"])
+def test_s3_delete_refuse_cle_dangereuse_sans_appel_reseau(cle):
+    s, client, _ = _s3_storage_avec_client_mock()
+    with pytest.raises(ValueError):
+        s.delete(cle)
+    client.delete_object.assert_not_called()
+
+
+@pytest.mark.parametrize("cle", ["../../secret", "/etc/passwd", "", "a/../b.txt"])
+def test_s3_exists_refuse_cle_dangereuse_sans_appel_reseau(cle):
+    s, client, _ = _s3_storage_avec_client_mock()
+    with pytest.raises(ValueError):
+        s.exists(cle)
+    client.head_object.assert_not_called()

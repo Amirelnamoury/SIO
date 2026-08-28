@@ -23,6 +23,30 @@ from app.config import settings
 logger = logging.getLogger("suite_artisan.storage")
 
 
+def valider_cle_relative(cle: str) -> None:
+    """Contrat de validite d'une cle de stockage, commun aux deux backends
+    (Local et S3). Une cle S3 avec ".." n'est pas un traversal filesystem au
+    sens strict (S3 n'a pas de systeme de fichiers, juste des caracteres dans
+    un nom de cle) - le contrat est volontairement homogene et aussi strict
+    que le filesystem local plutot que de dependre de la semantique propre a
+    chaque backend. Aucune cle produite par le code applicatif (toujours
+    "<artisan_id>/<uuid>.<ext>" ou "admin-site-previews/<artisan_id>/index.html")
+    n'a jamais besoin de ".." : refuser ce cas ne casse aucun usage reel.
+    """
+    if not cle:
+        raise ValueError("Cle de stockage vide")
+    if cle.startswith("/") or cle.startswith("\\"):
+        raise ValueError(f"Cle de stockage invalide (chemin absolu) : {cle!r}")
+    if len(cle) >= 2 and cle[1] == ":":
+        # Chemin absolu style Windows (C:\..., D:/...).
+        raise ValueError(f"Cle de stockage invalide (chemin absolu) : {cle!r}")
+    segments = cle.replace("\\", "/").split("/")
+    if ".." in segments:
+        raise ValueError(f"Cle de stockage invalide (traversal) : {cle!r}")
+    if any(segment == "" for segment in segments):
+        raise ValueError(f"Cle de stockage invalide (segment vide) : {cle!r}")
+
+
 class Storage(abc.ABC):
     """Interface minimale : juste ce dont les documents uploades ont besoin."""
 
@@ -57,10 +81,13 @@ class LocalFilesystemStorage(Storage):
         self._root = Path(root)
 
     def _resolve(self, relative_path: str) -> Path:
-        # Empeche toute tentative de sortir de la racine (../..) : le nom de
-        # fichier sur disque est de toute facon toujours un uuid genere par
-        # nous (voir routers/documents.py), jamais le nom fourni par
-        # l'utilisateur, mais on se protege quand meme au niveau du stockage.
+        # Contrat commun d'abord (voir valider_cle_relative) : refuse chemin
+        # absolu/traversal/cle vide, homogene avec S3CompatibleStorage.
+        # Puis la resolution reelle par le systeme de fichiers en filet de
+        # securite supplementaire propre au disque (le nom de fichier sur
+        # disque est de toute facon toujours un uuid genere par nous, voir
+        # routers/documents.py, jamais le nom fourni par l'utilisateur).
+        valider_cle_relative(relative_path)
         chemin = (self._root / relative_path).resolve()
         if self._root.resolve() not in chemin.parents and chemin != self._root.resolve():
             raise ValueError(f"Chemin de stockage invalide : {relative_path}")
@@ -105,11 +132,13 @@ class S3CompatibleStorage(Storage):
         )
 
     def save(self, relative_path: str, contenu: bytes) -> None:
+        valider_cle_relative(relative_path)
         self._client.put_object(Bucket=self._bucket, Key=relative_path, Body=contenu)
 
     def read(self, relative_path: str) -> bytes | None:
         from botocore.exceptions import ClientError
 
+        valider_cle_relative(relative_path)
         try:
             response = self._client.get_object(Bucket=self._bucket, Key=relative_path)
         except ClientError as exc:
@@ -121,12 +150,15 @@ class S3CompatibleStorage(Storage):
     def delete(self, relative_path: str) -> None:
         # delete_object est deja idempotent cote S3 (204 meme si la cle
         # n'existe pas) : rien a faire de special pour respecter le contrat
-        # "ne leve jamais si le fichier n'existe deja plus".
+        # "ne leve jamais si le fichier n'existe deja plus". La validation de
+        # cle, elle, s'applique quand meme avant tout appel reseau.
+        valider_cle_relative(relative_path)
         self._client.delete_object(Bucket=self._bucket, Key=relative_path)
 
     def exists(self, relative_path: str) -> bool:
         from botocore.exceptions import ClientError
 
+        valider_cle_relative(relative_path)
         try:
             self._client.head_object(Bucket=self._bucket, Key=relative_path)
         except ClientError as exc:

@@ -1,12 +1,19 @@
+from typing import Literal
+
 from pydantic_settings import BaseSettings
 from pydantic import EmailStr
 
 
 class Settings(BaseSettings):
-    # Signal explicite d'environnement ("development" ou "production"), verifie
-    # au demarrage (voir app/startup_checks.py) pour refuser une configuration
-    # manifestement dangereuse en production plutot que de demarrer quand meme.
-    app_env: str = "development"
+    # Signal explicite d'environnement, verifie au demarrage (voir
+    # app/startup_checks.py) pour refuser une configuration manifestement
+    # dangereuse en production plutot que de demarrer quand meme. Literal (pas
+    # un simple str) : toute valeur autre que "development"/"production"
+    # (faute de frappe, "staging", chaine vide...) fait echouer la
+    # construction de Settings() elle-meme des le chargement du module, avec
+    # un message explicite listant les valeurs acceptees - pas besoin d'une
+    # verification separee, Pydantic la fait a la source.
+    app_env: Literal["development", "production"] = "development"
 
     # SQLite par defaut (zero config). En prod, definir DATABASE_URL vers Postgres,
     # ex: postgresql://user:password@host:5432/dbname
