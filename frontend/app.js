@@ -345,12 +345,18 @@ async function attemptUpgrade(plan) {
 }
 
 // ===================== Modale des tarifs =====================
-function planCardHtml(key, plan) {
+function normalizeCurrentPlan(plan) {
+  const normalized = typeof plan === "string" ? plan.trim().toLowerCase() : "";
+  return PRICING_ORDRE.includes(normalized) ? normalized : "gratuit";
+}
+
+function planCardHtml(key, plan, currentPlan) {
   const isPro = plan.recommande === true;
   const isGratuit = key === "gratuit";
+  const isCurrent = key === currentPlan;
   const priceHtml = `<div class="plan-price">${plan.prix}&nbsp;&euro; <span class="period">/ ${plan.periode}</span></div>`;
   return `
-  <div class="plan-card ${isPro ? "plan-highlight" : ""}">
+  <div class="plan-card ${isPro ? "plan-highlight" : ""} ${isCurrent ? "plan-current" : ""}" data-plan-key="${key}"${isCurrent ? ' data-current-plan="true" aria-current="true"' : ""}>
     ${isPro ? '<span class="plan-badge">Recommande</span>' : ""}
     <div class="plan-name">${escapeHtml(plan.nom)}</div>
     <div class="plan-accroche">${escapeHtml(plan.accroche)}</div>
@@ -360,10 +366,17 @@ function planCardHtml(key, plan) {
     <ul class="plan-features">
       ${plan.fonctionnalites.map((f) => `<li>${escapeHtml(f)}</li>`).join("")}
     </ul>
-    ${isGratuit
-      ? '<button type="button" class="btn-secondary" data-action="close-pricing">Rester sur le plan Gratuit</button>'
+    ${isCurrent
+      ? '<button type="button" class="btn-secondary" disabled aria-disabled="true">Plan actuel</button>'
+      : isGratuit
+      ? '<button type="button" class="btn-secondary" data-action="close-pricing">Conserver mon plan actuel</button>'
       : `<button type="button" class="btn-primary" data-action="confirm-upgrade" data-plan="${key}">S'abonner a ${escapeHtml(plan.nom)}</button>`}
   </div>`;
+}
+
+function renderPlanCards(currentPlan) {
+  const normalizedPlan = normalizeCurrentPlan(currentPlan);
+  return Object.entries(PRICING).map(([key, plan]) => planCardHtml(key, plan, normalizedPlan)).join("");
 }
 
 function siteOfferHtml() {
@@ -386,7 +399,7 @@ function siteOfferHtml() {
 
 function openPricingModal() {
   const container = document.getElementById("pricing-plans");
-  container.innerHTML = Object.entries(PRICING).map(([key, plan]) => planCardHtml(key, plan)).join("");
+  container.innerHTML = renderPlanCards(currentArtisan && currentArtisan.plan);
   document.getElementById("pricing-site-offer").innerHTML = siteOfferHtml();
   document.getElementById("pricing-modal").hidden = false;
 }

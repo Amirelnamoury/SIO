@@ -401,6 +401,7 @@ h3 { margin: 0 0 12px; }
 @media (max-width: 560px) { .pricing-plans { grid-template-columns: 1fr; } }
 .plan-card { border: 1.5px solid var(--border); border-radius: 14px; padding: 22px; display: flex; flex-direction: column; }
 .plan-card.plan-highlight { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(194,65,12,0.13); position: relative; }
+.plan-card.plan-current { border-color: var(--success); }
 .plan-badge {
   position: absolute; top: -11px; left: 22px; background: var(--accent); color: #fff;
   font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
