@@ -311,6 +311,17 @@ h3 { margin: 0 0 12px; }
   width: 18px; height: 18px; flex-shrink: 0; padding: 0; margin: 0; accent-color: var(--accent);
 }
 
+/* "Tout preparer" (devis signe -> chantier) : le libelle du champ Budget est
+   plus long ("Budget (optionnel, sinon = montant HT du devis)") et passe sur
+   deux lignes, ce qui poussait son champ plus bas que Adresse/Date sur la
+   meme ligne de grille. On reserve la meme hauteur de libelle (2 lignes) sur
+   les trois colonnes pour que les trois champs commencent au meme niveau,
+   sans toucher au texte ni a la logique. Scope a cette grille precise (pas
+   une regle .form-box generale) pour ne pas affecter les autres formulaires. */
+.form-grid-labels-aligned label {
+  display: flex; align-items: flex-end; min-height: 3em;
+}
+
 /* ---------- Editeur de lignes (devis / factures) ---------- */
 .lignes-editor { margin-top: 16px; }
 .lignes-editor label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; }
@@ -525,6 +536,16 @@ h3 { margin: 0 0 12px; }
 .confirm-dialog-box.is-danger #confirm-dialog-ok { background: var(--danger); }
 .confirm-dialog-box.is-danger #confirm-dialog-ok:hover { background: #991b1b; }
 .confirm-dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
+
+/* #confirm-dialog partage la classe .search-modal (meme z-index:60 que
+   n'importe quel autre modal de ce type) : quand une confirmation est
+   ouverte depuis un modal deja affiche (ex: Supprimer depuis le detail d'un
+   rendez-vous), les deux se retrouvaient au meme niveau et l'ordre visuel
+   dependait alors de l'ordre DOM, pas de l'intention - la confirmation
+   pouvait s'afficher derriere. Le composant de confirmation est generique et
+   partage par toute l'application : il doit toujours passer au-dessus de
+   n'importe quel autre modal qui l'a declenche. */
+#confirm-dialog { z-index: 70; }
 
 /* ---------- Detail d'un rendez-vous (Planning) ---------- */
 #evenement-detail-modal .confirm-dialog-box { position: relative; max-width: 440px; }

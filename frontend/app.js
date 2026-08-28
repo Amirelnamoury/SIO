@@ -2253,7 +2253,7 @@ function showPreparerChantierForm(devisId) {
     <div class="form-box" style="margin-top:12px;">
       <h3 style="font-size:0.95rem;">Tout préparer</h3>
       <p class="section-hint">Crée le chantier, l'acompte à facturer et une checklist de préparation.</p>
-      <div class="form-grid">
+      <div class="form-grid form-grid-labels-aligned">
         <div><label for="prep-adresse-${devisId}">Adresse du chantier</label><input type="text" id="prep-adresse-${devisId}"></div>
         <div><label for="prep-date-${devisId}">Date de début</label><input type="date" id="prep-date-${devisId}" min="${today}"></div>
         <div><label for="prep-budget-${devisId}">Budget (optionnel, sinon = montant HT du devis)</label><input type="number" step="0.01" min="0" id="prep-budget-${devisId}"></div>
@@ -3901,6 +3901,30 @@ function planningDateHeureLocale(dateInput) {
   const get = (t) => parts.find((p) => p.type === t)?.value || "00";
   return { date: planningToIso(d), heure: `${get("hour")}:${get("minute")}` };
 }
+// Inverse de planningDateHeureLocale() : convertit une date/heure saisie
+// dans le formulaire (valeurs des <input type="date"/"time">, donc une heure
+// murale en Europe/Paris) en instant UTC. `new Date(\`${date}T${heure}:00\`)`
+// est ambigu : sans suffixe de fuseau, le moteur JS l'interprete dans le
+// fuseau AMBIANT de la machine qui l'execute (navigateur ou environnement de
+// test), pas forcement Europe/Paris - d'ou le decalage observe uniquement a
+// la modification (la machine de test n'est pas forcement a l'heure de
+// Paris). On calcule l'instant UTC explicitement : une premiere estimation
+// naive, puis on lit comment cet instant s'affiche reellement en
+// Europe/Paris via Intl et on corrige l'ecart. Fonctionne quel que soit le
+// fuseau de la machine et gere nativement ete/hiver (jamais de +1h/+2h code
+// en dur).
+function planningLocalToUtcIso(dateStr, heureStr) {
+  const [annee, mois, jour] = dateStr.split("-").map(Number);
+  const [heure, minute] = heureStr.split(":").map(Number);
+  const estimation = Date.UTC(annee, mois - 1, jour, heure, minute, 0);
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: PLANNING_TIMEZONE, year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
+  }).formatToParts(new Date(estimation));
+  const get = (t) => parseInt(parts.find((p) => p.type === t)?.value || "0", 10);
+  const afficheCommeUtc = Date.UTC(get("year"), get("month") - 1, get("day"), get("hour") % 24, get("minute"), get("second"));
+  return new Date(estimation - (afficheCommeUtc - estimation)).toISOString();
+}
 
 function planningStartOfWeek(d) {
   const date = new Date(d);
@@ -4080,7 +4104,14 @@ document.addEventListener("click", async (e) => {
   }
 });
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && !document.getElementById("evenement-detail-modal").hidden) fermerDetailEvenement();
+  // Si la confirmation de suppression est ouverte par-dessus, elle gere son
+  // propre Echap (voir confirmDialog()) : sans ce garde-fou, les deux
+  // ecouteurs Echap se declenchaient sur la meme frappe et refermaient les
+  // deux modales d'un coup, alors qu'Annuler doit ramener au detail du
+  // rendez-vous, pas tout fermer.
+  if (e.key === "Escape" && !document.getElementById("evenement-detail-modal").hidden && document.getElementById("confirm-dialog").hidden) {
+    fermerDetailEvenement();
+  }
 });
 
 function setupPlanningView() {
@@ -4132,7 +4163,7 @@ function setupPlanningView() {
       const payload = {
         titre: document.getElementById("ev-titre").value,
         type: document.getElementById("ev-type").value,
-        date_debut: new Date(`${dateVal}T${heureVal}:00`).toISOString(),
+        date_debut: planningLocalToUtcIso(dateVal, heureVal),
         lieu: emptyToNull(document.getElementById("ev-lieu").value),
         client_id: clientVal ? parseInt(clientVal, 10) : null,
         chantier_id: prefill.chantierId || null,

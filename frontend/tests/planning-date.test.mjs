@@ -22,11 +22,11 @@ const helpersSource = appSource.slice(start, end);
 
 const context = {};
 vm.runInNewContext(
-  `${helpersSource}\nglobalThis.__planning = { planningToIso, planningHeureLocale, planningDateHeureLocale, PLANNING_TIMEZONE };`,
+  `${helpersSource}\nglobalThis.__planning = { planningToIso, planningHeureLocale, planningDateHeureLocale, planningLocalToUtcIso, PLANNING_TIMEZONE };`,
   context,
   { filename: appPath },
 );
-const { planningToIso, planningHeureLocale, planningDateHeureLocale } = context.__planning;
+const { planningToIso, planningHeureLocale, planningDateHeureLocale, planningLocalToUtcIso } = context.__planning;
 
 // ---- Cas du rapport de bug original : 29/08/2026 09:00 (ete, UTC+2) ----
 {
@@ -68,6 +68,84 @@ const { planningToIso, planningHeureLocale, planningDateHeureLocale } = context.
   const { date, heure } = planningDateHeureLocale("2026-08-29T09:00:00+02:00");
   assert.equal(date, "2026-08-29");
   assert.equal(heure, "09:00");
+}
+
+// ---- Bug "edition d'heure incorrecte" : planningLocalToUtcIso() convertit
+// une date/heure saisie dans le formulaire (heure murale Europe/Paris,
+// valeurs des <input type="date"/"time">) en instant UTC, sans dependre du
+// fuseau AMBIANT de la machine qui execute le code - contrairement a
+// `new Date(`${date}T${heure}:00`)`, qui interprete une chaine sans suffixe
+// de fuseau dans le fuseau LOCAL de la machine (navigateur ou environnement
+// de test), pas forcement Europe/Paris. C'etait la cause du decalage : la
+// creation semblait correcte car testee dans un navigateur regle sur
+// Europe/Paris, mais toute machine dans un autre fuseau produisait un
+// decalage silencieux, y compris a l'edition. ----
+{
+  // Creation ete : 29/08/2026 09:00 Paris (CEST, UTC+2) doit stocker 07:00 UTC.
+  const iso = planningLocalToUtcIso("2026-08-29", "09:00");
+  assert.equal(iso, "2026-08-29T07:00:00.000Z");
+  assert.equal(planningToIso(new Date(iso)), "2026-08-29");
+  assert.equal(planningHeureLocale(new Date(iso)), "09:00");
+}
+
+// ---- Edition 07:00 -> 08:00, meme jour (cas signale) ----
+{
+  const isoAvant = planningLocalToUtcIso("2026-08-29", "07:00");
+  const isoApres = planningLocalToUtcIso("2026-08-29", "08:00");
+  assert.equal(planningHeureLocale(new Date(isoAvant)), "07:00");
+  assert.equal(planningHeureLocale(new Date(isoApres)), "08:00", "07:00 modifie en 08:00 doit s'afficher 08:00");
+  assert.notEqual(isoAvant, isoApres);
+}
+
+// ---- Edition 08:00 -> 10:00 (cas signale : saisir 10:00 affichait 08:00) ----
+{
+  const iso = planningLocalToUtcIso("2026-08-29", "10:00");
+  assert.equal(planningHeureLocale(new Date(iso)), "10:00", "saisir 10:00 doit afficher 10:00, pas 08:00");
+}
+
+// ---- Edition repetee : ro-uvrir en edition une valeur deja convertie ne
+// doit jamais deriver (pas de conversion appliquee deux fois). ----
+{
+  const premierEnregistrement = planningLocalToUtcIso("2026-08-29", "10:00");
+  const { date: d1, heure: h1 } = planningDateHeureLocale(premierEnregistrement);
+  assert.equal(d1, "2026-08-29");
+  assert.equal(h1, "10:00");
+  const secondEnregistrement = planningLocalToUtcIso(d1, h1);
+  assert.equal(secondEnregistrement, premierEnregistrement, "reouvrir puis re-enregistrer sans rien changer ne doit produire aucune derive");
+  const { date: d2, heure: h2 } = planningDateHeureLocale(secondEnregistrement);
+  assert.equal(d2, "2026-08-29");
+  assert.equal(h2, "10:00");
+}
+
+// ---- Date hiver (UTC+1) ----
+{
+  const iso = planningLocalToUtcIso("2026-01-15", "09:00");
+  assert.equal(iso, "2026-01-15T08:00:00.000Z");
+  assert.equal(planningHeureLocale(new Date(iso)), "09:00");
+}
+
+// ---- Heure proche de minuit, ete : 23:30 Paris ne doit pas glisser au jour
+// suivant. ----
+{
+  const iso = planningLocalToUtcIso("2026-08-29", "23:30");
+  assert.equal(planningToIso(new Date(iso)), "2026-08-29");
+  assert.equal(planningHeureLocale(new Date(iso)), "23:30");
+}
+
+// ---- Heure proche de minuit, hiver : 00:30 Paris ne doit pas glisser vers
+// la veille. ----
+{
+  const iso = planningLocalToUtcIso("2026-01-15", "00:30");
+  assert.equal(planningToIso(new Date(iso)), "2026-01-15");
+  assert.equal(planningHeureLocale(new Date(iso)), "00:30");
+}
+
+// ---- Changement de jour : modifier l'heure d'un RDV pour la faire passer
+// juste apres minuit doit correctement changer le jour affiche. ----
+{
+  const iso = planningLocalToUtcIso("2026-08-30", "01:00");
+  assert.equal(planningToIso(new Date(iso)), "2026-08-30");
+  assert.equal(planningHeureLocale(new Date(iso)), "01:00");
 }
 
 console.log("OK - planning-date.test.mjs");
