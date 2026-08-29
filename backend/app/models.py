@@ -504,6 +504,8 @@ class Chantier(Base):
         """Avancement reel du chantier = part des taches liees (checklist de
         preparation + taches ajoutees ensuite) marquees faites. Jamais de
         pourcentage invente : None tant qu'aucune tache n'est liee."""
+        if self.statut in ("termine", "facture", "paye"):
+            return 100
         taches = self.taches
         if not taches:
             return None

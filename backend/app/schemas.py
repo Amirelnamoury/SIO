@@ -610,8 +610,16 @@ class ChantierCreate(BaseModel):
     date_fin_prevue: Optional[date] = None
     budget: Optional[float] = None
 
+    @field_validator("budget")
+    @classmethod
+    def budget_valide(cls, v):
+        if v is not None and v < 0:
+            raise ValueError("Le budget doit etre positif ou nul.")
+        return v
+
 
 class ChantierUpdate(BaseModel):
+    client_id: Optional[int] = None
     titre: Optional[str] = None
     adresse: Optional[str] = None
     statut: Optional[str] = None
@@ -628,12 +636,40 @@ class ChantierUpdate(BaseModel):
             raise ValueError(f"statut doit etre l'un de : {sorted(CHANTIER_STATUTS)}")
         return v
 
+    @field_validator("budget")
+    @classmethod
+    def budget_valide(cls, v):
+        if v is not None and v < 0:
+            raise ValueError("Le budget doit etre positif ou nul.")
+        return v
+
 
 class DepenseCreate(BaseModel):
     libelle: str
     montant: float
     date_depense: date
     fournisseur_id: Optional[int] = None
+
+    @field_validator("montant")
+    @classmethod
+    def montant_positif(cls, v):
+        if v <= 0:
+            raise ValueError("Le montant doit etre superieur a 0.")
+        return v
+
+
+class DepenseUpdate(BaseModel):
+    libelle: Optional[str] = None
+    montant: Optional[float] = None
+    date_depense: Optional[date] = None
+    fournisseur_id: Optional[int] = None
+
+    @field_validator("montant")
+    @classmethod
+    def montant_positif(cls, v):
+        if v is not None and v <= 0:
+            raise ValueError("Le montant doit etre superieur a 0.")
+        return v
 
 
 class DepenseOut(BaseModel):
@@ -661,6 +697,29 @@ class HeureTravailCreate(BaseModel):
     def duree_positive(cls, v):
         if v <= 0:
             raise ValueError("La duree doit etre superieure a 0.")
+        return v
+
+
+class HeureTravailUpdate(BaseModel):
+    nom_intervenant: Optional[str] = None
+    membre_id: Optional[int] = None
+    date_travail: Optional[date] = None
+    duree_heures: Optional[float] = None
+    taux_horaire: Optional[float] = None
+    note: Optional[str] = None
+
+    @field_validator("duree_heures")
+    @classmethod
+    def duree_positive(cls, v):
+        if v is not None and v <= 0:
+            raise ValueError("La duree doit etre superieure a 0.")
+        return v
+
+    @field_validator("taux_horaire")
+    @classmethod
+    def taux_positif(cls, v):
+        if v is not None and v < 0:
+            raise ValueError("Le taux horaire doit etre positif ou nul.")
         return v
 
 
@@ -776,6 +835,7 @@ class ChantierOut(BaseModel):
     montant_encaisse: Optional[float] = None
     marge_reelle: Optional[float] = None
     progression: Optional[int] = None
+    finances_verrouillees: bool = False
     date_reception: Optional[date] = None
     reserves: Optional[str] = None
     created_at: datetime

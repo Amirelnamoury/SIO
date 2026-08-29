@@ -255,6 +255,8 @@ h3 { margin: 0 0 12px; }
   border: 1px solid var(--border); box-shadow: 0 1px 4px rgba(0,0,0,0.03);
 }
 .item-card.is-due { border-color: var(--warning); box-shadow: 0 0 0 3px var(--warning-bg); }
+.chantier-card { scroll-margin-block: 24px; transition: border-color 0.2s, box-shadow 0.2s; }
+.chantier-card.is-focused { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(43, 108, 89, 0.18); }
 .item-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .item-title { font-weight: 700; font-size: 1.02rem; }
 .item-sub { font-size: 0.85rem; color: var(--text-muted); margin-top: 2px; }
@@ -372,6 +374,8 @@ h3 { margin: 0 0 12px; }
   background: var(--info-bg); color: var(--info);
 }
 .planning-item:active { cursor: grabbing; }
+.planning-item-clickable { cursor: pointer; }
+.planning-item-clickable:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 .planning-item-heure { font-weight: 700; }
 .planning-item-blue { background: var(--info-bg); color: var(--info); }
 .planning-item-orange { background: var(--warning-bg); color: var(--warning); }

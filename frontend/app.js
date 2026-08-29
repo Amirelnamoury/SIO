@@ -177,6 +177,7 @@ async function ensureClientsCache() {
 // Cache simple des chantiers charges, pour retrouver les donnees d'un
 // chantier (ex: pre-remplir le formulaire de reception) sans reinterroger.
 let chantiersCache = [];
+let chantierFocusId = null;
 
 function clientOptionsHtml(selectedId) {
   return clientsCache
@@ -3095,9 +3096,25 @@ async function loadChantiers() {
       return;
     }
     list.innerHTML = chantiers.map(renderChantierCard).join("");
+    focusChantierCard();
   } catch (err) {
     list.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
   }
+}
+
+function focusChantierCard() {
+  if (!chantierFocusId) return;
+  const card = document.querySelector(`[data-chantier-id="${chantierFocusId}"]`);
+  if (!card) return;
+  chantierFocusId = null;
+  card.classList.add("is-focused");
+  card.scrollIntoView({ behavior: "smooth", block: "center" });
+  setTimeout(() => card.classList.remove("is-focused"), 3000);
+}
+
+function ouvrirChantierDepuisPlanning(chantierId) {
+  chantierFocusId = Number(chantierId);
+  switchView("chantiers");
 }
 
 function rentabiliteHtml(c) {
@@ -3131,7 +3148,10 @@ function heuresHtml(c) {
     .map((h) => `
       <div class="item-sub" style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
         <span>${fmtDate(h.date_travail)} · ${escapeHtml(h.nom_intervenant)} · ${parseFloat(h.duree_heures).toFixed(2).replace(/\.00$/, "")}h${h.cout !== null ? " · " + fmtEuro(h.cout) : ""}${h.note ? " · " + escapeHtml(h.note) : ""}</span>
-        <button type="button" class="btn-sm btn-sm-danger" style="padding:2px 8px;flex-shrink:0;" data-action="delete-heure" data-id="${c.id}" data-heure-id="${h.id}" title="Supprimer" aria-label="Supprimer cette entrée d'heures">&times;</button>
+        ${c.finances_verrouillees ? "" : `<span style="display:flex;gap:4px;flex-shrink:0;">
+          <button type="button" class="btn-sm" style="padding:2px 8px;" data-action="edit-heure" data-id="${c.id}" data-heure-id="${h.id}">Modifier</button>
+          <button type="button" class="btn-sm btn-sm-danger" style="padding:2px 8px;" data-action="delete-heure" data-id="${c.id}" data-heure-id="${h.id}" title="Supprimer" aria-label="Supprimer cette entrée d'heures">&times;</button>
+        </span>`}
       </div>`)
     .join("");
   return `<div class="dash-section" style="margin:12px 0;">
@@ -3141,33 +3161,33 @@ function heuresHtml(c) {
   </div>`;
 }
 
-function showHeuresForm(chantierId) {
+function showHeuresForm(chantierId, heure = null) {
   const container = document.getElementById(`heures-form-${chantierId}`);
   if (!container) return;
   const today = new Date().toISOString().slice(0, 10);
-  const membreOptions = equipeCache.map((m) => `<option value="${m.id}" data-nom="${escapeHtml(m.nom)}">${escapeHtml(m.nom)}</option>`).join("");
+  const membreOptions = equipeCache.map((m) => `<option value="${m.id}" data-nom="${escapeHtml(m.nom)}" ${heure && heure.membre_id === m.id ? "selected" : ""}>${escapeHtml(m.nom)}</option>`).join("");
   container.innerHTML = `
     <div class="form-box" style="margin-top:12px;">
       <div class="form-grid">
         <div>
           <label for="heure-membre-${chantierId}">Intervenant</label>
           <select id="heure-membre-${chantierId}">
-            <option value="">Autre / vous-même...</option>
+            <option value="" ${!heure || !heure.membre_id ? "selected" : ""}>Autre / vous-même...</option>
             ${membreOptions}
           </select>
         </div>
         <div id="heure-nom-libre-wrap-${chantierId}">
           <label for="heure-nom-${chantierId}">Nom (si "Autre")</label>
-          <input type="text" id="heure-nom-${chantierId}" placeholder="Ex: Vous-même, sous-traitant...">
+          <input type="text" id="heure-nom-${chantierId}" value="${escapeHtml(heure && !heure.membre_id ? heure.nom_intervenant : "")}" placeholder="Ex: Vous-même, sous-traitant...">
         </div>
-        <div><label for="heure-duree-${chantierId}">Durée (heures) *</label><input type="number" step="0.25" min="0.25" id="heure-duree-${chantierId}" placeholder="Ex: 6.5"></div>
-        <div><label for="heure-date-${chantierId}">Date</label><input type="date" id="heure-date-${chantierId}" value="${today}"></div>
-        <div><label for="heure-taux-${chantierId}">Coût horaire chargé (optionnel)</label><input type="number" step="0.01" min="0" id="heure-taux-${chantierId}" placeholder="Ex: 35"></div>
-        <div><label for="heure-note-${chantierId}">Note (optionnel)</label><input type="text" id="heure-note-${chantierId}" placeholder="Ex: pose carrelage"></div>
+        <div><label for="heure-duree-${chantierId}">Durée (heures) *</label><input type="number" step="0.25" min="0.25" id="heure-duree-${chantierId}" value="${heure ? escapeHtml(heure.duree_heures) : ""}" placeholder="Ex: 6.5"></div>
+        <div><label for="heure-date-${chantierId}">Date</label><input type="date" id="heure-date-${chantierId}" value="${heure ? escapeHtml(heure.date_travail) : today}"></div>
+        <div><label for="heure-taux-${chantierId}">Coût horaire chargé (optionnel)</label><input type="number" step="0.01" min="0" id="heure-taux-${chantierId}" value="${heure && heure.taux_horaire !== null ? escapeHtml(heure.taux_horaire) : ""}" placeholder="Ex: 35"></div>
+        <div><label for="heure-note-${chantierId}">Note (optionnel)</label><input type="text" id="heure-note-${chantierId}" value="${escapeHtml(heure && heure.note ? heure.note : "")}" placeholder="Ex: pose carrelage"></div>
       </div>
       <p class="field-error" id="heures-error-${chantierId}" hidden></p>
       <div class="form-actions">
-        <button type="button" class="btn-sm btn-sm-primary" data-action="submit-heures" data-id="${chantierId}">Ajouter</button>
+        <button type="button" class="btn-sm btn-sm-primary" data-action="submit-heures" data-id="${chantierId}" ${heure ? `data-heure-id="${heure.id}"` : ""}>${heure ? "Enregistrer" : "Ajouter"}</button>
         <button type="button" class="btn-sm" data-action="cancel-heures-form" data-id="${chantierId}">Annuler</button>
       </div>
     </div>`;
@@ -3256,6 +3276,32 @@ function showCloturerForm(chantierId) {
     </div>`;
 }
 
+async function showChantierEditForm(c) {
+  const container = document.getElementById(`chantier-edit-form-${c.id}`);
+  if (!container) return;
+  await ensureClientsCache();
+  const verrou = !!c.finances_verrouillees;
+  const clientVerrouille = verrou || !!c.devis_id;
+  container.innerHTML = `
+    <div class="form-box" style="margin-top:12px;">
+      <h3 style="font-size:0.95rem;">Modifier le chantier</h3>
+      <div class="form-grid">
+        <div><label for="chantier-titre-${c.id}">Titre *</label><input type="text" id="chantier-titre-${c.id}" value="${escapeHtml(c.titre)}"></div>
+        <div><label for="chantier-client-${c.id}">Client *</label><select id="chantier-client-${c.id}" ${clientVerrouille ? "disabled" : ""}>${clientOptionsHtml(c.client_id)}</select></div>
+        <div><label for="chantier-adresse-${c.id}">Adresse</label><input type="text" id="chantier-adresse-${c.id}" value="${escapeHtml(c.adresse || "")}"></div>
+        <div><label for="chantier-date-${c.id}">Date de début</label><input type="date" id="chantier-date-${c.id}" value="${escapeHtml(c.date_debut || "")}"></div>
+        <div><label for="chantier-budget-${c.id}">Budget prévu (euros)</label><input type="number" step="0.01" min="0" id="chantier-budget-${c.id}" value="${c.budget !== null ? escapeHtml(c.budget) : ""}" ${verrou ? "disabled" : ""}></div>
+      </div>
+      ${verrou ? '<div class="item-sub" style="margin-top:8px;">Le client et le budget sont verrouillés car la facture finale a été créée.</div>' : ""}
+      ${c.devis_id && !verrou ? '<div class="item-sub" style="margin-top:8px;">Le client reste celui du devis associé.</div>' : ""}
+      <p class="field-error" id="chantier-edit-error-${c.id}" hidden></p>
+      <div class="form-actions">
+        <button type="button" class="btn-sm btn-sm-primary" data-action="submit-chantier-edit" data-id="${c.id}">Enregistrer</button>
+        <button type="button" class="btn-sm" data-action="cancel-chantier-edit" data-id="${c.id}">Annuler</button>
+      </div>
+    </div>`;
+}
+
 function renderChantierCard(c) {
   const notesHtml = (c.notes || [])
     .slice()
@@ -3274,11 +3320,14 @@ function renderChantierCard(c) {
   const depensesHtml = (c.depenses || [])
     .slice()
     .reverse()
-    .map((d) => `<div class="item-sub">${fmtDate(d.date_depense)} · ${escapeHtml(d.libelle)} · ${fmtEuro(d.montant)}${d.fournisseur_nom ? " · " + escapeHtml(d.fournisseur_nom) : ""}</div>`)
+    .map((d) => `<div class="item-sub" style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+      <span>${fmtDate(d.date_depense)} · ${escapeHtml(d.libelle)} · ${fmtEuro(d.montant)}${d.fournisseur_nom ? " · " + escapeHtml(d.fournisseur_nom) : ""}</span>
+      ${c.finances_verrouillees ? "" : `<button type="button" class="btn-sm" style="padding:2px 8px;flex-shrink:0;" data-action="edit-depense" data-id="${c.id}" data-depense-id="${d.id}">Modifier</button>`}
+    </div>`)
     .join("");
 
   return `
-  <div class="item-card">
+  <div class="item-card chantier-card" data-chantier-id="${c.id}">
     <div class="item-card-top">
       <div>
         <div class="item-title">${escapeHtml(c.titre)}</div>
@@ -3296,14 +3345,16 @@ function renderChantierCard(c) {
     ${progressionHtml(c)}
     ${checklistHtml(c)}
     ${rentabiliteHtml(c)}
+    ${c.finances_verrouillees ? '<div class="moment-banner"><span>Les données financières sont verrouillées depuis la création de la facture finale.</span></div>' : ""}
     ${depensesHtml ? `<div class="item-meta">${depensesHtml}</div>` : ""}
     ${heuresHtml(c)}
     <div class="notes-list">${notesHtml || '<div class="item-sub">Aucune note pour le moment.</div>'}</div>
     ${receptionHtml(c)}
     <div class="item-actions">
+      <button type="button" class="btn-sm" data-action="edit-chantier" data-id="${c.id}">Modifier le chantier</button>
       <button type="button" class="btn-sm btn-sm-primary" data-action="toggle-note-form" data-id="${c.id}">+ Ajouter une note</button>
-      <button type="button" class="btn-sm" data-action="toggle-depense-form" data-id="${c.id}">+ Ajouter une dépense</button>
-      <button type="button" class="btn-sm" data-action="toggle-heures-form" data-id="${c.id}">+ Ajouter des heures</button>
+      ${c.finances_verrouillees ? "" : `<button type="button" class="btn-sm" data-action="toggle-depense-form" data-id="${c.id}">+ Ajouter une dépense</button>
+      <button type="button" class="btn-sm" data-action="toggle-heures-form" data-id="${c.id}">+ Ajouter des heures</button>`}
       <button type="button" class="btn-sm" data-action="chantier-document" data-id="${c.id}">+ Ajouter un document</button>
       <button type="button" class="btn-sm" data-action="planifier-intervention" data-id="${c.id}">Planifier une intervention</button>
       ${!["termine", "facture", "paye"].includes(c.statut) ? `<button type="button" class="btn-sm" data-action="terminer-chantier" data-id="${c.id}">Marquer terminé</button>` : ""}
@@ -3312,6 +3363,7 @@ function renderChantierCard(c) {
       <button type="button" class="btn-sm" data-action="rapport-chantier" data-id="${c.id}">Télécharger le rapport</button>
       <button type="button" class="btn-sm btn-sm-danger" data-action="delete-chantier" data-id="${c.id}">Archiver</button>
     </div>
+    <div id="chantier-edit-form-${c.id}"></div>
     <div id="note-form-${c.id}"></div>
     <div id="depense-form-${c.id}"></div>
     <div id="heures-form-${c.id}"></div>
@@ -3320,22 +3372,21 @@ function renderChantierCard(c) {
   </div>`;
 }
 
-function showDepenseForm(chantierId) {
+function showDepenseForm(chantierId, depense = null) {
   const container = document.getElementById(`depense-form-${chantierId}`);
   if (!container) return;
   const today = new Date().toISOString().slice(0, 10);
-  const fournisseurOptions = fournisseursCache.map((f) => `<option value="${f.id}">${escapeHtml(f.nom)}</option>`).join("");
   container.innerHTML = `
     <div class="form-box" style="margin-top:12px;">
       <div class="form-grid">
-        <div><label for="dep-libelle-${chantierId}">Libellé *</label><input type="text" id="dep-libelle-${chantierId}" placeholder="Ex: Matériaux carrelage"></div>
-        <div><label for="dep-montant-${chantierId}">Montant (euros) *</label><input type="number" step="0.01" min="0.01" id="dep-montant-${chantierId}"></div>
-        <div><label for="dep-date-${chantierId}">Date</label><input type="date" id="dep-date-${chantierId}" value="${today}"></div>
-        <div><label for="dep-fournisseur-${chantierId}">Fournisseur (optionnel)</label><select id="dep-fournisseur-${chantierId}"><option value="">Aucun</option>${fournisseurOptions}</select></div>
+        <div><label for="dep-libelle-${chantierId}">Libellé *</label><input type="text" id="dep-libelle-${chantierId}" value="${escapeHtml(depense ? depense.libelle : "")}" placeholder="Ex: Matériaux carrelage"></div>
+        <div><label for="dep-montant-${chantierId}">Montant (euros) *</label><input type="number" step="0.01" min="0.01" id="dep-montant-${chantierId}" value="${depense ? escapeHtml(depense.montant) : ""}"></div>
+        <div><label for="dep-date-${chantierId}">Date</label><input type="date" id="dep-date-${chantierId}" value="${depense ? escapeHtml(depense.date_depense) : today}"></div>
+        <div><label for="dep-fournisseur-${chantierId}">Fournisseur (optionnel)</label><select id="dep-fournisseur-${chantierId}"><option value="">Aucun</option>${fournisseursCache.map((f) => `<option value="${f.id}" ${depense && depense.fournisseur_id === f.id ? "selected" : ""}>${escapeHtml(f.nom)}</option>`).join("")}</select></div>
       </div>
       <p class="field-error" id="depense-error-${chantierId}" hidden></p>
       <div class="form-actions">
-        <button type="button" class="btn-sm btn-sm-primary" data-action="submit-depense" data-id="${chantierId}">Ajouter</button>
+        <button type="button" class="btn-sm btn-sm-primary" data-action="submit-depense" data-id="${chantierId}" ${depense ? `data-depense-id="${depense.id}"` : ""}>${depense ? "Enregistrer" : "Ajouter"}</button>
         <button type="button" class="btn-sm" data-action="cancel-depense-form" data-id="${chantierId}">Annuler</button>
       </div>
     </div>`;
@@ -3455,7 +3506,41 @@ function setupChantiersView() {
 
     const id = parseInt(btn.dataset.id, 10);
 
-    if (btn.dataset.action === "chantier-document") {
+    if (btn.dataset.action === "edit-chantier") {
+      const chantier = chantiersCache.find((c) => c.id === id);
+      if (chantier) await showChantierEditForm(chantier);
+    } else if (btn.dataset.action === "cancel-chantier-edit") {
+      document.getElementById(`chantier-edit-form-${id}`).innerHTML = "";
+    } else if (btn.dataset.action === "submit-chantier-edit") {
+      const chantier = chantiersCache.find((c) => c.id === id);
+      const errorBox = document.getElementById(`chantier-edit-error-${id}`);
+      const titre = document.getElementById(`chantier-titre-${id}`).value.trim();
+      if (!titre) {
+        errorBox.hidden = false;
+        errorBox.textContent = "Le titre est obligatoire.";
+        return;
+      }
+      const payload = {
+        titre,
+        adresse: emptyToNull(document.getElementById(`chantier-adresse-${id}`).value),
+        date_debut: emptyToNull(document.getElementById(`chantier-date-${id}`).value),
+      };
+      if (chantier && !chantier.finances_verrouillees && !chantier.devis_id) {
+        payload.client_id = parseInt(document.getElementById(`chantier-client-${id}`).value, 10);
+      }
+      if (chantier && !chantier.finances_verrouillees) {
+        const budget = document.getElementById(`chantier-budget-${id}`).value;
+        payload.budget = budget === "" ? null : parseFloat(budget);
+      }
+      try {
+        await Api.updateChantier(id, payload);
+        showToast("Chantier mis à jour.");
+        loadChantiers();
+      } catch (err) {
+        errorBox.hidden = false;
+        errorBox.textContent = err.message;
+      }
+    } else if (btn.dataset.action === "chantier-document") {
       switchView("documents");
       setTimeout(() => showDocumentForm(id), 50);
     } else if (btn.dataset.action === "planifier-intervention") {
@@ -3504,6 +3589,11 @@ function setupChantiersView() {
     } else if (btn.dataset.action === "toggle-depense-form") {
       await ensureFournisseursCache();
       showDepenseForm(id);
+    } else if (btn.dataset.action === "edit-depense") {
+      await ensureFournisseursCache();
+      const chantier = chantiersCache.find((c) => c.id === id);
+      const depense = chantier && chantier.depenses.find((d) => d.id === parseInt(btn.dataset.depenseId, 10));
+      if (depense) showDepenseForm(id, depense);
     } else if (btn.dataset.action === "cancel-depense-form") {
       document.getElementById(`depense-form-${id}`).innerHTML = "";
     } else if (btn.dataset.action === "submit-depense") {
@@ -3518,19 +3608,32 @@ function setupChantiersView() {
         return;
       }
       try {
-        await Api.addChantierDepense(id, {
+        const payload = {
           libelle, montant: parseFloat(montant), date_depense: dateDepense,
           fournisseur_id: fournisseurId ? parseInt(fournisseurId, 10) : null,
-        });
-        showToast("Dépense ajoutée.");
+        };
+        if (btn.dataset.depenseId) {
+          await Api.updateChantierDepense(id, parseInt(btn.dataset.depenseId, 10), payload);
+          showToast("Dépense mise à jour.");
+        } else {
+          await Api.addChantierDepense(id, payload);
+          showToast("Dépense ajoutée.");
+        }
         loadChantiers();
       } catch (err) {
         errorBox.hidden = false;
         errorBox.textContent = err.message;
       }
     } else if (btn.dataset.action === "toggle-heures-form") {
-      await ensureEquipeCache();
+      if (hasPlan("business")) await ensureEquipeCache();
+      else equipeCache = [];
       showHeuresForm(id);
+    } else if (btn.dataset.action === "edit-heure") {
+      if (hasPlan("business")) await ensureEquipeCache();
+      else equipeCache = [];
+      const chantier = chantiersCache.find((c) => c.id === id);
+      const heure = chantier && chantier.heures.find((h) => h.id === parseInt(btn.dataset.heureId, 10));
+      if (heure) showHeuresForm(id, heure);
     } else if (btn.dataset.action === "cancel-heures-form") {
       document.getElementById(`heures-form-${id}`).innerHTML = "";
     } else if (btn.dataset.action === "submit-heures") {
@@ -3551,14 +3654,20 @@ function setupChantiersView() {
         return;
       }
       try {
-        await Api.addChantierHeures(id, {
+        const payload = {
           membre_id: membreId ? parseInt(membreId, 10) : null,
           nom_intervenant: nomIntervenant,
           duree_heures: parseFloat(duree), date_travail: dateTravail,
           taux_horaire: taux ? parseFloat(taux) : null,
           note: emptyToNull(note),
-        });
-        showToast("Heures ajoutées.");
+        };
+        if (btn.dataset.heureId) {
+          await Api.updateChantierHeures(id, parseInt(btn.dataset.heureId, 10), payload);
+          showToast("Heures mises à jour.");
+        } else {
+          await Api.addChantierHeures(id, payload);
+          showToast("Heures ajoutées.");
+        }
         loadChantiers();
       } catch (err) {
         errorBox.hidden = false;
@@ -4031,7 +4140,8 @@ function planningToolbarHtml(debut, fin) {
 
 function planningItemChip(item, compact) {
   const heure = item.type === "chantier_debut" ? "" : `<span class="planning-item-heure">${planningHeureLocale(item.date)}</span> `;
-  return `<div class="planning-item ${PLANNING_TYPE_CLASS[item.type] || ""}" draggable="true" data-type="${item.type}" data-ref-id="${item.reference_id}" data-current-date="${item.date}" title="${escapeHtml(item.titre)}">
+  const ouvreFiche = item.type === "chantier_debut" || PLANNING_TYPES_EVENEMENT.has(item.type);
+  return `<div class="planning-item ${PLANNING_TYPE_CLASS[item.type] || ""} ${ouvreFiche ? "planning-item-clickable" : ""}" draggable="${item.type === "chantier_debut" ? "false" : "true"}" data-type="${item.type}" data-ref-id="${item.reference_id}" data-current-date="${item.date}" ${ouvreFiche ? 'role="button" tabindex="0"' : ""} title="${escapeHtml(item.titre)}">
     ${compact ? "" : heure}<span class="planning-item-titre">${escapeHtml(item.titre)}</span>
   </div>`;
 }
@@ -4253,7 +4363,8 @@ function setupPlanningView() {
       const item = planningItemsCache.find(
         (i) => String(i.reference_id) === chip.dataset.refId && i.type === chip.dataset.type,
       );
-      if (item && PLANNING_TYPES_EVENEMENT.has(item.type)) ouvrirDetailEvenement(item);
+      if (item && item.type === "chantier_debut") ouvrirChantierDepuisPlanning(item.chantier_id || item.reference_id);
+      else if (item && PLANNING_TYPES_EVENEMENT.has(item.type)) ouvrirDetailEvenement(item);
       return;
     }
     const btn = e.target.closest("[data-action]");
@@ -4273,9 +4384,19 @@ function setupPlanningView() {
     }
   });
 
+  planningContent.addEventListener("keydown", (e) => {
+    if ((e.key === "Enter" || e.key === " ") && e.target.matches(".planning-item-clickable")) {
+      e.preventDefault();
+      e.target.click();
+    }
+  });
+
   planningContent.addEventListener("dragstart", (e) => {
     const chip = e.target.closest(".planning-item");
-    if (!chip) return;
+    if (!chip || chip.dataset.type === "chantier_debut") {
+      e.preventDefault();
+      return;
+    }
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", JSON.stringify({
       type: chip.dataset.type, refId: chip.dataset.refId, currentDate: chip.dataset.currentDate,
@@ -4313,14 +4434,14 @@ function setupPlanningView() {
     await withErrorToast(async () => {
       if (data.type === "tache") {
         await Api.updateTache(parseInt(data.refId, 10), { echeance: newDate });
-      } else if (data.type === "chantier_debut") {
-        await Api.updateChantier(parseInt(data.refId, 10), { date_debut: newDate });
-      } else {
+      } else if (PLANNING_TYPES_EVENEMENT.has(data.type)) {
         const oldDate = new Date(data.currentDate);
         const [y, m, d] = newDate.split("-").map(Number);
         const combined = new Date(oldDate);
         combined.setFullYear(y, m - 1, d);
         await Api.updateEvenement(parseInt(data.refId, 10), { date_debut: combined.toISOString() });
+      } else {
+        return;
       }
       showToast("Deplace au " + new Date(newDate + "T00:00:00").toLocaleDateString("fr-FR"));
       loadPlanning();

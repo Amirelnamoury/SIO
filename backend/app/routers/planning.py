@@ -122,7 +122,7 @@ def obtenir_planning(
     for c in chantiers:
         items.append(PlanningItem(
             date=datetime.combine(c.date_debut, time(8, 0), tzinfo=timezone.utc), type="chantier_debut",
-            titre=f"Debut chantier : {c.titre}", reference_id=c.id, client_id=c.client_id, chantier_id=c.id,
+            titre=f"Début chantier : {c.titre}", reference_id=c.id, client_id=c.client_id, chantier_id=c.id,
         ))
 
     def _sort_key(item: PlanningItem) -> datetime:

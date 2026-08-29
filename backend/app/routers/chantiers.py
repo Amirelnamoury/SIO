@@ -1,5 +1,6 @@
 import secrets
 from datetime import date, datetime, timedelta, timezone
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session, joinedload
@@ -22,8 +23,10 @@ from app.schemas import (
     CloturerChantierOut,
     DepenseCreate,
     DepenseOut,
+    DepenseUpdate,
     HeureTravailCreate,
     HeureTravailOut,
+    HeureTravailUpdate,
     PreparerChantierIn,
     PreparerChantierOut,
 )
@@ -55,6 +58,21 @@ def _get_chantier_or_404(db: Session, artisan: Artisan, chantier_id: int) -> Cha
     return chantier
 
 
+def _finances_verrouillees(chantier: Chantier) -> bool:
+    return chantier.statut in ("facture", "paye") or any(
+        facture.type == "finale" and facture.statut != "annulee"
+        for facture in chantier.factures
+    )
+
+
+def _refuser_si_finances_verrouillees(chantier: Chantier) -> None:
+    if _finances_verrouillees(chantier):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Les données financières d'un chantier facturé sont verrouillées.",
+        )
+
+
 def _to_out(chantier: Chantier) -> ChantierOut:
     return ChantierOut(
         id=chantier.id, artisan_id=chantier.artisan_id, client_id=chantier.client_id,
@@ -65,6 +83,7 @@ def _to_out(chantier: Chantier) -> ChantierOut:
         cout_main_oeuvre=chantier.cout_main_oeuvre, marge_estimee=chantier.marge_estimee,
         montant_facture=chantier.montant_facture, montant_encaisse=chantier.montant_encaisse,
         marge_reelle=chantier.marge_reelle, progression=chantier.progression,
+        finances_verrouillees=_finances_verrouillees(chantier),
         date_reception=chantier.date_reception, reserves=chantier.reserves,
         created_at=chantier.created_at, notes=chantier.notes, depenses=chantier.depenses,
         heures=sorted(chantier.heures, key=lambda h: h.date_travail, reverse=True),
@@ -208,6 +227,17 @@ def modifier_chantier(
 ):
     chantier = _get_chantier_or_404(db, artisan, chantier_id)
     updates = payload.model_dump(exclude_unset=True)
+    if _finances_verrouillees(chantier) and {"budget", "client_id"}.intersection(updates):
+        _refuser_si_finances_verrouillees(chantier)
+    if "client_id" in updates:
+        client = db.query(Client).filter(Client.id == updates["client_id"], Client.artisan_id == artisan.id).first()
+        if client is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client introuvable")
+        if chantier.devis_id is not None and updates["client_id"] != chantier.client_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Le client d'un chantier issu d'un devis ne peut pas être modifié.",
+            )
     for field, value in updates.items():
         setattr(chantier, field, value)
     db.commit()
@@ -266,12 +296,40 @@ def ajouter_depense(
 ):
     """Ajoute une depense (materiaux, sous-traitance...) pour suivre la marge du chantier."""
     chantier = _get_chantier_or_404(db, artisan, chantier_id)
+    _refuser_si_finances_verrouillees(chantier)
     if payload.fournisseur_id is not None:
         fournisseur = db.query(Fournisseur).filter(Fournisseur.id == payload.fournisseur_id, Fournisseur.artisan_id == artisan.id).first()
         if fournisseur is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Fournisseur introuvable")
     depense = Depense(chantier_id=chantier.id, **payload.model_dump())
     db.add(depense)
+    db.commit()
+    db.refresh(depense)
+    return depense
+
+
+@router.patch("/{chantier_id}/depenses/{depense_id}", response_model=DepenseOut)
+def modifier_depense(
+    chantier_id: int,
+    depense_id: int,
+    payload: DepenseUpdate,
+    db: Session = Depends(get_db),
+    artisan: Artisan = Depends(require_active_subscription),
+):
+    chantier = _get_chantier_or_404(db, artisan, chantier_id)
+    _refuser_si_finances_verrouillees(chantier)
+    depense = db.query(Depense).filter(Depense.id == depense_id, Depense.chantier_id == chantier.id).first()
+    if depense is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dépense introuvable")
+    updates = payload.model_dump(exclude_unset=True)
+    if "fournisseur_id" in updates and updates["fournisseur_id"] is not None:
+        fournisseur = db.query(Fournisseur).filter(
+            Fournisseur.id == updates["fournisseur_id"], Fournisseur.artisan_id == artisan.id,
+        ).first()
+        if fournisseur is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Fournisseur introuvable")
+    for field, value in updates.items():
+        setattr(depense, field, value)
     db.commit()
     db.refresh(depense)
     return depense
@@ -288,12 +346,38 @@ def ajouter_heures(
     suivi simple, pas de pointeuse). Alimente Chantier.total_heures et
     Chantier.cout_main_oeuvre, donc la marge reelle/estimee."""
     chantier = _get_chantier_or_404(db, artisan, chantier_id)
+    _refuser_si_finances_verrouillees(chantier)
     if payload.membre_id is not None:
         membre = db.query(Membre).filter(Membre.id == payload.membre_id, Membre.artisan_id == artisan.id).first()
         if membre is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Membre introuvable")
     heure = HeureTravail(chantier_id=chantier.id, **payload.model_dump())
     db.add(heure)
+    db.commit()
+    db.refresh(heure)
+    return heure
+
+
+@router.patch("/{chantier_id}/heures/{heure_id}", response_model=HeureTravailOut)
+def modifier_heures(
+    chantier_id: int,
+    heure_id: int,
+    payload: HeureTravailUpdate,
+    db: Session = Depends(get_db),
+    artisan: Artisan = Depends(require_active_subscription),
+):
+    chantier = _get_chantier_or_404(db, artisan, chantier_id)
+    _refuser_si_finances_verrouillees(chantier)
+    heure = db.query(HeureTravail).filter(HeureTravail.id == heure_id, HeureTravail.chantier_id == chantier.id).first()
+    if heure is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Entrée d'heures introuvable")
+    updates = payload.model_dump(exclude_unset=True)
+    if "membre_id" in updates and updates["membre_id"] is not None:
+        membre = db.query(Membre).filter(Membre.id == updates["membre_id"], Membre.artisan_id == artisan.id).first()
+        if membre is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Membre introuvable")
+    for field, value in updates.items():
+        setattr(heure, field, value)
     db.commit()
     db.refresh(heure)
     return heure
@@ -307,6 +391,7 @@ def supprimer_heures(
     artisan: Artisan = Depends(require_active_subscription),
 ):
     chantier = _get_chantier_or_404(db, artisan, chantier_id)
+    _refuser_si_finances_verrouillees(chantier)
     heure = db.query(HeureTravail).filter(HeureTravail.id == heure_id, HeureTravail.chantier_id == chantier.id).first()
     if heure is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Entrée d'heures introuvable")
@@ -448,5 +533,10 @@ def telecharger_rapport_chantier(
     pdf_bytes = generate_chantier_report_pdf(chantier, artisan, photos)
     return Response(
         content=pdf_bytes, media_type="application/pdf",
-        headers={"Content-Disposition": f'inline; filename="rapport-{chantier.titre}.pdf"'},
+        headers={
+            "Content-Disposition": (
+                f'inline; filename="rapport-chantier-{chantier.id}.pdf"; '
+                f"filename*=UTF-8''{quote(f'rapport-{chantier.titre}.pdf')}"
+            ),
+        },
     )
