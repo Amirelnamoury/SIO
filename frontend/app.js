@@ -2649,6 +2649,27 @@ async function loadFactures() {
 
 const FACTURE_TYPE_LABELS = { standard: "Standard", acompte: "Acompte", situation: "Situation", finale: "Finale", avoir: "Avoir" };
 
+function buildPublicFrontendUrl(page, token) {
+  const url = new URL(page, document.baseURI);
+  url.searchParams.set("t", token);
+  return url.href;
+}
+
+function erreurMontantPaiement(montant, soldeRestant) {
+  const montantCentimes = Math.round(Number(montant) * 100);
+  const soldeCentimes = Math.round(Number(soldeRestant) * 100);
+  if (!Number.isFinite(montantCentimes) || montantCentimes <= 0) {
+    return "Le montant du paiement doit être supérieur à zéro.";
+  }
+  if (!Number.isFinite(soldeCentimes) || soldeCentimes <= 0) {
+    return "Cette facture est déjà totalement payée.";
+  }
+  if (montantCentimes > soldeCentimes) {
+    return `Le montant du paiement dépasse le solde restant de ${fmtEuro(soldeRestant)}.`;
+  }
+  return null;
+}
+
 function renderFactureCard(f) {
   const meta = FACTURE_STATUT_META[f.statut] || { label: f.statut, badge: "badge-gray" };
   const isDue = facturesDueIds.has(f.id);
@@ -2658,7 +2679,7 @@ function renderFactureCard(f) {
     actions += `<button type="button" class="btn-sm btn-sm-primary" data-action="envoyer-facture" data-id="${f.id}">Marquer envoyée</button>`;
   }
   if (f.montant_restant > 0 && f.statut !== "brouillon" && f.statut !== "annulee") {
-    actions += `<button type="button" class="btn-sm btn-sm-primary" data-action="ajouter-paiement" data-id="${f.id}">+ Enregistrer un paiement</button>`;
+    actions += `<button type="button" class="btn-sm btn-sm-primary" data-action="ajouter-paiement" data-id="${f.id}" data-restant="${f.montant_restant}">+ Enregistrer un paiement</button>`;
   }
   if (isDue) {
     actions += `<button type="button" class="btn-sm btn-sm-primary" data-action="relancer-facture" data-id="${f.id}">Relancer</button>`;
@@ -2698,14 +2719,15 @@ function renderFactureCard(f) {
   </div>`;
 }
 
-function showPaiementForm(factureId) {
+function showPaiementForm(factureId, soldeRestant) {
   const container = document.getElementById(`paiement-form-${factureId}`);
   if (!container) return;
   const today = new Date().toISOString().slice(0, 10);
+  const maximum = Number(soldeRestant).toFixed(2);
   container.innerHTML = `
     <div class="form-box" style="margin-top:12px;">
       <div class="form-grid">
-        <div><label for="pay-montant-${factureId}">Montant (euros) *</label><input type="number" step="0.01" min="0.01" id="pay-montant-${factureId}" required></div>
+        <div><label for="pay-montant-${factureId}">Montant (euros) * · Solde ${fmtEuro(soldeRestant)}</label><input type="number" step="0.01" min="0.01" max="${maximum}" id="pay-montant-${factureId}" required></div>
         <div><label for="pay-date-${factureId}">Date</label><input type="date" id="pay-date-${factureId}" value="${today}"></div>
         <div>
           <label for="pay-moyen-${factureId}">Moyen</label>
@@ -2828,20 +2850,27 @@ function setupFacturesView() {
         loadFactures();
       });
     } else if (btn.dataset.action === "ajouter-paiement") {
-      showPaiementForm(id);
+      showPaiementForm(id, parseFloat(btn.dataset.restant));
     } else if (btn.dataset.action === "cancel-paiement-form") {
       document.getElementById(`paiement-form-${id}`).innerHTML = "";
     } else if (btn.dataset.action === "submit-paiement") {
-      const montant = document.getElementById(`pay-montant-${id}`).value;
+      const montantInput = document.getElementById(`pay-montant-${id}`);
+      const montant = montantInput.value;
       const datePaiement = document.getElementById(`pay-date-${id}`).value;
       const moyen = document.getElementById(`pay-moyen-${id}`).value;
       const reference = document.getElementById(`pay-reference-${id}`).value;
+      const errorBox = document.getElementById(`paiement-error-${id}`);
+      const erreurMontant = erreurMontantPaiement(montant, montantInput.max);
+      if (erreurMontant) {
+        errorBox.hidden = false;
+        errorBox.textContent = erreurMontant;
+        return;
+      }
       try {
         await Api.ajouterPaiement(id, { montant: parseFloat(montant), date_paiement: datePaiement, moyen, reference: emptyToNull(reference) });
         showToast("Paiement enregistre.");
         loadFactures();
       } catch (err) {
-        const errorBox = document.getElementById(`paiement-error-${id}`);
         errorBox.hidden = false;
         errorBox.textContent = err.message;
       }
@@ -2861,7 +2890,7 @@ function setupFacturesView() {
         loadFactures();
       });
     } else if (btn.dataset.action === "copier-lien-facture") {
-      const url = `${window.location.origin}/facture-public.html?t=${btn.dataset.token}`;
+      const url = buildPublicFrontendUrl("facture-public.html", btn.dataset.token);
       try {
         await navigator.clipboard.writeText(url);
         showToast("Lien copié. Envoyez-le à votre client par email ou SMS.");

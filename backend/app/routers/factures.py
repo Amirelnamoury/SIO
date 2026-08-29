@@ -1,5 +1,6 @@
 import secrets
 from datetime import date, datetime, timedelta, timezone
+from decimal import Decimal
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
@@ -311,7 +312,23 @@ def ajouter_paiement(
     db: Session = Depends(get_db),
     artisan: Artisan = Depends(require_active_subscription),
 ):
-    facture = _get_facture_or_404(db, artisan, facture_id)
+    facture = (
+        db.query(Facture)
+        .filter(Facture.id == facture_id, Facture.artisan_id == artisan.id)
+        .with_for_update()
+        .first()
+    )
+    if facture is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Facture introuvable")
+
+    montant = Decimal(payload.montant).quantize(Decimal("0.01"))
+    solde_restant = Decimal(facture.montant_restant).quantize(Decimal("0.01"))
+    if montant > solde_restant:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Le montant du paiement dépasse le solde restant de la facture.",
+        )
+
     paiement = Paiement(facture_id=facture.id, **payload.model_dump())
     db.add(paiement)
     db.commit()

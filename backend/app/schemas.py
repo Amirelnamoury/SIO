@@ -1,7 +1,8 @@
 from datetime import datetime, date, timezone
+from decimal import Decimal
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr, ConfigDict, field_validator, model_validator
+from pydantic import BaseModel, EmailStr, ConfigDict, Field, field_validator, model_validator
 
 METIERS_VALIDES = {"plombier", "electricien", "macon", "peintre", "general"}
 CLIENT_STATUTS = {
@@ -509,7 +510,7 @@ class FactureUpdate(BaseModel):
 
 
 class PaiementCreate(BaseModel):
-    montant: float
+    montant: Decimal = Field(gt=0, max_digits=10, decimal_places=2)
     date_paiement: date
     moyen: str = "virement"
     reference: Optional[str] = None
