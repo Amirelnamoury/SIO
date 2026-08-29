@@ -29,7 +29,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.config import settings
 from app.database import SessionLocal
 from app import email_service
-from app.deps import PLAN_ORDRE
+from app.deps import plan_allows
 from app.models import Artisan, AutomationRun, ConformiteItem, Contrat, Devis, EmailLog, Facture
 from app.routers.conformite import SEUIL_ALERTE_JOURS
 from app.routers.contrats import generer_facture_pour_contrat
@@ -72,8 +72,7 @@ def _palier_devis(statut: str) -> int:
 
 
 def _plan_au_moins(artisan: Artisan, minimum: str) -> bool:
-    plan_actuel = artisan.plan if artisan.plan in PLAN_ORDRE else "gratuit"
-    return artisan.subscription_status == "active" and PLAN_ORDRE.index(plan_actuel) >= PLAN_ORDRE.index(minimum)
+    return plan_allows(artisan.plan, minimum)
 
 
 def _traiter_devis(db: Session, artisan: Artisan, run: AutomationRun) -> None:

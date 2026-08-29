@@ -77,7 +77,7 @@ class SchedulerPlanTests(unittest.TestCase):
         send_email.return_value = SimpleNamespace(statut="envoye")
         run = automation_run()
 
-        _traiter_conformite(db, artisan("essentiel"), run)
+        _traiter_conformite(db, artisan("essentiel", subscription_status="inactive"), run)
 
         send_email.assert_called_once()
         self.assertEqual(run.nb_alertes_conformite, 1)

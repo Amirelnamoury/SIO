@@ -292,7 +292,7 @@ function setupAuthScreen() {
 }
 
 // ===================== Fonctions payantes (abonnement) =====================
-function isSubscriptionActive() {
+function isBillingSubscriptionActive() {
   return currentArtisan && currentArtisan.subscription_status === "active";
 }
 
@@ -301,8 +301,8 @@ function isSubscriptionActive() {
 // echouer au clic, jamais la source de verite (toujours revalidee par
 // l'API a chaque action).
 function hasPlan(minimum) {
-  if (!isSubscriptionActive()) return false;
-  const planActuel = PRICING_ORDRE.includes(currentArtisan.plan) ? currentArtisan.plan : "gratuit";
+  const planActuel = currentArtisan && PRICING_ORDRE.includes(currentArtisan.plan) ? currentArtisan.plan : "gratuit";
+  if (!PRICING_ORDRE.includes(minimum)) return false;
   return PRICING_ORDRE.indexOf(planActuel) >= PRICING_ORDRE.indexOf(minimum);
 }
 
@@ -602,9 +602,9 @@ function setupProfilPanel() {
       <div class="profil-row">
         <div class="label">Abonnement Suite Artisan</div>
         <div class="value">
-          <span class="badge ${isSubscriptionActive() ? "badge-green" : "badge-gray"}">${isSubscriptionActive() ? "Actif" : "Inactif"}</span>
+          <span class="badge ${isBillingSubscriptionActive() ? "badge-green" : "badge-gray"}">${isBillingSubscriptionActive() ? "Actif" : "Inactif"}</span>
         </div>
-        ${!isSubscriptionActive() ? '<button type="button" class="btn-primary" data-action="upgrade-subscription" style="margin-top:10px;width:100%;">Voir les tarifs</button>' : ""}
+        ${!isBillingSubscriptionActive() ? '<button type="button" class="btn-primary" data-action="upgrade-subscription" style="margin-top:10px;width:100%;">Voir les tarifs</button>' : ""}
       </div>
       <div class="dash-section" style="margin-top:20px;">
         <h3 style="font-size:0.95rem;">Changer le mot de passe</h3>
@@ -2882,7 +2882,12 @@ const CONTRAT_STATUT_META = {
 
 async function loadContrats() {
   const list = document.getElementById("contrats-list");
+  const newBtn = document.querySelector('[data-action="show-contrat-form"]');
+  const formContainer = document.getElementById("contrat-form-container");
   if (!hasPlan("pro")) {
+    newBtn.hidden = true;
+    formContainer.hidden = true;
+    formContainer.innerHTML = "";
     list.innerHTML = renderUpgradeCard(
       "Contrats récurrents réservés au plan Pro",
       "La facturation automatique des contrats d'entretien/maintenance fait partie du plan Pro.",
@@ -2890,6 +2895,7 @@ async function loadContrats() {
     );
     return;
   }
+  newBtn.hidden = false;
   list.innerHTML = skeletonCards();
   try {
     const contrats = await Api.listContrats();

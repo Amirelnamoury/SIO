@@ -36,6 +36,7 @@ export default async function run() {
   await attendu402(api.get("/analytics", tokenGratuit), "les statistiques doivent etre reservees aux abonnes (Essentiel+)");
   await attendu402(api.get("/contrats", tokenGratuit), "les contrats recurrents doivent etre reserves au plan Pro");
   await attendu402(api.post(`/devis/${devis.id}/relancer`, undefined, tokenGratuit), "la relance manuelle de devis doit etre reservee au plan Pro");
+  await attendu402(api.get("/equipe", tokenGratuit), "la lecture de l'equipe doit etre reservee au plan Business");
   await attendu402(api.post("/equipe", { nom: "Test Membre", email: "x@test.fr", password: "TestPass123!" }, tokenGratuit), "la gestion d'equipe doit etre reservee au plan Business");
   logEtape("plan Gratuit : chantiers/factures/conformite/statistiques/contrats/relance-devis/equipe tous bloques (402)");
 
@@ -54,6 +55,10 @@ export default async function run() {
   await api.patch(`/factures/${factureE.id}`, { statut: "envoyee" }, tokenEssentiel);
   const factureRelancee = await api.post(`/factures/${factureE.id}/relancer`, undefined, tokenEssentiel);
   assert(factureRelancee.nb_relances === 1, "un abonne Essentiel doit pouvoir relancer manuellement une facture");
+  const facturePayee = await api.post(`/factures/${factureE.id}/paiements`, {
+    montant: 10, date_paiement: new Date().toISOString().slice(0, 10), moyen: "virement",
+  }, tokenEssentiel);
+  assert(facturePayee.montant_paye === 10, "un abonne Essentiel doit pouvoir enregistrer un paiement");
 
   const analytics = await api.get("/analytics", tokenEssentiel);
   assert(Array.isArray(analytics.ca_par_mois), "un abonne Essentiel doit acceder aux analytics");
@@ -73,6 +78,41 @@ export default async function run() {
   }, tokenEssentiel);
   await api.patch(`/devis/${devisE.id}`, { statut: "envoye" }, tokenEssentiel);
   await attendu402(api.post(`/devis/${devisE.id}/relancer`, undefined, tokenEssentiel), "la relance manuelle doit rester reservee au plan Pro pour un abonne Essentiel");
+  await attendu402(api.get("/equipe", tokenEssentiel), "la lecture de l'equipe doit rester reservee au plan Business pour un abonne Essentiel");
   await attendu402(api.post("/equipe", { nom: "Test Membre", email: "x@test.fr", password: "TestPass123!" }, tokenEssentiel), "l'equipe doit rester reservee au plan Business pour un abonne Essentiel");
   logEtape("plan Essentiel : contrats/relance-devis/equipe restent bloques (le plan ne debloque pas plus que ce qui est annonce)");
+
+  // ---------- Plan Pro : tout Essentiel + relances/automatisations/contrats, equipe bloquee ----------
+  const { token: tokenPro, email: emailPro } = await creerArtisanTest("scenario12-pro");
+  await activerAbonnement(emailPro, "pro");
+  await api.get("/factures", tokenPro);
+  await api.get("/chantiers", tokenPro);
+  await api.get("/conformite", tokenPro);
+  await api.get("/analytics", tokenPro);
+  await api.get("/contrats", tokenPro);
+  const clientP = await api.post("/clients", { nom: "Client Pro" }, tokenPro);
+  const devisP = await api.post("/devis", {
+    client_id: clientP.id, titre: "Devis pro", taux_tva: 20,
+    lignes: [{ description: "x", quantite: 1, prix_unitaire_ht: 10 }],
+  }, tokenPro);
+  await api.patch(`/devis/${devisP.id}`, { statut: "envoye" }, tokenPro);
+  const devisRelance = await api.post(`/devis/${devisP.id}/relancer`, undefined, tokenPro);
+  assert(devisRelance.nb_relances === 1, "un abonne Pro doit pouvoir relancer manuellement un devis");
+  await attendu402(api.get("/equipe", tokenPro), "l'equipe doit rester reservee au plan Business pour un abonne Pro");
+  logEtape("plan Pro : tout Essentiel, relance devis et contrats accessibles ; equipe bloquee");
+
+  // ---------- Plan Business : tout Pro + equipe/collaborateurs ----------
+  const { token: tokenBusiness, email: emailBusiness } = await creerArtisanTest("scenario12-business");
+  await activerAbonnement(emailBusiness, "business");
+  await api.get("/factures", tokenBusiness);
+  await api.get("/chantiers", tokenBusiness);
+  await api.get("/analytics", tokenBusiness);
+  await api.get("/contrats", tokenBusiness);
+  const membre = await api.post("/equipe", {
+    nom: "Collaborateur Business", email: `membre-${Date.now()}@e2e-test.fr`, password: "TestPass123!",
+  }, tokenBusiness);
+  assert(!!membre.id, "un abonne Business doit pouvoir creer un collaborateur");
+  const equipe = await api.get("/equipe", tokenBusiness);
+  assert(equipe.some((item) => item.id === membre.id), "un abonne Business doit pouvoir lire son equipe");
+  logEtape("plan Business : tout Pro et equipe accessibles");
 }

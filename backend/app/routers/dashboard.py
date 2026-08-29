@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
-from app.deps import get_current_artisan
+from app.deps import get_current_artisan, plan_allows
 from app.models import Artisan, Avis, Chantier, Client, ConformiteItem, Devis, Evenement, Facture, Paiement, Tache
 from app.routers.chantiers import _to_out as chantier_to_out
 from app.routers.conformite import SEUIL_ALERTE_JOURS, _to_out as conformite_to_out
@@ -328,8 +328,8 @@ def obtenir_recommandations(
                 urgence="haute" if jours < 7 else "moyenne", view="entreprise",
             ))
 
-    # ---------- Meilleur canal d'acquisition du mois (fonctionnalite reservee aux comptes actifs) ----------
-    if artisan.subscription_status == "active":
+    # ---------- Meilleur canal d'acquisition du mois (Essentiel+) ----------
+    if plan_allows(artisan.plan, "essentiel"):
         debut_mois = date(aujourdhui.year, aujourdhui.month, 1)
         clients_tous = db.query(Client).filter(Client.artisan_id == artisan.id).all()
         paiements_par_client = defaultdict(Decimal)

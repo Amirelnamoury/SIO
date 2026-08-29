@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.deps import UtilisateurActif, get_current_artisan, require_equipe_admin
+from app.deps import UtilisateurActif, require_equipe_admin, require_plan
 from app.models import Artisan, Membre
 from app.schemas import MembreCreate, MembreOut, MembreUpdate
 from app.security import hash_password
@@ -13,11 +13,12 @@ router = APIRouter(prefix="/equipe", tags=["equipe"])
 @router.get("", response_model=list[MembreOut])
 def lister_equipe(
     db: Session = Depends(get_db),
-    artisan: Artisan = Depends(get_current_artisan),
+    artisan: Artisan = Depends(require_plan("business")),
 ):
-    """Visible par tous les membres de l'equipe (proprietaire, administrateur
-    ou salarie) : seule la gestion (creer/modifier/supprimer) est reservee
-    aux administrateurs, voir les autres routes de ce fichier."""
+    """Visible par les membres d'un compte Business.
+
+    La gestion (creer/modifier/supprimer) reste reservee aux administrateurs.
+    """
     return db.query(Membre).filter(Membre.artisan_id == artisan.id).order_by(Membre.created_at).all()
 
 

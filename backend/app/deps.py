@@ -113,8 +113,7 @@ def require_equipe_admin(
     "administrateur", et seulement sur le plan Business (voir PLAN_ORDRE) -
     l'equipe multi-utilisateur est la fonction qui differencie Business des
     plans en-dessous."""
-    plan_actuel = utilisateur.artisan.plan if utilisateur.artisan.plan in PLAN_ORDRE else "gratuit"
-    if utilisateur.artisan.subscription_status != "active" or PLAN_ORDRE.index(plan_actuel) < PLAN_ORDRE.index("business"):
+    if not plan_allows(utilisateur.artisan.plan, "business"):
         raise HTTPException(
             status_code=status.HTTP_402_PAYMENT_REQUIRED,
             detail="La gestion d'équipe fait partie du plan Business. Passez au plan Business pour la débloquer.",
@@ -127,13 +126,14 @@ def require_equipe_admin(
 def require_active_subscription(
     artisan: Artisan = Depends(get_current_artisan),
 ) -> Artisan:
-    """A utiliser sur les routes reservees aux fonctions payantes de Suite
-    Artisan (chantiers, conformite, analytics...), quel que soit le plan
-    tant qu'il est actif. La gestion des devis reste gratuite : c'est la
-    porte d'entree qui donne envie de s'abonner, elle ne doit jamais etre
-    verrouillee."""
+    """Alias historique pour les routes accessibles des le plan Essentiel.
 
-    if artisan.subscription_status != "active":
+    Les droits fonctionnels proviennent du plan du compte authentifie. Le
+    statut d'abonnement reste une information de facturation affichee dans le
+    profil, mais ne constitue pas un second systeme d'entitlements.
+    """
+
+    if not plan_allows(artisan.plan, "essentiel"):
         raise HTTPException(
             status_code=status.HTTP_402_PAYMENT_REQUIRED,
             detail="Cette fonctionnalité fait partie de l'abonnement Suite Artisan. Abonnez-vous pour la débloquer.",
@@ -150,15 +150,19 @@ PLAN_ORDRE = ["gratuit", "essentiel", "pro", "business"]
 PLAN_LABELS = {"gratuit": "Gratuit", "essentiel": "Essentiel", "pro": "Pro", "business": "Business"}
 
 
-def require_plan(plan_minimum: str):
-    """Fabrique une dependance qui exige un abonnement actif ET un plan au
-    moins egal a plan_minimum dans PLAN_ORDRE. Le message d'erreur nomme le
-    plan requis (jamais juste "non autorise") pour que le paywall vende le
-    palier suivant plutot que d'afficher une interdiction seche."""
+def plan_allows(plan_actuel: str | None, plan_minimum: str) -> bool:
+    """Compare deux plans selon l'unique hierarchie fonctionnelle du produit."""
+    if plan_minimum not in PLAN_ORDRE:
+        return False
+    plan_normalise = plan_actuel if plan_actuel in PLAN_ORDRE else "gratuit"
+    return PLAN_ORDRE.index(plan_normalise) >= PLAN_ORDRE.index(plan_minimum)
 
-    def _dependency(artisan: Artisan = Depends(require_active_subscription)) -> Artisan:
-        plan_actuel = artisan.plan if artisan.plan in PLAN_ORDRE else "gratuit"
-        if PLAN_ORDRE.index(plan_actuel) < PLAN_ORDRE.index(plan_minimum):
+
+def require_plan(plan_minimum: str):
+    """Fabrique une dependance exigeant au moins plan_minimum."""
+
+    def _dependency(artisan: Artisan = Depends(get_current_artisan)) -> Artisan:
+        if not plan_allows(artisan.plan, plan_minimum):
             raise HTTPException(
                 status_code=status.HTTP_402_PAYMENT_REQUIRED,
                 detail=f"Cette fonctionnalité fait partie du plan {PLAN_LABELS[plan_minimum]}. Passez au plan {PLAN_LABELS[plan_minimum]} pour la débloquer.",

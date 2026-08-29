@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
-from app.deps import get_current_artisan
+from app.deps import get_current_artisan, plan_allows
 from app.models import Artisan, ConformiteItem, Devis, Facture, Message
 from app.routers.conformite import SEUIL_ALERTE_JOURS
 from app.routers.devis import JOURS_SEUIL_STATUTS, relance_due
@@ -58,7 +58,7 @@ def lister_notifications(
                 view="factures",
             ))
 
-    if artisan.subscription_status == "active":
+    if plan_allows(artisan.plan, "essentiel"):
         seuil = date.today() + timedelta(days=SEUIL_ALERTE_JOURS)
         conformite_items = (
             db.query(ConformiteItem)
