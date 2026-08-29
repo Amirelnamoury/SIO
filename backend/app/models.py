@@ -1,4 +1,5 @@
 from datetime import datetime, date, timezone
+from decimal import Decimal
 
 from sqlalchemy import (
     Column,
@@ -335,7 +336,12 @@ class Facture(Base):
 
     @property
     def montant_ht(self):
-        return round(sum(l.quantite * l.prix_unitaire_ht for l in self.lignes), 2) if self.lignes else 0.0
+        # Decimal, jamais float (voir MONTANT en tete de fichier) : une
+        # facture sans ligne doit rester du meme type que le cas normal,
+        # sinon montant_ttc (float * Decimal) plante juste en dessous.
+        if not self.lignes:
+            return Decimal("0.00")
+        return round(sum(l.quantite * l.prix_unitaire_ht for l in self.lignes), 2)
 
     @property
     def montant_ttc(self):
