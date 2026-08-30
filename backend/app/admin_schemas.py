@@ -30,6 +30,10 @@ class AdminTokenOut(BaseModel):
     admin: AdminIdentityOut
 
 
+class AdminPreviewSessionOut(BaseModel):
+    url: str
+
+
 class AdminDashboardOut(BaseModel):
     artisans_total: int
     artisans_actifs: int

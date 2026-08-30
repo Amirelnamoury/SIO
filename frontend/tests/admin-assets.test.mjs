@@ -22,5 +22,8 @@ assert.match(script, /opts\.headers\.Authorization = "Bearer " \+ token/, "les a
 assert.match(script, /location\.assign\("\/admin\/"\)/, "la connexion doit rediriger vers l'index Admin statique");
 assert.match(script, /location\.assign\("\/admin\/login\.html"\)/, "une session absente ou fermée doit rediriger vers le login statique");
 assert.doesNotMatch(script, /location\.assign\("\/admin\/login"\)/, "l'ancienne redirection backend-only ne doit plus subsister");
+assert.match(script, /preview-session/, "Voir la preview doit demander une session protégée au backend");
+assert.match(script, /previewWindow\.location\.replace\(apiUrl\(session\.url\)\)/, "la preview doit utiliser API_BASE après le handoff authentifié");
+assert.doesNotMatch(script, /window\.open\("\/admin\/api\/artisans\//, "la preview ne doit plus viser directement le serveur statique");
 
 console.log("OK - admin-assets.test.mjs");

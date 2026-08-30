@@ -1,7 +1,8 @@
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
+from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
@@ -13,6 +14,7 @@ from app.admin_schemas import (
     AdminDashboardOut,
     AdminIdentityOut,
     AdminLogin,
+    AdminPreviewSessionOut,
     AdminSiteListOut,
     AdminTokenOut,
     SiteVitrineOut,
@@ -27,14 +29,48 @@ from app.admin_service import (
 )
 from app.config import settings
 from app.database import get_db
-from app.deps import ADMIN_COOKIE_NAME, require_admin
+from app.deps import ADMIN_COOKIE_NAME, bearer_scheme, require_admin
 from app.models import AdminUser, Artisan, Client, Devis, Facture, Membre, SiteVitrine, utcnow
 from app.rate_limit import rate_limiter
-from app.security import create_access_token, verify_password
+from app.security import create_access_token, decode_access_token, verify_password
 from app.storage import get_storage
 
 router = APIRouter(tags=["admin"])
 FRONTEND_ADMIN_DIR = Path(__file__).resolve().parents[3] / "frontend" / "admin"
+ADMIN_PREVIEW_COOKIE_NAME = "suite_artisan_admin_preview"
+ADMIN_PREVIEW_SESSION_MINUTES = 10
+
+
+def _require_admin_or_preview(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+    db: Session = Depends(get_db),
+) -> tuple[AdminUser, int | None]:
+    """Autorise un admin complet ou une session limitee a une preview.
+
+    Le cookie de preview ne peut servir que sur les deux routes qui utilisent
+    explicitement cette dependance. Toutes les autres API Admin continuent de
+    passer exclusivement par require_admin.
+    """
+    try:
+        return require_admin(request, credentials, db), None
+    except HTTPException as admin_error:
+        token = request.cookies.get(ADMIN_PREVIEW_COOKIE_NAME)
+        resultat = decode_access_token(token) if token else None
+        if resultat is None:
+            raise admin_error
+        admin_id, subject_type = resultat
+        prefix = "admin_preview:"
+        if not subject_type.startswith(prefix):
+            raise admin_error
+        try:
+            artisan_id = int(subject_type.removeprefix(prefix))
+        except ValueError:
+            raise admin_error
+        admin = db.query(AdminUser).filter(AdminUser.id == admin_id, AdminUser.actif.is_(True)).first()
+        if admin is None:
+            raise admin_error
+        return admin, artisan_id
 
 
 def _artisan_or_404(db: Session, artisan_id: int) -> Artisan:
@@ -322,7 +358,13 @@ def admin_site_generate(
 
 
 @router.get("/admin/api/artisans/{artisan_id}/site/preview", response_class=HTMLResponse)
-def admin_site_preview(artisan_id: int, db: Session = Depends(get_db), _admin: AdminUser = Depends(require_admin)):
+def admin_site_preview(
+    artisan_id: int,
+    db: Session = Depends(get_db),
+    preview_access: tuple[AdminUser, int | None] = Depends(_require_admin_or_preview),
+):
+    if preview_access[1] is not None and preview_access[1] != artisan_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cette session ne donne pas accès à cette preview")
     artisan = _artisan_or_404(db, artisan_id)
     site = artisan.site_vitrine
     expected_key = preview_storage_key(artisan.id)
@@ -332,6 +374,58 @@ def admin_site_preview(artisan_id: int, db: Session = Depends(get_db), _admin: A
     if content is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Preview introuvable")
     return HTMLResponse(content=content.decode("utf-8"), headers={"Cache-Control": "no-store", "X-Robots-Tag": "noindex, nofollow"})
+
+
+@router.post(
+    "/admin/api/artisans/{artisan_id}/site/preview-session",
+    response_model=AdminPreviewSessionOut,
+)
+def admin_site_preview_session(
+    artisan_id: int,
+    db: Session = Depends(get_db),
+    admin: AdminUser = Depends(require_admin),
+):
+    artisan = _artisan_or_404(db, artisan_id)
+    expected_key = preview_storage_key(artisan.id)
+    if artisan.site_vitrine is None or artisan.site_vitrine.storage_key != expected_key or not get_storage().exists(expected_key):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Preview introuvable")
+    token = create_access_token(
+        admin.id,
+        f"admin_preview:{artisan.id}",
+        expires_minutes=ADMIN_PREVIEW_SESSION_MINUTES,
+    )
+    return AdminPreviewSessionOut(
+        url=f"/admin/api/artisans/{artisan.id}/site/preview/open?token={token}"
+    )
+
+
+@router.get("/admin/api/artisans/{artisan_id}/site/preview/open", include_in_schema=False)
+def admin_site_preview_open(artisan_id: int, token: str, db: Session = Depends(get_db)):
+    resultat = decode_access_token(token)
+    if resultat is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session de preview invalide ou expirée")
+    admin_id, subject_type = resultat
+    if subject_type != f"admin_preview:{artisan_id}":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Session de preview invalide")
+    admin = db.query(AdminUser).filter(AdminUser.id == admin_id, AdminUser.actif.is_(True)).first()
+    if admin is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Compte admin introuvable ou désactivé")
+    _artisan_or_404(db, artisan_id)
+
+    response = RedirectResponse(
+        url=f"/admin/api/artisans/{artisan_id}/site/preview",
+        status_code=status.HTTP_303_SEE_OTHER,
+    )
+    response.set_cookie(
+        key=ADMIN_PREVIEW_COOKIE_NAME,
+        value=token,
+        max_age=ADMIN_PREVIEW_SESSION_MINUTES * 60,
+        httponly=True,
+        secure=settings.admin_cookie_secure,
+        samesite="strict",
+        path="/admin",
+    )
+    return response
 
 
 @router.post("/admin/api/artisans/{artisan_id}/site/ready", response_model=SiteVitrineOut)
@@ -364,6 +458,14 @@ def admin_site_publish(artisan_id: int, db: Session = Depends(get_db), _admin: A
 
 
 @router.post("/admin/preview-api/pub/{slug}/demande-devis")
-def admin_preview_lead_sink(slug: str, _admin: AdminUser = Depends(require_admin)):
+def admin_preview_lead_sink(
+    slug: str,
+    db: Session = Depends(get_db),
+    preview_access: tuple[AdminUser, int | None] = Depends(_require_admin_or_preview),
+):
     """Confirme visuellement le formulaire sans jamais ecrire un prospect."""
+    if preview_access[1] is not None:
+        artisan = db.query(Artisan).filter(Artisan.id == preview_access[1], Artisan.slug == slug).first()
+        if artisan is None:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cette session ne donne pas accès à cette preview")
     return {"detail": f"Mode preview : aucune demande n'a ete creee pour {slug}."}

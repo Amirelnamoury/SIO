@@ -248,6 +248,19 @@
     await openArtisan(state.artisan.id);
   }
 
+  async function openPreview() {
+    const previewWindow = window.open("about:blank", "_blank");
+    if (!previewWindow) throw new Error("Autorisez l'ouverture de fenêtres pour afficher la preview");
+    previewWindow.opener = null;
+    try {
+      const session = await api("/admin/api/artisans/" + state.artisan.id + "/site/preview-session", { method: "POST" });
+      previewWindow.location.replace(apiUrl(session.url));
+    } catch (error) {
+      previewWindow.close();
+      throw error;
+    }
+  }
+
   document.querySelectorAll(".nav-item").forEach(function (item) {
     item.addEventListener("click", function () {
       if (item.dataset.view === "dashboard") loadDashboard().catch(handleError);
@@ -259,7 +272,7 @@
   document.getElementById("artisan-form").addEventListener("submit", function (event) { event.preventDefault(); saveArtisan().catch(handleError); });
   document.getElementById("site-form").addEventListener("submit", function (event) { event.preventDefault(); saveSite().catch(handleError); });
   document.getElementById("generate-button").addEventListener("click", function () { generate().catch(handleError); });
-  document.getElementById("preview-button").addEventListener("click", function () { window.open("/admin/api/artisans/" + state.artisan.id + "/site/preview", "_blank", "noopener"); });
+  document.getElementById("preview-button").addEventListener("click", function () { openPreview().catch(handleError); });
   document.getElementById("ready-button").addEventListener("click", function () { transition("ready", "Site marqué prêt à publier").catch(handleError); });
   document.getElementById("publish-button").addEventListener("click", function () { transition("publish", "Publication enregistrée").catch(handleError); });
   document.getElementById("artisan-form").elements.metier.addEventListener("change", function (event) { updateMotifs(event.target.value, ""); });
