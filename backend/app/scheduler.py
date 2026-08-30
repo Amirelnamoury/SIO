@@ -33,7 +33,7 @@ from app.deps import plan_allows
 from app.models import Artisan, AutomationRun, ConformiteItem, Contrat, Devis, EmailLog, Facture
 from app.routers.conformite import SEUIL_ALERTE_JOURS
 from app.routers.contrats import generer_facture_pour_contrat
-from app.routers.devis import JOURS_SEUIL_STATUTS, STATUT_SUIVANT, relance_due
+from app.routers.devis import JOURS_SEUIL_STATUTS, STATUT_SUIVANT, _palier_relance, relance_due
 from app.routers.factures import relance_facture_due
 
 logger = logging.getLogger("suite_artisan.scheduler")
@@ -51,13 +51,17 @@ DELAI_RETENTATIVE_HEURES = 20
 _scheduler: BackgroundScheduler | None = None
 
 
-def _tentative_recente(db: Session, *, type_: str, devis_id: int | None = None, facture_id: int | None = None, conformite_libelle: str | None = None) -> bool:
+def _tentative_recente(
+    db: Session, *, type_: str, devis_id: int | None = None, facture_id: int | None = None,
+    conformite_libelle: str | None = None, tous_statuts: bool = False,
+) -> bool:
     seuil = datetime.now(timezone.utc) - timedelta(hours=DELAI_RETENTATIVE_HEURES)
     query = db.query(EmailLog).filter(
         EmailLog.type == type_,
-        EmailLog.statut.in_(("non_configure", "echec", "sans_destinataire")),
         EmailLog.created_at >= seuil,
     )
+    if not tous_statuts:
+        query = query.filter(EmailLog.statut.in_(("non_configure", "echec", "sans_destinataire")))
     if devis_id is not None:
         query = query.filter(EmailLog.devis_id == devis_id)
     if facture_id is not None:
@@ -67,17 +71,13 @@ def _tentative_recente(db: Session, *, type_: str, devis_id: int | None = None, 
     return db.query(query.exists()).scalar()
 
 
-def _palier_devis(statut: str) -> int:
-    return {"envoye": 1, "consulte": 1, "relance_j3": 2, "relance_j7": 3}.get(statut, 1)
-
-
 def _plan_au_moins(artisan: Artisan, minimum: str) -> bool:
     return plan_allows(artisan.plan, minimum)
 
 
 def _traiter_devis(db: Session, artisan: Artisan, run: AutomationRun) -> None:
-    # Les relances automatiques sont une fonction du plan Pro, comme leur
-    # equivalent manuel (POST /devis/{id}/relancer) : meme frontiere.
+    # Les relances automatiques restent Pro+ ; l'action manuelle est
+    # volontairement distincte et disponible des le plan Essentiel.
     if not _plan_au_moins(artisan, "pro"):
         return
     candidats = (
@@ -89,14 +89,14 @@ def _traiter_devis(db: Session, artisan: Artisan, run: AutomationRun) -> None:
     for devis in candidats:
         if not relance_due(devis, artisan):
             continue
-        if _tentative_recente(db, type_="relance_devis", devis_id=devis.id):
+        if _tentative_recente(db, type_="relance_devis", devis_id=devis.id, tous_statuts=True):
             continue
 
         if not devis.token:
             devis.token = secrets.token_urlsafe(24)
             db.commit()
         url = f"{settings.app_base_url}/devis-public.html?t={devis.token}"
-        log = email_service.send_relance_devis(db, devis, artisan, url, _palier_devis(devis.statut))
+        log = email_service.send_relance_devis(db, devis, artisan, url, _palier_relance(devis.statut))
 
         if log.statut == "envoye":
             devis.statut = STATUT_SUIVANT[devis.statut]

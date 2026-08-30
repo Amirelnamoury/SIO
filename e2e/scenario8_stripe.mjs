@@ -74,13 +74,12 @@ export default async function run() {
   assert(!!chantier.id, "l'acces premium doit fonctionner reellement apres paiement");
   logEtape("acces premium reellement debloque (creation de chantier reussie)");
 
-  // Fonctionnalite specifiquement reservee au plan Pro (pas juste "abonne") :
-  // verifie que le plan achete via ce webhook debloque bien la bonne frontiere.
+  // Une fonctionnalite Essentiel+ reste naturellement accessible avec Pro.
   const devis = await api.post("/devis", { client_id: client.id, titre: "Devis E2E Stripe", taux_tva: 20, lignes: [{ description: "x", quantite: 1, prix_unitaire_ht: 100 }] }, token);
   await api.patch(`/devis/${devis.id}`, { statut: "envoye" }, token);
-  const devisRelance = await api.post(`/devis/${devis.id}/relancer`, undefined, token);
-  assert(!!devisRelance.id, "le plan Pro achete doit reellement debloquer la relance manuelle de devis");
-  logEtape("fonctionnalite specifique au plan Pro (relance devis) verifiee reellement debloquee");
+  const relance = await api.post(`/devis/${devis.id}/relancer`, undefined, token);
+  assert(!!relance.id, "le plan Pro achete doit heriter de la relance manuelle de devis Essentiel+");
+  logEtape("heritage Essentiel+ du plan Pro verifie avec la relance manuelle de devis");
 
   await postWebhookEvent({ id: `evt_fail_${me.id}`, type: "customer.subscription.updated", data: { object: { customer: customerId, status: "past_due" } } });
   const meEchec = await api.get("/auth/me", token);

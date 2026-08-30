@@ -34,9 +34,13 @@ export default async function run() {
   logEtape("devis consulte via le lien public");
 
   // Relance manuelle (meme logique que l'automatisation, declenchee a la main ici pour ne pas attendre le planificateur).
-  const devisRelance = await api.post(`/devis/${devis.id}/relancer`, {}, token);
-  assert(devisRelance.nb_relances >= 1, "la relance doit incrementer nb_relances");
-  logEtape(`devis relance (nb_relances=${devisRelance.nb_relances})`);
+  const relance = await api.post(`/devis/${devis.id}/relancer`, {}, token);
+  if (relance.email_statut === "envoye") {
+    assert(relance.nb_relances >= 1, "un email reellement envoye doit incrementer nb_relances");
+  } else {
+    assert(relance.nb_relances === 0, "une tentative non envoyee ne doit pas incrementer nb_relances");
+  }
+  logEtape(`tentative de relance devis tracee (email=${relance.email_statut})`);
 
   // Signature reelle par le client (endpoint public).
   const devisSigne = await api.post(`/pub/devis/${devis.token}/accepter`, { nom_signataire: "Jean Prospect" });

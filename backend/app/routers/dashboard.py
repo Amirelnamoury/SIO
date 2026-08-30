@@ -62,7 +62,7 @@ def obtenir_dashboard(
         .filter(Devis.artisan_id == artisan.id, Devis.statut.in_(JOURS_SEUIL_STATUTS))
         .all()
     )
-    devis_a_relancer = [devis_to_out(d) for d in devis_candidats if relance_due(d, artisan)]
+    devis_a_relancer = [devis_to_out(d, db) for d in devis_candidats if relance_due(d, artisan)]
 
     factures_ouvertes = (
         db.query(Facture)

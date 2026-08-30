@@ -51,6 +51,14 @@ function showToast(message, isError = false) {
   toastTimer = setTimeout(() => toast.classList.remove("show"), 3500);
 }
 
+function feedbackRelanceDevis(result) {
+  const statut = result && result.email_statut;
+  return {
+    message: result && result.message ? result.message : "Tentative de relance enregistrée.",
+    isError: statut !== "envoye",
+  };
+}
+
 async function withErrorToast(promiseFn) {
   try {
     return await promiseFn();
@@ -1391,8 +1399,9 @@ function setupDashboardView() {
     if (relanceDevisBtn) {
       const id = parseInt(relanceDevisBtn.dataset.id, 10);
       await withErrorToast(async () => {
-        await Api.relancerDevis(id);
-        showToast("Relance envoyée.");
+        const result = await Api.relancerDevis(id);
+        const feedback = feedbackRelanceDevis(result);
+        showToast(feedback.message, feedback.isError);
         loadDashboard();
       });
       return;
@@ -1684,7 +1693,9 @@ async function loadDashboard() {
       ...d.aujourdhui.devis_a_relancer.map((dv) => ({
         urgence: "moyenne", view: "devis",
         label: `Relancer ${escapeHtml(dv.client_nom)} (${escapeHtml(dv.numero || "devis #" + dv.id)})`,
-        ...(hasPlan("pro") ? { action: "relancer-devis", actionId: dv.id, actionLabel: "Relancer" } : {}),
+        ...(hasPlan("essentiel") && dv.relance_manuelle_possible !== false
+          ? { action: "relancer-devis", actionId: dv.id, actionLabel: "Relancer" }
+          : {}),
       })),
       ...d.aujourdhui.taches.map((t) => ({
         urgence: "moyenne", view: "taches",
@@ -2297,10 +2308,11 @@ function renderDevisCard(d) {
     if (d.montant_ht !== null) {
       actions += `<button type="button" class="btn-sm btn-sm-primary" data-action="envoyer-devis" data-id="${d.id}">Envoyer le devis</button>`;
     }
-  } else if (["envoye", "relance_j3", "relance_j7"].includes(d.statut) && hasPlan("pro")) {
-    actions += `<button type="button" class="btn-sm btn-sm-primary" data-action="relancer-devis" data-id="${d.id}">Relancer maintenant</button>`;
+  } else if (["envoye", "consulte", "relance_j3", "relance_j7"].includes(d.statut)
+      && hasPlan("essentiel") && d.relance_manuelle_possible !== false) {
+    actions += `<button type="button" class="btn-sm btn-sm-primary" data-action="relancer-devis" data-id="${d.id}">Relancer</button>`;
   }
-  if (["envoye", "relance_j3", "relance_j7", "relance_j15"].includes(d.statut)) {
+  if (["envoye", "consulte", "relance_j3", "relance_j7", "relance_j15"].includes(d.statut)) {
     actions += `<button type="button" class="btn-sm" data-action="marquer-devis" data-id="${d.id}" data-statut="signe">Marquer signé</button>`;
     actions += `<button type="button" class="btn-sm" data-action="marquer-devis" data-id="${d.id}" data-statut="perdu">Marquer perdu</button>`;
   }
@@ -2331,6 +2343,7 @@ function renderDevisCard(d) {
       ${montantTxt}${d.numero ? " · " + escapeHtml(d.numero) : ""}
       ${d.remise_montant ? ` · Remise ${d.remise_pourcentage}%` : ""}
       ${isDue ? " · <strong>Relance due aujourd'hui</strong>" : ""}
+      ${d.nb_relances > 0 ? ` · ${d.nb_relances} relance${d.nb_relances > 1 ? "s" : ""}${d.date_derniere_relance ? " · dernière le " + fmtDate(d.date_derniere_relance) : ""}` : ""}
       · Source : ${d.source === "site_vitrine" ? "Site vitrine" : "Manuel"}
       ${d.statut === "signe" && d.nom_signataire ? ` · Accepte par ${escapeHtml(d.nom_signataire)}` : ""}
     </div>
@@ -2503,10 +2516,18 @@ function setupDevisView() {
       });
     } else if (btn.dataset.action === "relancer-devis") {
       await withErrorToast(async () => {
-        await Api.relancerDevis(id);
-        showToast("Relance enregistree.");
-        loadDevis();
-        refreshBadges();
+        btn.disabled = true;
+        try {
+          const result = await Api.relancerDevis(id);
+          const feedback = feedbackRelanceDevis(result);
+          showToast(feedback.message, feedback.isError);
+          btn.remove();
+          loadDevis();
+          refreshBadges();
+        } catch (err) {
+          btn.disabled = false;
+          throw err;
+        }
       });
     } else if (btn.dataset.action === "marquer-devis") {
       await withErrorToast(async () => {

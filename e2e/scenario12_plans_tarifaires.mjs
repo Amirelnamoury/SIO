@@ -2,8 +2,8 @@
 // matrice fonctionnalite x plan - verifie que le backend applique
 // exactement les frontieres annoncees sur la page de tarifs (pricing.js) :
 // devis/clients/documents toujours libres ; chantiers/factures/conformite/
-// statistiques a partir d'Essentiel ; contrats recurrents et relance devis
-// a partir de Pro ; equipe a partir de Business. Trouve en auditant le code
+// statistiques et relances manuelles a partir d'Essentiel ; contrats
+// recurrents et automatisations a partir de Pro ; equipe a partir de Business. Trouve en auditant le code
 // reel : les factures n'etaient gated nulle part (ni backend ni frontend),
 // alors que la page de tarifs les presente comme la fonctionnalite phare du
 // plan Essentiel - corrige dans le meme commit que ce scenario.
@@ -35,7 +35,7 @@ export default async function run() {
   await attendu402(api.get("/conformite", tokenGratuit), "la conformite doit etre reservee aux abonnes (Essentiel+)");
   await attendu402(api.get("/analytics", tokenGratuit), "les statistiques doivent etre reservees aux abonnes (Essentiel+)");
   await attendu402(api.get("/contrats", tokenGratuit), "les contrats recurrents doivent etre reserves au plan Pro");
-  await attendu402(api.post(`/devis/${devis.id}/relancer`, undefined, tokenGratuit), "la relance manuelle de devis doit etre reservee au plan Pro");
+  await attendu402(api.post(`/devis/${devis.id}/relancer`, undefined, tokenGratuit), "la relance manuelle de devis doit etre reservee au plan Essentiel+");
   await attendu402(api.get("/equipe", tokenGratuit), "la lecture de l'equipe doit etre reservee au plan Business");
   await attendu402(api.post("/equipe", { nom: "Test Membre", email: "x@test.fr", password: "TestPass123!" }, tokenGratuit), "la gestion d'equipe doit etre reservee au plan Business");
   logEtape("plan Gratuit : chantiers/factures/conformite/statistiques/contrats/relance-devis/equipe tous bloques (402)");
@@ -76,11 +76,13 @@ export default async function run() {
     client_id: clientE.id, titre: "Devis essentiel", taux_tva: 20,
     lignes: [{ description: "x", quantite: 1, prix_unitaire_ht: 10 }],
   }, tokenEssentiel);
-  await api.patch(`/devis/${devisE.id}`, { statut: "envoye" }, tokenEssentiel);
-  await attendu402(api.post(`/devis/${devisE.id}/relancer`, undefined, tokenEssentiel), "la relance manuelle doit rester reservee au plan Pro pour un abonne Essentiel");
+  await api.post(`/devis/${devisE.id}/envoyer`, undefined, tokenEssentiel);
+  const relanceEssentiel = await api.post(`/devis/${devisE.id}/relancer`, undefined, tokenEssentiel);
+  assert(!!relanceEssentiel.id, "un abonne Essentiel doit pouvoir relancer manuellement un devis");
+  assert(["envoye", "non_configure", "echec", "sans_destinataire"].includes(relanceEssentiel.email_statut), "le resultat email doit etre explicite");
   await attendu402(api.get("/equipe", tokenEssentiel), "la lecture de l'equipe doit rester reservee au plan Business pour un abonne Essentiel");
   await attendu402(api.post("/equipe", { nom: "Test Membre", email: "x@test.fr", password: "TestPass123!" }, tokenEssentiel), "l'equipe doit rester reservee au plan Business pour un abonne Essentiel");
-  logEtape("plan Essentiel : contrats/relance-devis/equipe restent bloques (le plan ne debloque pas plus que ce qui est annonce)");
+  logEtape("plan Essentiel : relance devis manuelle accessible ; contrats/equipe restent bloques");
 
   // ---------- Plan Pro : tout Essentiel + relances/automatisations/contrats, equipe bloquee ----------
   const { token: tokenPro, email: emailPro } = await creerArtisanTest("scenario12-pro");
@@ -97,7 +99,7 @@ export default async function run() {
   }, tokenPro);
   await api.patch(`/devis/${devisP.id}`, { statut: "envoye" }, tokenPro);
   const devisRelance = await api.post(`/devis/${devisP.id}/relancer`, undefined, tokenPro);
-  assert(devisRelance.nb_relances === 1, "un abonne Pro doit pouvoir relancer manuellement un devis");
+  assert(!!devisRelance.id, "un abonne Pro doit pouvoir relancer manuellement un devis");
   await attendu402(api.get("/equipe", tokenPro), "l'equipe doit rester reservee au plan Business pour un abonne Pro");
   logEtape("plan Pro : tout Essentiel, relance devis et contrats accessibles ; equipe bloquee");
 

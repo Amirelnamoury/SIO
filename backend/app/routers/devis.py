@@ -5,12 +5,14 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session, joinedload
 
+from app import email_service
+from app.config import settings
 from app.database import get_db
 from app.deps import get_current_artisan, require_plan
-from app.models import Artisan, Client, Devis, LigneDevis
+from app.models import Artisan, Client, Devis, EmailLog, LigneDevis
 from app.numerotation import generer_numero
 from app.pdf import generate_devis_pdf
-from app.schemas import DevisCreate, DevisOut, DevisUpdate
+from app.schemas import DevisCreate, DevisOut, DevisUpdate, RelanceDevisOut
 
 
 def _nouveau_token() -> str:
@@ -25,6 +27,7 @@ router = APIRouter(prefix="/devis", tags=["devis"])
 # configurables par artisan (voir Artisan.relance_devis_j1/j2/j3).
 STATUT_SUIVANT = {"envoye": "relance_j3", "consulte": "relance_j3", "relance_j3": "relance_j7", "relance_j7": "relance_j15"}
 JOURS_SEUIL_STATUTS = ("envoye", "consulte", "relance_j3", "relance_j7")
+DELAI_RELANCE_MANUELLE_HEURES = 20
 
 # Source unique (V5 section 10) : dashboard.py et analytics.py importent
 # cette constante plutot que de la redefinir chacun de leur cote - deux
@@ -32,6 +35,10 @@ JOURS_SEUIL_STATUTS = ("envoye", "consulte", "relance_j3", "relance_j7")
 # prochain changement et faire afficher un pipeline different au tableau
 # de bord et dans les statistiques pour les memes donnees.
 DEVIS_STATUTS_FINAUX = ("signe", "perdu", "expire")
+
+
+def _palier_relance(statut: str) -> int:
+    return {"envoye": 1, "consulte": 1, "relance_j3": 2, "relance_j7": 3}.get(statut, 1)
 
 
 def _jours_seuil(artisan: Artisan) -> dict:
@@ -52,19 +59,51 @@ def relance_due(devis: Devis, artisan: Artisan) -> bool:
     return now >= echeance
 
 
-def _get_devis_or_404(db: Session, artisan: Artisan, devis_id: int) -> Devis:
-    devis = (
-        db.query(Devis)
-        .options(joinedload(Devis.lignes), joinedload(Devis.client))
-        .filter(Devis.id == devis_id, Devis.artisan_id == artisan.id)
-        .first()
-    )
+def _get_devis_or_404(db: Session, artisan: Artisan, devis_id: int, *, for_update: bool = False) -> Devis:
+    query = db.query(Devis).filter(Devis.id == devis_id, Devis.artisan_id == artisan.id)
+    if for_update:
+        query = query.with_for_update()
+    else:
+        query = query.options(joinedload(Devis.lignes), joinedload(Devis.client))
+    devis = query.first()
     if devis is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Devis introuvable")
     return devis
 
 
-def _to_out(devis: Devis) -> DevisOut:
+def _as_utc(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    return value if value.tzinfo is not None else value.replace(tzinfo=timezone.utc)
+
+
+def _derniere_tentative_relance(db: Session, devis: Devis) -> datetime | None:
+    log = (
+        db.query(EmailLog)
+        .filter(
+            EmailLog.artisan_id == devis.artisan_id,
+            EmailLog.type == "relance_devis",
+            EmailLog.devis_id == devis.id,
+        )
+        .order_by(EmailLog.created_at.desc())
+        .first()
+    )
+    dates = [_as_utc(devis.date_derniere_relance), _as_utc(log.created_at) if log else None]
+    return max((value for value in dates if value is not None), default=None)
+
+
+def relance_manuelle_disponible_le(db: Session, devis: Devis) -> datetime | None:
+    derniere_tentative = _derniere_tentative_relance(db, devis)
+    if derniere_tentative is None:
+        return None
+    return derniere_tentative + timedelta(hours=DELAI_RELANCE_MANUELLE_HEURES)
+
+
+def _to_out(devis: Devis, db: Session | None = None) -> DevisOut:
+    disponible_le = relance_manuelle_disponible_le(db, devis) if db is not None else None
+    relance_possible = not devis.archive and devis.statut in STATUT_SUIVANT and (
+        disponible_le is None or datetime.now(timezone.utc) >= disponible_le
+    )
     return DevisOut(
         id=devis.id, artisan_id=devis.artisan_id, client_id=devis.client_id,
         client_nom=devis.client.nom, numero=devis.numero, titre=devis.titre,
@@ -76,6 +115,8 @@ def _to_out(devis: Devis) -> DevisOut:
         date_consultation=devis.date_consultation, date_derniere_relance=devis.date_derniere_relance,
         date_signature=devis.date_signature, nom_signataire=devis.nom_signataire,
         nb_relances=devis.nb_relances, source=devis.source, token=devis.token,
+        relance_manuelle_possible=relance_possible,
+        relance_manuelle_disponible_le=disponible_le,
         created_at=devis.created_at, lignes=devis.lignes,
     )
 
@@ -118,7 +159,7 @@ def lister_devis(
         query = query.filter(Devis.statut == statut)
     if client_id:
         query = query.filter(Devis.client_id == client_id)
-    return [_to_out(d) for d in query.order_by(Devis.created_at.desc()).all()]
+    return [_to_out(d, db) for d in query.order_by(Devis.created_at.desc()).all()]
 
 
 @router.get("/a-relancer", response_model=list[DevisOut])
@@ -133,7 +174,7 @@ def devis_a_relancer(
         .filter(Devis.artisan_id == artisan.id, Devis.statut.in_(JOURS_SEUIL_STATUTS))
         .all()
     )
-    return [_to_out(d) for d in candidats if relance_due(d, artisan)]
+    return [_to_out(d, db) for d in candidats if relance_due(d, artisan)]
 
 
 @router.post("", response_model=DevisOut, status_code=status.HTTP_201_CREATED)
@@ -263,27 +304,54 @@ def envoyer_devis(
     return _to_out(devis)
 
 
-@router.post("/{devis_id}/relancer", response_model=DevisOut)
+@router.post("/{devis_id}/relancer", response_model=RelanceDevisOut)
 def relancer_devis(
     devis_id: int,
     db: Session = Depends(get_db),
-    artisan: Artisan = Depends(require_plan("pro")),
+    artisan: Artisan = Depends(require_plan("essentiel")),
 ):
-    """Passe le devis a l'etape de relance suivante (envoye -> J+3 -> J+7 -> J+15).
-    Fonction du plan Pro (relance manuelle comme automatique, meme
-    frontiere - voir scheduler.py)."""
-    devis = _get_devis_or_404(db, artisan, devis_id)
-    if devis.statut not in STATUT_SUIVANT:
+    """Envoie une relance manuelle Essentiel+ sans modifier le cycle Pro automatique."""
+    devis = _get_devis_or_404(db, artisan, devis_id, for_update=True)
+    if devis.archive or devis.statut not in STATUT_SUIVANT:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Pas de relance possible depuis le statut '{devis.statut}'",
         )
-    devis.statut = STATUT_SUIVANT[devis.statut]
-    devis.date_derniere_relance = datetime.now(timezone.utc)
-    devis.nb_relances += 1
-    db.commit()
+    disponible_le = relance_manuelle_disponible_le(db, devis)
+    if disponible_le is not None and datetime.now(timezone.utc) < disponible_le:
+        secondes = max(1, int((disponible_le - datetime.now(timezone.utc)).total_seconds()))
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Une relance vient déjà d'être tentée pour ce devis. Réessayez plus tard.",
+            headers={"Retry-After": str(secondes)},
+        )
+
+    if not devis.token:
+        devis.token = _nouveau_token()
+        db.flush()
+    statut_initial = devis.statut
+    url = f"{settings.app_base_url.rstrip('/')}/devis-public.html?t={devis.token}"
+    log = email_service.send_relance_devis(db, devis, artisan, url, _palier_relance(statut_initial))
+
+    messages = {
+        "envoye": "Relance envoyée par email.",
+        "non_configure": "Relance non envoyée : le service email n'est pas configuré.",
+        "sans_destinataire": "Relance non envoyée : ce client n'a pas d'adresse email.",
+        "echec": "Relance non envoyée : le fournisseur email a refusé ou interrompu l'envoi.",
+    }
+    if log.statut == "envoye":
+        devis.statut = STATUT_SUIVANT[statut_initial]
+        devis.date_derniere_relance = datetime.now(timezone.utc)
+        devis.nb_relances += 1
+        db.commit()
+
     devis = _get_devis_or_404(db, artisan, devis_id)
-    return _to_out(devis)
+    devis_out = _to_out(devis, db)
+    return RelanceDevisOut(
+        **devis_out.model_dump(),
+        email_statut=log.statut,
+        message=messages.get(log.statut, "Tentative de relance enregistrée."),
+    )
 
 
 @router.delete("/{devis_id}", status_code=status.HTTP_204_NO_CONTENT)

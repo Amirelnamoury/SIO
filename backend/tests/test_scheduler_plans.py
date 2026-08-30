@@ -3,7 +3,7 @@ from datetime import date, timedelta
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-from app.scheduler import _traiter_conformite, _traiter_factures
+from app.scheduler import _traiter_conformite, _traiter_devis, _traiter_factures
 
 
 def artisan(plan: str, subscription_status: str = "active") -> SimpleNamespace:
@@ -17,6 +17,7 @@ def artisan(plan: str, subscription_status: str = "active") -> SimpleNamespace:
 
 def automation_run() -> SimpleNamespace:
     return SimpleNamespace(
+        nb_devis_relances=0,
         nb_factures_relancees=0,
         nb_alertes_conformite=0,
         nb_emails_envoyes=0,
@@ -26,6 +27,35 @@ def automation_run() -> SimpleNamespace:
 
 
 class SchedulerPlanTests(unittest.TestCase):
+    @patch("app.scheduler.email_service.send_relance_devis")
+    def test_essentiel_does_not_run_automatic_quote_reminders(self, send_email):
+        db = MagicMock()
+
+        _traiter_devis(db, artisan("essentiel"), automation_run())
+
+        db.query.assert_not_called()
+        send_email.assert_not_called()
+
+    @patch("app.scheduler._tentative_recente", return_value=False)
+    @patch("app.scheduler.relance_due", return_value=True)
+    @patch("app.scheduler.email_service.send_relance_devis")
+    def test_pro_runs_automatic_quote_reminders(self, send_email, _due, _recent):
+        devis = SimpleNamespace(id=7, token="devis-token", statut="envoye", date_derniere_relance=None, nb_relances=0)
+        query = MagicMock()
+        query.options.return_value = query
+        query.filter.return_value = query
+        query.all.return_value = [devis]
+        db = MagicMock()
+        db.query.return_value = query
+        send_email.return_value = SimpleNamespace(statut="envoye")
+        run = automation_run()
+
+        _traiter_devis(db, artisan("pro"), run)
+
+        send_email.assert_called_once()
+        self.assertEqual(devis.nb_relances, 1)
+        self.assertEqual(run.nb_devis_relances, 1)
+
     @patch("app.scheduler.email_service.send_relance_facture")
     def test_essentiel_does_not_run_automatic_invoice_reminders(self, send_email):
         db = MagicMock()

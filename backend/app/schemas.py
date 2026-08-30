@@ -420,8 +420,15 @@ class DevisOut(BaseModel):
     nb_relances: int
     source: str
     token: Optional[str] = None
+    relance_manuelle_possible: bool = False
+    relance_manuelle_disponible_le: Optional[datetime] = None
     created_at: datetime
     lignes: list[LigneDevisOut] = []
+
+
+class RelanceDevisOut(DevisOut):
+    email_statut: str
+    message: str
 
 
 class DevisAccepterIn(BaseModel):

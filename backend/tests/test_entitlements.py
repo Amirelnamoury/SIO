@@ -19,7 +19,7 @@ MINIMUMS = {
     "conformite": "essentiel",
     "statistiques": "essentiel",
     "relance_factures": "essentiel",
-    "relance_devis": "pro",
+    "relance_devis": "essentiel",
     "automatisations": "pro",
     "contrats": "pro",
     "equipe": "business",
