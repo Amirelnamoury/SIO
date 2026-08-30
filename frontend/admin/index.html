@@ -96,6 +96,22 @@
           </div>
           <p class="publication-note">Le statut publié enregistre une livraison existante. Aucun déploiement, DNS ou certificat HTTPS n’est déclenché automatiquement.</p>
         </form>
+
+        <div class="form-section" id="admin-media-section">
+          <div class="section-heading"><div><p class="eyebrow">IDENTITÉ & MÉDIAS</p><h3>Médias du site</h3><p>Photos artisan, sources et sélection persistante du générateur.</p></div><span id="admin-media-count" class="status-pill"></span></div>
+          <div class="admin-media-logo-row">
+            <div id="admin-logo-preview" class="admin-logo-preview"><span class="muted">Aucun logo</span></div>
+            <form id="admin-logo-form" class="admin-logo-form">
+              <label>Définir ou remplacer le logo<input name="file" type="file" accept="image/png,image/jpeg,image/webp" required></label>
+              <button class="button button-secondary" type="submit">Importer</button>
+              <button class="button button-secondary" id="admin-logo-delete" type="button" hidden>Supprimer</button>
+            </form>
+          </div>
+          <h3 class="admin-media-subtitle">Photos artisan</h3>
+          <div id="admin-media-photos" class="admin-media-grid"></div>
+          <h3 class="admin-media-subtitle">Sélection actuelle</h3>
+          <div id="admin-media-selections" class="admin-selection-list"></div>
+        </div>
       </section>
     </main>
   </div>

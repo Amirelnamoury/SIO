@@ -50,6 +50,12 @@ class Settings(BaseSettings):
     # utilise quand storage_backend="local".
     uploads_dir: str = "uploads"
     max_upload_mo: int = 15
+    site_media_max_upload_mo: int = 12
+    site_media_max_photos: int = 20
+    site_media_max_source_pixels: int = 40_000_000
+    site_media_max_source_dimension: int = 12_000
+    site_media_web_max_dimension: int = 2_400
+    site_media_thumbnail_max_dimension: int = 480
 
     # Backend de stockage des fichiers (voir app/storage.py) : "local" (disque,
     # par defaut) ou "s3" (objet, compatible AWS S3 et Cloudflare R2 via un

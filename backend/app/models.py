@@ -13,9 +13,10 @@ from sqlalchemy import (
     Text,
     JSON,
     UniqueConstraint,
+    CheckConstraint,
 )
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import false as sql_false
+from sqlalchemy.sql import false as sql_false, true as sql_true
 
 from app.database import Base
 
@@ -86,6 +87,8 @@ class Artisan(Base):
     contrats = relationship("Contrat", back_populates="artisan", cascade="all, delete-orphan")
     messages = relationship("Message", back_populates="artisan", cascade="all, delete-orphan")
     notifications = relationship("Notification", back_populates="artisan", cascade="all, delete-orphan")
+    site_medias = relationship("SiteMedia", back_populates="artisan", cascade="all, delete-orphan")
+    site_media_usages = relationship("SiteMediaUsage", back_populates="artisan", cascade="all, delete-orphan")
     site_vitrine = relationship("SiteVitrine", back_populates="artisan", cascade="all, delete-orphan", uselist=False)
 
 
@@ -132,6 +135,109 @@ class SiteVitrine(Base):
     updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 
     artisan = relationship("Artisan", back_populates="site_vitrine")
+    medias = relationship("SiteMedia", back_populates="site_vitrine")
+    media_selections = relationship("SiteMediaSelection", back_populates="site_vitrine", cascade="all, delete-orphan")
+    media_usages = relationship("SiteMediaUsage", back_populates="site_vitrine", cascade="all, delete-orphan")
+
+
+class SiteMedia(Base):
+    """Logo ou photo reelle fournie par un artisan pour son site vitrine."""
+
+    __tablename__ = "site_medias"
+
+    id = Column(Integer, primary_key=True, index=True)
+    artisan_id = Column(Integer, ForeignKey("artisans.id"), nullable=False, index=True)
+    site_vitrine_id = Column(Integer, ForeignKey("sites_vitrines.id"), nullable=True, index=True)
+    type_media = Column(String, nullable=False, index=True)  # logo, photo
+    categorie = Column(String, nullable=True, index=True)
+    storage_key = Column(String, nullable=False, unique=True)
+    thumbnail_key = Column(String, nullable=False, unique=True)
+    nom_original = Column(String, nullable=False)
+    mime_type = Column(String, nullable=False)
+    taille_octets = Column(Integer, nullable=False)
+    largeur = Column(Integer, nullable=True)
+    hauteur = Column(Integer, nullable=True)
+    ordre = Column(Integer, nullable=False, default=0)
+    actif = Column(Boolean, nullable=False, default=True, server_default=sql_true())
+    source = Column(String, nullable=False, default="artisan")
+    alt_text = Column(String, nullable=True)
+    checksum = Column(String, nullable=True, index=True)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False, index=True)
+
+    artisan = relationship("Artisan", back_populates="site_medias")
+    site_vitrine = relationship("SiteVitrine", back_populates="medias")
+    selections = relationship("SiteMediaSelection", back_populates="site_media")
+
+
+class SiteMediaLibrary(Base):
+    """Registre global de medias de secours dont la licence est connue."""
+
+    __tablename__ = "site_media_library"
+
+    id = Column(Integer, primary_key=True, index=True)
+    media_id = Column(String, unique=True, nullable=False, index=True)
+    metier = Column(String, nullable=False, index=True)
+    sous_categorie = Column(String, nullable=False, index=True)
+    storage_key = Column(String, nullable=False, unique=True)
+    thumbnail_key = Column(String, nullable=True, unique=True)
+    mime_type = Column(String, nullable=False, default="image/webp")
+    largeur = Column(Integer, nullable=True)
+    hauteur = Column(Integer, nullable=True)
+    orientation = Column(String, nullable=False, default="paysage")
+    usage_recommande = Column(JSON, nullable=False, default=list)
+    licence = Column(String, nullable=False)
+    source_nom = Column(String, nullable=False)
+    credit = Column(String, nullable=True)
+    actif = Column(Boolean, nullable=False, default=True, server_default=sql_true())
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+    selections = relationship("SiteMediaSelection", back_populates="library_media")
+    usages = relationship("SiteMediaUsage", back_populates="library_media")
+
+
+class SiteMediaSelection(Base):
+    """Media profile persistant d'un site, stable entre deux generations."""
+
+    __tablename__ = "site_media_selections"
+    __table_args__ = (
+        UniqueConstraint("site_vitrine_id", "usage", "position", name="uq_site_media_selection_usage_position"),
+        CheckConstraint(
+            "(source = 'artisan' AND site_media_id IS NOT NULL AND library_media_id IS NULL) OR "
+            "(source = 'bibliotheque' AND library_media_id IS NOT NULL AND site_media_id IS NULL) OR "
+            "(source = 'fallback' AND site_media_id IS NULL AND library_media_id IS NULL)",
+            name="ck_site_media_selection_source",
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    site_vitrine_id = Column(Integer, ForeignKey("sites_vitrines.id"), nullable=False, index=True)
+    usage = Column(String, nullable=False, index=True)
+    position = Column(Integer, nullable=False, default=0)
+    source = Column(String, nullable=False)
+    site_media_id = Column(Integer, ForeignKey("site_medias.id"), nullable=True, index=True)
+    library_media_id = Column(Integer, ForeignKey("site_media_library.id"), nullable=True, index=True)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+    site_vitrine = relationship("SiteVitrine", back_populates="media_selections")
+    site_media = relationship("SiteMedia", back_populates="selections")
+    library_media = relationship("SiteMediaLibrary", back_populates="selections")
+
+
+class SiteMediaUsage(Base):
+    """Historique borne consulte par l'anti-repetition de la bibliotheque."""
+
+    __tablename__ = "site_media_usages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    artisan_id = Column(Integer, ForeignKey("artisans.id"), nullable=False, index=True)
+    site_vitrine_id = Column(Integer, ForeignKey("sites_vitrines.id"), nullable=False, index=True)
+    library_media_id = Column(Integer, ForeignKey("site_media_library.id"), nullable=False, index=True)
+    usage = Column(String, nullable=False, index=True)
+    selected_at = Column(DateTime(timezone=True), default=utcnow, nullable=False, index=True)
+
+    artisan = relationship("Artisan", back_populates="site_media_usages")
+    site_vitrine = relationship("SiteVitrine", back_populates="media_usages")
+    library_media = relationship("SiteMediaLibrary", back_populates="usages")
 
 
 # Pipeline commercial : de la premiere demande jusqu'a la signature (ou la perte).

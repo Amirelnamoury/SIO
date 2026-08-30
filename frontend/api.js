@@ -225,6 +225,15 @@ const Api = {
   deleteDocument: (id) => apiFetch(`/documents/${id}`, { method: "DELETE" }),
   restaurerDocument: (id) => apiFetch(`/documents/${id}/restaurer`, { method: "POST" }),
 
+  // ---------- Identite visuelle du site ----------
+  siteMedia: () => apiFetch("/site-media"),
+  uploadSiteLogo: (formData) => uploadFetch("/site-media/logo", formData),
+  deleteSiteLogo: () => apiFetch("/site-media/logo", { method: "DELETE" }),
+  uploadSitePhoto: (formData) => uploadFetch("/site-media/photos", formData),
+  updateSiteMedia: (id, payload) => apiFetch(`/site-media/${id}`, { method: "PATCH", body: payload }),
+  deleteSiteMedia: (id) => apiFetch(`/site-media/${id}`, { method: "DELETE" }),
+  orderSitePhotos: (mediaIds) => apiFetch("/site-media/photos/order", { method: "PUT", body: { media_ids: mediaIds } }),
+
   // ---------- Abonnement ----------
   checkoutSession: (plan = "essentiel") => apiFetch(`/stripe/checkout-session?plan=${encodeURIComponent(plan)}`, { method: "POST" }),
 };
@@ -277,6 +286,20 @@ async function uploadFetch(path, formData) {
     throw new Error(formatApiError(data));
   }
   return response.json();
+}
+
+/** Cree une URL blob temporaire pour une image protegee par le JWT artisan. */
+async function protectedImageUrl(path) {
+  const token = getToken();
+  const response = await fetch(API_BASE + path, {
+    headers: token ? { Authorization: "Bearer " + token } : {},
+  });
+  if (!response.ok) {
+    let data = null;
+    try { data = await response.json(); } catch (e) { /* pas de corps JSON */ }
+    throw new Error(formatApiError(data) || "Impossible de charger l'image.");
+  }
+  return URL.createObjectURL(await response.blob());
 }
 
 /**

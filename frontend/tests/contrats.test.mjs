@@ -38,7 +38,7 @@ assert.match(
   /genererContrat:\s*\(id\)\s*=>\s*apiFetch\(`\/contrats\/\$\{id\}\/generer`,\s*\{ method: "POST" \}\)/,
   "Api.genererContrat doit retourner directement le JSON de l'endpoint",
 );
-assert.match(indexSource, /app\.js\?v=20260830-contract-email-feedback/, "app.js doit être versionné pour invalider l'ancien handler en cache");
+assert.match(indexSource, /app\.js\?v=20260830-site-media/, "app.js doit être versionné pour invalider l'ancien handler en cache");
 assert.match(
   appSource,
   /if \(view === "entreprise"\)[\s\S]*?loadContrats\(\);[\s\S]*?\n  }/,

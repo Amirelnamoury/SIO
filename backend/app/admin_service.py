@@ -9,6 +9,7 @@ from app.config import settings
 from app.design_schemas import DesignProfileOut
 from app.models import AdminUser, Artisan, Avis, SiteVitrine, utcnow
 from app.security import hash_password
+from app.site_media_selection_service import ensure_media_profile, media_profile_dict
 from app.storage import get_storage
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -129,9 +130,15 @@ def _safe_text(value: str | None) -> str:
     return html.escape(value or "", quote=True)
 
 
-def build_generator_payload(db: Session, artisan: Artisan, config: dict) -> dict:
+def build_generator_payload(
+    db: Session,
+    artisan: Artisan,
+    config: dict,
+    site: SiteVitrine | None = None,
+) -> dict:
     validate_site_variants(artisan, config)
     avis = db.query(Avis).filter(Avis.artisan_id == artisan.id, Avis.publie_site.is_(True)).all()
+    media_profile = media_profile_dict(db, artisan, site, admin=True)
     return {
         "nom_entreprise": _safe_text(artisan.nom_entreprise),
         "metier": artisan.metier,
@@ -155,6 +162,11 @@ def build_generator_payload(db: Session, artisan: Artisan, config: dict) -> dict
             {"note": item.note, "commentaire": _safe_text(item.commentaire), "nom_auteur": _safe_text(item.nom_auteur)}
             for item in avis
         ],
+        "has_logo": media_profile["has_logo"],
+        "artisan_photo_count": media_profile["artisan_photo_count"],
+        "has_gallery": media_profile["has_gallery"],
+        "has_before_after": media_profile["has_before_after"],
+        "selected_media": media_profile["selections"],
     }
 
 
@@ -164,8 +176,9 @@ def generate_site_preview(db: Session, artisan: Artisan, site: SiteVitrine) -> s
     # hasard ensuite. Le rendu V1 (generate_site ci-dessous) reste inchange
     # dans ce lot - voir la note de compatibilite du Lot 1.
     ensure_design_profile(db, artisan, site)
+    ensure_media_profile(db, artisan, site)
     config = merged_site_config(artisan, site)
-    payload = build_generator_payload(db, artisan, config)
+    payload = build_generator_payload(db, artisan, config, site)
     generated_html = generate_site(payload, api_base_url="/admin/preview-api")
     storage_key = preview_storage_key(artisan.id)
     get_storage().save(storage_key, generated_html.encode("utf-8"))

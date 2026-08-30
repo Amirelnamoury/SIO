@@ -1,10 +1,11 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, EmailStr, HttpUrl, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, HttpUrl, field_validator
 
 from app.design_schemas import DesignProfileOut
 from app.schemas import METIERS_VALIDES
+from app.site_media_schemas import SiteMediaOverviewOut, SiteMediaProfileOut
 
 
 SITE_STATUTS = {"brouillon", "genere", "pret", "publie"}
@@ -162,6 +163,7 @@ class SiteVitrineOut(BaseModel):
     storage_key: Optional[str] = None
     config: dict
     design_profile: Optional[DesignProfileOut] = None
+    media_profile: SiteMediaProfileOut = Field(default_factory=SiteMediaProfileOut)
     date_generation: Optional[datetime] = None
     date_publication: Optional[datetime] = None
     created_at: Optional[datetime] = None
@@ -203,6 +205,7 @@ class AdminArtisanDetail(BaseModel):
     devis_total: int
     factures_total: int
     site: SiteVitrineOut
+    media: SiteMediaOverviewOut
 
 
 class AdminArtisanListOut(BaseModel):

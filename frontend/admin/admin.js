@@ -32,7 +32,7 @@
     return;
   }
 
-  const state = { currentView: "dashboard", previousView: "artisans", artisan: null };
+  const state = { currentView: "dashboard", previousView: "artisans", artisan: null, mediaObjectUrls: [] };
   const motifs = {
     plombier: ["wave-gradient", "gradient-mesh"],
     electricien: ["diagonal-stripes", "dot-grid"],
@@ -81,6 +81,57 @@
     }
     if (!response.ok) throw new Error(data && data.detail ? data.detail : "Action impossible");
     return data;
+  }
+
+  async function apiUpload(path, formData) {
+    const token = window.sessionStorage.getItem(ADMIN_TOKEN_KEY);
+    const response = await fetch(apiUrl(path), {
+      method: "POST",
+      headers: token ? { Authorization: "Bearer " + token } : {},
+      body: formData,
+    });
+    let data = null;
+    try { data = await response.json(); } catch (err) { data = null; }
+    if (!response.ok) throw new Error(data && data.detail ? data.detail : "Import impossible");
+    return data;
+  }
+
+  async function protectedImageUrl(path) {
+    const token = window.sessionStorage.getItem(ADMIN_TOKEN_KEY);
+    const response = await fetch(apiUrl(path), { headers: token ? { Authorization: "Bearer " + token } : {} });
+    if (!response.ok) throw new Error("Image protégée indisponible");
+    return URL.createObjectURL(await response.blob());
+  }
+
+  function clearMediaObjectUrls() {
+    state.mediaObjectUrls.splice(0).forEach(function (url) { URL.revokeObjectURL(url); });
+  }
+
+  async function hydrateAdminMediaImages() {
+    const images = Array.from(document.querySelectorAll("#admin-media-section img[data-media-url]"));
+    await Promise.all(images.map(async function (image) {
+      const url = await protectedImageUrl(image.dataset.mediaUrl);
+      state.mediaObjectUrls.push(url);
+      image.src = url;
+    }));
+  }
+
+  async function renderAdminMedia(media) {
+    clearMediaObjectUrls();
+    document.getElementById("admin-media-count").textContent = media.photos.length + " / " + media.max_photos + " photos";
+    document.getElementById("admin-logo-preview").innerHTML = media.logo
+      ? `<img data-media-url="${escapeHtml(media.logo.thumbnail_url)}" alt="Logo artisan">`
+      : '<span class="muted">Aucun logo</span>';
+    document.getElementById("admin-logo-delete").hidden = !media.logo;
+    document.getElementById("admin-media-photos").innerHTML = media.photos.length ? media.photos.map(function (photo) {
+      return `<article class="admin-media-item"><img data-media-url="${escapeHtml(photo.thumbnail_url)}" alt="${escapeHtml(photo.alt_text || photo.nom_original)}"><div><strong>${escapeHtml(photo.nom_original)}</strong><span>${escapeHtml(photo.categorie || "autre")} · ${photo.actif ? "active" : "inactive"} · source artisan</span></div></article>`;
+    }).join("") : '<p class="muted">Aucune photo artisan.</p>';
+    const selections = media.profile.selections || [];
+    document.getElementById("admin-media-selections").innerHTML = selections.length ? selections.map(function (selection) {
+      const preview = selection.thumbnail_url ? `<img data-media-url="${escapeHtml(selection.thumbnail_url)}" alt="">` : '<span class="selection-fallback">Sans photo</span>';
+      return `<article class="admin-selection-item" data-selection-id="${selection.id}">${preview}<div><strong>${escapeHtml(selection.usage)}${selection.position ? " " + (selection.position + 1) : ""}</strong><span>${escapeHtml(selection.source)}${selection.credit ? " · " + escapeHtml(selection.credit) : ""}</span></div><button class="button button-secondary" data-action="remove-selection" type="button">Retirer</button></article>`;
+    }).join("") : '<p class="muted">La sélection sera créée à la première génération.</p>';
+    await hydrateAdminMediaImages();
   }
 
   function showView(name, title) {
@@ -205,6 +256,7 @@
     document.getElementById("site-generated-at").textContent = formatDate(artisan.site.date_generation);
     document.getElementById("site-published-at").textContent = formatDate(artisan.site.date_publication);
     updateWorkflow(artisan.site);
+    await renderAdminMedia(artisan.media);
   }
 
   function artisanPayload() {
@@ -286,6 +338,32 @@
   document.getElementById("preview-button").addEventListener("click", function () { openPreview().catch(handleError); });
   document.getElementById("ready-button").addEventListener("click", function () { transition("ready", "Site marqué prêt à publier").catch(handleError); });
   document.getElementById("publish-button").addEventListener("click", function () { transition("publish", "Publication enregistrée").catch(handleError); });
+  document.getElementById("admin-logo-form").addEventListener("submit", async function (event) {
+    event.preventDefault();
+    try {
+      await apiUpload("/admin/api/artisans/" + state.artisan.id + "/site/media/logo", new FormData(event.target));
+      event.target.reset();
+      toast("Logo artisan enregistré");
+      await openArtisan(state.artisan.id);
+    } catch (error) { handleError(error); }
+  });
+  document.getElementById("admin-logo-delete").addEventListener("click", async function () {
+    try {
+      await api("/admin/api/artisans/" + state.artisan.id + "/site/media/logo", { method: "DELETE" });
+      toast("Logo artisan supprimé");
+      await openArtisan(state.artisan.id);
+    } catch (error) { handleError(error); }
+  });
+  document.getElementById("admin-media-selections").addEventListener("click", async function (event) {
+    const button = event.target.closest('[data-action="remove-selection"]');
+    const item = event.target.closest("[data-selection-id]");
+    if (!button || !item) return;
+    try {
+      await api("/admin/api/artisans/" + state.artisan.id + "/site/media/selections/" + item.dataset.selectionId, { method: "DELETE" });
+      toast("Image retirée de la sélection");
+      await openArtisan(state.artisan.id);
+    } catch (error) { handleError(error); }
+  });
   document.getElementById("artisan-form").elements.metier.addEventListener("change", function (event) { updateMotifs(event.target.value, ""); });
   document.getElementById("logout-button").addEventListener("click", async function () {
     await api("/admin/auth/logout", { method: "POST" });

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, Response, UploadFile, status
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy import func, or_
@@ -30,9 +30,25 @@ from app.admin_service import (
 from app.config import settings
 from app.database import get_db
 from app.deps import ADMIN_COOKIE_NAME, bearer_scheme, require_admin
-from app.models import AdminUser, Artisan, Client, Devis, Facture, Membre, SiteVitrine, utcnow
+from app.media_processing import MediaValidationError
+from app.models import AdminUser, Artisan, Client, Devis, Facture, Membre, SiteMedia, SiteMediaLibrary, SiteVitrine, utcnow
 from app.rate_limit import rate_limiter
 from app.security import create_access_token, decode_access_token, verify_password
+from app.site_media_schemas import (
+    SITE_MEDIA_CATEGORIES,
+    AdminMediaSelectionIn,
+    SiteMediaLibraryOut,
+    SiteMediaOut,
+    SiteMediaSelectionOut,
+)
+from app.site_media_selection_service import (
+    media_overview_dict,
+    media_profile_dict,
+    remove_media_selection,
+    selection_to_dict,
+    set_media_selection,
+)
+from app.site_media_service import delete_site_media, media_to_dict, save_uploaded_media
 from app.storage import get_storage
 
 router = APIRouter(tags=["admin"])
@@ -80,12 +96,45 @@ def _artisan_or_404(db: Session, artisan_id: int) -> Artisan:
     return artisan
 
 
-def _site_out(artisan: Artisan, site: SiteVitrine | None) -> SiteVitrineOut:
+async def _read_media_upload(file: UploadFile) -> tuple[bytes, str]:
+    max_bytes = settings.site_media_max_upload_mo * 1024 * 1024
+    content = await file.read(max_bytes + 1)
+    if len(content) > max_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"Image trop volumineuse (maximum {settings.site_media_max_upload_mo} Mo)",
+        )
+    filename = (file.filename or "image").replace("\\", "/").split("/")[-1][:255]
+    return content, filename
+
+
+def _save_admin_media(db: Session, artisan: Artisan, **kwargs) -> SiteMedia:
+    try:
+        return save_uploaded_media(db, artisan, **kwargs)
+    except MediaValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+
+
+def _admin_image_response(content: bytes, *, public: bool = False) -> Response:
+    return Response(
+        content=content,
+        media_type="image/webp",
+        headers={
+            "Cache-Control": "public, max-age=3600" if public else "private, max-age=300",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
+
+
+def _site_out(db: Session, artisan: Artisan, site: SiteVitrine | None) -> SiteVitrineOut:
     if site is None:
         return SiteVitrineOut(
             artisan_id=artisan.id,
             statut="non_cree",
             config=default_site_config(artisan),
+            media_profile=media_profile_dict(db, artisan, None, admin=True),
             preview_disponible=False,
         )
     expected_key = preview_storage_key(artisan.id)
@@ -101,6 +150,7 @@ def _site_out(artisan: Artisan, site: SiteVitrine | None) -> SiteVitrineOut:
         storage_key=site.storage_key,
         config=merged_site_config(artisan, site),
         design_profile=site.design_profile,
+        media_profile=media_profile_dict(db, artisan, site, admin=True),
         date_generation=site.date_generation,
         date_publication=site.date_publication,
         created_at=site.created_at,
@@ -262,7 +312,8 @@ def admin_artisan_detail(artisan_id: int, db: Session = Depends(get_db), _admin:
         clients_total=db.query(Client).filter(Client.artisan_id == artisan.id).count(),
         devis_total=db.query(Devis).filter(Devis.artisan_id == artisan.id).count(),
         factures_total=db.query(Facture).filter(Facture.artisan_id == artisan.id).count(),
-        site=_site_out(artisan, artisan.site_vitrine),
+        site=_site_out(db, artisan, artisan.site_vitrine),
+        media=media_overview_dict(db, artisan, admin=True),
     )
 
 
@@ -296,7 +347,7 @@ def admin_artisan_update(
 @router.get("/admin/api/artisans/{artisan_id}/site", response_model=SiteVitrineOut)
 def admin_site_detail(artisan_id: int, db: Session = Depends(get_db), _admin: AdminUser = Depends(require_admin)):
     artisan = _artisan_or_404(db, artisan_id)
-    return _site_out(artisan, artisan.site_vitrine)
+    return _site_out(db, artisan, artisan.site_vitrine)
 
 
 @router.patch("/admin/api/artisans/{artisan_id}/site", response_model=SiteVitrineOut)
@@ -336,7 +387,7 @@ def admin_site_update(
         artisan.site_statut = "en_cours"
     db.commit()
     db.refresh(site)
-    return _site_out(artisan, site)
+    return _site_out(db, artisan, site)
 
 
 @router.post("/admin/api/artisans/{artisan_id}/site/generate", response_model=SiteVitrineOut)
@@ -355,7 +406,216 @@ def admin_site_generate(
         generate_site_preview(db, artisan, site)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
-    return _site_out(artisan, site)
+    return _site_out(db, artisan, site)
+
+
+@router.post(
+    "/admin/api/artisans/{artisan_id}/site/media/logo",
+    response_model=SiteMediaOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def admin_site_media_logo_upload(
+    artisan_id: int,
+    file: UploadFile = File(...),
+    alt_text: str | None = Form(None),
+    db: Session = Depends(get_db),
+    _admin: AdminUser = Depends(require_admin),
+):
+    artisan = _artisan_or_404(db, artisan_id)
+    content, filename = await _read_media_upload(file)
+    media = _save_admin_media(
+        db,
+        artisan,
+        content=content,
+        filename=filename,
+        declared_mime=file.content_type,
+        type_media="logo",
+        alt_text=alt_text,
+    )
+    return media_to_dict(media, admin_artisan_id=artisan.id)
+
+
+@router.delete("/admin/api/artisans/{artisan_id}/site/media/logo", status_code=status.HTTP_204_NO_CONTENT)
+def admin_site_media_logo_delete(
+    artisan_id: int,
+    db: Session = Depends(get_db),
+    _admin: AdminUser = Depends(require_admin),
+):
+    artisan = _artisan_or_404(db, artisan_id)
+    logo = db.query(SiteMedia).filter(
+        SiteMedia.artisan_id == artisan.id,
+        SiteMedia.type_media == "logo",
+    ).first()
+    if logo is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Logo introuvable")
+    delete_site_media(db, logo)
+
+
+@router.post(
+    "/admin/api/artisans/{artisan_id}/site/media/photos",
+    response_model=SiteMediaOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def admin_site_media_photo_upload(
+    artisan_id: int,
+    file: UploadFile = File(...),
+    categorie: str = Form("autre"),
+    alt_text: str | None = Form(None),
+    db: Session = Depends(get_db),
+    _admin: AdminUser = Depends(require_admin),
+):
+    if categorie not in SITE_MEDIA_CATEGORIES:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Categorie photo invalide")
+    artisan = _artisan_or_404(db, artisan_id)
+    content, filename = await _read_media_upload(file)
+    media = _save_admin_media(
+        db,
+        artisan,
+        content=content,
+        filename=filename,
+        declared_mime=file.content_type,
+        type_media="photo",
+        categorie=categorie,
+        alt_text=alt_text,
+    )
+    return media_to_dict(media, admin_artisan_id=artisan.id)
+
+
+@router.get("/admin/api/artisans/{artisan_id}/site/media/library", response_model=list[SiteMediaLibraryOut])
+def admin_site_media_library(
+    artisan_id: int,
+    db: Session = Depends(get_db),
+    _admin: AdminUser = Depends(require_admin),
+):
+    artisan = _artisan_or_404(db, artisan_id)
+    medias = db.query(SiteMediaLibrary).filter(
+        SiteMediaLibrary.actif.is_(True),
+    ).order_by(SiteMediaLibrary.metier, SiteMediaLibrary.media_id).all()
+    return [
+        {
+            **{
+                field: getattr(media, field)
+                for field in (
+                    "id", "media_id", "metier", "sous_categorie", "mime_type", "largeur", "hauteur",
+                    "orientation", "usage_recommande", "licence", "source_nom", "credit", "actif",
+                )
+            },
+            "thumbnail_url": f"/admin/api/artisans/{artisan.id}/site/media/library/{media.id}/content?variant=thumbnail",
+        }
+        for media in medias
+    ]
+
+
+@router.get("/admin/api/artisans/{artisan_id}/site/media/{media_id}/content")
+def admin_site_media_content(
+    artisan_id: int,
+    media_id: int,
+    variant: str = Query(default="web", pattern="^(web|thumbnail)$"),
+    db: Session = Depends(get_db),
+    preview_access: tuple[AdminUser, int | None] = Depends(_require_admin_or_preview),
+):
+    if preview_access[1] is not None and preview_access[1] != artisan_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cette session ne donne pas acces a ce media")
+    _artisan_or_404(db, artisan_id)
+    media = db.query(SiteMedia).filter(
+        SiteMedia.id == media_id,
+        SiteMedia.artisan_id == artisan_id,
+    ).first()
+    if media is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Media introuvable")
+    key = media.thumbnail_key if variant == "thumbnail" else media.storage_key
+    content = get_storage().read(key)
+    if content is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Fichier media introuvable")
+    return _admin_image_response(content)
+
+
+@router.get("/admin/api/artisans/{artisan_id}/site/media/library/{library_media_id}/content")
+def admin_site_library_media_content(
+    artisan_id: int,
+    library_media_id: int,
+    variant: str = Query(default="web", pattern="^(web|thumbnail)$"),
+    db: Session = Depends(get_db),
+    preview_access: tuple[AdminUser, int | None] = Depends(_require_admin_or_preview),
+):
+    if preview_access[1] is not None and preview_access[1] != artisan_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cette session ne donne pas acces a ce media")
+    artisan = _artisan_or_404(db, artisan_id)
+    media = db.query(SiteMediaLibrary).filter(
+        SiteMediaLibrary.id == library_media_id,
+        SiteMediaLibrary.actif.is_(True),
+    ).first()
+    if media is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Media de bibliotheque introuvable")
+    if preview_access[1] is not None:
+        selected = (
+            db.query(SiteMediaSelection)
+            .join(SiteVitrine, SiteVitrine.id == SiteMediaSelection.site_vitrine_id)
+            .filter(
+                SiteVitrine.artisan_id == artisan.id,
+                SiteMediaSelection.library_media_id == media.id,
+            )
+            .first()
+        )
+        if selected is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Media de bibliotheque introuvable")
+    key = media.thumbnail_key if variant == "thumbnail" and media.thumbnail_key else media.storage_key
+    content = get_storage().read(key)
+    if content is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Fichier media introuvable")
+    return _admin_image_response(content)
+
+
+@router.put(
+    "/admin/api/artisans/{artisan_id}/site/media/selections/{usage}",
+    response_model=SiteMediaSelectionOut,
+)
+def admin_site_media_selection_set(
+    artisan_id: int,
+    usage: str,
+    payload: AdminMediaSelectionIn,
+    db: Session = Depends(get_db),
+    _admin: AdminUser = Depends(require_admin),
+):
+    artisan = _artisan_or_404(db, artisan_id)
+    site = artisan.site_vitrine
+    if site is None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Le site doit etre cree avant de choisir ses medias")
+    try:
+        selection = set_media_selection(
+            db,
+            artisan,
+            site,
+            usage=usage,
+            position=payload.position,
+            source=payload.source,
+            site_media_id=payload.site_media_id,
+            library_media_id=payload.library_media_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+    except LookupError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    return selection_to_dict(selection, admin_artisan_id=artisan.id)
+
+
+@router.delete(
+    "/admin/api/artisans/{artisan_id}/site/media/selections/{selection_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def admin_site_media_selection_delete(
+    artisan_id: int,
+    selection_id: int,
+    db: Session = Depends(get_db),
+    _admin: AdminUser = Depends(require_admin),
+):
+    artisan = _artisan_or_404(db, artisan_id)
+    if artisan.site_vitrine is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Selection media introuvable")
+    try:
+        remove_media_selection(db, artisan, artisan.site_vitrine, selection_id)
+    except LookupError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
 
 @router.get("/admin/api/artisans/{artisan_id}/site/preview", response_class=HTMLResponse)
@@ -438,7 +698,7 @@ def admin_site_ready(artisan_id: int, db: Session = Depends(get_db), _admin: Adm
     site.statut = "pret"
     db.commit()
     db.refresh(site)
-    return _site_out(artisan, site)
+    return _site_out(db, artisan, site)
 
 
 @router.post("/admin/api/artisans/{artisan_id}/site/publish", response_model=SiteVitrineOut)
@@ -455,7 +715,7 @@ def admin_site_publish(artisan_id: int, db: Session = Depends(get_db), _admin: A
     artisan.site_url = site.url_publique
     db.commit()
     db.refresh(site)
-    return _site_out(artisan, site)
+    return _site_out(db, artisan, site)
 
 
 @router.post("/admin/preview-api/pub/{slug}/demande-devis")

@@ -8,7 +8,21 @@ from sqlalchemy.orm import Session, joinedload
 
 from app import email_service
 from app.database import get_db
-from app.models import Artisan, Avis, Chantier, Client, Devis, Document, Facture, Message, Notification
+from app.models import (
+    Artisan,
+    Avis,
+    Chantier,
+    Client,
+    Devis,
+    Document,
+    Facture,
+    Message,
+    Notification,
+    SiteMedia,
+    SiteMediaLibrary,
+    SiteMediaSelection,
+    SiteVitrine,
+)
 from app.rate_limit import rate_limiter
 from app.routers.clients import PORTAIL_VALIDITE_JOURS
 from app.schemas import (
@@ -33,6 +47,70 @@ router = APIRouter(prefix="/pub", tags=["public"])
 logger = logging.getLogger("suite_artisan.public")
 
 DEVIS_STATUTS_CLOTURES = ("signe", "perdu", "expire")
+
+
+def _public_image_response(content: bytes) -> Response:
+    return Response(
+        content=content,
+        media_type="image/webp",
+        headers={
+            "Cache-Control": "public, max-age=3600",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
+
+
+@router.get("/{slug}/site-media/{media_id}")
+def site_media_public(slug: str, media_id: int, db: Session = Depends(get_db)):
+    site = (
+        db.query(SiteVitrine)
+        .join(Artisan, Artisan.id == SiteVitrine.artisan_id)
+        .filter(Artisan.slug == slug, SiteVitrine.statut == "publie")
+        .first()
+    )
+    if site is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Media introuvable")
+    media = db.query(SiteMedia).filter(
+        SiteMedia.id == media_id,
+        SiteMedia.artisan_id == site.artisan_id,
+        SiteMedia.actif.is_(True),
+    ).first()
+    if media is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Media introuvable")
+    if media.type_media != "logo":
+        selected = db.query(SiteMediaSelection).filter(
+            SiteMediaSelection.site_vitrine_id == site.id,
+            SiteMediaSelection.site_media_id == media.id,
+        ).first()
+        if selected is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Media introuvable")
+    content = get_storage().read(media.storage_key)
+    if content is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Fichier media introuvable")
+    return _public_image_response(content)
+
+
+@router.get("/{slug}/library-media/{library_media_id}")
+def library_media_public(slug: str, library_media_id: int, db: Session = Depends(get_db)):
+    media = (
+        db.query(SiteMediaLibrary)
+        .join(SiteMediaSelection, SiteMediaSelection.library_media_id == SiteMediaLibrary.id)
+        .join(SiteVitrine, SiteVitrine.id == SiteMediaSelection.site_vitrine_id)
+        .join(Artisan, Artisan.id == SiteVitrine.artisan_id)
+        .filter(
+            Artisan.slug == slug,
+            SiteVitrine.statut == "publie",
+            SiteMediaLibrary.id == library_media_id,
+            SiteMediaLibrary.actif.is_(True),
+        )
+        .first()
+    )
+    if media is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Media introuvable")
+    content = get_storage().read(media.storage_key)
+    if content is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Fichier media introuvable")
+    return _public_image_response(content)
 
 
 def _get_devis_public_or_404(db: Session, token: str) -> Devis:

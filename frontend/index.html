@@ -430,6 +430,35 @@
         </form>
       </div>
 
+      <div class="form-box visual-identity-box" id="visual-identity-box">
+        <h3>Identité visuelle</h3>
+        <p class="section-hint">Ajoutez votre logo et de vraies photos de votre activité pour préparer votre site vitrine.</p>
+        <div class="visual-identity-grid">
+          <section class="media-upload-section">
+            <h4>Logo</h4>
+            <div id="site-logo-preview" class="site-logo-preview"></div>
+            <form id="site-logo-form" class="media-upload-form">
+              <label for="site-logo-file">Image PNG, JPG ou WEBP</label>
+              <input id="site-logo-file" name="file" type="file" accept="image/png,image/jpeg,image/webp" required>
+              <div class="media-actions">
+                <button type="submit" class="btn-sm btn-sm-primary">Ajouter ou remplacer</button>
+                <button type="button" id="site-logo-delete" class="btn-sm btn-sm-danger" hidden>Supprimer</button>
+              </div>
+            </form>
+          </section>
+          <section class="media-upload-section">
+            <div class="media-section-heading"><h4>Photos du site</h4><span id="site-photo-count" class="media-count"></span></div>
+            <form id="site-photo-form" class="media-upload-form media-photo-form">
+              <div><label for="site-photo-file">Photo</label><input id="site-photo-file" name="file" type="file" accept="image/png,image/jpeg,image/webp" required></div>
+              <div><label for="site-photo-category">Catégorie</label><select id="site-photo-category" name="categorie"><option value="realisation">Réalisation</option><option value="chantier">Chantier</option><option value="equipe">Équipe</option><option value="atelier">Atelier</option><option value="vehicule">Véhicule</option><option value="avant">Avant</option><option value="apres">Après</option><option value="autre">Autre</option></select></div>
+              <button type="submit" class="btn-sm btn-sm-primary">Ajouter la photo</button>
+            </form>
+          </section>
+        </div>
+        <p class="field-error" id="site-media-error" hidden></p>
+        <div id="site-photos-list" class="site-photos-list"></div>
+      </div>
+
       <div class="form-box" id="automatisation-form-box" style="margin-top:24px;">
         <h3>Automatisation des relances</h3>
         <p class="section-hint">Délais avant qu'une relance ne devienne "à faire" dans vos notifications.</p>
@@ -514,7 +543,7 @@
 <script src="env.js"></script>
 <script src="config.js"></script>
 <script src="pricing.js"></script>
-<script src="api.js?v=20260830-contract-email-feedback"></script>
-<script src="app.js?v=20260830-contract-email-feedback"></script>
+<script src="api.js?v=20260830-site-media"></script>
+<script src="app.js?v=20260830-site-media"></script>
 </body>
 </html>

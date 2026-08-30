@@ -667,6 +667,7 @@ function loadEntrepriseForm() {
   document.getElementById("ent-adresse").value = currentArtisan.adresse || "";
   document.getElementById("ent-siret").value = currentArtisan.siret || "";
   document.getElementById("ent-assurance").value = currentArtisan.assurance_decennale_nom || "";
+  loadSiteMedia().catch(showSiteMediaError);
 
   const automationBox = document.getElementById("automatisation-form-box");
   const automationPaywall = document.getElementById("automatisation-paywall");
@@ -1381,6 +1382,157 @@ function renderNotificationCard(n) {
         data-notification-id="${n.notification_id || ""}" data-client-id="${n.client_id || ""}">Voir</button>
     </div>
   </div>`;
+}
+
+const siteMediaObjectUrls = [];
+const siteMediaCategories = {
+  realisation: "Réalisation", chantier: "Chantier", equipe: "Équipe", atelier: "Atelier",
+  vehicule: "Véhicule", avant: "Avant", apres: "Après", autre: "Autre",
+};
+
+function showSiteMediaError(error) {
+  const box = document.getElementById("site-media-error");
+  box.hidden = false;
+  box.textContent = error && error.message ? error.message : "Impossible de charger les médias.";
+}
+
+function clearSiteMediaObjectUrls() {
+  siteMediaObjectUrls.splice(0).forEach((url) => URL.revokeObjectURL(url));
+}
+
+async function hydrateSiteMediaImages() {
+  const images = Array.from(document.querySelectorAll("#visual-identity-box img[data-media-url]"));
+  await Promise.all(images.map(async (image) => {
+    const url = await protectedImageUrl(image.dataset.mediaUrl);
+    siteMediaObjectUrls.push(url);
+    image.src = url;
+  }));
+}
+
+function categoryOptions(selected) {
+  return Object.entries(siteMediaCategories).map(([value, label]) =>
+    `<option value="${value}"${value === selected ? " selected" : ""}>${label}</option>`
+  ).join("");
+}
+
+async function loadSiteMedia() {
+  const errorBox = document.getElementById("site-media-error");
+  errorBox.hidden = true;
+  const data = await Api.siteMedia();
+  clearSiteMediaObjectUrls();
+  const logoBox = document.getElementById("site-logo-preview");
+  const logoDelete = document.getElementById("site-logo-delete");
+  if (data.logo) {
+    logoBox.innerHTML = `<img data-media-url="${escapeHtml(data.logo.thumbnail_url)}" alt="Aperçu du logo">`;
+    logoDelete.hidden = false;
+  } else {
+    logoBox.innerHTML = '<span class="media-empty">Aucun logo</span>';
+    logoDelete.hidden = true;
+  }
+  document.getElementById("site-photo-count").textContent = `${data.photos.length} / ${data.max_photos}`;
+  document.getElementById("site-photos-list").innerHTML = data.photos.length ? data.photos.map((photo, index) => `
+    <article class="site-photo-item" data-media-id="${photo.id}">
+      <img data-media-url="${escapeHtml(photo.thumbnail_url)}" alt="${escapeHtml(photo.alt_text || photo.nom_original)}">
+      <div class="site-photo-fields">
+        <strong>${escapeHtml(photo.nom_original)}</strong>
+        <select data-action="media-category" aria-label="Catégorie de ${escapeHtml(photo.nom_original)}">${categoryOptions(photo.categorie)}</select>
+        <label class="checkbox-option"><input type="checkbox" data-action="media-active"${photo.actif ? " checked" : ""}> Active sur le site</label>
+      </div>
+      <div class="site-photo-actions">
+        <button type="button" class="btn-sm" data-action="media-up" title="Monter"${index === 0 ? " disabled" : ""}>↑</button>
+        <button type="button" class="btn-sm" data-action="media-down" title="Descendre"${index === data.photos.length - 1 ? " disabled" : ""}>↓</button>
+        <button type="button" class="btn-sm btn-sm-danger" data-action="media-delete">Supprimer</button>
+      </div>
+    </article>
+  `).join("") : '<p class="media-empty">Aucune photo ajoutée.</p>';
+  await hydrateSiteMediaImages();
+}
+
+function setupSiteMedia() {
+  document.getElementById("site-logo-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const button = event.target.querySelector("button[type=submit]");
+    button.disabled = true;
+    const previous = button.textContent;
+    button.textContent = "Traitement...";
+    try {
+      await Api.uploadSiteLogo(new FormData(event.target));
+      event.target.reset();
+      await loadSiteMedia();
+      showToast("Logo enregistré.");
+    } catch (error) {
+      showSiteMediaError(error);
+    } finally {
+      button.disabled = false;
+      button.textContent = previous;
+    }
+  });
+
+  document.getElementById("site-photo-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const button = event.target.querySelector("button[type=submit]");
+    button.disabled = true;
+    const previous = button.textContent;
+    button.textContent = "Traitement...";
+    try {
+      await Api.uploadSitePhoto(new FormData(event.target));
+      event.target.reset();
+      document.getElementById("site-photo-category").value = "realisation";
+      await loadSiteMedia();
+      showToast("Photo ajoutée.");
+    } catch (error) {
+      showSiteMediaError(error);
+    } finally {
+      button.disabled = false;
+      button.textContent = previous;
+    }
+  });
+
+  document.getElementById("site-logo-delete").addEventListener("click", async () => {
+    if (!(await confirmDialog("Supprimer le logo ?", { danger: true }))) return;
+    try {
+      await Api.deleteSiteLogo();
+      await loadSiteMedia();
+      showToast("Logo supprimé.");
+    } catch (error) { showSiteMediaError(error); }
+  });
+
+  document.getElementById("site-photos-list").addEventListener("change", async (event) => {
+    const item = event.target.closest("[data-media-id]");
+    if (!item) return;
+    try {
+      if (event.target.dataset.action === "media-category") {
+        await Api.updateSiteMedia(Number(item.dataset.mediaId), { categorie: event.target.value });
+      }
+      if (event.target.dataset.action === "media-active") {
+        await Api.updateSiteMedia(Number(item.dataset.mediaId), { actif: event.target.checked });
+      }
+      showToast("Photo mise à jour.");
+    } catch (error) {
+      showSiteMediaError(error);
+      await loadSiteMedia();
+    }
+  });
+
+  document.getElementById("site-photos-list").addEventListener("click", async (event) => {
+    const button = event.target.closest("button[data-action]");
+    const item = event.target.closest("[data-media-id]");
+    if (!button || !item) return;
+    try {
+      if (button.dataset.action === "media-delete") {
+        if (!(await confirmDialog("Supprimer cette photo ?", { danger: true }))) return;
+        await Api.deleteSiteMedia(Number(item.dataset.mediaId));
+      } else {
+        const ids = Array.from(document.querySelectorAll("#site-photos-list [data-media-id]"), (node) => Number(node.dataset.mediaId));
+        const index = ids.indexOf(Number(item.dataset.mediaId));
+        const target = button.dataset.action === "media-up" ? index - 1 : index + 1;
+        if (target < 0 || target >= ids.length) return;
+        [ids[index], ids[target]] = [ids[target], ids[index]];
+        await Api.orderSitePhotos(ids);
+      }
+      await loadSiteMedia();
+    } catch (error) { showSiteMediaError(error); }
+  });
 }
 
 function setupNotificationsView() {
@@ -4685,6 +4837,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupClientsView();
   setupArchivesPanel();
   setupEntrepriseForm();
+  setupSiteMedia();
   setupAutomatisationForm();
   setupEquipeView();
   setupPrestationsView();
