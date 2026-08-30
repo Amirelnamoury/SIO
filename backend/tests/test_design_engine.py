@@ -251,3 +251,123 @@ def test_resolve_visible_sections_omet_les_sections_sans_donnees_reelles():
     }
     visibles_completes = resolve_visible_sections("trust_led", toutes_donnees)
     assert set(visibles_completes) == {"hero", "trust", "services", "featured_project", "about", "gallery", "reviews", "service_area", "cta"}
+
+
+# ---------- Lot 1.1 : une famille est une direction artistique, pas un template fige ----------
+
+def test_meme_famille_structures_reellement_differentes():
+    """Seeds controlees (pas de hasard fragile) : 'artisan-d' et 'artisan-e'
+    tombent tous les deux dans la famille 'atelier' (verifie ci-dessous),
+    mais avec un header, un hero et une gallery differents - la famille fixe
+    une direction artistique coherente, jamais un squelette unique."""
+    profil_a = select_design_profile({"slug": "artisan-d"}, [])
+    profil_b = select_design_profile({"slug": "artisan-e"}, [])
+
+    assert profil_a["design_family"] == profil_b["design_family"] == "atelier", (
+        "precondition du test : les deux seeds doivent partager la meme famille"
+    )
+
+    axes_structurels = [
+        "header_variant", "hero_variant", "services_variant", "gallery_variant",
+        "about_variant", "reviews_variant", "cta_variant", "footer_variant",
+    ]
+    axes_differents = [axe for axe in axes_structurels if profil_a[axe] != profil_b[axe]]
+    assert len(axes_differents) >= 2, (
+        f"deux artisans de la meme famille doivent differer sur plusieurs axes structurels, "
+        f"seuls differents : {axes_differents} (A={profil_a}, B={profil_b})"
+    )
+
+    # Chaque variante choisie reste compatible avec la famille (jamais une
+    # combinaison hors-registre - voir DESIGN_FAMILY_RULES).
+    from generator.design_registry import DESIGN_FAMILY_RULES
+    for axe in axes_structurels:
+        assert profil_a[axe] in DESIGN_FAMILY_RULES["atelier"][axe]
+        assert profil_b[axe] in DESIGN_FAMILY_RULES["atelier"][axe]
+
+    # Point 8 du brief : signatures differentes malgre la meme famille.
+    assert profil_a["design_signature"] != profil_b["design_signature"]
+
+
+def test_diversite_a_grande_echelle_sur_50_seeds():
+    """Genere 50 profils deterministes (aucune ecriture DB) et verifie
+    l'absence de regression vers "1 famille = 1 template" : plusieurs
+    familles, plusieurs heroes/services/galleries, plusieurs signatures, et
+    plusieurs structures a l'interieur d'une meme famille. Pas de seuil
+    arbitraire intenable - juste "plus d'une valeur observee" partout."""
+    profils = []
+    existants = []
+    for i in range(50):
+        p = select_design_profile({"slug": f"diversite-seed-{i}"}, existants)
+        profils.append(p)
+        existants.append(p)
+
+    familles = {p["design_family"] for p in profils}
+    heroes = {p["hero_variant"] for p in profils}
+    services = {p["services_variant"] for p in profils}
+    galleries = {p["gallery_variant"] for p in profils}
+    signatures = {p["design_signature"] for p in profils}
+
+    assert len(familles) >= 3, f"au moins 3 familles distinctes attendues sur 50 seeds, obtenu : {familles}"
+    assert len(heroes) >= 3, f"heroes trop peu varies : {heroes}"
+    assert len(services) >= 3, f"services trop peu varies : {services}"
+    assert len(galleries) >= 3, f"galleries trop peu variees : {galleries}"
+    assert len(signatures) >= 10, f"trop peu de signatures distinctes sur 50 profils : {len(signatures)}"
+
+    # Au moins une famille avec plusieurs artisans doit presenter plusieurs
+    # structures internes (la regression exacte a eviter : "1 famille = 1
+    # template" - voir le brief).
+    par_famille: dict[str, list[dict]] = {}
+    for p in profils:
+        par_famille.setdefault(p["design_family"], []).append(p)
+    familles_avec_variation_interne = 0
+    for fam, membres in par_famille.items():
+        if len(membres) < 2:
+            continue
+        heroes_famille = {m["hero_variant"] for m in membres}
+        services_famille = {m["services_variant"] for m in membres}
+        gallery_famille = {m["gallery_variant"] for m in membres}
+        if len(heroes_famille) > 1 or len(services_famille) > 1 or len(gallery_famille) > 1:
+            familles_avec_variation_interne += 1
+    assert familles_avec_variation_interne >= 1, (
+        "au moins une famille peuplee par plusieurs artisans doit presenter des structures internes differentes "
+        f"(repartition observee : { {fam: len(m) for fam, m in par_famille.items()} })"
+    )
+
+
+# ---------- Lot 1.1 : compatibilite avec les profils deja persistes du Lot 1 ----------
+
+def test_profil_lot1_deja_persiste_reste_valide_et_reutilise_tel_quel():
+    """Un design_profile persiste AVANT le Lot 1.1 (avec l'ancienne
+    combinaison fixe par famille) doit continuer a etre accepte par
+    DesignProfileOut et reutilise sans jamais etre recalcule."""
+    from app.design_schemas import DesignProfileOut
+
+    ancien_profil_lot1 = {
+        "design_family": "architecture",
+        "header_variant": "classic", "hero_variant": "split", "services_variant": "editorial",
+        "gallery_variant": "masonry", "about_variant": "split", "reviews_variant": "featured",
+        "cta_variant": "split", "footer_variant": "columns",
+        "section_order": ["hero", "trust", "services", "featured_project", "about", "gallery", "reviews", "service_area", "cta"],
+        "palette": "palette-2", "font_pair": "poppins-inter", "radius_style": "soft", "spacing_style": "comfortable",
+        "image_treatment": "flat", "design_engine_version": "v2.0",
+        "design_signature": "architecture|classic|split|editorial|masonry|split|featured|split|columns|palette-2|poppins-inter|soft|comfortable|hero+trust+services+featured_project+about+gallery+reviews+service_area+cta",
+    }
+    # 1. Toujours accepte par la validation stricte.
+    valide = DesignProfileOut(**ancien_profil_lot1)
+    assert valide.design_family == "architecture"
+
+    # 2. Reutilise tel quel par ensure_design_profile (jamais recalcule).
+    headers, _ = _admin_headers()
+    artisan_id = _creer_artisan("macon")
+    db = SessionLocal()
+    try:
+        site = SiteVitrine(artisan_id=artisan_id, statut="genere", config={}, design_profile=ancien_profil_lot1)
+        db.add(site)
+        db.commit()
+    finally:
+        db.close()
+
+    with TestClient(app) as client:
+        res = client.post(f"/admin/api/artisans/{artisan_id}/site/generate", headers=headers)
+        assert res.status_code == 200, res.text
+        assert res.json()["design_profile"] == ancien_profil_lot1

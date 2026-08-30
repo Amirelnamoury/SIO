@@ -137,44 +137,97 @@ def resolve_visible_sections(section_order_template: str, available_data: dict) 
     return visible
 
 
-# ---------- Regles par famille ----------
-# Chaque famille fixe une combinaison coherente de variantes structurelles.
+# ---------- Regles par famille (Lot 1.1) ----------
+# Une famille est une DIRECTION ARTISTIQUE (un ensemble de contraintes), pas
+# un template fige : pour chaque axe structurel, elle liste les variantes
+# COMPATIBLES avec sa personnalite, avec un poids (plus un poids est eleve,
+# plus cette variante est frequente pour cette famille - jamais exclusif).
 # C'est ce qui garantit qu'un site "architecture" reste toujours credible
-# visuellement, tout en restant reconnaissable d'une famille a l'autre
-# (exemples du brief : architecture -> split/editorial/masonry,
-# impact -> fullscreen/cards/featured, atelier -> asymmetric/alternating/grid).
+# visuellement (jamais "impact" avec un CTA minimaliste), tout en permettant
+# a deux artisans "architecture" d'avoir des structures reellement
+# differentes (header/hero/services/gallery/about/reviews/cta/footer
+# selectionnes chacun independamment - voir select_design_profile).
+#
+# Personnalite visee par famille (guide les poids ci-dessous) :
+#   atelier      -> chaleureux, artisanal
+#   architecture -> premium, minimal, editorial
+#   impact       -> fort, dynamique, gros CTA
+#   technique    -> structure, precis
+#   local        -> proximite, confiance
+#   signature    -> haut de gamme, photographique
+#
+# Chaque valeur du Lot 1 (celle qui avait le plus de poids visuel avant ce
+# lot) reste le choix DOMINANT (poids le plus eleve) de sa famille : un
+# design_profile deja persiste reste donc pleinement coherent avec ce
+# registre, meme si nous ne le recalculons jamais (voir ensure_design_profile).
 DESIGN_FAMILY_RULES = {
     "atelier": {
-        "header_variant": "minimal", "hero_variant": "asymmetric", "services_variant": "alternating",
-        "gallery_variant": "grid", "about_variant": "compact", "reviews_variant": "minimal",
-        "cta_variant": "minimal", "footer_variant": "simple",
+        "header_variant": {"minimal": 3, "centered": 2, "compact": 1},
+        "hero_variant": {"asymmetric": 3, "compact": 2, "editorial": 1},
+        "services_variant": {"alternating": 3, "list": 2, "grid": 1},
+        "gallery_variant": {"grid": 3, "horizontal": 2, "masonry": 1},
+        "about_variant": {"compact": 3, "classic": 2, "editorial": 1},
+        "reviews_variant": {"minimal": 3, "cards": 2},
+        "cta_variant": {"minimal": 3, "floating": 2},
+        "footer_variant": {"simple": 3, "centered": 2},
     },
     "architecture": {
-        "header_variant": "classic", "hero_variant": "split", "services_variant": "editorial",
-        "gallery_variant": "masonry", "about_variant": "split", "reviews_variant": "featured",
-        "cta_variant": "split", "footer_variant": "columns",
+        "header_variant": {"classic": 3, "minimal": 2, "centered": 1},
+        "hero_variant": {"split": 3, "editorial": 3, "asymmetric": 2, "card": 1},
+        "services_variant": {"editorial": 3, "grid": 2, "list": 1},
+        "gallery_variant": {"masonry": 3, "featured": 2, "grid": 1},
+        "about_variant": {"split": 3, "editorial": 2, "classic": 1},
+        "reviews_variant": {"featured": 3, "cards": 2},
+        "cta_variant": {"split": 3, "banner": 2},
+        "footer_variant": {"columns": 3, "map": 2},
     },
     "impact": {
-        "header_variant": "compact", "hero_variant": "fullscreen", "services_variant": "cards",
-        "gallery_variant": "featured", "about_variant": "classic", "reviews_variant": "cards",
-        "cta_variant": "banner", "footer_variant": "columns",
+        "header_variant": {"compact": 3, "classic": 2, "minimal": 1},
+        "hero_variant": {"fullscreen": 3, "card": 2, "split": 1},
+        "services_variant": {"cards": 3, "grid": 2, "alternating": 1},
+        "gallery_variant": {"featured": 3, "grid": 2, "masonry": 1},
+        "about_variant": {"classic": 3, "compact": 2},
+        "reviews_variant": {"cards": 3, "featured": 2},
+        "cta_variant": {"banner": 3, "floating": 2},
+        "footer_variant": {"columns": 3, "simple": 2},
     },
     "technique": {
-        "header_variant": "classic", "hero_variant": "compact", "services_variant": "list",
-        "gallery_variant": "horizontal", "about_variant": "classic", "reviews_variant": "minimal",
-        "cta_variant": "floating", "footer_variant": "simple",
+        "header_variant": {"classic": 3, "compact": 2, "centered": 1},
+        "hero_variant": {"compact": 3, "split": 2, "asymmetric": 1},
+        "services_variant": {"list": 3, "grid": 2, "editorial": 1},
+        "gallery_variant": {"horizontal": 3, "grid": 2},
+        "about_variant": {"classic": 3, "split": 2},
+        "reviews_variant": {"minimal": 3, "cards": 2},
+        "cta_variant": {"floating": 3, "minimal": 2},
+        "footer_variant": {"simple": 3, "columns": 2},
     },
     "local": {
-        "header_variant": "centered", "hero_variant": "editorial", "services_variant": "grid",
-        "gallery_variant": "grid", "about_variant": "editorial", "reviews_variant": "cards",
-        "cta_variant": "banner", "footer_variant": "centered",
+        "header_variant": {"centered": 3, "classic": 2, "minimal": 1},
+        "hero_variant": {"editorial": 3, "compact": 2, "split": 1},
+        "services_variant": {"grid": 3, "list": 2, "alternating": 1},
+        "gallery_variant": {"grid": 3, "horizontal": 2},
+        "about_variant": {"editorial": 3, "classic": 2},
+        "reviews_variant": {"cards": 3, "minimal": 2},
+        "cta_variant": {"banner": 3, "split": 2},
+        "footer_variant": {"centered": 3, "simple": 2},
     },
     "signature": {
-        "header_variant": "centered", "hero_variant": "card", "services_variant": "editorial",
-        "gallery_variant": "featured", "about_variant": "split", "reviews_variant": "featured",
-        "cta_variant": "split", "footer_variant": "map",
+        "header_variant": {"centered": 3, "minimal": 2, "classic": 1},
+        "hero_variant": {"card": 3, "editorial": 3, "split": 2, "fullscreen": 1},
+        "services_variant": {"editorial": 3, "cards": 2, "grid": 1},
+        "gallery_variant": {"featured": 3, "masonry": 2, "grid": 1},
+        "about_variant": {"split": 3, "editorial": 2},
+        "reviews_variant": {"featured": 3, "cards": 2},
+        "cta_variant": {"split": 3, "banner": 2},
+        "footer_variant": {"map": 3, "columns": 2},
     },
 }
+# Les 8 axes structurels controles par DESIGN_FAMILY_RULES (dans cet ordre,
+# reutilise par design_selector.py::_candidate_profile).
+STRUCTURAL_AXES = [
+    "header_variant", "hero_variant", "services_variant", "gallery_variant",
+    "about_variant", "reviews_variant", "cta_variant", "footer_variant",
+]
 
 
 def _stable_index(seed: str, salt: str, modulo: int) -> int:
@@ -183,6 +236,30 @@ def _stable_index(seed: str, salt: str, modulo: int) -> int:
     au module V1 - voir la note de compatibilite dans le rapport)."""
     digest = hashlib.sha256(f"{seed}|{salt}".encode("utf-8")).hexdigest()
     return int(digest, 16) % modulo
+
+
+def _stable_fraction(seed: str, salt: str) -> float:
+    """Meme principe que _stable_index, mais renvoie un flottant stable dans
+    [0, 1) - utilise pour un tirage pondere deterministe (voir
+    weighted_stable_choice)."""
+    digest = hashlib.sha256(f"{seed}|{salt}".encode("utf-8")).hexdigest()
+    return (int(digest, 16) % 10_000_000) / 10_000_000
+
+
+def weighted_stable_choice(seed: str, salt: str, weighted_options: dict) -> str:
+    """Choisit une variante parmi les options AUTORISEES par la famille pour
+    cet axe, en respectant leurs poids relatifs, de facon 100% deterministe
+    (meme seed+salt -> toujours le meme choix). Jamais de valeur hors de
+    weighted_options : une famille garde ainsi sa personnalite (pas de
+    cascade de if, juste ce registre)."""
+    total = sum(weighted_options.values())
+    threshold = _stable_fraction(seed, salt) * total
+    cumulative = 0
+    for value, weight in weighted_options.items():
+        cumulative += weight
+        if threshold < cumulative:
+            return value
+    return next(iter(weighted_options))  # filet de securite (arrondi flottant)
 
 
 # ---------- Points d'extension pour de futures ponderations metier ----------
