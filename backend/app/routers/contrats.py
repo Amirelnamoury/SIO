@@ -11,7 +11,7 @@ from app.deps import require_plan
 from app import email_service
 from app.models import Artisan, Client, Contrat, Facture, LigneFacture
 from app.routers.factures import _generer_numero as _generer_numero_facture
-from app.schemas import ContratCreate, ContratOut, ContratUpdate
+from app.schemas import ContratCreate, ContratOut, ContratUpdate, GenerationContratOut
 
 router = APIRouter(prefix="/contrats", tags=["contrats"])
 
@@ -25,7 +25,9 @@ def _ajouter_mois(d: date, mois: int) -> date:
     mois_total = d.month - 1 + mois
     annee = d.year + mois_total // 12
     mois_resultat = mois_total % 12 + 1
-    jour = min(d.day, calendar.monthrange(annee, mois_resultat)[1])
+    dernier_jour_source = calendar.monthrange(d.year, d.month)[1]
+    dernier_jour_cible = calendar.monthrange(annee, mois_resultat)[1]
+    jour = dernier_jour_cible if d.day == dernier_jour_source else min(d.day, dernier_jour_cible)
     return date(annee, mois_resultat, jour)
 
 
@@ -52,7 +54,7 @@ def _get_contrat_or_404(db: Session, artisan: Artisan, contrat_id: int) -> Contr
 
 
 def generer_facture_pour_contrat(db: Session, artisan: Artisan, contrat: Contrat):
-    """Genere et envoie reellement la facture d'echeance d'un contrat recurrent,
+    """Genere la facture d'echeance d'un contrat recurrent, tente son envoi,
     puis avance prochaine_echeance selon la frequence. Appele soit par le
     planificateur d'automatisation (scheduler.py), soit manuellement via
     POST /contrats/{id}/generer - meme fonction, un seul chemin de verite.
@@ -69,10 +71,10 @@ def generer_facture_pour_contrat(db: Session, artisan: Artisan, contrat: Contrat
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client introuvable")
 
     facture = Facture(
-        artisan_id=artisan.id, client_id=contrat.client_id, contrat_id=contrat.id, statut="envoyee",
+        artisan_id=artisan.id, client_id=contrat.client_id, contrat_id=contrat.id, statut="brouillon",
         type="standard", taux_tva=contrat.taux_tva,
         numero=_generer_numero_facture(db, artisan), token=secrets.token_urlsafe(24),
-        date_echeance=date.today() + timedelta(days=30), date_envoi=datetime.now(timezone.utc),
+        date_echeance=date.today() + timedelta(days=30), date_envoi=None,
     )
     db.add(facture)
     db.flush()
@@ -91,8 +93,12 @@ def generer_facture_pour_contrat(db: Session, artisan: Artisan, contrat: Contrat
         .filter(Facture.id == facture.id, Facture.artisan_id == artisan.id)
         .first()
     )
-    url = f"{settings.app_base_url}/facture-public.html?t={facture.token}"
+    url = f"{settings.app_base_url.rstrip('/')}/facture-public.html?t={facture.token}"
     log = email_service.send_facture(db, facture, artisan, url)
+    if log.statut == "envoye":
+        facture.statut = "envoyee"
+        facture.date_envoi = datetime.now(timezone.utc)
+        db.commit()
     return facture, log
 
 
@@ -154,7 +160,7 @@ def supprimer_contrat(
     db.commit()
 
 
-@router.post("/{contrat_id}/generer", response_model=ContratOut)
+@router.post("/{contrat_id}/generer", response_model=GenerationContratOut)
 def generer_maintenant(
     contrat_id: int,
     db: Session = Depends(get_db),
@@ -166,6 +172,20 @@ def generer_maintenant(
     contrat = _get_contrat_or_404(db, artisan, contrat_id)
     if contrat.statut != "actif":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Seul un contrat actif peut generer une facture")
-    generer_facture_pour_contrat(db, artisan, contrat)
+    facture, log = generer_facture_pour_contrat(db, artisan, contrat)
     contrat = _get_contrat_or_404(db, artisan, contrat_id)
-    return _to_out(contrat)
+    contrat_out = _to_out(contrat)
+    messages = {
+        "envoye": "Facture générée et envoyée par email.",
+        "non_configure": "Facture générée. L'email n'a pas été envoyé car le service email n'est pas configuré.",
+        "sans_destinataire": "Facture générée. L'email n'a pas été envoyé car ce client n'a pas d'adresse email.",
+        "echec": "Facture générée. L'email n'a pas pu être envoyé par le fournisseur.",
+    }
+    return GenerationContratOut(
+        **contrat_out.model_dump(),
+        facture_id=facture.id,
+        facture_numero=facture.numero,
+        facture_statut=facture.statut,
+        email_statut=log.statut,
+        message=messages.get(log.statut, "Facture générée. Statut de l'email inconnu."),
+    )

@@ -37,6 +37,7 @@ def _to_out(facture: Facture) -> FactureOut:
     return FactureOut(
         id=facture.id, artisan_id=facture.artisan_id, client_id=facture.client_id,
         client_nom=facture.client.nom, devis_id=facture.devis_id, chantier_id=facture.chantier_id,
+        contrat_id=facture.contrat_id,
         numero=facture.numero, type=facture.type, taux_tva=facture.taux_tva, statut=facture.statut,
         montant_ht=facture.montant_ht, montant_ttc=facture.montant_ttc, montant_paye=facture.montant_paye,
         montant_restant=facture.montant_restant, est_en_retard=facture.est_en_retard,

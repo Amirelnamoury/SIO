@@ -538,7 +538,7 @@ function switchView(view) {
   if (view === "prospects") loadClients();
   if (view === "clients") loadClientsDirectory();
   if (view === "devis") loadDevis();
-  if (view === "factures") { loadFactures(); loadContrats(); }
+  if (view === "factures") loadFactures();
   if (view === "chantiers") loadChantiers();
   if (view === "planning") loadPlanning();
   if (view === "taches") loadTaches();
@@ -553,6 +553,7 @@ function switchView(view) {
     loadConformite();
     loadEquipe();
     loadAutomationStatus();
+    loadContrats();
   }
 }
 
@@ -2930,12 +2931,21 @@ const CONTRAT_STATUT_META = {
   suspendu: { label: "Suspendu", badge: "badge-orange" },
   resilie: { label: "Résilié", badge: "badge-gray" },
 };
+let contratsCache = [];
+
+function feedbackGenerationContrat(result) {
+  return {
+    message: result && result.message ? result.message : "Facture générée.",
+    isError: !!result && result.email_statut === "echec",
+  };
+}
 
 async function loadContrats() {
   const list = document.getElementById("contrats-list");
   const newBtn = document.querySelector('[data-action="show-contrat-form"]');
   const formContainer = document.getElementById("contrat-form-container");
   if (!hasPlan("pro")) {
+    contratsCache = [];
     newBtn.hidden = true;
     formContainer.hidden = true;
     formContainer.innerHTML = "";
@@ -2950,8 +2960,9 @@ async function loadContrats() {
   list.innerHTML = skeletonCards();
   try {
     const contrats = await Api.listContrats();
+    contratsCache = contrats;
     if (contrats.length === 0) {
-      list.innerHTML = '<div class="empty-state">Aucun contrat récurrent. Un contrat d\'entretien ou de maintenance génère et envoie automatiquement sa facture à chaque échéance.</div>';
+      list.innerHTML = '<div class="empty-state">Aucun contrat récurrent. Créez votre premier contrat pour planifier sa facturation.</div>';
       return;
     }
     list.innerHTML = contrats.map(renderContratCard).join("");
@@ -2967,7 +2978,7 @@ function renderContratCard(c) {
     <div class="item-card-top">
       <div>
         <div class="item-title">${escapeHtml(c.titre)}</div>
-        <div class="item-sub">${escapeHtml(c.client_nom)} · ${fmtEuro(c.montant_ht)} HT · ${CONTRAT_FREQUENCE_LABELS[c.frequence] || c.frequence}</div>
+        <div class="item-sub">${escapeHtml(c.client_nom)} · ${fmtEuro(c.montant_ht)} HT · TVA ${c.taux_tva}% · ${CONTRAT_FREQUENCE_LABELS[c.frequence] || c.frequence}</div>
       </div>
       <span class="badge ${meta.badge}">${meta.label}</span>
     </div>
@@ -2977,76 +2988,90 @@ function renderContratCard(c) {
       · ${c.nb_factures_generees} facture${c.nb_factures_generees > 1 ? "s" : ""} générée${c.nb_factures_generees > 1 ? "s" : ""}
     </div>
     <div class="item-actions">
-      ${c.statut === "actif" ? `<button type="button" class="btn-sm" data-action="generer-contrat" data-id="${c.id}">Générer maintenant</button>` : ""}
+      <button type="button" class="btn-sm" data-action="edit-contrat" data-id="${c.id}">Modifier</button>
+      ${c.statut === "actif" ? `<button type="button" class="btn-sm btn-sm-primary" data-action="generer-contrat" data-id="${c.id}">Générer maintenant</button>` : ""}
       ${c.statut === "actif" ? `<button type="button" class="btn-sm" data-action="suspendre-contrat" data-id="${c.id}">Suspendre</button>` : ""}
       ${c.statut === "suspendu" ? `<button type="button" class="btn-sm btn-sm-primary" data-action="reactiver-contrat" data-id="${c.id}">Réactiver</button>` : ""}
       ${c.statut !== "resilie" ? `<button type="button" class="btn-sm btn-sm-danger" data-action="resilier-contrat" data-id="${c.id}">Résilier</button>` : ""}
+      <button type="button" class="btn-sm btn-sm-danger" data-action="delete-contrat" data-id="${c.id}">Supprimer</button>
     </div>
   </div>`;
 }
 
-function setupContratsView() {
-  document.querySelector('[data-action="show-contrat-form"]').addEventListener("click", async () => {
-    const container = document.getElementById("contrat-form-container");
-    await ensureClientsCache();
-    if (clientsCache.length === 0) {
+async function showContratForm(contrat = null) {
+  const container = document.getElementById("contrat-form-container");
+  const isEdit = !!contrat;
+  await ensureClientsCache();
+  if (!isEdit && clientsCache.length === 0) {
       container.innerHTML = `<div class="form-box"><p>Vous n'avez pas encore de client. Ajoutez d'abord un contact dans l'onglet <strong>Clients &amp; prospects</strong>.</p>
         <div class="form-actions"><button type="button" class="btn-sm" data-action="cancel-contrat-form">Fermer</button></div></div>`;
       container.hidden = false;
       return;
-    }
-    const today = new Date().toISOString().slice(0, 10);
-    container.innerHTML = `
+  }
+  const today = new Date().toISOString().slice(0, 10);
+  const echeance = isEdit ? contrat.prochaine_echeance : today;
+  container.innerHTML = `
       <div class="form-box">
-        <h3>Nouveau contrat récurrent</h3>
+        <h3>${isEdit ? "Modifier le contrat récurrent" : "Nouveau contrat récurrent"}</h3>
         <form id="contrat-form">
           <div class="form-grid">
-            <div><label for="ct-titre">Titre *</label><input type="text" id="ct-titre" required placeholder="Ex: Contrat d'entretien chaudière"></div>
-            <div><label for="ct-client">Client *</label><select id="ct-client" required><option value="">Choisir...</option>${clientOptionsHtml()}</select></div>
-            <div><label for="ct-montant">Montant HT par échéance *</label><input type="number" step="0.01" min="0.01" id="ct-montant" required></div>
+            <div><label for="ct-titre">Titre *</label><input type="text" id="ct-titre" required placeholder="Ex: Contrat d'entretien chaudière" value="${isEdit ? escapeHtml(contrat.titre) : ""}"></div>
+            ${isEdit
+              ? `<div><label>Client</label><input type="text" value="${escapeHtml(contrat.client_nom)}" disabled></div>`
+              : `<div><label for="ct-client">Client *</label><select id="ct-client" required><option value="">Choisir...</option>${clientOptionsHtml()}</select></div>`}
+            <div><label for="ct-montant">Montant HT par échéance *</label><input type="number" step="0.01" min="0.01" id="ct-montant" required value="${isEdit ? contrat.montant_ht : ""}"></div>
             <div>
               <label for="ct-tva">TVA</label>
-              <select id="ct-tva"><option value="10">10% (rénovation)</option><option value="20">20% (neuf)</option></select>
+              <select id="ct-tva"><option value="10" ${!isEdit || contrat.taux_tva === 10 ? "selected" : ""}>10% (rénovation)</option><option value="20" ${isEdit && contrat.taux_tva === 20 ? "selected" : ""}>20% (neuf)</option></select>
             </div>
             <div>
               <label for="ct-frequence">Fréquence</label>
-              <select id="ct-frequence">${Object.entries(CONTRAT_FREQUENCE_LABELS).map(([v, l]) => `<option value="${v}" ${v === "mensuel" ? "selected" : ""}>${l}</option>`).join("")}</select>
+              <select id="ct-frequence">${Object.entries(CONTRAT_FREQUENCE_LABELS).map(([v, l]) => `<option value="${v}" ${(!isEdit && v === "mensuel") || (isEdit && contrat.frequence === v) ? "selected" : ""}>${l}</option>`).join("")}</select>
             </div>
-            <div><label for="ct-echeance">Première échéance *</label><input type="date" id="ct-echeance" required value="${today}"></div>
+            <div><label for="ct-echeance">${isEdit ? "Prochaine échéance" : "Première échéance"} *</label><input type="date" id="ct-echeance" required value="${echeance}"></div>
           </div>
           <p class="field-error" id="contrat-form-error" hidden></p>
           <div class="form-actions">
-            <button type="submit" class="btn-sm btn-sm-primary">Créer</button>
+            <button type="submit" class="btn-sm btn-sm-primary">${isEdit ? "Enregistrer" : "Créer"}</button>
             <button type="button" class="btn-sm" data-action="cancel-contrat-form">Annuler</button>
           </div>
         </form>
       </div>`;
-    container.hidden = false;
-    container.scrollIntoView({ behavior: "smooth", block: "start" });
+  container.hidden = false;
+  container.scrollIntoView({ behavior: "smooth", block: "start" });
 
-    document.getElementById("contrat-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const errorBox = document.getElementById("contrat-form-error");
-      errorBox.hidden = true;
-      try {
-        await Api.createContrat({
-          client_id: parseInt(document.getElementById("ct-client").value, 10),
-          titre: document.getElementById("ct-titre").value,
-          montant_ht: parseFloat(document.getElementById("ct-montant").value),
-          taux_tva: parseFloat(document.getElementById("ct-tva").value),
-          frequence: document.getElementById("ct-frequence").value,
-          prochaine_echeance: document.getElementById("ct-echeance").value,
-        });
-        showToast("Contrat créé. La facture sera générée et envoyée automatiquement à l'échéance.");
-        container.hidden = true;
-        container.innerHTML = "";
-        loadContrats();
-      } catch (err) {
-        errorBox.hidden = false;
-        errorBox.textContent = err.message;
+  document.getElementById("contrat-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const errorBox = document.getElementById("contrat-form-error");
+    errorBox.hidden = true;
+    const payload = {
+      titre: document.getElementById("ct-titre").value.trim(),
+      montant_ht: parseFloat(document.getElementById("ct-montant").value),
+      taux_tva: parseFloat(document.getElementById("ct-tva").value),
+      frequence: document.getElementById("ct-frequence").value,
+      prochaine_echeance: document.getElementById("ct-echeance").value,
+    };
+    if (!isEdit) payload.client_id = parseInt(document.getElementById("ct-client").value, 10);
+    try {
+      if (isEdit) {
+        await Api.updateContrat(contrat.id, payload);
+        showToast("Contrat mis à jour.");
+      } else {
+        await Api.createContrat(payload);
+        showToast("Contrat créé. Sa première facture sera générée à l'échéance prévue.");
       }
-    });
+      container.hidden = true;
+      container.innerHTML = "";
+      loadContrats();
+    } catch (err) {
+      errorBox.hidden = false;
+      errorBox.textContent = err.message;
+    }
   });
+}
+
+function setupContratsView() {
+  document.querySelector('[data-action="show-contrat-form"]').addEventListener("click", () => showContratForm());
 
   document.getElementById("contrat-form-container").addEventListener("click", (e) => {
     if (e.target.closest('[data-action="cancel-contrat-form"]')) {
@@ -3061,11 +3086,21 @@ function setupContratsView() {
     if (!btn) return;
     const id = parseInt(btn.dataset.id, 10);
 
-    if (btn.dataset.action === "generer-contrat") {
+    if (btn.dataset.action === "edit-contrat") {
+      const contrat = contratsCache.find((item) => item.id === id);
+      if (contrat) await showContratForm(contrat);
+    } else if (btn.dataset.action === "generer-contrat") {
       await withErrorToast(async () => {
-        await Api.genererContrat(id);
-        showToast("Facture générée et envoyée.");
-        loadContrats();
+        btn.disabled = true;
+        try {
+          const result = await Api.genererContrat(id);
+          const feedback = feedbackGenerationContrat(result);
+          showToast(feedback.message, feedback.isError);
+          await loadContrats();
+        } catch (err) {
+          btn.disabled = false;
+          throw err;
+        }
       });
     } else if (btn.dataset.action === "suspendre-contrat") {
       await withErrorToast(async () => {
@@ -3084,6 +3119,13 @@ function setupContratsView() {
       await withErrorToast(async () => {
         await Api.updateContrat(id, { statut: "resilie" });
         showToast("Contrat résilié.");
+        loadContrats();
+      });
+    } else if (btn.dataset.action === "delete-contrat") {
+      if (!(await confirmDialog("Supprimer ce contrat ? Les factures déjà générées resteront conservées.", { confirmLabel: "Supprimer", danger: true }))) return;
+      await withErrorToast(async () => {
+        await Api.deleteContrat(id);
+        showToast("Contrat supprimé.");
         loadContrats();
       });
     }

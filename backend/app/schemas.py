@@ -553,6 +553,7 @@ class FactureOut(BaseModel):
     client_nom: str
     devis_id: Optional[int] = None
     chantier_id: Optional[int] = None
+    contrat_id: Optional[int] = None
     numero: str
     type: str
     taux_tva: float
@@ -1428,11 +1429,18 @@ CONTRAT_STATUTS = {"actif", "suspendu", "resilie"}
 
 class ContratCreate(BaseModel):
     client_id: int
-    titre: str
-    montant_ht: float
-    taux_tva: float = 10.0
+    titre: str = Field(min_length=1)
+    montant_ht: float = Field(gt=0)
+    taux_tva: float = Field(default=10.0, ge=0, le=100)
     frequence: str
     prochaine_echeance: date
+
+    @field_validator("titre")
+    @classmethod
+    def titre_non_vide(cls, v):
+        if not v.strip():
+            raise ValueError("titre ne peut pas être vide")
+        return v.strip()
 
     @field_validator("frequence")
     @classmethod
@@ -1443,12 +1451,19 @@ class ContratCreate(BaseModel):
 
 
 class ContratUpdate(BaseModel):
-    titre: Optional[str] = None
-    montant_ht: Optional[float] = None
-    taux_tva: Optional[float] = None
+    titre: Optional[str] = Field(default=None, min_length=1)
+    montant_ht: Optional[float] = Field(default=None, gt=0)
+    taux_tva: Optional[float] = Field(default=None, ge=0, le=100)
     frequence: Optional[str] = None
     statut: Optional[str] = None
     prochaine_echeance: Optional[date] = None
+
+    @field_validator("titre")
+    @classmethod
+    def titre_non_vide(cls, v):
+        if v is not None and not v.strip():
+            raise ValueError("titre ne peut pas être vide")
+        return v.strip() if v is not None else v
 
     @field_validator("frequence")
     @classmethod
@@ -1480,3 +1495,11 @@ class ContratOut(BaseModel):
     derniere_generation: Optional[date] = None
     nb_factures_generees: int = 0
     created_at: datetime
+
+
+class GenerationContratOut(ContratOut):
+    facture_id: int
+    facture_numero: str
+    facture_statut: str
+    email_statut: str
+    message: str

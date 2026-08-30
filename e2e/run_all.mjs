@@ -13,6 +13,7 @@ import scenario10 from "./scenario10_portail_client.mjs";
 import scenario11 from "./scenario11_numerotation.mjs";
 import scenario12 from "./scenario12_plans_tarifaires.mjs";
 import scenario13 from "./scenario13_planning_timezone.mjs";
+import scenario14 from "./scenario14_contrats_recurrents.mjs";
 
 const scenarios = [
   ["1. Devis -> ... -> avis", scenario1],
@@ -28,6 +29,7 @@ const scenarios = [
   ["11. Numerotation devis/factures : concurrence sans doublon", scenario11],
   ["12. Plans tarifaires : matrice fonctionnalite x plan", scenario12],
   ["13. Planning - decalage horaire (test navigateur reel, Europe/Paris)", scenario13],
+  ["14. Contrats recurrents Pro -> facture liee et email honnete", scenario14],
 ];
 
 let echecs = 0;

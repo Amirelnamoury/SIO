@@ -3,7 +3,7 @@ from datetime import date, timedelta
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-from app.scheduler import _traiter_conformite, _traiter_devis, _traiter_factures
+from app.scheduler import _traiter_conformite, _traiter_contrats, _traiter_devis, _traiter_factures
 
 
 def artisan(plan: str, subscription_status: str = "active") -> SimpleNamespace:
@@ -20,6 +20,7 @@ def automation_run() -> SimpleNamespace:
         nb_devis_relances=0,
         nb_factures_relancees=0,
         nb_alertes_conformite=0,
+        nb_contrats_factures=0,
         nb_emails_envoyes=0,
         nb_emails_non_configures=0,
         nb_erreurs=0,
@@ -27,6 +28,32 @@ def automation_run() -> SimpleNamespace:
 
 
 class SchedulerPlanTests(unittest.TestCase):
+    @patch("app.scheduler.generer_facture_pour_contrat")
+    def test_essentiel_does_not_run_recurring_contracts(self, generer):
+        db = MagicMock()
+
+        _traiter_contrats(db, artisan("essentiel"), automation_run())
+
+        db.query.assert_not_called()
+        generer.assert_not_called()
+
+    @patch("app.scheduler.generer_facture_pour_contrat")
+    def test_pro_runs_due_recurring_contracts(self, generer):
+        contrat = SimpleNamespace(id=9)
+        query = MagicMock()
+        query.filter.return_value = query
+        query.all.return_value = [contrat]
+        db = MagicMock()
+        db.query.return_value = query
+        generer.return_value = (SimpleNamespace(id=10), SimpleNamespace(statut="non_configure"))
+        run = automation_run()
+
+        _traiter_contrats(db, artisan("pro"), run)
+
+        generer.assert_called_once_with(db, unittest.mock.ANY, contrat)
+        self.assertEqual(run.nb_contrats_factures, 1)
+        self.assertEqual(run.nb_emails_non_configures, 1)
+
     @patch("app.scheduler.email_service.send_relance_devis")
     def test_essentiel_does_not_run_automatic_quote_reminders(self, send_email):
         db = MagicMock()
