@@ -119,6 +119,13 @@ class SiteVitrine(Base):
     url_publique = Column(String, nullable=True)
     storage_key = Column(String, nullable=True)
     config = Column(JSON, nullable=False, default=dict)
+    # Identite de design persistante du site (moteur V2, voir
+    # generator/design_registry.py et generator/design_selector.py).
+    # Nullable : un site cree avant ce lot n'a pas encore de profil - il en
+    # recoit un proprement (voir admin_service.ensure_design_profile) a la
+    # premiere generation suivant la mise a jour, jamais retroactivement en
+    # masse (aucune migration de donnees destructrice).
+    design_profile = Column(JSON, nullable=True)
     date_generation = Column(DateTime(timezone=True), nullable=True)
     date_publication = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)

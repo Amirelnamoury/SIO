@@ -6,6 +6,7 @@ from pathlib import Path
 from sqlalchemy.orm import Session
 
 from app.config import settings
+from app.design_schemas import DesignProfileOut
 from app.models import AdminUser, Artisan, Avis, SiteVitrine, utcnow
 from app.security import hash_password
 from app.storage import get_storage
@@ -16,6 +17,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from generator.site_generator import generate_site  # noqa: E402
 from generator.themes import HERO_MOTIFS, PALETTE_VARIANTS, get_theme  # noqa: E402
+from generator.design_selector import select_design_profile  # noqa: E402
 
 logger = logging.getLogger("suite_artisan.admin")
 
@@ -66,6 +68,57 @@ def validate_site_variants(artisan: Artisan, config: dict) -> None:
         raise ValueError("Variante motif incompatible avec ce metier")
 
 
+def _design_profile_artisan_payload(artisan: Artisan) -> dict:
+    """Contexte transmis au selecteur de design (voir
+    generator/design_selector.py::select_design_profile). Volontairement
+    reduit aux champs qui influencent reellement la graine stable."""
+    return {"slug": artisan.slug, "siret": artisan.siret, "nom_entreprise": artisan.nom_entreprise, "metier": artisan.metier}
+
+
+def _valid_stored_profile(site: SiteVitrine) -> dict | None:
+    """Un design_profile deja persiste est reutilise TEL QUEL (jamais
+    recalcule au hasard) - mais seulement s'il est encore valide contre le
+    registre actuel (voir app/design_schemas.py::DesignProfileOut). Un
+    profil corrompu ou issu d'un registre incompatible est traite comme
+    absent plutot que de faire planter la generation."""
+    if not site.design_profile:
+        return None
+    try:
+        return DesignProfileOut(**site.design_profile).model_dump()
+    except Exception:
+        logger.warning("design_profile invalide pour le site %s : regeneration", site.id)
+        return None
+
+
+def ensure_design_profile(db: Session, artisan: Artisan, site: SiteVitrine) -> dict:
+    """Garantit que ce site a un design_profile, sans jamais en recalculer un
+    nouveau s'il en a deja un valide (voir le brief : "Une nouvelle
+    generation de preview ne doit pas changer cela. Le profil n'est genere
+    automatiquement que lorsqu'il n'existe pas encore. Il doit ensuite rester
+    stable.").
+
+    Quand un profil doit etre choisi, compare aux profils deja persistes des
+    AUTRES sites (anti-clonage, voir select_design_profile) - jamais a celui
+    du site en cours (il n'en a justement pas encore)."""
+    existing = _valid_stored_profile(site)
+    if existing is not None:
+        return existing
+
+    autres_profils = [
+        profil for (profil,) in db.query(SiteVitrine.design_profile).filter(
+            SiteVitrine.id != (site.id or -1), SiteVitrine.design_profile.isnot(None),
+        ).order_by(SiteVitrine.id.desc()).limit(50).all()
+        if profil
+    ]
+    profile = select_design_profile(_design_profile_artisan_payload(artisan), autres_profils)
+    profile = DesignProfileOut(**profile).model_dump()
+
+    site.design_profile = profile
+    db.commit()
+    db.refresh(site)
+    return profile
+
+
 def preview_storage_key(artisan_id: int) -> str:
     if artisan_id <= 0:
         raise ValueError("Identifiant artisan invalide")
@@ -106,6 +159,11 @@ def build_generator_payload(db: Session, artisan: Artisan, config: dict) -> dict
 
 
 def generate_site_preview(db: Session, artisan: Artisan, site: SiteVitrine) -> str:
+    # Assure un design_profile stable AVANT de generer (voir
+    # ensure_design_profile) : cree une fois si absent, jamais recalcule au
+    # hasard ensuite. Le rendu V1 (generate_site ci-dessous) reste inchange
+    # dans ce lot - voir la note de compatibilite du Lot 1.
+    ensure_design_profile(db, artisan, site)
     config = merged_site_config(artisan, site)
     payload = build_generator_payload(db, artisan, config)
     generated_html = generate_site(payload, api_base_url="/admin/preview-api")

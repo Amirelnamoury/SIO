@@ -100,6 +100,7 @@ def _site_out(artisan: Artisan, site: SiteVitrine | None) -> SiteVitrineOut:
         url_publique=site.url_publique,
         storage_key=site.storage_key,
         config=merged_site_config(artisan, site),
+        design_profile=site.design_profile,
         date_generation=site.date_generation,
         date_publication=site.date_publication,
         created_at=site.created_at,

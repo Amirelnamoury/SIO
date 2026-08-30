@@ -3,6 +3,7 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, HttpUrl, field_validator
 
+from app.design_schemas import DesignProfileOut
 from app.schemas import METIERS_VALIDES
 
 
@@ -160,6 +161,7 @@ class SiteVitrineOut(BaseModel):
     url_publique: Optional[str] = None
     storage_key: Optional[str] = None
     config: dict
+    design_profile: Optional[DesignProfileOut] = None
     date_generation: Optional[datetime] = None
     date_publication: Optional[datetime] = None
     created_at: Optional[datetime] = None

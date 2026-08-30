@@ -190,6 +190,17 @@
       url_publique: artisan.site.url_publique,
     });
     updateMotifs(artisan.metier, config.variante_motif);
+    const designProfile = artisan.site.design_profile;
+    const designProfileEl = document.getElementById("site-design-profile");
+    if (designProfile) {
+      designProfileEl.hidden = false;
+      designProfileEl.textContent = "Profil de design (V2) : " + [
+        designProfile.design_family, designProfile.hero_variant, designProfile.services_variant,
+        designProfile.gallery_variant, designProfile.palette,
+      ].join(" · ");
+    } else {
+      designProfileEl.hidden = true;
+    }
     document.getElementById("site-slug").textContent = artisan.slug;
     document.getElementById("site-generated-at").textContent = formatDate(artisan.site.date_generation);
     document.getElementById("site-published-at").textContent = formatDate(artisan.site.date_publication);
