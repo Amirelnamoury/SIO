@@ -140,6 +140,38 @@ def send_demande_avis(db: Session, artisan, client, url: str) -> EmailLog:
     return _envoyer(db, artisan, client, "demande_avis", objet, html)
 
 
+def send_nouvelle_demande_devis(db: Session, artisan, prospect) -> EmailLog:
+    """Notifie l'artisan sans jamais confondre son adresse avec celle du prospect."""
+    objet, html = tpl.nouvelle_demande_devis_email(artisan, prospect)
+    destinataire = artisan.email
+    log_args = {
+        "artisan_id": artisan.id,
+        "client_id": prospect.id,
+        "type_": "nouvelle_demande_devis",
+        "destinataire": destinataire,
+        "objet": objet,
+    }
+    if not destinataire:
+        return _log(db, **log_args, statut="sans_destinataire")
+    if not is_configured():
+        logger.info(
+            "Email 'nouvelle_demande_devis' non envoye (fournisseur non configure) : destinataire=%s",
+            destinataire,
+        )
+        return _log(db, **log_args, statut="non_configure")
+
+    try:
+        succes, provider_id, erreur = _send_raw(destinataire, objet, html)
+    except Exception as exc:
+        logger.exception("Echec inattendu de l'envoi de la nouvelle demande a %s", destinataire)
+        return _log(db, **log_args, statut="echec", erreur=f"Erreur provider : {exc}"[:500])
+
+    statut = "envoye" if succes else "echec"
+    if not succes:
+        logger.warning("Echec envoi nouvelle demande de devis a %s : %s", destinataire, erreur)
+    return _log(db, **log_args, statut=statut, erreur=erreur, provider_id=provider_id)
+
+
 def send_conformite_alerte(db: Session, artisan, item) -> EmailLog:
     """Notifie l'ARTISAN lui-meme (pas un client) : destinataire = son propre email."""
     objet, html = tpl.conformite_alerte_email(artisan, item)

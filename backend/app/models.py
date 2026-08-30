@@ -85,6 +85,7 @@ class Artisan(Base):
     fournisseurs = relationship("Fournisseur", back_populates="artisan", cascade="all, delete-orphan")
     contrats = relationship("Contrat", back_populates="artisan", cascade="all, delete-orphan")
     messages = relationship("Message", back_populates="artisan", cascade="all, delete-orphan")
+    notifications = relationship("Notification", back_populates="artisan", cascade="all, delete-orphan")
     site_vitrine = relationship("SiteVitrine", back_populates="artisan", cascade="all, delete-orphan", uselist=False)
 
 
@@ -193,6 +194,7 @@ class Client(Base):
     avis = relationship("Avis", back_populates="client", cascade="all, delete-orphan")
     contrats = relationship("Contrat", back_populates="client", cascade="all, delete-orphan")
     messages = relationship("Message", back_populates="client", cascade="all, delete-orphan", order_by="Message.created_at")
+    notifications = relationship("Notification", back_populates="client", cascade="all, delete-orphan")
 
 
 class Devis(Base):
@@ -777,7 +779,7 @@ class EmailLog(Base):
     devis_id = Column(Integer, ForeignKey("devis.id"), nullable=True, index=True)
     facture_id = Column(Integer, ForeignKey("factures.id"), nullable=True, index=True)
 
-    type = Column(String, nullable=False)  # devis, relance_devis, facture, relance_facture, paiement_recu, demande_avis, conformite_alerte
+    type = Column(String, nullable=False)  # devis, relances, facture, paiement_recu, demande_avis, conformite_alerte, nouvelle_demande_devis
     destinataire = Column(String, nullable=True)
     objet = Column(String, nullable=True)
     statut = Column(String, nullable=False)  # voir EMAIL_LOG_STATUTS
@@ -895,6 +897,31 @@ class Message(Base):
 
     artisan = relationship("Artisan", back_populates="messages")
     client = relationship("Client", back_populates="messages")
+
+
+class Notification(Base):
+    """Evenement interne persistant destine a un artisan.
+
+    Le centre de notifications calcule aussi certaines alertes metier a la
+    volee. Cette table porte uniquement les evenements qui doivent survivre
+    a la requete d'origine, comme une demande recue depuis un site vitrine.
+    """
+
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    artisan_id = Column(Integer, ForeignKey("artisans.id"), nullable=False, index=True)
+    client_id = Column(Integer, ForeignKey("clients.id"), nullable=True, index=True)
+
+    type = Column(String, nullable=False)
+    titre = Column(String, nullable=False)
+    message = Column(Text, nullable=True)
+    view = Column(String, nullable=False, default="notifications")
+    lu = Column(Boolean, nullable=False, default=False, server_default=sql_false())
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False, index=True)
+
+    artisan = relationship("Artisan", back_populates="notifications")
+    client = relationship("Client", back_populates="notifications")
 
 
 class NumeroSequence(Base):

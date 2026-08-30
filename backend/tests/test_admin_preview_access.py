@@ -1,12 +1,13 @@
 from urllib.parse import parse_qs, urlparse
 from uuid import uuid4
+from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
 from app import storage as storage_module
 from app.database import SessionLocal
 from app.main import app
-from app.models import AdminUser, Artisan, Client
+from app.models import AdminUser, Artisan, Client, EmailLog, Notification
 from app.security import create_access_token
 from app.storage import LocalFilesystemStorage
 
@@ -80,10 +81,12 @@ def test_preview_locale_utilise_un_handoff_limite_et_ne_cree_aucun_prospect(tmp_
         autre_preview = client.get(f"/admin/api/artisans/{autre_artisan_id}/site/preview")
         assert autre_preview.status_code == 403
 
-        faux_envoi = client.post(
-            f"/admin/preview-api/pub/{slug}/demande-devis",
-            json={"nom": "Ne doit pas être créé"},
-        )
+        with patch("app.routers.public.email_service.send_nouvelle_demande_devis") as envoi_email:
+            faux_envoi = client.post(
+                f"/admin/preview-api/pub/{slug}/demande-devis",
+                json={"nom": "Ne doit pas être créé"},
+            )
+            envoi_email.assert_not_called()
         assert faux_envoi.status_code == 200, faux_envoi.text
         assert "aucune demande n'a ete creee" in faux_envoi.json()["detail"]
 
@@ -96,5 +99,7 @@ def test_preview_locale_utilise_un_handoff_limite_et_ne_cree_aucun_prospect(tmp_
     db = SessionLocal()
     try:
         assert db.query(Client).filter(Client.artisan_id == artisan_id).count() == 0
+        assert db.query(Notification).filter(Notification.artisan_id == artisan_id).count() == 0
+        assert db.query(EmailLog).filter(EmailLog.artisan_id == artisan_id).count() == 0
     finally:
         db.close()

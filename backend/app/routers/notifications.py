@@ -1,11 +1,11 @@
 from datetime import date, datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
 from app.deps import get_current_artisan, plan_allows
-from app.models import Artisan, ConformiteItem, Devis, Facture, Message
+from app.models import Artisan, ConformiteItem, Devis, Facture, Message, Notification
 from app.routers.conformite import SEUIL_ALERTE_JOURS
 from app.routers.devis import JOURS_SEUIL_STATUTS, relance_due
 from app.routers.factures import relance_facture_due
@@ -23,6 +23,26 @@ def lister_notifications(
     l'attention de l'artisan (devis a relancer, factures impayees, echeances
     de conformite), sans dupliquer la logique metier de chaque module."""
     notifications: list[NotificationOut] = []
+
+    evenements_internes = (
+        db.query(Notification)
+        .filter(Notification.artisan_id == artisan.id, Notification.lu.is_(False))
+        .order_by(Notification.created_at.desc())
+        .all()
+    )
+    for evenement in evenements_internes:
+        notifications.append(NotificationOut(
+            type=evenement.type,
+            id=evenement.client_id or evenement.id,
+            notification_id=evenement.id,
+            client_id=evenement.client_id,
+            titre=evenement.titre,
+            sous_titre=evenement.message,
+            urgent=False,
+            date=evenement.created_at,
+            view=evenement.view,
+            lu=evenement.lu,
+        ))
 
     devis_candidats = (
         db.query(Devis)
@@ -92,5 +112,25 @@ def lister_notifications(
             view="prospects",
         ))
 
-    notifications.sort(key=lambda n: (not n.urgent, n.date))
+    notifications.sort(key=lambda n: (
+        not n.urgent,
+        n.date if n.date.tzinfo is not None else n.date.replace(tzinfo=timezone.utc),
+    ))
     return notifications
+
+
+@router.patch("/{notification_id}/lire", status_code=status.HTTP_204_NO_CONTENT)
+def marquer_notification_lue(
+    notification_id: int,
+    db: Session = Depends(get_db),
+    artisan: Artisan = Depends(get_current_artisan),
+):
+    notification = (
+        db.query(Notification)
+        .filter(Notification.id == notification_id, Notification.artisan_id == artisan.id)
+        .first()
+    )
+    if notification is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Notification introuvable")
+    notification.lu = True
+    db.commit()

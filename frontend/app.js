@@ -1348,6 +1348,7 @@ function setupAvisView() {
 // ===================== Notifications =====================
 const NOTIFICATION_TYPE_LABELS = {
   devis_relance: "Devis", facture_relance: "Facture", conformite: "Conformité", message_client: "Message",
+  nouvelle_demande_devis: "Prospect",
 };
 
 async function loadNotifications() {
@@ -1376,16 +1377,27 @@ function renderNotificationCard(n) {
       <span class="badge ${n.urgent ? "badge-red" : "badge-gray"}">${NOTIFICATION_TYPE_LABELS[n.type] || n.type}</span>
     </div>
     <div class="item-actions">
-      <button type="button" class="btn-sm btn-sm-primary" data-action="voir-notification" data-view="${n.view}">Voir</button>
+      <button type="button" class="btn-sm btn-sm-primary" data-action="voir-notification" data-view="${n.view}"
+        data-notification-id="${n.notification_id || ""}" data-client-id="${n.client_id || ""}">Voir</button>
     </div>
   </div>`;
 }
 
 function setupNotificationsView() {
-  document.getElementById("notifications-list").addEventListener("click", (e) => {
+  document.getElementById("notifications-list").addEventListener("click", async (e) => {
     const btn = e.target.closest('[data-action="voir-notification"]');
     if (!btn) return;
-    switchView(btn.dataset.view);
+    await withErrorToast(async () => {
+      const notificationId = parseInt(btn.dataset.notificationId, 10);
+      const clientId = parseInt(btn.dataset.clientId, 10);
+      switchView(btn.dataset.view);
+      if (btn.dataset.view === "prospects" && Number.isInteger(clientId)) {
+        await loadClients();
+        await showTimeline(clientId);
+      }
+      if (Number.isInteger(notificationId)) await Api.markNotificationRead(notificationId);
+      refreshBadges();
+    });
   });
 }
 

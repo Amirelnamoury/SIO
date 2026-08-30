@@ -195,6 +195,7 @@ def timeline_client(
         "devis": "Devis envoye par email", "relance_devis": "Relance devis envoyee par email",
         "facture": "Facture envoyee par email", "relance_facture": "Relance facture envoyee par email",
         "paiement_recu": "Confirmation de paiement envoyee", "demande_avis": "Demande d'avis envoyee",
+        "nouvelle_demande_devis": "Notification de nouvelle demande envoyee a l'artisan",
     }
     emails = db.query(EmailLog).filter(EmailLog.client_id == client.id).all()
     for log in emails:

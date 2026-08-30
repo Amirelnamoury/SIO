@@ -132,6 +132,34 @@ def demande_avis_email(artisan, client, url: str) -> tuple[str, str]:
     return objet, _render(contenu, artisan)
 
 
+def nouvelle_demande_devis_email(artisan, prospect) -> tuple[str, str]:
+    objet = "Nouvelle demande de devis depuis votre site — Suite Artisan"
+    contenu = _env.from_string("""
+    <p style="font-size:0.95rem;color:#2a2a28;">Bonjour {{ artisan_nom }},</p>
+    <p style="font-size:0.95rem;color:#2a2a28;line-height:1.6;">
+      Vous venez de recevoir une nouvelle demande de devis depuis votre site vitrine.
+    </p>
+    <p style="font-size:0.95rem;color:#2a2a28;line-height:1.7;">
+      <strong>Nom :</strong> {{ prospect_nom }}<br>
+      <strong>Email :</strong> {{ prospect_email or "Non renseigne" }}<br>
+      <strong>Telephone :</strong> {{ prospect_telephone or "Non renseigne" }}
+    </p>
+    {% if prospect_message %}
+    <p style="font-size:0.95rem;color:#2a2a28;line-height:1.6;">
+      <strong>Message :</strong><br>{{ prospect_message }}
+    </p>
+    {% endif %}
+    <p style="font-size:0.85rem;color:#8a8578;">Retrouvez cette demande dans Suite Artisan.</p>
+    """).render(
+        artisan_nom=artisan.nom_entreprise,
+        prospect_nom=prospect.nom,
+        prospect_email=prospect.email,
+        prospect_telephone=prospect.telephone,
+        prospect_message=prospect.notes,
+    )
+    return objet, _render(contenu, artisan)
+
+
 def conformite_alerte_email(artisan, item) -> tuple[str, str]:
     jours = (item.date_expiration - __import__("datetime").date.today()).days
     urgence = "a deja expire" if jours < 0 else f"expire dans {jours} jours"

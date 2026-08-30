@@ -193,6 +193,7 @@ const Api = {
 
   // ---------- Notifications ----------
   listNotifications: () => apiFetch("/notifications"),
+  markNotificationRead: (id) => apiFetch(`/notifications/${id}/lire`, { method: "PATCH" }),
 
   // ---------- Tableau de bord & analytics ----------
   dashboard: () => apiFetch("/dashboard"),

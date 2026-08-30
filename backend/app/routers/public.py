@@ -1,12 +1,14 @@
 from datetime import datetime, timedelta, timezone
+import logging
 import mimetypes
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session, joinedload
 
+from app import email_service
 from app.database import get_db
-from app.models import Artisan, Avis, Chantier, Client, Devis, Document, Facture, Message
+from app.models import Artisan, Avis, Chantier, Client, Devis, Document, Facture, Message, Notification
 from app.rate_limit import rate_limiter
 from app.routers.clients import PORTAIL_VALIDITE_JOURS
 from app.schemas import (
@@ -28,6 +30,7 @@ from app.schemas import (
 from app.storage import get_storage
 
 router = APIRouter(prefix="/pub", tags=["public"])
+logger = logging.getLogger("suite_artisan.public")
 
 DEVIS_STATUTS_CLOTURES = ("signe", "perdu", "expire")
 
@@ -83,8 +86,30 @@ def demande_devis(
         source="site_vitrine",
     )
     db.add(client)
+    db.flush()
+    notification = Notification(
+        artisan_id=artisan.id,
+        client_id=client.id,
+        type="nouvelle_demande_devis",
+        titre="Nouvelle demande de devis",
+        message=f"{client.nom} vient d'envoyer une demande depuis votre site vitrine.",
+        view="prospects",
+        lu=False,
+    )
+    db.add(notification)
     db.commit()
     db.refresh(client)
+
+    # Le prospect et sa notification sont deja durablement enregistres. Une
+    # panne du fournisseur email ne doit jamais pouvoir annuler la demande.
+    try:
+        email_service.send_nouvelle_demande_devis(db, artisan, client)
+    except Exception:
+        db.rollback()
+        logger.exception(
+            "La demande %s est conservee, mais la tentative d'email a echoue de facon inattendue",
+            client.id,
+        )
     return {"message": "Demande envoyee avec succes", "client_id": client.id}
 
 

@@ -1386,13 +1386,16 @@ class PortailClientOut(BaseModel):
 # ---------- Notifications (centre de notifications) ----------
 
 class NotificationOut(BaseModel):
-    type: str  # devis_relance, facture_relance, conformite
+    type: str  # devis_relance, facture_relance, conformite, nouvelle_demande_devis
     id: int
+    notification_id: Optional[int] = None
+    client_id: Optional[int] = None
     titre: str
     sous_titre: Optional[str] = None
     urgent: bool
     date: datetime
     view: str
+    lu: bool = False
 
 
 # ---------- Automatisation (emails + observabilite du scheduler) ----------
