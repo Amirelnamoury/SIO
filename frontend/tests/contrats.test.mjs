@@ -34,6 +34,12 @@ for (const apiMethod of ["listContrats", "createContrat", "updateContrat", "dele
   assert.match(apiSource, new RegExp(`${apiMethod}:`), `Api.${apiMethod} doit exister`);
 }
 assert.match(
+  apiSource,
+  /genererContrat:\s*\(id\)\s*=>\s*apiFetch\(`\/contrats\/\$\{id\}\/generer`,\s*\{ method: "POST" \}\)/,
+  "Api.genererContrat doit retourner directement le JSON de l'endpoint",
+);
+assert.match(indexSource, /app\.js\?v=20260830-contract-email-feedback/, "app.js doit être versionné pour invalider l'ancien handler en cache");
+assert.match(
   appSource,
   /if \(view === "entreprise"\)[\s\S]*?loadContrats\(\);[\s\S]*?\n  }/,
   "ouvrir Entreprise doit charger les contrats",
@@ -88,14 +94,32 @@ const htmlSuspendu = context.__contrats.renderContratCard({ ...contratActif, sta
 assert.ok(htmlSuspendu.includes("Réactiver"));
 assert.ok(!htmlSuspendu.includes("Générer maintenant"));
 
-const sansEmail = context.__contrats.feedbackGenerationContrat({
-  email_statut: "non_configure",
-  message: "Facture générée. L'email n'a pas été envoyé.",
-});
-assert.equal(sansEmail.message, "Facture générée. L'email n'a pas été envoyé.");
-assert.equal(sansEmail.isError, false, "une facture créée ne doit pas être présentée comme un échec global");
-const echecEmail = context.__contrats.feedbackGenerationContrat({ email_statut: "echec", message: "Facture générée." });
-assert.equal(echecEmail.isError, true);
+const feedbacks = {
+  envoye: context.__contrats.feedbackGenerationContrat({ email_statut: "envoye", message: "Message backend ignoré pour le test." }),
+  non_configure: context.__contrats.feedbackGenerationContrat({
+    email_statut: "non_configure",
+    message: "Facture générée et envoyée.",
+  }),
+  sans_destinataire: context.__contrats.feedbackGenerationContrat({ email_statut: "sans_destinataire" }),
+  echec: context.__contrats.feedbackGenerationContrat({ email_statut: "echec" }),
+};
+assert.equal(feedbacks.envoye.message, "Facture générée et envoyée par email.");
+assert.equal(
+  feedbacks.non_configure.message,
+  "Facture générée. L'email n'a pas été envoyé car le service email n'est pas configuré.",
+);
+assert.doesNotMatch(feedbacks.non_configure.message, /^Facture générée et envoyée\.?$/);
+assert.equal(
+  feedbacks.sans_destinataire.message,
+  "Facture générée. L'email n'a pas été envoyé car ce client n'a pas d'adresse email.",
+);
+assert.equal(
+  feedbacks.echec.message,
+  "Facture générée. L'email n'a pas pu être envoyé par le fournisseur.",
+);
+assert.equal(feedbacks.non_configure.isError, false, "une facture créée sans fournisseur email ne doit pas être présentée comme un échec global");
+assert.equal(feedbacks.sans_destinataire.isError, false, "l'absence d'adresse email ne doit pas masquer la facture créée");
+assert.equal(feedbacks.echec.isError, true, "l'échec fournisseur doit rester visuellement signalé sans nier la facture créée");
 
 const formStart = appSource.indexOf("async function showContratForm");
 const setupEnd = appSource.indexOf("// ===================== Chantiers", formStart);
@@ -105,5 +129,8 @@ assert.match(contractUiSource, /Api\.updateContrat\(contrat\.id, payload\)/, "le
 assert.match(contractUiSource, /Api\.deleteContrat\(id\)/, "l'action Supprimer doit appeler DELETE");
 assert.match(contractUiSource, /confirmDialog\("Supprimer ce contrat/, "la suppression doit être confirmée");
 assert.match(contractUiSource, /btn\.disabled = true/, "Générer maintenant doit bloquer les doubles clics");
+assert.match(contractUiSource, /const result = await Api\.genererContrat\(id\)/, "le handler doit conserver la réponse JSON de génération");
+assert.match(contractUiSource, /feedbackGenerationContrat\(result\)/, "le toast doit être construit depuis le statut email réel");
+assert.doesNotMatch(contractUiSource, /showToast\("Facture générée et envoyée\."\)/, "aucun toast générique d'envoi ne doit subsister");
 
 console.log("OK - contrats.test.mjs");

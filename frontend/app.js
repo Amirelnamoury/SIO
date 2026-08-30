@@ -2934,9 +2934,16 @@ const CONTRAT_STATUT_META = {
 let contratsCache = [];
 
 function feedbackGenerationContrat(result) {
+  const statut = result && result.email_statut;
+  const messagesParStatut = {
+    envoye: "Facture générée et envoyée par email.",
+    non_configure: "Facture générée. L'email n'a pas été envoyé car le service email n'est pas configuré.",
+    sans_destinataire: "Facture générée. L'email n'a pas été envoyé car ce client n'a pas d'adresse email.",
+    echec: "Facture générée. L'email n'a pas pu être envoyé par le fournisseur.",
+  };
   return {
-    message: result && result.message ? result.message : "Facture générée.",
-    isError: !!result && result.email_statut === "echec",
+    message: messagesParStatut[statut] || (result && result.message) || "Facture générée. Le statut de l'envoi email est indisponible.",
+    isError: statut === "echec",
   };
 }
 
