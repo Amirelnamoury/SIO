@@ -1,6 +1,14 @@
 (function () {
   "use strict";
 
+  const isLocalFrontend = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+  const API_BASE = (window.SUITE_ARTISAN_API_BASE || (isLocalFrontend ? "http://localhost:8000" : window.location.origin)).replace(/\/$/, "");
+  const ADMIN_TOKEN_KEY = "suite_artisan_admin_token";
+
+  function apiUrl(path) {
+    return API_BASE + path;
+  }
+
   const loginForm = document.getElementById("admin-login-form");
   if (loginForm) {
     loginForm.addEventListener("submit", async function (event) {
@@ -8,15 +16,15 @@
       const error = document.getElementById("login-error");
       error.textContent = "";
       try {
-        const response = await fetch("/admin/auth/login", {
+        const response = await fetch(apiUrl("/admin/auth/login"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          credentials: "same-origin",
           body: JSON.stringify({ email: document.getElementById("login-email").value, password: document.getElementById("login-password").value }),
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.detail || "Connexion impossible");
-        window.location.assign("/admin");
+        window.sessionStorage.setItem(ADMIN_TOKEN_KEY, data.access_token);
+        window.location.assign("/admin/");
       } catch (err) {
         error.textContent = err.message;
       }
@@ -59,9 +67,12 @@
   async function api(path, options) {
     const opts = Object.assign({ credentials: "same-origin" }, options || {});
     opts.headers = Object.assign({}, opts.body ? { "Content-Type": "application/json" } : {}, opts.headers || {});
-    const response = await fetch(path, opts);
+    const token = window.sessionStorage.getItem(ADMIN_TOKEN_KEY);
+    if (token) opts.headers.Authorization = "Bearer " + token;
+    const response = await fetch(apiUrl(path), opts);
     if (response.status === 401) {
-      window.location.assign("/admin/login");
+      window.sessionStorage.removeItem(ADMIN_TOKEN_KEY);
+      window.location.assign("/admin/login.html");
       throw new Error("Session expirée");
     }
     let data = null;
@@ -252,7 +263,11 @@
   document.getElementById("ready-button").addEventListener("click", function () { transition("ready", "Site marqué prêt à publier").catch(handleError); });
   document.getElementById("publish-button").addEventListener("click", function () { transition("publish", "Publication enregistrée").catch(handleError); });
   document.getElementById("artisan-form").elements.metier.addEventListener("change", function (event) { updateMotifs(event.target.value, ""); });
-  document.getElementById("logout-button").addEventListener("click", async function () { await api("/admin/auth/logout", { method: "POST" }); window.location.assign("/admin/login"); });
+  document.getElementById("logout-button").addEventListener("click", async function () {
+    await api("/admin/auth/logout", { method: "POST" });
+    window.sessionStorage.removeItem(ADMIN_TOKEN_KEY);
+    window.location.assign("/admin/login.html");
+  });
 
   function debounceSearch(input, loader) {
     let timer;
