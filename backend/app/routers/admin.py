@@ -176,7 +176,8 @@ def _site_out(db: Session, artisan: Artisan, site: SiteVitrine | None) -> SiteVi
     )
 
 
-def _list_item(artisan: Artisan, site: SiteVitrine | None) -> AdminArtisanListItem:
+def _list_item(artisan: Artisan, site: SiteVitrine | None, artisans_avec_media: set[int]) -> AdminArtisanListItem:
+    site_existe = site is not None and site.statut != "non_cree"
     return AdminArtisanListItem(
         id=artisan.id,
         nom_entreprise=artisan.nom_entreprise,
@@ -190,6 +191,8 @@ def _list_item(artisan: Artisan, site: SiteVitrine | None) -> AdminArtisanListIt
         domaine=site.domaine if site else None,
         url_publique=site.url_publique if site else None,
         created_at=artisan.created_at,
+        media_manquant=bool(site) and site_existe and artisan.id not in artisans_avec_media,
+        alternative_en_attente=bool(site and site.candidate_design_profile),
     )
 
 
@@ -281,7 +284,15 @@ def _query_artisans(db: Session, q: str | None, sites_only: bool, limit: int, of
         ))
     total = query.count()
     rows = query.order_by(Artisan.created_at.desc()).offset(offset).limit(limit).all()
-    return [_list_item(artisan, site) for artisan, site in rows], total
+    artisan_ids = [artisan.id for artisan, _site in rows]
+    artisans_avec_media = set()
+    if artisan_ids:
+        artisans_avec_media = {
+            artisan_id for (artisan_id,) in db.query(SiteMedia.artisan_id)
+            .filter(SiteMedia.artisan_id.in_(artisan_ids), SiteMedia.actif.is_(True))
+            .distinct()
+        }
+    return [_list_item(artisan, site, artisans_avec_media) for artisan, site in rows], total
 
 
 @router.get("/admin/api/artisans", response_model=AdminArtisanListOut)

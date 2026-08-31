@@ -32,7 +32,10 @@
     return;
   }
 
-  const state = { currentView: "dashboard", previousView: "artisans", artisan: null, mediaObjectUrls: [] };
+  const state = {
+    currentView: "dashboard", previousView: "artisans", artisan: null, mediaObjectUrls: [],
+    artisanItems: [], siteItems: [], artisanFilter: "all", siteFilter: "all", currentTab: "overview",
+  };
   const motifs = {
     plombier: ["wave-gradient", "gradient-mesh"],
     electricien: ["diagonal-stripes", "dot-grid"],
@@ -41,6 +44,22 @@
     general: ["wave-gradient", "gradient-mesh"],
   };
   const statusLabels = { non_cree: "Non créé", brouillon: "Brouillon", genere: "Généré", pret: "Prêt", publie: "Publié" };
+  const PLAN_LABELS = { gratuit: "Gratuit", essentiel: "Essentiel", pro: "Pro", business: "Business" };
+  const ARTISAN_FILTERS = [
+    ["all", "Tous", null],
+    ["non_cree", "Sans site", "non_cree"],
+    ["brouillon", "À préparer", "brouillon"],
+    ["genere", "Générés", "genere"],
+    ["pret", "Prêts", "pret"],
+    ["publie", "Publiés", "publie"],
+  ];
+  const SITE_FILTERS = [
+    ["all", "Tous", null],
+    ["brouillon", "À préparer", "brouillon"],
+    ["genere", "Générés", "genere"],
+    ["pret", "Prêts", "pret"],
+    ["publie", "Publiés", "publie"],
+  ];
 
   // ---------- Configurateur de design V2 (Lot 4) ----------
   // Ce vocabulaire reflete generator/design_registry.py (source de verite).
@@ -88,6 +107,11 @@
     "rajdhani-inter": "Technique et anguleuse",
   };
   const PALETTE_LABELS = { "palette-1": "Palette 1", "palette-2": "Palette 2", "palette-3": "Palette 3" };
+  const MEDIA_USAGE_LABELS = {
+    hero: "Bandeau d'accueil", gallery: "Galerie photo", about: "À propos",
+    featured_project: "Réalisation phare", before_after: "Avant / après",
+  };
+  const MEDIA_SOURCE_LABELS = { artisan: "Photo artisan", bibliotheque: "Bibliothèque", fallback: "Visuel de secours" };
   const SECTION_LABELS = {
     hero: "Introduction", trust: "Confiance", services: "Prestations", featured_project: "Réalisation phare",
     about: "À propos", gallery: "Galerie photo", reviews: "Avis clients", service_area: "Zone d'intervention",
@@ -204,12 +228,14 @@
     document.getElementById("admin-logo-delete").hidden = !media.logo;
     document.getElementById("admin-media-photos").innerHTML = media.photos.length ? media.photos.map(function (photo) {
       return `<article class="admin-media-item"><img data-media-url="${escapeHtml(photo.thumbnail_url)}" alt="${escapeHtml(photo.alt_text || photo.nom_original)}"><div><strong>${escapeHtml(photo.nom_original)}</strong><span>${escapeHtml(photo.categorie || "autre")} · ${photo.actif ? "active" : "inactive"} · source artisan</span></div></article>`;
-    }).join("") : '<p class="muted">Aucune photo artisan.</p>';
+    }).join("") : '<div class="empty-state"><strong>Aucune photo artisan</strong><p>Ajoutez des réalisations pour personnaliser le site.</p></div>';
     const selections = media.profile.selections || [];
     document.getElementById("admin-media-selections").innerHTML = selections.length ? selections.map(function (selection) {
       const preview = selection.thumbnail_url ? `<img data-media-url="${escapeHtml(selection.thumbnail_url)}" alt="">` : '<span class="selection-fallback">Sans photo</span>';
-      return `<article class="admin-selection-item" data-selection-id="${selection.id}">${preview}<div><strong>${escapeHtml(selection.usage)}${selection.position ? " " + (selection.position + 1) : ""}</strong><span>${escapeHtml(selection.source)}${selection.credit ? " · " + escapeHtml(selection.credit) : ""}</span></div><button class="button button-secondary" data-action="remove-selection" type="button">Retirer</button></article>`;
-    }).join("") : '<p class="muted">La sélection sera créée à la première génération.</p>';
+      const usageLabel = MEDIA_USAGE_LABELS[selection.usage] || selection.usage;
+      const sourceLabel = MEDIA_SOURCE_LABELS[selection.source] || selection.source;
+      return `<article class="admin-selection-item" data-selection-id="${selection.id}">${preview}<div><strong>${escapeHtml(usageLabel)}${selection.position ? " " + (selection.position + 1) : ""}</strong><span>${escapeHtml(sourceLabel)}${selection.credit ? " · " + escapeHtml(selection.credit) : ""}</span></div><button class="button button-secondary" data-action="remove-selection" type="button">Retirer</button></article>`;
+    }).join("") : '<div class="empty-state"><strong>Sélection pas encore créée</strong><p>Elle sera créée à la première génération du site.</p></div>';
     await hydrateAdminMediaImages();
   }
 
@@ -219,36 +245,115 @@
     document.querySelectorAll(".nav-item").forEach(function (item) { item.classList.toggle("active", item.dataset.view === name); });
     document.getElementById("page-title").textContent = title;
     state.currentView = name;
+    closeDrawer();
   }
 
+  function showTab(name) {
+    document.querySelectorAll(".tab-item").forEach(function (t) { t.classList.toggle("active", t.dataset.tab === name); });
+    document.querySelectorAll(".tab-panel").forEach(function (p) { p.classList.toggle("active", p.id === "tab-panel-" + name); });
+    state.currentTab = name;
+  }
+
+  // ---------- Menu mobile ----------
+  const sidebarEl = document.getElementById("sidebar");
+  const drawerScrim = document.getElementById("drawer-scrim");
+  const drawerToggle = document.getElementById("drawer-toggle");
+  function closeDrawer() {
+    if (!sidebarEl) return;
+    sidebarEl.classList.remove("open");
+    if (drawerScrim) drawerScrim.hidden = true;
+    if (drawerToggle) drawerToggle.setAttribute("aria-expanded", "false");
+  }
+  function openDrawer() {
+    if (!sidebarEl) return;
+    sidebarEl.classList.add("open");
+    if (drawerScrim) drawerScrim.hidden = false;
+    if (drawerToggle) drawerToggle.setAttribute("aria-expanded", "true");
+  }
+  if (drawerToggle) {
+    drawerToggle.addEventListener("click", function () {
+      if (sidebarEl.classList.contains("open")) closeDrawer(); else openDrawer();
+    });
+  }
+  if (drawerScrim) drawerScrim.addEventListener("click", closeDrawer);
+
   async function loadDashboard() {
-    showView("dashboard", "Dashboard");
-    const data = await api("/admin/api/dashboard");
+    showView("dashboard", "Vue d'ensemble");
+    const [metrics, artisansData] = await Promise.all([
+      api("/admin/api/dashboard"),
+      api("/admin/api/artisans?limit=100"),
+    ]);
+    renderDashboardMetrics(metrics);
+    renderAttentionGroups(artisansData.items);
+    renderRecentSites(artisansData.items);
+  }
+
+  function renderDashboardMetrics(data) {
     const metrics = [
-      ["Artisans", data.artisans_total], ["Artisans actifs", data.artisans_actifs],
-      ["Sites vitrines", data.sites_total], ["Sites publiés", data.sites_publies],
+      ["Artisans", data.artisans_total, false],
+      ["Sites en production", data.sites_generes + data.sites_prets, false],
+      ["Prêts à publier", data.sites_prets, data.sites_prets > 0],
+      ["Sites publiés", data.sites_publies, false],
     ];
     document.getElementById("metric-grid").innerHTML = metrics.map(function (item) {
-      return `<article class="metric"><span>${item[0]}</span><strong>${item[1]}</strong></article>`;
+      return `<article class="metric${item[2] ? " metric-accent" : ""}"><span>${item[0]}</span><strong>${item[1]}</strong></article>`;
     }).join("");
-    const maxPlan = Math.max(1, ...Object.values(data.plans));
-    const labels = { gratuit: "Gratuit", essentiel: "Essentiel", pro: "Pro", business: "Business" };
-    document.getElementById("plan-breakdown").innerHTML = Object.entries(data.plans).map(function (entry) {
-      return `<div class="breakdown-row"><span>${labels[entry[0]] || entry[0]}</span><div class="bar"><i style="width:${entry[1] / maxPlan * 100}%"></i></div><strong>${entry[1]}</strong></div>`;
+  }
+
+  function attentionRow(item) {
+    return '<div class="attention-row" data-open-id="' + item.id + '"><span class="attention-row-title">' + escapeHtml(item.nom_entreprise) +
+      '</span><span class="attention-row-sub">' + escapeHtml(item.ville || item.metier) + '</span></div>';
+  }
+
+  function bindOpenRows(container) {
+    container.querySelectorAll("[data-open-id]").forEach(function (row) {
+      row.addEventListener("click", function () { openArtisan(Number(row.dataset.openId)).catch(handleError); });
+    });
+  }
+
+  function renderAttentionGroups(items) {
+    const groups = [
+      ["Sites à démarrer", "Aucun site à démarrer pour l'instant.", items.filter(function (i) { return i.site_statut === "non_cree" || i.site_statut === "brouillon"; })],
+      ["Générés à vérifier", "Rien à vérifier pour le moment.", items.filter(function (i) { return i.site_statut === "genere"; })],
+      ["Prêts à publier", "Aucun site en attente de publication.", items.filter(function (i) { return i.site_statut === "pret"; })],
+      ["Médias manquants", "Tous les sites générés ont au moins un média actif.", items.filter(function (i) { return i.media_manquant; })],
+      ["Alternatives en attente", "Aucune alternative de design en attente de décision.", items.filter(function (i) { return i.alternative_en_attente; })],
+    ];
+    const el = document.getElementById("attention-groups");
+    el.innerHTML = groups.map(function (group) {
+      const label = group[0], emptyText = group[1], list = group[2];
+      const shown = list.slice(0, 5);
+      const rows = shown.length ? shown.map(attentionRow).join("") : '<p class="attention-empty">' + escapeHtml(emptyText) + '</p>';
+      const more = list.length > shown.length ? '<span class="attention-more">+ ' + (list.length - shown.length) + ' autre(s)</span>' : "";
+      return '<div class="attention-group' + (list.length ? " has-items" : "") + '"><div class="attention-group-heading"><h3>' + escapeHtml(label) +
+        '</h3><span class="count-badge">' + list.length + '</span></div><div class="attention-list">' + rows + '</div>' + more + '</div>';
     }).join("");
-    const pipeline = [["Brouillons", data.sites_brouillon], ["Générés", data.sites_generes], ["Prêts", data.sites_prets], ["Publiés", data.sites_publies]];
-    document.getElementById("site-pipeline").innerHTML = pipeline.map(function (entry) {
-      return `<div class="breakdown-row"><span>${entry[0]}</span><div class="bar"><i style="width:${data.sites_total ? entry[1] / data.sites_total * 100 : 0}%"></i></div><strong>${entry[1]}</strong></div>`;
+    bindOpenRows(el);
+  }
+
+  function renderRecentSites(items) {
+    const sites = items.filter(function (i) { return i.site_statut !== "non_cree"; }).slice(0, 8);
+    const el = document.getElementById("recent-sites");
+    if (!sites.length) {
+      el.innerHTML = '<div class="empty-state"><strong>Aucun site en cours</strong><p>Les sites récemment générés apparaîtront ici.</p></div>';
+      return;
+    }
+    el.innerHTML = sites.map(function (item) {
+      return '<div class="recent-site-row" data-open-id="' + item.id + '"><div><div class="cell-title">' + escapeHtml(item.nom_entreprise) +
+        '</div><div class="cell-sub">' + escapeHtml(item.metier) + (item.ville ? " · " + escapeHtml(item.ville) : "") + '</div></div>' +
+        pill(item.site_statut) + '<span class="recent-site-when">' + formatDate(item.created_at) + '</span></div>';
     }).join("");
+    bindOpenRows(el);
   }
 
   function artisanRows(items, sitesMode) {
-    if (!items.length) return `<tr><td colspan="7" class="muted">Aucun résultat</td></tr>`;
+    if (!items.length) return `<tr><td colspan="${sitesMode ? 6 : 7}" class="muted">Aucun résultat</td></tr>`;
     return items.map(function (item) {
+      const openCell = '<td class="cell-actions"><span class="row-open-hint">Ouvrir →</span></td>';
       if (sitesMode) {
-        return `<tr data-id="${item.id}"><td><div class="cell-title">${escapeHtml(item.nom_entreprise)}</div><div class="cell-sub">${escapeHtml(item.slug)}</div></td><td>${escapeHtml(item.metier)}</td><td>${pill(item.site_statut)}</td><td>${escapeHtml(item.domaine || "-")}</td><td>${escapeHtml(item.url_publique || "-")}</td><td>${formatDate(item.created_at)}</td></tr>`;
+        return `<tr data-id="${item.id}"><td><div class="cell-title">${escapeHtml(item.nom_entreprise)}</div><div class="cell-sub">${escapeHtml(item.slug)}</div></td><td>${escapeHtml(item.metier)}</td><td>${pill(item.site_statut)}</td><td>${escapeHtml(item.domaine || "-")}</td><td>${escapeHtml(item.url_publique || "-")}</td>${openCell}</tr>`;
       }
-      return `<tr data-id="${item.id}"><td><div class="cell-title">${escapeHtml(item.nom_entreprise)}</div><div class="cell-sub">${escapeHtml(item.email)}</div></td><td>${escapeHtml(item.metier)}</td><td>${escapeHtml(item.ville || "-")}</td><td>${escapeHtml(item.plan)}</td><td>${pill(item.subscription_status)}</td><td>${pill(item.site_statut)}</td><td>${formatDate(item.created_at)}</td></tr>`;
+      return `<tr data-id="${item.id}"><td><div class="cell-title">${escapeHtml(item.nom_entreprise)}</div><div class="cell-sub">${escapeHtml(item.email)}</div></td><td>${escapeHtml(item.metier)}</td><td>${escapeHtml(item.ville || "-")}</td><td>${escapeHtml(item.plan)}</td><td>${pill(item.subscription_status)}</td><td>${pill(item.site_statut)}</td>${openCell}</tr>`;
     }).join("");
   }
 
@@ -258,22 +363,56 @@
     });
   }
 
+  function filterByStatut(items, filters, activeKey) {
+    const def = filters.find(function (f) { return f[0] === activeKey; });
+    if (!def || def[2] === null) return items;
+    return items.filter(function (i) { return i.site_statut === def[2]; });
+  }
+
+  function renderFilterChips(containerId, items, filters, activeKey, onSelect) {
+    document.getElementById(containerId).innerHTML = filters.map(function (f) {
+      const count = f[2] === null ? items.length : items.filter(function (i) { return i.site_statut === f[2]; }).length;
+      return '<button type="button" class="filter-chip' + (activeKey === f[0] ? " active" : "") + '" data-filter="' + f[0] + '">' + escapeHtml(f[1]) + '<span class="count">' + count + '</span></button>';
+    }).join("");
+    document.getElementById(containerId).querySelectorAll("[data-filter]").forEach(function (chip) {
+      chip.addEventListener("click", function () { onSelect(chip.dataset.filter); });
+    });
+  }
+
+  function renderArtisanView() {
+    renderFilterChips("artisan-filters", state.artisanItems, ARTISAN_FILTERS, state.artisanFilter, function (key) {
+      state.artisanFilter = key;
+      renderArtisanView();
+    });
+    const table = document.getElementById("artisan-table");
+    table.innerHTML = artisanRows(filterByStatut(state.artisanItems, ARTISAN_FILTERS, state.artisanFilter), false);
+    bindRows(table);
+  }
+
+  function renderSiteView() {
+    renderFilterChips("site-filters", state.siteItems, SITE_FILTERS, state.siteFilter, function (key) {
+      state.siteFilter = key;
+      renderSiteView();
+    });
+    const table = document.getElementById("site-table");
+    table.innerHTML = artisanRows(filterByStatut(state.siteItems, SITE_FILTERS, state.siteFilter), true);
+    bindRows(table);
+  }
+
   async function loadArtisans(q) {
     showView("artisans", "Artisans");
-    const data = await api("/admin/api/artisans" + (q ? "?q=" + encodeURIComponent(q) : ""));
+    const data = await api("/admin/api/artisans?limit=100" + (q ? "&q=" + encodeURIComponent(q) : ""));
+    state.artisanItems = data.items;
     document.getElementById("artisan-count").textContent = data.total + " compte" + (data.total > 1 ? "s" : "");
-    const table = document.getElementById("artisan-table");
-    table.innerHTML = artisanRows(data.items, false);
-    bindRows(table);
+    renderArtisanView();
   }
 
   async function loadSites(q) {
     showView("sites", "Sites vitrines");
-    const data = await api("/admin/api/sites" + (q ? "?q=" + encodeURIComponent(q) : ""));
+    const data = await api("/admin/api/sites?limit=100" + (q ? "&q=" + encodeURIComponent(q) : ""));
+    state.siteItems = data.items;
     document.getElementById("site-count").textContent = data.total + " site" + (data.total > 1 ? "s" : "");
-    const table = document.getElementById("site-table");
-    table.innerHTML = artisanRows(data.items, true);
-    bindRows(table);
+    renderSiteView();
   }
 
   function setForm(form, values) {
@@ -299,11 +438,81 @@
     badge.textContent = statusLabels[site.statut] || site.statut;
   }
 
+  function hasMedia(site) {
+    const profile = site.media_profile || {};
+    return !!(profile.has_logo || profile.artisan_photo_count > 0);
+  }
+
+  function computeNextAction(artisan) {
+    const site = artisan.site;
+    if (site.statut === "non_cree") return { label: "Configurer le site", run: function () { showTab("site"); } };
+    if (!site.design_profile || !site.preview_disponible) return { label: "Générer la preview", run: function () { generate().catch(handleError); } };
+    if (!hasMedia(site)) return { label: "Ajouter des médias", run: function () { showTab("medias"); } };
+    if (site.statut === "genere") return { label: "Vérifier la preview", run: function () { openPreview().catch(handleError); } };
+    if (site.statut === "pret") return { label: "Publier le site", run: function () { transition("publish", "Publication enregistrée").catch(handleError); } };
+    return null;
+  }
+
+  function renderPrimaryAction(artisan) {
+    const nextAction = computeNextAction(artisan);
+    const button = document.getElementById("detail-primary-action");
+    if (!nextAction) { button.hidden = true; return; }
+    button.hidden = false;
+    button.textContent = nextAction.label;
+    button.onclick = nextAction.run;
+  }
+
+  function renderProgressCard(artisan) {
+    const site = artisan.site;
+    const rows = [
+      ["Identité", true, "Renseignée"],
+      ["Médias", hasMedia(site), hasMedia(site) ? "Complétés" : "À compléter"],
+      ["Design", !!site.design_profile, site.design_profile ? "Généré" : "Non généré"],
+      ["Preview", site.preview_disponible, site.preview_disponible ? "Disponible" : "À générer"],
+      ["Publication", site.statut === "publie", site.statut === "publie" ? "Publié" : "Non publiée"],
+    ];
+    document.getElementById("progress-rows").innerHTML = rows.map(function (row) {
+      return '<div class="progress-row ' + (row[1] ? "done" : "attention") + '"><span class="progress-row-label"><span class="progress-dot"></span>' +
+        escapeHtml(row[0]) + '</span><span class="progress-row-status">' + escapeHtml(row[2]) + '</span></div>';
+    }).join("");
+    const nextAction = computeNextAction(artisan);
+    document.getElementById("progress-hint").textContent = nextAction
+      ? "Prochaine étape recommandée : " + nextAction.label + "."
+      : "Le site est publié. Aucune action requise pour l'instant.";
+  }
+
+  function setStepBadge(id, ok, label) {
+    const el = document.getElementById(id);
+    el.className = "step-status-badge status-pill " + (ok ? "publie" : "brouillon");
+    el.textContent = label;
+    el.closest(".workflow-step").classList.toggle("done", ok);
+  }
+
+  function renderStepBadges(artisan) {
+    const site = artisan.site;
+    const media = artisan.media || { photos: [], max_photos: 0, logo: null };
+    const contentOk = (site.config.services || []).length > 0;
+    setStepBadge("step-contenu-badge", contentOk, contentOk ? "Configuré" : "À compléter");
+    setStepBadge("step-medias-badge", hasMedia(site), hasMedia(site) ? "Complétés" : "À compléter");
+    setStepBadge("step-design-badge", !!site.design_profile, site.design_profile ? "Généré" : "Non généré");
+    setStepBadge("step-preview-badge", site.preview_disponible, site.preview_disponible ? "Disponible" : "À générer");
+    setStepBadge("step-publication-badge", site.statut === "publie", site.statut === "publie" ? "Publié" : "Non publiée");
+    document.getElementById("media-summary-logo").textContent = media.logo ? "Défini" : "Non défini";
+    document.getElementById("media-summary-photos").textContent = media.photos.length + " / " + media.max_photos;
+  }
+
+  function renderPublicationSummary(site) {
+    document.getElementById("pub-statut").textContent = statusLabels[site.statut] || site.statut;
+    document.getElementById("pub-domaine").textContent = site.domaine || "Non renseigné";
+    document.getElementById("pub-url").textContent = site.url_publique || "Non renseignée";
+    document.getElementById("pub-date").textContent = formatDate(site.date_publication);
+  }
+
   function renderDesignCurrent(site) {
     const el = document.getElementById("design-current");
     const profile = site.design_profile;
     if (!profile) {
-      el.innerHTML = '<p class="design-empty">Aucun design généré pour l’instant. Cliquez sur « Générer la preview » ci-dessus.</p>';
+      el.innerHTML = '<div class="empty-state"><strong>Aucun design généré</strong><p>Générez la preview du site (étape « Preview ») pour que le moteur choisisse un premier design.</p></div>';
       return;
     }
     const rows = DESIGN_AXES.filter(function (entry) { return entry[0] !== "design_family"; }).map(function (entry) {
@@ -330,11 +539,14 @@
   function renderFamilyCards(selected) {
     document.getElementById("design-family-cards").innerHTML = Object.keys(FAMILY_LABELS).map(function (fam) {
       return '<button type="button" class="design-family-card' + (fam === selected ? " selected" : "") + '" data-family="' + fam + '">' +
+        '<span class="family-glyph glyph-' + fam + '" aria-hidden="true"><i></i><i></i></span>' +
         '<strong>' + escapeHtml(FAMILY_LABELS[fam]) + '</strong><span>' + escapeHtml(FAMILY_DESCRIPTIONS[fam]) + '</span></button>';
     }).join("");
   }
 
   function buildAdvancedPanel() {
+    const density = '<div class="override-group"><span>Densité</span><select id="pref-density"><option value="">Automatique</option>' +
+      '<option value="compact">Compact</option><option value="comfortable">Confortable</option><option value="spacious">Aéré</option></select></div>';
     const grid = ADVANCED_AXES.map(function (entry) {
       const axis = entry[0], label = entry[1], options = entry[2];
       const opts = options.map(function (opt) { return '<option value="' + opt + '">' + escapeHtml(axisValueLabel(axis, opt)) + '</option>'; }).join("");
@@ -352,8 +564,10 @@
       '<button type="button" class="image-treatment-option selected" data-value="">Automatique</button>' +
       IMAGE_TREATMENTS.map(function (t) { return '<button type="button" class="image-treatment-option treatment-' + t + '" data-value="' + t + '">' + escapeHtml(IMAGE_TREATMENT_LABELS[t]) + '</button>'; }).join("") +
       '</div></div>';
-    document.getElementById("advanced-panel").innerHTML = '<div class="form-grid">' + grid + '</div>' + palettes + fonts + images +
-      '<div class="section-order-editor" id="section-order-editor"><span>Ordre des sections</span></div>';
+    const saveRow = '<div class="override-group"><button id="save-preferences-button" class="button button-secondary" type="button">Enregistrer cette orientation par défaut</button>' +
+      '<p class="field-hint">Mémorise la famille et la densité choisies pour les prochaines alternatives.</p></div>';
+    document.getElementById("advanced-panel").innerHTML = density + '<div class="form-grid">' + grid + '</div>' + palettes + fonts + images +
+      '<div class="section-order-editor" id="section-order-editor"><span>Ordre des sections</span></div>' + saveRow;
   }
 
   function paintSectionOrderEditor() {
@@ -406,7 +620,9 @@
     const diffAxes = DESIGN_AXES.filter(function (entry) { return !current || current[entry[0]] !== candidate[entry[0]]; });
     const currentRows = diffAxes.map(function (entry) { return '<div><dt>' + escapeHtml(entry[1]) + '</dt><dd>' + escapeHtml(axisValueLabel(entry[0], current ? current[entry[0]] : null)) + '</dd></div>'; }).join("");
     const candidateRows = diffAxes.map(function (entry) { return '<div><dt>' + escapeHtml(entry[1]) + '</dt><dd>' + escapeHtml(axisValueLabel(entry[0], candidate[entry[0]])) + '</dd></div>'; }).join("");
-    el.innerHTML = '<h4>Version actuelle vs alternative</h4><div class="design-comparison-grid">' +
+    el.innerHTML = '<h4>Version actuelle vs alternative</h4>' +
+      '<p class="design-comparison-intro">Comparaison des axes qui diffèrent réellement. « Adopter » remplace le design de travail mais ne publie jamais le site.</p>' +
+      '<div class="design-comparison-grid">' +
       '<div class="design-comparison-card current"><span class="design-comparison-tag">Version actuelle</span>' + currentRows + '</div>' +
       '<div class="design-comparison-card candidate"><span class="design-comparison-tag">Alternative</span>' + candidateRows + '</div></div>' +
       (diffAxes.length ? "" : '<p class="muted">Cette alternative est très proche du design actuel sur les axes affichés.</p>');
@@ -479,16 +695,27 @@
   }
 
   async function openArtisan(id) {
-    state.previousView = state.currentView === "sites" ? "sites" : "artisans";
+    // Un rafraichissement apres une action (enregistrer, generer, adopter...)
+    // rouvre le meme artisan : ne jamais reinitialiser l'onglet actif dans ce
+    // cas, sinon chaque action ramene l'utilisateur a "Vue d'ensemble" et lui
+    // fait perdre le contexte de l'onglet ou il travaillait.
+    const reopeningSameArtisan = state.currentView === "detail" && state.artisan && state.artisan.id === id;
+    if (!reopeningSameArtisan) {
+      state.previousView = state.currentView === "sites" ? "sites" : "artisans";
+    }
     const artisan = await api("/admin/api/artisans/" + id);
     state.artisan = artisan;
     showView("detail", artisan.nom_entreprise);
+    if (!reopeningSameArtisan) showTab("overview");
+
     document.getElementById("detail-title").textContent = artisan.nom_entreprise;
     document.getElementById("detail-meta").textContent = artisan.slug + " · " + artisan.email + " · inscrit le " + formatDate(artisan.created_at);
+    document.getElementById("detail-plan-badge").textContent = PLAN_LABELS[artisan.plan] || artisan.plan;
     document.getElementById("detail-stats").innerHTML = [
       ["Plan", artisan.plan], ["Abonnement", artisan.subscription_status], ["Clients", artisan.clients_total], ["Documents commerciaux", artisan.devis_total + artisan.factures_total],
     ].map(function (item) { return `<div class="detail-stat"><span>${item[0]}</span><strong>${escapeHtml(item[1])}</strong></div>`; }).join("");
     setForm(document.getElementById("artisan-form"), artisan);
+
     const config = artisan.site.config || {};
     setForm(document.getElementById("site-form"), {
       tagline: config.tagline,
@@ -503,6 +730,11 @@
     document.getElementById("site-generated-at").textContent = formatDate(artisan.site.date_generation);
     document.getElementById("site-published-at").textContent = formatDate(artisan.site.date_publication);
     updateWorkflow(artisan.site);
+    renderPublicationSummary(artisan.site);
+
+    renderPrimaryAction(artisan);
+    renderProgressCard(artisan);
+    renderStepBadges(artisan);
 
     const preferredFamily = (artisan.site.design_preferences && artisan.site.design_preferences.preferred_family) || "";
     renderDesignCurrent(artisan.site);
@@ -511,6 +743,7 @@
     document.getElementById("pref-family").value = preferredFamily;
     document.getElementById("pref-density").value = (artisan.site.design_preferences && artisan.site.design_preferences.density) || "";
     document.getElementById("candidate-keep-family").checked = false;
+    document.getElementById("design-personalize").open = false;
     state.originalSectionOrder = (artisan.site.design_profile && artisan.site.design_profile.section_order) || [];
     state.sectionOrderDraft = state.originalSectionOrder.slice();
     paintSectionOrderEditor();
@@ -553,7 +786,7 @@
 
   async function saveSite() {
     await api("/admin/api/artisans/" + state.artisan.id + "/site", { method: "PATCH", body: JSON.stringify(sitePayload()) });
-    toast("Configuration du site enregistrée");
+    toast("Contenu du site enregistré");
     await openArtisan(state.artisan.id);
   }
 
@@ -593,6 +826,10 @@
       if (item.dataset.view === "sites") loadSites().catch(handleError);
     });
   });
+  document.querySelectorAll(".tab-item").forEach(function (tab) {
+    tab.addEventListener("click", function () { showTab(tab.dataset.tab); });
+  });
+  document.getElementById("go-to-medias-button").addEventListener("click", function () { showTab("medias"); });
   document.getElementById("detail-back").addEventListener("click", function () { (state.previousView === "sites" ? loadSites() : loadArtisans()).catch(handleError); });
   document.getElementById("artisan-form").addEventListener("submit", function (event) { event.preventDefault(); saveArtisan().catch(handleError); });
   document.getElementById("site-form").addEventListener("submit", function (event) { event.preventDefault(); saveSite().catch(handleError); });
@@ -634,12 +871,6 @@
   });
 
   buildAdvancedPanel();
-  document.getElementById("advanced-toggle").addEventListener("click", function () {
-    const panel = document.getElementById("advanced-panel");
-    const expanded = !panel.hidden;
-    panel.hidden = expanded;
-    this.setAttribute("aria-expanded", String(!expanded));
-  });
   document.getElementById("design-family-cards").addEventListener("click", function (event) {
     const card = event.target.closest(".design-family-card");
     if (!card) return;

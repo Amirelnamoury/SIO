@@ -278,6 +278,10 @@ class AdminArtisanListItem(BaseModel):
     domaine: Optional[str] = None
     url_publique: Optional[str] = None
     created_at: datetime
+    # Signaux "a traiter" (refonte Admin) - calcules a partir de donnees reelles
+    # uniquement (aucun etat invente) : voir _query_artisans dans admin.py.
+    media_manquant: bool = False
+    alternative_en_attente: bool = False
 
 
 class AdminArtisanDetail(BaseModel):

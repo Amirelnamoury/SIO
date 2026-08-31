@@ -7,166 +7,268 @@
   <link rel="stylesheet" href="admin.css">
 </head>
 <body class="admin-page">
-  <div class="admin-layout">
-    <aside class="sidebar">
-      <div class="sidebar-brand"><span class="brand-mark">SA</span><div><strong>ADMIN</strong><small>SUITE ARTISAN</small></div></div>
-      <nav class="sidebar-nav" aria-label="Navigation admin">
-        <button class="nav-item active" data-view="dashboard">Dashboard</button>
-        <button class="nav-item" data-view="artisans">Artisans</button>
-        <button class="nav-item" data-view="sites">Sites vitrines</button>
-      </nav>
-      <div class="sidebar-account">
-        <span id="admin-name">Administration</span>
-        <button id="logout-button" class="button button-quiet" type="button">Déconnexion</button>
-      </div>
-    </aside>
+  <div class="admin-shell">
+    <div class="mobile-topbar">
+      <button id="drawer-toggle" class="icon-button" type="button" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="sidebar">☰</button>
+      <span class="mobile-brand">Admin Suite Artisan</span>
+    </div>
+    <div id="drawer-scrim" class="drawer-scrim" hidden></div>
 
-    <main class="admin-main">
-      <header class="topbar">
-        <div><p class="eyebrow">ADMIN SUITE ARTISAN</p><h1 id="page-title">Dashboard</h1></div>
-        <span class="environment-badge">INTERNE</span>
-      </header>
-
-      <section id="view-dashboard" class="view active">
-        <div id="metric-grid" class="metric-grid"></div>
-        <div class="dashboard-band">
-          <div><h2>Répartition des plans</h2><div id="plan-breakdown" class="plan-breakdown"></div></div>
-          <div><h2>Production des sites</h2><div id="site-pipeline" class="pipeline-list"></div></div>
+    <div class="admin-layout">
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand"><span class="brand-mark">SA</span><div><strong>ADMIN</strong><small>SUITE ARTISAN</small></div></div>
+        <nav class="sidebar-nav" aria-label="Navigation admin">
+          <p class="nav-group-label">Pilotage</p>
+          <button class="nav-item active" data-view="dashboard">Vue d'ensemble</button>
+          <p class="nav-group-label">Gestion</p>
+          <button class="nav-item" data-view="artisans">Artisans</button>
+          <button class="nav-item" data-view="sites">Sites vitrines</button>
+        </nav>
+        <div class="sidebar-account">
+          <span id="admin-name">Administration</span>
+          <button id="logout-button" class="button button-quiet" type="button">Déconnexion</button>
         </div>
-      </section>
+      </aside>
 
-      <section id="view-artisans" class="view">
-        <div class="section-toolbar">
-          <div><h2>Artisans</h2><p id="artisan-count" class="muted"></p></div>
-          <label class="search-field"><span>Recherche</span><input id="artisan-search" type="search" placeholder="Entreprise, email, ville ou slug"></label>
-        </div>
-        <div class="table-wrap"><table><thead><tr><th>Entreprise</th><th>Métier</th><th>Ville</th><th>Plan</th><th>Abonnement</th><th>Site</th><th>Inscription</th></tr></thead><tbody id="artisan-table"></tbody></table></div>
-      </section>
+      <main class="admin-main">
+        <header class="topbar">
+          <div><p class="eyebrow">ADMIN SUITE ARTISAN</p><h1 id="page-title">Vue d'ensemble</h1></div>
+          <span class="environment-badge">INTERNE</span>
+        </header>
 
-      <section id="view-sites" class="view">
-        <div class="section-toolbar">
-          <div><h2>Sites vitrines</h2><p id="site-count" class="muted"></p></div>
-          <label class="search-field"><span>Recherche</span><input id="site-search" type="search" placeholder="Entreprise, domaine ou slug"></label>
-        </div>
-        <div class="table-wrap"><table><thead><tr><th>Entreprise</th><th>Métier</th><th>Statut</th><th>Domaine</th><th>URL publique</th><th>Inscription</th></tr></thead><tbody id="site-table"></tbody></table></div>
-      </section>
-
-      <section id="view-detail" class="view">
-        <div class="detail-heading">
-          <button id="detail-back" class="button button-secondary" type="button">Retour</button>
-          <div><p class="eyebrow">FICHE ARTISAN</p><h2 id="detail-title"></h2><p id="detail-meta" class="muted"></p></div>
-          <span id="detail-site-status" class="status-pill"></span>
-        </div>
-
-        <div class="detail-stats" id="detail-stats"></div>
-
-        <form id="artisan-form" class="form-section">
-          <div class="section-heading"><div><h3>Entreprise</h3><p>Informations métier utilisées par le SaaS et le site.</p></div><button class="button button-secondary" type="submit">Enregistrer</button></div>
-          <div class="form-grid">
-            <label>Entreprise<input name="nom_entreprise" required></label>
-            <label>Métier<select name="metier"><option value="plombier">Plombier</option><option value="electricien">Électricien</option><option value="macon">Maçon</option><option value="peintre">Peintre</option><option value="general">Général</option></select></label>
-            <label>Email<input name="email" type="email" required></label>
-            <label>Téléphone<input name="telephone" type="tel"></label>
-            <label>Ville<input name="ville"></label>
-            <label>Code postal<input name="code_postal"></label>
-            <label class="span-2">Adresse<input name="adresse"></label>
-            <label>SIRET<input name="siret"></label>
-            <label>Assurance décennale<input name="assurance_decennale_nom"></label>
+        <section id="view-dashboard" class="view active">
+          <div class="dashboard-greeting">
+            <p class="eyebrow">VUE D'ENSEMBLE</p>
+            <h1>Bonjour</h1>
+            <p class="muted">Voici ce qui mérite votre attention aujourd'hui.</p>
           </div>
-        </form>
+          <div id="metric-grid" class="metric-grid"></div>
 
-        <form id="site-form" class="form-section site-section">
-          <div class="section-heading"><div><p class="eyebrow">SITE VITRINE</p><h3>Production</h3><p>Configuration du rendu et suivi de la livraison réelle.</p></div><button class="button button-secondary" type="submit">Enregistrer</button></div>
-          <div class="site-identity"><div><span>Slug</span><strong id="site-slug"></strong></div><div><span>Dernière génération</span><strong id="site-generated-at">Jamais</strong></div><div><span>Publication</span><strong id="site-published-at">Jamais</strong></div></div>
-          <div class="form-grid">
-            <label class="span-2">Tagline<input name="tagline" maxlength="180"></label>
-            <label class="span-2">Prestations<textarea name="services" rows="6" placeholder="Une prestation par ligne"></textarea></label>
-            <label class="span-2">Chiffres clés<textarea name="stats" rows="3" placeholder="12 ans | d'expérience"></textarea></label>
-            <label>Variante couleur<select name="variante_couleur"><option value="">Automatique</option><option value="0">Variante 1</option><option value="1">Variante 2</option><option value="2">Variante 3</option></select></label>
-            <label>Motif hero<select name="variante_motif" id="motif-select"></select></label>
-            <label>Domaine<input name="domaine" placeholder="artisan.fr"></label>
-            <label>URL publique<input name="url_publique" type="url" placeholder="https://artisan.fr"></label>
-          </div>
-          <div class="workflow-bar">
-            <button id="generate-button" class="button button-primary" type="button">Générer la preview</button>
-            <button id="preview-button" class="button button-secondary" type="button">Voir la preview</button>
-            <button id="ready-button" class="button button-secondary" type="button">Marquer prêt</button>
-            <button id="publish-button" class="button button-success" type="button">Marquer publié</button>
-          </div>
-          <p class="publication-note">Le statut publié enregistre une livraison existante. Aucun déploiement, DNS ou certificat HTTPS n’est déclenché automatiquement.</p>
-        </form>
-
-        <div class="form-section" id="design-configurator-section">
-          <div class="section-heading">
-            <div><p class="eyebrow">DESIGN DU SITE</p><h3>Apparence générée (moteur V2)</h3><p>Le moteur choisit et compose automatiquement l'apparence. Vous pouvez orienter la prochaine alternative puis la comparer au design actuel avant de l'adopter — rien n'est jamais remplacé sans confirmation.</p></div>
+          <div class="dashboard-section">
+            <div class="section-heading"><div><h2>À traiter</h2><p>Calculé à partir de l'état réel des sites — rien n'est deviné.</p></div></div>
+            <div id="attention-groups" class="attention-groups"></div>
           </div>
 
-          <div id="design-current" class="design-current"></div>
-          <div id="design-sections-availability" class="design-sections-availability"></div>
+          <div class="dashboard-section">
+            <div class="section-heading"><div><h2>Sites récents</h2></div></div>
+            <div id="recent-sites" class="recent-sites-list"></div>
+          </div>
+        </section>
 
-          <div class="design-preferences">
-            <h4>Orientation souhaitée <span class="muted">(facultatif — niveau 1)</span></h4>
-            <p class="muted">Ces réglages orientent la prochaine alternative générée ; ils ne modifient jamais le design actuel du site.</p>
-            <div id="design-family-cards" class="design-family-cards"></div>
-            <div class="form-grid">
-              <label>Famille souhaitée
-                <select id="pref-family">
-                  <option value="">Laisser le moteur choisir</option>
-                  <option value="atelier">Atelier</option>
-                  <option value="architecture">Architecture</option>
-                  <option value="impact">Impact</option>
-                  <option value="technique">Technique</option>
-                  <option value="local">Local</option>
-                  <option value="signature">Signature</option>
-                </select>
-              </label>
-              <label>Densité
-                <select id="pref-density">
-                  <option value="">Automatique</option>
-                  <option value="compact">Compact</option>
-                  <option value="comfortable">Confortable</option>
-                  <option value="spacious">Aéré</option>
-                </select>
-              </label>
+        <section id="view-artisans" class="view">
+          <div class="section-toolbar">
+            <div><h2>Artisans</h2><p id="artisan-count" class="muted"></p></div>
+            <label class="search-field"><span>Recherche</span><input id="artisan-search" type="search" placeholder="Entreprise, email, ville ou slug"></label>
+          </div>
+          <div id="artisan-filters" class="filter-chips"></div>
+          <div class="table-wrap"><table><thead><tr><th>Entreprise</th><th>Métier</th><th>Ville</th><th>Plan</th><th>Abonnement</th><th>Site</th><th class="cell-actions"></th></tr></thead><tbody id="artisan-table"></tbody></table></div>
+        </section>
+
+        <section id="view-sites" class="view">
+          <div class="section-toolbar">
+            <div><h2>Sites vitrines</h2><p id="site-count" class="muted"></p></div>
+            <label class="search-field"><span>Recherche</span><input id="site-search" type="search" placeholder="Entreprise, domaine ou slug"></label>
+          </div>
+          <div id="site-filters" class="filter-chips"></div>
+          <div class="table-wrap"><table><thead><tr><th>Entreprise</th><th>Métier</th><th>Statut</th><th>Domaine</th><th>URL publique</th><th class="cell-actions"></th></tr></thead><tbody id="site-table"></tbody></table></div>
+        </section>
+
+        <section id="view-detail" class="view">
+          <div class="detail-header">
+            <button id="detail-back" class="button button-secondary detail-back" type="button">← Retour</button>
+            <div class="detail-header-main">
+              <div class="detail-identity">
+                <h2 id="detail-title"></h2>
+                <p id="detail-meta" class="muted"></p>
+                <div class="detail-badges">
+                  <span id="detail-plan-badge" class="status-pill"></span>
+                  <span id="detail-site-status" class="status-pill"></span>
+                </div>
+              </div>
+              <div class="detail-primary-action">
+                <button id="detail-primary-action" class="button button-primary button-lg" type="button" hidden></button>
+              </div>
             </div>
-            <button id="save-preferences-button" class="button button-secondary" type="button">Enregistrer l'orientation</button>
           </div>
 
-          <button id="advanced-toggle" class="button button-secondary" type="button" aria-expanded="false">Réglages avancés</button>
-          <div id="advanced-panel" class="advanced-panel" hidden></div>
+          <nav class="detail-tabs" aria-label="Sections de la fiche artisan">
+            <button class="tab-item active" data-tab="overview" type="button">Vue d'ensemble</button>
+            <button class="tab-item" data-tab="entreprise" type="button">Entreprise</button>
+            <button class="tab-item" data-tab="site" type="button">Site vitrine</button>
+            <button class="tab-item" data-tab="medias" type="button">Médias</button>
+          </nav>
 
-          <div class="workflow-bar">
-            <label class="candidate-keep-family"><input id="candidate-keep-family" type="checkbox"> Garder la même famille que le design actuel</label>
+          <div class="tab-panel active" id="tab-panel-overview">
+            <div id="detail-stats" class="detail-stats"></div>
+            <div class="progress-card">
+              <div class="progress-card-heading"><h3>Avancement du site</h3></div>
+              <div id="progress-rows" class="progress-rows"></div>
+              <div class="progress-card-action">
+                <p id="progress-hint"></p>
+              </div>
+            </div>
           </div>
-          <div class="workflow-bar">
-            <button id="candidate-generate-button" class="button button-primary" type="button">Générer une alternative</button>
-            <button id="candidate-regenerate-button" class="button button-secondary" type="button" disabled>Régénérer</button>
-            <button id="candidate-preview-button" class="button button-secondary" type="button" disabled>Prévisualiser l'alternative</button>
-            <button id="candidate-adopt-button" class="button button-success" type="button" disabled>Adopter cette version</button>
-            <button id="candidate-abandon-button" class="button button-secondary" type="button" disabled>Abandonner</button>
-          </div>
-          <p class="publication-note">Générer, prévisualiser ou adopter une alternative ne publie jamais le site. La publication reste une action séparée et explicite (bouton « Marquer publié »).</p>
 
-          <div id="design-comparison" class="design-comparison" hidden></div>
-        </div>
-
-        <div class="form-section" id="admin-media-section">
-          <div class="section-heading"><div><p class="eyebrow">IDENTITÉ & MÉDIAS</p><h3>Médias du site</h3><p>Photos artisan, sources et sélection persistante du générateur.</p></div><span id="admin-media-count" class="status-pill"></span></div>
-          <div class="admin-media-logo-row">
-            <div id="admin-logo-preview" class="admin-logo-preview"><span class="muted">Aucun logo</span></div>
-            <form id="admin-logo-form" class="admin-logo-form">
-              <label>Définir ou remplacer le logo<input name="file" type="file" accept="image/png,image/jpeg,image/webp" required></label>
-              <button class="button button-secondary" type="submit">Importer</button>
-              <button class="button button-secondary" id="admin-logo-delete" type="button" hidden>Supprimer</button>
+          <div class="tab-panel" id="tab-panel-entreprise">
+            <form id="artisan-form" class="form-section">
+              <div class="section-heading"><div><h3>Informations entreprise</h3><p>Utilisées par le SaaS artisan et par le site vitrine.</p></div><button class="button button-secondary" type="submit">Enregistrer</button></div>
+              <div class="field-cards">
+                <div class="field-card">
+                  <h4>Identité</h4>
+                  <div class="form-grid">
+                    <label>Entreprise<input name="nom_entreprise" required></label>
+                    <label>Métier<select name="metier"><option value="plombier">Plombier</option><option value="electricien">Électricien</option><option value="macon">Maçon</option><option value="peintre">Peintre</option><option value="general">Général</option></select></label>
+                  </div>
+                </div>
+                <div class="field-card">
+                  <h4>Coordonnées</h4>
+                  <div class="form-grid">
+                    <label>Email<input name="email" type="email" required></label>
+                    <label>Téléphone<input name="telephone" type="tel"></label>
+                    <label>Ville<input name="ville"></label>
+                    <label>Code postal<input name="code_postal"></label>
+                    <label class="span-2">Adresse<input name="adresse"></label>
+                  </div>
+                </div>
+                <div class="field-card">
+                  <h4>Légal &amp; assurance</h4>
+                  <div class="form-grid">
+                    <label>SIRET<input name="siret"></label>
+                    <label>Assurance décennale<input name="assurance_decennale_nom"></label>
+                  </div>
+                </div>
+              </div>
             </form>
           </div>
-          <h3 class="admin-media-subtitle">Photos artisan</h3>
-          <div id="admin-media-photos" class="admin-media-grid"></div>
-          <h3 class="admin-media-subtitle">Sélection actuelle</h3>
-          <div id="admin-media-selections" class="admin-selection-list"></div>
-        </div>
-      </section>
-    </main>
+
+          <div class="tab-panel" id="tab-panel-site">
+            <div class="workflow-step" id="step-contenu">
+              <div class="workflow-step-heading">
+                <span class="step-index">1</span>
+                <div><h3>Contenu</h3><p>Tagline, prestations, chiffres clés et adresse du site.</p></div>
+                <span id="step-contenu-badge" class="step-status-badge status-pill"></span>
+              </div>
+              <form id="site-form">
+                <div class="site-identity"><div><span>Slug</span><strong id="site-slug"></strong></div><div><span>Dernière génération</span><strong id="site-generated-at">Jamais</strong></div><div><span>Publication</span><strong id="site-published-at">Jamais</strong></div></div>
+                <div class="form-grid">
+                  <label class="span-2">Tagline<input name="tagline" maxlength="180"></label>
+                  <label class="span-2">Prestations<textarea name="services" rows="5" placeholder="Une prestation par ligne"></textarea></label>
+                  <label class="span-2">Chiffres clés<textarea name="stats" rows="3" placeholder="12 ans | d'expérience"></textarea></label>
+                  <label>Variante couleur<select name="variante_couleur"><option value="">Automatique</option><option value="0">Variante 1</option><option value="1">Variante 2</option><option value="2">Variante 3</option></select></label>
+                  <label>Motif hero<select name="variante_motif" id="motif-select"></select></label>
+                  <label>Domaine<input name="domaine" placeholder="artisan.fr"></label>
+                  <label>URL publique<input name="url_publique" type="url" placeholder="https://artisan.fr"></label>
+                </div>
+                <div class="step-secondary-actions">
+                  <button class="button button-secondary" type="submit">Enregistrer le contenu</button>
+                </div>
+              </form>
+            </div>
+
+            <div class="workflow-step" id="step-medias-summary">
+              <div class="workflow-step-heading">
+                <span class="step-index">2</span>
+                <div><h3>Médias</h3><p>Logo et photos utilisés pour habiller le site.</p></div>
+                <span id="step-medias-badge" class="step-status-badge status-pill"></span>
+              </div>
+              <div class="workflow-step-media-summary">
+                <div class="media-summary-figures">
+                  <div class="media-summary-figure"><strong id="media-summary-logo">–</strong><span>Logo</span></div>
+                  <div class="media-summary-figure"><strong id="media-summary-photos">–</strong><span>Photos</span></div>
+                </div>
+                <button id="go-to-medias-button" class="button button-secondary" type="button">Gérer les médias</button>
+              </div>
+            </div>
+
+            <div class="workflow-step" id="design-configurator-section">
+              <div class="workflow-step-heading">
+                <span class="step-index">3</span>
+                <div><h3>Design</h3><p>Le moteur choisit et compose automatiquement l'apparence du site.</p></div>
+                <span id="step-design-badge" class="step-status-badge status-pill"></span>
+              </div>
+
+              <div id="design-current" class="design-current"></div>
+              <div id="design-sections-availability" class="design-sections-availability"></div>
+
+              <div class="design-directions">
+                <h4>Essayer une autre direction</h4>
+                <p class="muted">Choisissez une famille puis générez une alternative — le design actuel n'est jamais modifié tant que vous ne l'adoptez pas.</p>
+                <input type="hidden" id="pref-family">
+                <div id="design-family-cards" class="design-family-cards"></div>
+
+                <details class="design-personalize" id="design-personalize">
+                  <summary class="button button-secondary">Personnaliser davantage</summary>
+                  <div id="advanced-panel" class="advanced-panel"></div>
+                </details>
+
+                <div class="workflow-bar" style="margin-top:16px;">
+                  <label class="candidate-keep-family"><input id="candidate-keep-family" type="checkbox"> Garder la même famille que le design actuel</label>
+                </div>
+                <div class="workflow-bar">
+                  <button id="candidate-generate-button" class="button button-primary" type="button">Générer une alternative</button>
+                  <button id="candidate-regenerate-button" class="button button-secondary" type="button" disabled>Régénérer</button>
+                  <button id="candidate-preview-button" class="button button-secondary" type="button" disabled>Prévisualiser l'alternative</button>
+                  <button id="candidate-adopt-button" class="button button-success" type="button" disabled>Adopter cette version</button>
+                  <button id="candidate-abandon-button" class="button button-danger-quiet" type="button" disabled>Abandonner</button>
+                </div>
+                <p class="publication-note">Adopter change le design de travail mais ne publie pas le site. La publication reste une action séparée et explicite.</p>
+
+                <div id="design-comparison" class="design-comparison" hidden></div>
+              </div>
+            </div>
+
+            <div class="workflow-step" id="step-preview">
+              <div class="workflow-step-heading">
+                <span class="step-index">4</span>
+                <div><h3>Preview</h3><p>Aperçu du site tel qu'il sera livré, non indexé et protégé.</p></div>
+                <span id="step-preview-badge" class="step-status-badge status-pill"></span>
+              </div>
+              <div class="step-primary-action">
+                <button id="generate-button" class="button button-primary" type="button">Générer la preview</button>
+                <button id="preview-button" class="button button-secondary" type="button">Voir la preview</button>
+              </div>
+            </div>
+
+            <div class="workflow-step" id="step-publication">
+              <div class="workflow-step-heading">
+                <span class="step-index">5</span>
+                <div><h3>Publication</h3><p>Enregistre la livraison réelle du site auprès de l'artisan.</p></div>
+                <span id="step-publication-badge" class="step-status-badge status-pill"></span>
+              </div>
+              <div class="publication-summary">
+                <div><span>État</span><strong id="pub-statut"></strong></div>
+                <div><span>Domaine</span><strong id="pub-domaine"></strong></div>
+                <div><span>URL publique</span><strong id="pub-url"></strong></div>
+                <div><span>Date de publication</span><strong id="pub-date"></strong></div>
+              </div>
+              <div class="step-primary-action">
+                <button id="ready-button" class="button button-secondary" type="button">Marquer prêt</button>
+                <button id="publish-button" class="button button-success" type="button">Marquer publié</button>
+              </div>
+              <p class="publication-note">Le statut publié enregistre une livraison existante. Aucun déploiement, DNS ou certificat HTTPS n'est déclenché automatiquement.</p>
+            </div>
+          </div>
+
+          <div class="tab-panel" id="tab-panel-medias">
+            <div class="form-section" id="admin-media-section">
+              <div class="section-heading"><div><p class="eyebrow">IDENTITÉ &amp; MÉDIAS</p><h3>Médias du site</h3><p>Photos artisan, sources et sélection persistante du générateur.</p></div><span id="admin-media-count" class="status-pill"></span></div>
+              <div class="admin-media-logo-row">
+                <div id="admin-logo-preview" class="admin-logo-preview"><span class="muted">Aucun logo</span></div>
+                <form id="admin-logo-form" class="admin-logo-form">
+                  <label>Définir ou remplacer le logo<input name="file" type="file" accept="image/png,image/jpeg,image/webp" required></label>
+                  <button class="button button-secondary" type="submit">Importer</button>
+                  <button class="button button-secondary" id="admin-logo-delete" type="button" hidden>Supprimer</button>
+                </form>
+              </div>
+              <h3 class="admin-media-subtitle">Photos artisan</h3>
+              <div id="admin-media-photos" class="admin-media-grid"></div>
+              <h3 class="admin-media-subtitle">Sélection actuelle</h3>
+              <div id="admin-media-selections" class="admin-selection-list"></div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
   </div>
   <div id="toast" class="toast" role="status"></div>
   <script src="admin.js"></script>

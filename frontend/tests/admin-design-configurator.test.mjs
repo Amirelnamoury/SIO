@@ -16,9 +16,12 @@ const script = fs.readFileSync(path.join(adminDir, "admin.js"), "utf8");
 const css = fs.readFileSync(path.join(adminDir, "admin.css"), "utf8");
 
 // --- Design actuel : affichage lisible, jamais de code technique brut en avant ---
-for (const id of ["design-current", "design-sections-availability", "design-family-cards", "pref-family", "pref-density"]) {
+for (const id of ["design-current", "design-sections-availability", "design-family-cards", "pref-family"]) {
   assert.match(index, new RegExp(`id="${id}"`), `le controle ${id} doit exister`);
 }
+// pref-density est construit dynamiquement dans le panneau "Personnaliser
+// davantage" (refonte Admin) : cache derriere <details>, pas dans le HTML statique.
+assert.match(script, /id="pref-density"/, "le controle pref-density doit exister (construit par buildAdvancedPanel)");
 assert.match(script, /function renderDesignCurrent/, "le design actuel doit avoir un rendu dedie");
 assert.match(script, /design-family-badge/, "la famille doit etre mise en avant visuellement");
 assert.match(script, /<details class="design-technical">/, "le detail technique (signature) doit rester discret, pas la donnee principale");
@@ -46,7 +49,7 @@ assert.match(script, /window\.confirm\(.*Abandonner cette alternative/, "abandon
 assert.match(script, /Le site publié n'est jamais modifié automatiquement/, "le message d'adoption doit rappeler qu'il n'y a jamais de publication automatique");
 
 // --- Jamais de publication automatique : rappel visible dans l'UI ---
-assert.match(index, /ne publie jamais le site/, "la note sous les actions candidate doit rappeler l'absence de publication automatique");
+assert.match(index, /ne publie pas le site/, "la note sous les actions candidate doit rappeler l'absence de publication automatique");
 
 // --- Etats de chargement / anti double-clic ---
 assert.match(script, /genBtn\.disabled = true/, "le bouton generer doit se desactiver pendant la requete");
@@ -65,11 +68,12 @@ assert.match(script, /const FONT_PAIR_LABELS = \{/, "les paires de polices doive
 assert.match(script, /const PALETTE_LABELS = \{/, "les palettes doivent avoir un libelle, pas seulement un id");
 
 // --- Donnees manquantes : etat honnete quand il n'y a pas encore de design ---
-assert.match(script, /Aucun design généré pour l’instant/, "l'absence de design doit etre annoncee honnetement, jamais une candidate vide masquee");
+assert.match(script, /Aucun design généré/, "l'absence de design doit etre annoncee honnetement, jamais une candidate vide masquee");
 
-// --- Reglages avances (Niveau 2), replies derriere un toggle, jamais force ---
-assert.match(index, /id="advanced-toggle"/, "les reglages avances doivent etre derriere un bouton dedie");
-assert.match(index, /id="advanced-panel" class="advanced-panel" hidden/, "le panneau avance doit rester masque par defaut (non force)");
+// --- Reglages avances (Niveau 2), replies derriere un toggle natif <details>, jamais force ---
+assert.match(index, /<details class="design-personalize"[\s\S]*?<summary/, "les reglages avances doivent etre derriere un disclosure dedie");
+assert.doesNotMatch(index, /<details class="design-personalize"[^>]*\bopen\b/, "le panneau avance doit rester masque par defaut (non force)");
+assert.match(index, /id="advanced-panel" class="advanced-panel"/, "le panneau avance doit exister");
 assert.match(script, /function buildAdvancedPanel/, "le panneau avance doit etre construit depuis le registre de variantes");
 assert.match(script, /section-order-editor/, "le reordonnancement des sections doit rester une liste simple (haut\\/bas), pas de librairie drag-and-drop");
 assert.doesNotMatch(script + index, /sortablejs|react-beautiful-dnd|interactjs/i, "aucune librairie de drag-and-drop lourde ne doit etre ajoutee");
