@@ -111,11 +111,22 @@ def _script(ctx: SiteContext, api_base_url: str) -> str:
 
 
 def _mobile_actions(ctx: SiteContext) -> str:
-    actions = []
-    if ctx.phone_href:
-        actions.append(f'<a href="tel:{ctx.phone_href}">Appeler</a>')
-    actions.append('<a href="#devis">Demander un devis</a>')
-    return f'<nav class="mobile-action-bar" aria-label="Actions rapides" style="--mobile-actions:{len(actions)}">{"".join(actions)}</nav>'
+    family = ctx.profile["design_family"]
+    devis = '<a href="#devis">Demander un devis</a>'
+    if family in ("architecture", "signature"):
+        # CTA mobile unique et discret (le telephone reste accessible dans le
+        # header/hero) : eviter la signature commune "Appeler | Devis" pour
+        # ces deux familles premium/editoriales (Lot 3.1, section 8).
+        actions = [devis]
+    else:
+        actions = []
+        if ctx.phone_href:
+            actions.append(f'<a href="tel:{ctx.phone_href}">Appeler</a>')
+        actions.append(devis)
+    return (
+        f'<nav class="mobile-action-bar mobile-action-bar--{family}" aria-label="Actions rapides" '
+        f'style="--mobile-actions:{len(actions)}">{"".join(actions)}</nav>'
+    )
 
 
 def render_site_v2(payload: dict, api_base_url: str) -> str:

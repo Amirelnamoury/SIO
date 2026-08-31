@@ -217,32 +217,104 @@ p { margin: 0; }
 .copyright { margin-top: 42px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,.16); font-size: .78rem; opacity: .65; }
 .mobile-action-bar { display: none; }
 
-/* Six recognisable directions */
+/* ============================================================
+   Six directions artistiques - systemes distincts (Lot 3.1).
+   Chaque famille reecrit typographie, rythme vertical, boutons,
+   decoration ET fallbacks sans photo - pas seulement une couleur
+   ou un motif de fond en filigrane (cause de l'effet "template"
+   du Lot 3 : voir le rapport). Les identifiants de variantes
+   (header-classic-row, hero-columns...) restent inchanges : seule
+   l'habillage visuel par famille est renforce ici.
+   ============================================================ */
+
+/* --- ATELIER : chaleureux, artisanal, tactile --- */
 body.family-atelier { --container: 1100px; }
+.family-atelier h1, .family-atelier h2 { font-weight: 750; letter-spacing: -.005em; }
+.family-atelier .eyebrow { text-transform: none; font-weight: 800; }
+.family-atelier .eyebrow::before { content: "●"; margin-right: 8px; font-size: .55em; color: var(--color-secondary); }
+.family-atelier section:nth-of-type(even) { padding-block: calc(var(--space-section) * 1.12); }
+.family-atelier .button, .family-atelier .header-cta { border-radius: 999px; }
+.family-atelier .button-primary { box-shadow: 0 14px 30px -14px color-mix(in srgb, var(--color-accent) 75%, transparent); }
+.family-atelier .service-item { border-top: 5px solid var(--color-secondary); border-radius: var(--radius-lg) var(--radius-lg) 6px 6px; }
+.family-atelier .review-item, .family-atelier .quote-form { border-radius: var(--radius-lg); }
 .family-atelier .hero { background: color-mix(in srgb, var(--color-primary-dark) 88%, #3f2f24); }
-.family-atelier .hero-fallback { background-image: repeating-linear-gradient(105deg, transparent 0 28px, rgba(255,255,255,.06) 28px 30px); }
-.family-atelier .section-heading h2 { font-weight: 700; }
-.family-atelier .service-item { border-top: 5px solid var(--color-secondary); }
-body.family-architecture { --container: 1260px; }
+.family-atelier .hero-fallback, .family-atelier .about-monogram { background: radial-gradient(120% 140% at 18% 16%, color-mix(in srgb, var(--color-secondary) 55%, transparent), transparent 60%), var(--color-primary); }
+.family-atelier .hero-fallback span, .family-atelier .about-monogram span { border-radius: 46% 54% 58% 42% / 50% 44% 56% 50%; opacity: .55; background: color-mix(in srgb, var(--color-secondary) 80%, transparent); border-color: transparent; }
+.family-atelier .hero-fallback span:nth-child(1) { transform: rotate(-6deg); }
+.family-atelier .hero-fallback span:nth-child(3), .family-atelier .about-monogram span:nth-child(3) { background: var(--color-accent); border-radius: 60% 40% 45% 55% / 55% 60% 40% 45%; }
+.family-atelier .footer-simple, .family-atelier .footer-centered { border-top: 3px solid var(--color-secondary); }
+
+/* --- ARCHITECTURE : premium, minimal, editorial --- */
+body.family-architecture { --container: 1260px; --font-heading: Georgia, 'Iowan Old Style', 'Times New Roman', serif; --space-section: calc(var(--space-section) * 1.32); }
 .family-architecture section { border-bottom: 1px solid color-mix(in srgb, var(--color-text) 10%, transparent); }
-.family-architecture .hero-fallback { background-image: linear-gradient(90deg, transparent 49.7%, rgba(255,255,255,.28) 50%, transparent 50.3%), linear-gradient(transparent 49.7%, rgba(255,255,255,.18) 50%, transparent 50.3%); background-size: 90px 90px; }
-.family-architecture .eyebrow { color: var(--color-text); }
-.family-impact .hero h1 { text-transform: uppercase; font-weight: 950; }
-.family-impact .hero-fallback { background-image: repeating-linear-gradient(125deg, transparent 0 40px, rgba(255,255,255,.1) 40px 80px); }
-.family-impact .button-primary { box-shadow: 7px 7px 0 var(--color-secondary); }
+.family-architecture h1 { font-weight: 400; letter-spacing: -.015em; line-height: 1.02; }
+.family-architecture h2 { font-weight: 400; }
+.family-architecture .eyebrow { color: var(--color-text); font-weight: 600; letter-spacing: .18em; }
+.family-architecture .button-primary { border-radius: 2px; box-shadow: none; padding-inline: 26px; font-size: .82rem; letter-spacing: .06em; text-transform: uppercase; }
+.family-architecture .button-secondary { border-radius: 2px; }
+.family-architecture .service-item, .family-architecture .review-item, .family-architecture .quote-form { border-radius: 2px; }
+.family-architecture .hero-fallback, .family-architecture .about-monogram { background: linear-gradient(115deg, color-mix(in srgb, var(--color-primary) 92%, black) 0 62%, color-mix(in srgb, var(--color-secondary) 40%, var(--color-primary)) 62% 100%); }
+.family-architecture .hero-fallback span, .family-architecture .about-monogram span { border-radius: 0; background: transparent; border: 1px solid color-mix(in srgb, white 32%, transparent); opacity: .55; }
+.family-architecture .hero-fallback span:nth-child(3), .family-architecture .about-monogram span:nth-child(3) { background: color-mix(in srgb, white 12%, transparent); border: none; }
+.family-architecture .footer-columns { border-top: 1px solid color-mix(in srgb, white 16%, transparent); padding-top: 40px; }
+
+/* --- IMPACT : energique, commercial, direct --- */
+.family-impact h1 { text-transform: uppercase; font-weight: 950; letter-spacing: -.02em; line-height: .96; }
+.family-impact .hero h1 { font-size: clamp(2.7rem, 6.4vw, 6.6rem); }
+.family-impact .eyebrow { display: inline-block; padding: 5px 12px; color: var(--color-on-accent); background: var(--color-accent); letter-spacing: .06em; }
+.family-impact .button-primary { min-height: 56px; padding-inline: 26px; border-radius: 0; box-shadow: 7px 7px 0 var(--color-secondary); font-size: 1.02rem; }
+.family-impact .button-secondary { border-radius: 0; border-width: 2px; }
 .family-impact .section-heading { grid-template-columns: .35fr 1fr; align-items: end; }
-.family-technique .hero-fallback { background-image: linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px); background-size: 24px 24px; }
-.family-technique .service-item, .family-technique .quote-form { border-left: 5px solid var(--color-accent); }
-.family-technique .eyebrow { font-family: monospace; }
+.family-impact .cta { padding-block: calc(var(--space-section) * 1.15); }
+.family-impact .hero-fallback, .family-impact .about-monogram { background: linear-gradient(125deg, var(--color-primary) 0 46%, var(--color-accent) 46% 54%, var(--color-primary-dark) 54% 100%); }
+.family-impact .hero-fallback span, .family-impact .about-monogram span { border-radius: 0; opacity: .85; background: color-mix(in srgb, white 20%, var(--color-secondary)); border-color: transparent; }
+.family-impact .service-item { border-radius: 0; border-top: 6px solid var(--color-accent); }
+.family-impact .site-footer { background: #0d0e10; }
+
+/* --- TECHNIQUE : structure, precis, fiable --- */
+.family-technique { --space-section: calc(var(--space-section) * .84); }
+.family-technique h1, .family-technique h2 { font-weight: 640; letter-spacing: -.01em; }
+.family-technique .eyebrow { font-family: 'Courier New', monospace; letter-spacing: .04em; }
+.family-technique .section-heading { border-left: 2px solid var(--color-accent); padding-left: 16px; }
+.family-technique .service-item, .family-technique .quote-form, .family-technique .review-item { border-left: 5px solid var(--color-accent); border-radius: 0; }
+.family-technique .button { border-radius: 0; }
+.family-technique .button-primary { border: 1px solid var(--color-accent); }
+.family-technique .hero-fallback, .family-technique .about-monogram { background-image: linear-gradient(rgba(255,255,255,.14) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.14) 1px, transparent 1px); background-size: 22px 22px; background-color: var(--color-primary-dark); }
+.family-technique .hero-fallback span, .family-technique .about-monogram span { border-radius: 0; background: transparent; border: 1px solid color-mix(in srgb, white 45%, transparent); opacity: .8; }
+.family-technique .hero-fallback span:nth-child(3), .family-technique .about-monogram span:nth-child(3) { background: var(--color-accent); border: none; }
+.family-technique .site-footer { border-top: 4px solid var(--color-accent); }
+
+/* --- LOCAL : proximite, confiance, accessible --- */
+.family-local { --space-section: calc(var(--space-section) * .93); }
+.family-local h1, .family-local h2 { font-weight: 720; }
 .family-local .hero { background: var(--color-primary); }
-.family-local .hero-fallback { background-image: repeating-linear-gradient(0deg, rgba(255,255,255,.07) 0 2px, transparent 2px 18px); }
-.family-local .button { border-radius: 999px; }
-.family-local .service-item { border-bottom: 4px solid var(--color-secondary); }
-body.family-signature { --container: 1280px; }
+.family-local .button, .family-local .header-cta { border-radius: 999px; }
+.family-local .service-item { border-radius: var(--radius-lg); border-bottom: 4px solid var(--color-secondary); }
+.family-local .header-phone { padding: 6px 12px; border-radius: 999px; background: color-mix(in srgb, var(--color-accent) 14%, transparent); }
+.family-local .hero-fallback, .family-local .about-monogram { background: radial-gradient(38% 55% at 74% 30%, color-mix(in srgb, var(--color-secondary) 60%, transparent), transparent), radial-gradient(30% 45% at 24% 78%, color-mix(in srgb, var(--color-accent) 55%, transparent), transparent), var(--color-primary); }
+.family-local .hero-fallback span, .family-local .about-monogram span { border-radius: 50%; opacity: .5; background: color-mix(in srgb, white 15%, var(--color-secondary)); border-color: transparent; }
+.family-local .footer-simple a, .family-local .footer-centered a { font-weight: 800; }
+
+/* --- SIGNATURE : haut de gamme, magazine, photographique --- */
+body.family-signature { --container: 1300px; --font-heading: 'Bodoni MT', Didot, Georgia, serif; --space-section: calc(var(--space-section) * 1.42); }
+.family-signature h1 { font-weight: 300; letter-spacing: -.025em; line-height: .96; }
+.family-signature .hero h1 { font-size: clamp(2.9rem, 6.6vw, 7.4rem); }
+.family-signature .eyebrow { font-size: .68rem; letter-spacing: .22em; opacity: .8; }
+.family-signature .section-heading { justify-items: center; text-align: center; gap: 16px; }
+.family-signature .button-primary { border-radius: 999px; box-shadow: none; }
+.family-signature .button-secondary { border: none; text-decoration: underline; text-underline-offset: 5px; }
 .family-signature .hero { min-height: 700px; }
-.family-signature .hero-fallback { background-image: linear-gradient(135deg, transparent 0 48%, rgba(255,255,255,.15) 48% 50%, transparent 50%); }
-.family-signature .section-heading { justify-items: center; text-align: center; }
 .family-signature .gallery-image, .family-signature .featured-image { min-height: 420px; }
+.family-signature .hero-fallback, .family-signature .about-monogram { background: linear-gradient(150deg, var(--color-primary-dark) 0 55%, color-mix(in srgb, var(--color-secondary) 45%, var(--color-primary)) 55% 100%); }
+.family-signature .hero-fallback span, .family-signature .about-monogram span { border-radius: 0; background: transparent; border: 1px solid color-mix(in srgb, white 36%, transparent); opacity: .45; }
+.family-signature .site-footer { padding-block: 90px 30px; }
+.family-signature .footer-simple { flex-direction: column; align-items: center; gap: 14px; text-align: center; }
+.family-signature .footer-columns { justify-items: center; text-align: center; }
+
+/* --- Traitements d'image (Lot 3.1 : plus perceptibles, sans wrapper DOM) --- */
+.image-framed img { border: 12px solid var(--color-surface); outline: 1px solid color-mix(in srgb, var(--color-text) 20%, transparent); box-shadow: 0 18px 40px -18px rgba(0,0,0,.35); }
+.image-duotone img { filter: grayscale(1) sepia(.35) hue-rotate(-8deg) saturate(1.5) contrast(1.05); }
+.image-overlay img { filter: brightness(.92) contrast(1.06); box-shadow: inset 0 -140px 120px -70px color-mix(in srgb, var(--color-primary-dark) 70%, black); }
 
 @media (max-width: 1024px) {
   .main-nav, .site-header .header-phone, .site-header .header-cta, .header-meta { display: none; }
@@ -292,6 +364,27 @@ body.family-signature { --container: 1280px; }
   .mobile-action-bar a { min-height: 46px; display: grid; place-items: center; color: #151515; font-size: .86rem; font-weight: 800; text-decoration: none; }
   .mobile-action-bar a:last-child { color: var(--color-on-accent); background: var(--color-accent); }
   body { padding-bottom: 62px; }
+
+  /* Barre CTA mobile configurable par famille (Lot 3.1, section 8) */
+  .mobile-action-bar--architecture { background: var(--color-surface); border-top: 1px solid color-mix(in srgb, var(--color-text) 16%, transparent); }
+  .mobile-action-bar--architecture a { color: var(--color-text); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; font-size: .78rem; }
+  .mobile-action-bar--technique { padding-block: 5px; }
+  .mobile-action-bar--technique a { font-size: .8rem; }
+  .mobile-action-bar--signature { left: auto; right: 14px; bottom: 14px; width: auto; display: block; padding: 0; background: transparent; border: none; }
+  .mobile-action-bar--signature a { min-width: 168px; padding-inline: 24px; border-radius: 999px; color: var(--color-on-accent); background: var(--color-accent); box-shadow: 0 12px 30px -8px rgba(0,0,0,.4); }
+
+  /* Familles : le mobile ne doit pas s'effondrer vers la meme pile
+     header -> hero -> CTA -> image -> sticky bar pour tout le monde
+     (Lot 3.1, section 7 - point critique). */
+  .family-impact .hero { min-height: 560px; }
+  .family-impact .hero h1 { font-size: clamp(2.6rem, 11vw, 4.2rem); }
+  .family-architecture h1, .family-signature h1 { font-size: clamp(2.5rem, 10vw, 4.2rem); }
+  .family-architecture section, .family-signature section { padding-block: calc(var(--space-section) * .8); }
+  .family-atelier .hero-copy, .family-atelier .about-copy { margin-left: 14px; }
+  .family-technique .reasons ul, .family-technique .process ol, .family-technique .services-list .services-layout { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .family-technique .service-item, .family-technique .reasons li, .family-technique .process li { padding: 14px; min-height: auto; }
+  .family-local .service-area, .family-local .trust-strip { border-radius: var(--radius-lg); margin-inline: 4px; }
+  .family-signature .hero-index { display: none; }
 }
 
 @media (max-width: 430px) {
