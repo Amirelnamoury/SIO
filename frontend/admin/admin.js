@@ -42,6 +42,85 @@
   };
   const statusLabels = { non_cree: "Non créé", brouillon: "Brouillon", genere: "Généré", pret: "Prêt", publie: "Publié" };
 
+  // ---------- Configurateur de design V2 (Lot 4) ----------
+  // Ce vocabulaire reflete generator/design_registry.py (source de verite).
+  // Le backend revalide integralement chaque valeur ; ces listes ne servent
+  // qu'a construire des controles lisibles, jamais a la validation.
+  const FAMILY_LABELS = { atelier: "Atelier", architecture: "Architecture", impact: "Impact", technique: "Technique", local: "Local", signature: "Signature" };
+  const FAMILY_DESCRIPTIONS = {
+    atelier: "Chaleureux et artisanal : met en valeur le savoir-faire.",
+    architecture: "Premium, minimal et éditorial : très épuré.",
+    impact: "Fort et dynamique : met en avant l'action (devis, contact).",
+    technique: "Structuré et précis : clarté et expertise.",
+    local: "Proximité et confiance : ancrage dans le territoire.",
+    signature: "Haut de gamme et photographique : très visuel.",
+  };
+  const HEADER_VARIANTS = ["classic", "minimal", "centered", "compact"];
+  const HERO_VARIANTS = ["fullscreen", "split", "asymmetric", "compact", "editorial", "card"];
+  const SERVICES_VARIANTS = ["cards", "editorial", "list", "grid", "alternating"];
+  const GALLERY_VARIANTS = ["grid", "masonry", "featured", "horizontal"];
+  const ABOUT_VARIANTS = ["classic", "editorial", "split", "compact"];
+  const REVIEWS_VARIANTS = ["cards", "featured", "minimal"];
+  const CTA_VARIANTS = ["banner", "floating", "split", "minimal"];
+  const FOOTER_VARIANTS = ["simple", "columns", "centered", "map"];
+  const RADIUS_STYLES = ["sharp", "soft", "rounded", "pill"];
+  const SPACING_STYLES = ["compact", "comfortable", "spacious"];
+  const IMAGE_TREATMENTS = ["flat", "duotone", "framed", "overlay"];
+  const PALETTE_SLOTS = ["palette-1", "palette-2", "palette-3"];
+  const FONT_PAIR_IDS = ["poppins-inter", "archivo-inter", "fredoka-inter", "rajdhani-inter"];
+  const VARIANT_LABELS = {
+    header_variant: { classic: "Classique", minimal: "Minimaliste", centered: "Centré", compact: "Compact" },
+    hero_variant: { fullscreen: "Plein écran", split: "Divisé", asymmetric: "Asymétrique", compact: "Compact", editorial: "Éditorial", card: "Carte" },
+    services_variant: { cards: "Cartes", editorial: "Éditorial", list: "Liste", grid: "Grille", alternating: "Alterné" },
+    gallery_variant: { grid: "Grille", masonry: "Mosaïque", featured: "Mise en avant", horizontal: "Horizontal" },
+    about_variant: { classic: "Classique", editorial: "Éditorial", split: "Divisé", compact: "Compact" },
+    reviews_variant: { cards: "Cartes", featured: "Mise en avant", minimal: "Minimaliste" },
+    cta_variant: { banner: "Bandeau", floating: "Flottant", split: "Divisé", minimal: "Minimaliste" },
+    footer_variant: { simple: "Simple", columns: "Colonnes", centered: "Centré", map: "Carte" },
+  };
+  const RADIUS_LABELS = { sharp: "Angles nets", soft: "Légèrement arrondi", rounded: "Arrondi", pill: "Très arrondi" };
+  const SPACING_LABELS = { compact: "Compact", comfortable: "Confortable", spacious: "Aéré" };
+  const IMAGE_TREATMENT_LABELS = { flat: "Naturelle", duotone: "Bicolore", framed: "Encadrée", overlay: "Dégradé" };
+  const FONT_PAIR_LABELS = {
+    "poppins-inter": "Moderne et arrondie",
+    "archivo-inter": "Neutre et structurée",
+    "fredoka-inter": "Ludique et chaleureuse",
+    "rajdhani-inter": "Technique et anguleuse",
+  };
+  const PALETTE_LABELS = { "palette-1": "Palette 1", "palette-2": "Palette 2", "palette-3": "Palette 3" };
+  const SECTION_LABELS = {
+    hero: "Introduction", trust: "Confiance", services: "Prestations", featured_project: "Réalisation phare",
+    about: "À propos", gallery: "Galerie photo", reviews: "Avis clients", service_area: "Zone d'intervention",
+    cta: "Appel à l'action", stats: "Chiffres clés", process: "Déroulé", before_after: "Avant / après",
+    reasons: "Pourquoi nous choisir", contact: "Formulaire de contact",
+  };
+  const DESIGN_AXES = [
+    ["design_family", "Famille"], ["header_variant", "En-tête"], ["hero_variant", "Bloc d'accueil"],
+    ["services_variant", "Prestations"], ["gallery_variant", "Galerie"], ["about_variant", "À propos"],
+    ["reviews_variant", "Avis"], ["cta_variant", "Appel à l'action"], ["footer_variant", "Pied de page"],
+    ["palette", "Palette"], ["font_pair", "Typographie"], ["radius_style", "Arrondis"],
+    ["spacing_style", "Espacement"], ["image_treatment", "Traitement des images"],
+  ];
+  const ADVANCED_AXES = [
+    ["header_variant", "En-tête", HEADER_VARIANTS], ["hero_variant", "Bloc d'accueil", HERO_VARIANTS],
+    ["services_variant", "Prestations", SERVICES_VARIANTS], ["gallery_variant", "Galerie", GALLERY_VARIANTS],
+    ["about_variant", "À propos", ABOUT_VARIANTS], ["reviews_variant", "Avis", REVIEWS_VARIANTS],
+    ["cta_variant", "Appel à l'action", CTA_VARIANTS], ["footer_variant", "Pied de page", FOOTER_VARIANTS],
+    ["radius_style", "Arrondis", RADIUS_STYLES], ["spacing_style", "Espacement", SPACING_STYLES],
+  ];
+
+  function axisValueLabel(axis, value) {
+    if (!value) return "-";
+    if (axis === "design_family") return FAMILY_LABELS[value] || value;
+    if (axis === "palette") return PALETTE_LABELS[value] || value;
+    if (axis === "font_pair") return FONT_PAIR_LABELS[value] || value;
+    if (axis === "radius_style") return RADIUS_LABELS[value] || value;
+    if (axis === "spacing_style") return SPACING_LABELS[value] || value;
+    if (axis === "image_treatment") return IMAGE_TREATMENT_LABELS[value] || value;
+    if (VARIANT_LABELS[axis] && VARIANT_LABELS[axis][value]) return VARIANT_LABELS[axis][value];
+    return value;
+  }
+
   function escapeHtml(value) {
     return String(value == null ? "" : value).replace(/[&<>'"]/g, function (char) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[char];
@@ -220,6 +299,185 @@
     badge.textContent = statusLabels[site.statut] || site.statut;
   }
 
+  function renderDesignCurrent(site) {
+    const el = document.getElementById("design-current");
+    const profile = site.design_profile;
+    if (!profile) {
+      el.innerHTML = '<p class="design-empty">Aucun design généré pour l’instant. Cliquez sur « Générer la preview » ci-dessus.</p>';
+      return;
+    }
+    const rows = DESIGN_AXES.filter(function (entry) { return entry[0] !== "design_family"; }).map(function (entry) {
+      return '<div><dt>' + escapeHtml(entry[1]) + '</dt><dd>' + escapeHtml(axisValueLabel(entry[0], profile[entry[0]])) + '</dd></div>';
+    }).join("");
+    el.innerHTML = '<div class="design-current-card"><div class="design-current-family">' +
+      '<span class="design-family-badge">' + escapeHtml(FAMILY_LABELS[profile.design_family] || profile.design_family) + '</span>' +
+      '<p>' + escapeHtml(FAMILY_DESCRIPTIONS[profile.design_family] || "") + '</p></div>' +
+      '<dl class="design-current-grid">' + rows + '</dl>' +
+      '<details class="design-technical"><summary>Détails techniques</summary><code>' + escapeHtml(profile.design_signature || "") + '</code></details></div>';
+  }
+
+  function renderSectionsAvailability(list) {
+    const el = document.getElementById("design-sections-availability");
+    if (!list || !list.length) { el.innerHTML = ""; return; }
+    el.innerHTML = '<h4>Sections qui pourront apparaître</h4><ul class="design-sections-list">' + list.map(function (item) {
+      const label = SECTION_LABELS[item.section] || item.section;
+      const reason = !item.disponible ? (item.raison || "Cette section n'apparaît pas car aucune donnée n'est disponible.") : "";
+      return '<li class="' + (item.disponible ? "available" : "unavailable") + '"><span>' + (item.disponible ? "✓ " : "– ") + escapeHtml(label) + '</span>' +
+        (reason ? '<small>' + escapeHtml(reason) + '</small>' : "") + '</li>';
+    }).join("") + '</ul>';
+  }
+
+  function renderFamilyCards(selected) {
+    document.getElementById("design-family-cards").innerHTML = Object.keys(FAMILY_LABELS).map(function (fam) {
+      return '<button type="button" class="design-family-card' + (fam === selected ? " selected" : "") + '" data-family="' + fam + '">' +
+        '<strong>' + escapeHtml(FAMILY_LABELS[fam]) + '</strong><span>' + escapeHtml(FAMILY_DESCRIPTIONS[fam]) + '</span></button>';
+    }).join("");
+  }
+
+  function buildAdvancedPanel() {
+    const grid = ADVANCED_AXES.map(function (entry) {
+      const axis = entry[0], label = entry[1], options = entry[2];
+      const opts = options.map(function (opt) { return '<option value="' + opt + '">' + escapeHtml(axisValueLabel(axis, opt)) + '</option>'; }).join("");
+      return '<label>' + escapeHtml(label) + '<select data-override="' + axis + '"><option value="">Automatique</option>' + opts + '</select></label>';
+    }).join("");
+    const palettes = '<div class="override-group" data-override="palette"><span>Palette</span><div class="palette-swatches">' +
+      '<button type="button" class="palette-swatch auto selected" data-value="">Auto</button>' +
+      PALETTE_SLOTS.map(function (p, i) { return '<button type="button" class="palette-swatch swatch-' + (i + 1) + '" data-value="' + p + '" aria-label="' + escapeHtml(PALETTE_LABELS[p]) + '" title="' + escapeHtml(PALETTE_LABELS[p]) + '"></button>'; }).join("") +
+      '</div></div>';
+    const fonts = '<div class="override-group" data-override="font_pair"><span>Typographie</span><div class="font-options">' +
+      '<button type="button" class="font-option selected" data-value="">Automatique</button>' +
+      FONT_PAIR_IDS.map(function (id) { return '<button type="button" class="font-option" data-value="' + id + '">' + escapeHtml(FONT_PAIR_LABELS[id]) + '</button>'; }).join("") +
+      '</div></div>';
+    const images = '<div class="override-group" data-override="image_treatment"><span>Traitement des images</span><div class="image-treatment-options">' +
+      '<button type="button" class="image-treatment-option selected" data-value="">Automatique</button>' +
+      IMAGE_TREATMENTS.map(function (t) { return '<button type="button" class="image-treatment-option treatment-' + t + '" data-value="' + t + '">' + escapeHtml(IMAGE_TREATMENT_LABELS[t]) + '</button>'; }).join("") +
+      '</div></div>';
+    document.getElementById("advanced-panel").innerHTML = '<div class="form-grid">' + grid + '</div>' + palettes + fonts + images +
+      '<div class="section-order-editor" id="section-order-editor"><span>Ordre des sections</span></div>';
+  }
+
+  function paintSectionOrderEditor() {
+    const el = document.getElementById("section-order-editor");
+    if (!el) return;
+    const order = state.sectionOrderDraft || [];
+    el.innerHTML = '<span>Ordre des sections</span><ol class="section-order-list">' + order.map(function (section, index) {
+      const label = escapeHtml(SECTION_LABELS[section] || section);
+      return '<li><span>' + label + '</span><span>' +
+        '<button type="button" class="button button-secondary" data-move="up" data-index="' + index + '" aria-label="Monter ' + label + '"' + (index === 0 ? " disabled" : "") + '>↑</button> ' +
+        '<button type="button" class="button button-secondary" data-move="down" data-index="' + index + '" aria-label="Descendre ' + label + '"' + (index === order.length - 1 ? " disabled" : "") + '>↓</button></span></li>';
+    }).join("") + '</ol>';
+  }
+
+  function resetAdvancedPanelSelections() {
+    document.querySelectorAll('#advanced-panel select[data-override]').forEach(function (select) { select.value = ""; });
+    document.querySelectorAll('#advanced-panel .override-group [data-value]').forEach(function (btn) { btn.classList.toggle("selected", btn.dataset.value === ""); });
+    state.overrideChoices = {};
+  }
+
+  function gatherOverrides() {
+    const overrides = {};
+    document.querySelectorAll('#advanced-panel select[data-override]').forEach(function (select) {
+      if (select.value) overrides[select.dataset.override] = select.value;
+    });
+    Object.entries(state.overrideChoices || {}).forEach(function (entry) {
+      if (entry[1]) overrides[entry[0]] = entry[1];
+    });
+    if (state.sectionOrderDraft && state.originalSectionOrder && JSON.stringify(state.sectionOrderDraft) !== JSON.stringify(state.originalSectionOrder)) {
+      overrides.section_order = state.sectionOrderDraft;
+    }
+    return Object.keys(overrides).length ? overrides : null;
+  }
+
+  function updateCandidateButtons(site) {
+    const hasCandidate = !!site.candidate_design_profile;
+    document.getElementById("candidate-generate-button").disabled = !site.design_profile;
+    document.getElementById("candidate-regenerate-button").disabled = !hasCandidate;
+    document.getElementById("candidate-adopt-button").disabled = !hasCandidate;
+    document.getElementById("candidate-abandon-button").disabled = !hasCandidate;
+    document.getElementById("candidate-preview-button").disabled = !site.candidate_preview_disponible;
+  }
+
+  function renderDesignComparison(site) {
+    const el = document.getElementById("design-comparison");
+    const current = site.design_profile;
+    const candidate = site.candidate_design_profile;
+    if (!candidate) { el.hidden = true; el.innerHTML = ""; return; }
+    el.hidden = false;
+    const diffAxes = DESIGN_AXES.filter(function (entry) { return !current || current[entry[0]] !== candidate[entry[0]]; });
+    const currentRows = diffAxes.map(function (entry) { return '<div><dt>' + escapeHtml(entry[1]) + '</dt><dd>' + escapeHtml(axisValueLabel(entry[0], current ? current[entry[0]] : null)) + '</dd></div>'; }).join("");
+    const candidateRows = diffAxes.map(function (entry) { return '<div><dt>' + escapeHtml(entry[1]) + '</dt><dd>' + escapeHtml(axisValueLabel(entry[0], candidate[entry[0]])) + '</dd></div>'; }).join("");
+    el.innerHTML = '<h4>Version actuelle vs alternative</h4><div class="design-comparison-grid">' +
+      '<div class="design-comparison-card current"><span class="design-comparison-tag">Version actuelle</span>' + currentRows + '</div>' +
+      '<div class="design-comparison-card candidate"><span class="design-comparison-tag">Alternative</span>' + candidateRows + '</div></div>' +
+      (diffAxes.length ? "" : '<p class="muted">Cette alternative est très proche du design actuel sur les axes affichés.</p>');
+  }
+
+  function candidatePayload() {
+    const keepFamily = document.getElementById("candidate-keep-family").checked;
+    const familySelect = document.getElementById("pref-family").value;
+    const density = document.getElementById("pref-density").value;
+    return {
+      keep_current_family: keepFamily,
+      preferred_family: keepFamily ? null : (familySelect || null),
+      density: density || null,
+      overrides: gatherOverrides(),
+    };
+  }
+
+  async function generateCandidate(regenerate) {
+    const genBtn = document.getElementById("candidate-generate-button");
+    const regenBtn = document.getElementById("candidate-regenerate-button");
+    genBtn.disabled = true;
+    regenBtn.disabled = true;
+    try {
+      const path = "/admin/api/artisans/" + state.artisan.id + "/site/design/candidate" + (regenerate ? "/regenerate" : "");
+      const result = await api(path, { method: "POST", body: JSON.stringify(candidatePayload()) });
+      toast(result.distinct ? "Alternative générée : structure bien distincte du design actuel" : "Alternative générée (proche du design actuel malgré les réglages)");
+      await openArtisan(state.artisan.id);
+    } catch (error) {
+      genBtn.disabled = false;
+      regenBtn.disabled = state.artisan && state.artisan.site && !state.artisan.site.candidate_design_profile;
+      throw error;
+    }
+  }
+
+  async function savePreferences() {
+    const payload = {
+      preferred_family: document.getElementById("pref-family").value || null,
+      density: document.getElementById("pref-density").value || null,
+    };
+    await api("/admin/api/artisans/" + state.artisan.id + "/site/design/preferences", { method: "PATCH", body: JSON.stringify(payload) });
+    toast("Orientation enregistrée pour la prochaine alternative");
+    await openArtisan(state.artisan.id);
+  }
+
+  async function abandonCandidate() {
+    if (!window.confirm("Abandonner cette alternative ? Elle sera définitivement supprimée. Le design actuel du site n'est pas concerné.")) return;
+    await api("/admin/api/artisans/" + state.artisan.id + "/site/design/candidate", { method: "DELETE" });
+    toast("Alternative abandonnée");
+    await openArtisan(state.artisan.id);
+  }
+
+  async function adoptCandidate() {
+    if (!window.confirm("Adopter cette alternative comme nouveau design du site ? Le site publié n'est jamais modifié automatiquement : vous devrez le republier explicitement si besoin.")) return;
+    await api("/admin/api/artisans/" + state.artisan.id + "/site/design/candidate/adopt", { method: "POST" });
+    toast("Nouveau design adopté — pensez à vérifier le statut du site avant de le republier");
+    await openArtisan(state.artisan.id);
+  }
+
+  async function previewCandidate() {
+    const previewWindow = window.open("about:blank", "_blank");
+    if (!previewWindow) throw new Error("Autorisez l'ouverture de fenêtres pour afficher la preview");
+    previewWindow.opener = null;
+    try {
+      const session = await api("/admin/api/artisans/" + state.artisan.id + "/site/preview-session/candidate", { method: "POST" });
+      previewWindow.location.replace(apiUrl(session.url));
+    } catch (error) {
+      previewWindow.close();
+      throw error;
+    }
+  }
+
   async function openArtisan(id) {
     state.previousView = state.currentView === "sites" ? "sites" : "artisans";
     const artisan = await api("/admin/api/artisans/" + id);
@@ -241,30 +499,25 @@
       url_publique: artisan.site.url_publique,
     });
     updateMotifs(artisan.metier, config.variante_motif);
-    const designProfile = artisan.site.design_profile;
-    const designProfileEl = document.getElementById("site-design-profile");
-    if (designProfile) {
-      designProfileEl.hidden = false;
-      const profileItems = [
-        ["Famille", designProfile.design_family], ["Header", designProfile.header_variant],
-        ["Hero", designProfile.hero_variant], ["Services", designProfile.services_variant],
-        ["Galerie", designProfile.gallery_variant], ["À propos", designProfile.about_variant],
-        ["Avis", designProfile.reviews_variant], ["CTA", designProfile.cta_variant],
-        ["Footer", designProfile.footer_variant], ["Palette", designProfile.palette],
-        ["Police", designProfile.font_pair], ["Rayons", designProfile.radius_style],
-        ["Espacement", designProfile.spacing_style], ["Images", designProfile.image_treatment],
-      ];
-      designProfileEl.innerHTML = '<div class="site-design-profile-heading"><strong>Profil visuel V2</strong><span>' + escapeHtml(designProfile.design_signature || "") + '</span></div><dl>' +
-        profileItems.map(function (item) { return '<div><dt>' + escapeHtml(item[0]) + '</dt><dd>' + escapeHtml(item[1] || "-") + '</dd></div>'; }).join("") +
-        '</dl><div class="site-design-order"><strong>Ordre des sections</strong><span>' + escapeHtml((designProfile.section_order || []).join(" → ")) + '</span></div>';
-    } else {
-      designProfileEl.hidden = true;
-      designProfileEl.innerHTML = "";
-    }
     document.getElementById("site-slug").textContent = artisan.slug;
     document.getElementById("site-generated-at").textContent = formatDate(artisan.site.date_generation);
     document.getElementById("site-published-at").textContent = formatDate(artisan.site.date_publication);
     updateWorkflow(artisan.site);
+
+    const preferredFamily = (artisan.site.design_preferences && artisan.site.design_preferences.preferred_family) || "";
+    renderDesignCurrent(artisan.site);
+    renderSectionsAvailability(artisan.site.sections_disponibles);
+    renderFamilyCards(preferredFamily);
+    document.getElementById("pref-family").value = preferredFamily;
+    document.getElementById("pref-density").value = (artisan.site.design_preferences && artisan.site.design_preferences.density) || "";
+    document.getElementById("candidate-keep-family").checked = false;
+    state.originalSectionOrder = (artisan.site.design_profile && artisan.site.design_profile.section_order) || [];
+    state.sectionOrderDraft = state.originalSectionOrder.slice();
+    paintSectionOrderEditor();
+    resetAdvancedPanelSelections();
+    updateCandidateButtons(artisan.site);
+    renderDesignComparison(artisan.site);
+
     await renderAdminMedia(artisan.media);
   }
 
@@ -379,6 +632,46 @@
     window.sessionStorage.removeItem(ADMIN_TOKEN_KEY);
     window.location.assign("/admin/login.html");
   });
+
+  buildAdvancedPanel();
+  document.getElementById("advanced-toggle").addEventListener("click", function () {
+    const panel = document.getElementById("advanced-panel");
+    const expanded = !panel.hidden;
+    panel.hidden = expanded;
+    this.setAttribute("aria-expanded", String(!expanded));
+  });
+  document.getElementById("design-family-cards").addEventListener("click", function (event) {
+    const card = event.target.closest(".design-family-card");
+    if (!card) return;
+    document.getElementById("pref-family").value = card.dataset.family;
+    renderFamilyCards(card.dataset.family);
+  });
+  document.getElementById("advanced-panel").addEventListener("click", function (event) {
+    const moveButton = event.target.closest("[data-move]");
+    if (moveButton) {
+      const index = Number(moveButton.dataset.index);
+      const swapIndex = index + (moveButton.dataset.move === "up" ? -1 : 1);
+      const order = state.sectionOrderDraft;
+      if (!order || swapIndex < 0 || swapIndex >= order.length) return;
+      const tmp = order[index];
+      order[index] = order[swapIndex];
+      order[swapIndex] = tmp;
+      paintSectionOrderEditor();
+      return;
+    }
+    const choiceButton = event.target.closest(".override-group [data-value]");
+    if (!choiceButton) return;
+    const group = choiceButton.closest(".override-group");
+    state.overrideChoices = state.overrideChoices || {};
+    state.overrideChoices[group.dataset.override] = choiceButton.dataset.value || null;
+    group.querySelectorAll("[data-value]").forEach(function (el) { el.classList.toggle("selected", el === choiceButton); });
+  });
+  document.getElementById("save-preferences-button").addEventListener("click", function () { savePreferences().catch(handleError); });
+  document.getElementById("candidate-generate-button").addEventListener("click", function () { generateCandidate(false).catch(handleError); });
+  document.getElementById("candidate-regenerate-button").addEventListener("click", function () { generateCandidate(true).catch(handleError); });
+  document.getElementById("candidate-abandon-button").addEventListener("click", function () { abandonCandidate().catch(handleError); });
+  document.getElementById("candidate-adopt-button").addEventListener("click", function () { adoptCandidate().catch(handleError); });
+  document.getElementById("candidate-preview-button").addEventListener("click", function () { previewCandidate().catch(handleError); });
 
   function debounceSearch(input, loader) {
     let timer;

@@ -78,7 +78,6 @@
         <form id="site-form" class="form-section site-section">
           <div class="section-heading"><div><p class="eyebrow">SITE VITRINE</p><h3>Production</h3><p>Configuration du rendu et suivi de la livraison réelle.</p></div><button class="button button-secondary" type="submit">Enregistrer</button></div>
           <div class="site-identity"><div><span>Slug</span><strong id="site-slug"></strong></div><div><span>Dernière génération</span><strong id="site-generated-at">Jamais</strong></div><div><span>Publication</span><strong id="site-published-at">Jamais</strong></div></div>
-          <div class="site-design-profile" id="site-design-profile" hidden></div>
           <div class="form-grid">
             <label class="span-2">Tagline<input name="tagline" maxlength="180"></label>
             <label class="span-2">Prestations<textarea name="services" rows="6" placeholder="Une prestation par ligne"></textarea></label>
@@ -96,6 +95,60 @@
           </div>
           <p class="publication-note">Le statut publié enregistre une livraison existante. Aucun déploiement, DNS ou certificat HTTPS n’est déclenché automatiquement.</p>
         </form>
+
+        <div class="form-section" id="design-configurator-section">
+          <div class="section-heading">
+            <div><p class="eyebrow">DESIGN DU SITE</p><h3>Apparence générée (moteur V2)</h3><p>Le moteur choisit et compose automatiquement l'apparence. Vous pouvez orienter la prochaine alternative puis la comparer au design actuel avant de l'adopter — rien n'est jamais remplacé sans confirmation.</p></div>
+          </div>
+
+          <div id="design-current" class="design-current"></div>
+          <div id="design-sections-availability" class="design-sections-availability"></div>
+
+          <div class="design-preferences">
+            <h4>Orientation souhaitée <span class="muted">(facultatif — niveau 1)</span></h4>
+            <p class="muted">Ces réglages orientent la prochaine alternative générée ; ils ne modifient jamais le design actuel du site.</p>
+            <div id="design-family-cards" class="design-family-cards"></div>
+            <div class="form-grid">
+              <label>Famille souhaitée
+                <select id="pref-family">
+                  <option value="">Laisser le moteur choisir</option>
+                  <option value="atelier">Atelier</option>
+                  <option value="architecture">Architecture</option>
+                  <option value="impact">Impact</option>
+                  <option value="technique">Technique</option>
+                  <option value="local">Local</option>
+                  <option value="signature">Signature</option>
+                </select>
+              </label>
+              <label>Densité
+                <select id="pref-density">
+                  <option value="">Automatique</option>
+                  <option value="compact">Compact</option>
+                  <option value="comfortable">Confortable</option>
+                  <option value="spacious">Aéré</option>
+                </select>
+              </label>
+            </div>
+            <button id="save-preferences-button" class="button button-secondary" type="button">Enregistrer l'orientation</button>
+          </div>
+
+          <button id="advanced-toggle" class="button button-secondary" type="button" aria-expanded="false">Réglages avancés</button>
+          <div id="advanced-panel" class="advanced-panel" hidden></div>
+
+          <div class="workflow-bar">
+            <label class="candidate-keep-family"><input id="candidate-keep-family" type="checkbox"> Garder la même famille que le design actuel</label>
+          </div>
+          <div class="workflow-bar">
+            <button id="candidate-generate-button" class="button button-primary" type="button">Générer une alternative</button>
+            <button id="candidate-regenerate-button" class="button button-secondary" type="button" disabled>Régénérer</button>
+            <button id="candidate-preview-button" class="button button-secondary" type="button" disabled>Prévisualiser l'alternative</button>
+            <button id="candidate-adopt-button" class="button button-success" type="button" disabled>Adopter cette version</button>
+            <button id="candidate-abandon-button" class="button button-secondary" type="button" disabled>Abandonner</button>
+          </div>
+          <p class="publication-note">Générer, prévisualiser ou adopter une alternative ne publie jamais le site. La publication reste une action séparée et explicite (bouton « Marquer publié »).</p>
+
+          <div id="design-comparison" class="design-comparison" hidden></div>
+        </div>
 
         <div class="form-section" id="admin-media-section">
           <div class="section-heading"><div><p class="eyebrow">IDENTITÉ & MÉDIAS</p><h3>Médias du site</h3><p>Photos artisan, sources et sélection persistante du générateur.</p></div><span id="admin-media-count" class="status-pill"></span></div>

@@ -7,8 +7,98 @@ from app.design_schemas import DesignProfileOut
 from app.schemas import METIERS_VALIDES
 from app.site_media_schemas import SiteMediaOverviewOut, SiteMediaProfileOut
 
+import sys
+from pathlib import Path
+
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
+from generator.design_registry import DESIGN_FAMILIES, SPACING_STYLES  # noqa: E402
+
 
 SITE_STATUTS = {"brouillon", "genere", "pret", "publie"}
+CANDIDATE_OVERRIDE_FIELDS = {
+    "header_variant", "hero_variant", "services_variant", "gallery_variant",
+    "about_variant", "reviews_variant", "cta_variant", "footer_variant",
+    "palette", "font_pair", "radius_style", "spacing_style", "image_treatment",
+    "section_order",
+}
+
+
+class DesignPreferencesUpdate(BaseModel):
+    """Preferences Admin (Niveau 1 du configurateur, Lot 4) - orientent la
+    generation d'une alternative, ne remplacent jamais design_profile."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    preferred_family: Optional[str] = None
+    density: Optional[str] = None
+
+    @field_validator("preferred_family")
+    @classmethod
+    def _famille_valide(cls, v):
+        if v is not None and v not in DESIGN_FAMILIES:
+            raise ValueError(f"preferred_family doit etre l'une de : {sorted(DESIGN_FAMILIES)}")
+        return v
+
+    @field_validator("density")
+    @classmethod
+    def _densite_valide(cls, v):
+        if v is not None and v not in SPACING_STYLES:
+            raise ValueError(f"density doit etre l'une de : {sorted(SPACING_STYLES)}")
+        return v
+
+
+class DesignCandidateGenerateRequest(BaseModel):
+    """Payload de generation/regeneration d'une alternative (Lot 4). Tous les
+    champs sont optionnels : sans rien, le moteur choisit automatiquement."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    preferred_family: Optional[str] = None
+    keep_current_family: bool = False
+    density: Optional[str] = None
+    overrides: Optional[dict] = None
+
+    @field_validator("preferred_family")
+    @classmethod
+    def _famille_valide(cls, v):
+        if v is not None and v not in DESIGN_FAMILIES:
+            raise ValueError(f"preferred_family doit etre l'une de : {sorted(DESIGN_FAMILIES)}")
+        return v
+
+    @field_validator("density")
+    @classmethod
+    def _densite_valide(cls, v):
+        if v is not None and v not in SPACING_STYLES:
+            raise ValueError(f"density doit etre l'une de : {sorted(SPACING_STYLES)}")
+        return v
+
+    @field_validator("overrides")
+    @classmethod
+    def _overrides_valides(cls, v):
+        if v is None:
+            return v
+        inconnues = set(v) - CANDIDATE_OVERRIDE_FIELDS
+        if inconnues:
+            raise ValueError(f"Reglages avances inconnus : {sorted(inconnues)}")
+        return v
+
+
+class SectionAvailabilityOut(BaseModel):
+    section: str
+    label: str
+    disponible: bool
+    raison: Optional[str] = None
+
+
+class DesignCandidateOut(BaseModel):
+    """Alternative proposee + indication honnete de sa distance au design
+    actuel (voir le brief, section 11 : jamais de fausse distinction)."""
+
+    profile: DesignProfileOut
+    distinct: bool
 
 
 class AdminLogin(BaseModel):
@@ -163,6 +253,10 @@ class SiteVitrineOut(BaseModel):
     storage_key: Optional[str] = None
     config: dict
     design_profile: Optional[DesignProfileOut] = None
+    design_preferences: Optional[DesignPreferencesUpdate] = None
+    candidate_design_profile: Optional[DesignProfileOut] = None
+    candidate_preview_disponible: bool = False
+    sections_disponibles: list[SectionAvailabilityOut] = Field(default_factory=list)
     media_profile: SiteMediaProfileOut = Field(default_factory=SiteMediaProfileOut)
     date_generation: Optional[datetime] = None
     date_publication: Optional[datetime] = None

@@ -86,7 +86,13 @@ def _seed(artisan: dict) -> str:
     return str(artisan.get("slug") or artisan.get("siret") or artisan.get("nom_entreprise") or "artisan")
 
 
-def _candidate_profile(seed: str, attempt: int) -> dict:
+def _candidate_profile(
+    seed: str,
+    attempt: int,
+    *,
+    family_override: str | None = None,
+    spacing_override: str | None = None,
+) -> dict:
     """Construit un profil 100% deterministe pour (seed, attempt).
 
     La famille fixe seulement quelles variantes sont COMPATIBLES par axe
@@ -97,10 +103,15 @@ def _candidate_profile(seed: str, attempt: int) -> dict:
     meme famille d'avoir des structures differentes tout en restant
     coherents. Les axes libres (palette, police, rayons, espacements, ordre
     des sections) varient eux aussi independamment, sans contrainte de
-    famille."""
+    famille.
+
+    family_override/spacing_override (Lot 4, configurateur Admin) : forcent
+    un axe au lieu de le tirer depuis le seed - utilise quand l'Admin
+    exprime une preference explicite (voir select_candidate_design_profile).
+    Aucun impact sur le tirage historique quand ils valent None."""
     salt_suffix = "" if attempt == 0 else f"|attempt={attempt}"
 
-    family = DESIGN_FAMILIES[_stable_index(seed, f"family{salt_suffix}", len(DESIGN_FAMILIES))]
+    family = family_override or DESIGN_FAMILIES[_stable_index(seed, f"family{salt_suffix}", len(DESIGN_FAMILIES))]
     rules = DESIGN_FAMILY_RULES[family]
 
     structural = {
@@ -111,7 +122,7 @@ def _candidate_profile(seed: str, attempt: int) -> dict:
     palette = PALETTE_SLOTS[_stable_index(seed, f"palette{salt_suffix}", len(PALETTE_SLOTS))]
     font_pair = FONT_PAIR_IDS[_stable_index(seed, f"font{salt_suffix}", len(FONT_PAIR_IDS))]
     radius_style = RADIUS_STYLES[_stable_index(seed, f"radius{salt_suffix}", len(RADIUS_STYLES))]
-    spacing_style = SPACING_STYLES[_stable_index(seed, f"spacing{salt_suffix}", len(SPACING_STYLES))]
+    spacing_style = spacing_override or SPACING_STYLES[_stable_index(seed, f"spacing{salt_suffix}", len(SPACING_STYLES))]
     section_order_template_id = SECTION_ORDER_TEMPLATE_IDS[
         _stable_index(seed, f"section_order{salt_suffix}", len(SECTION_ORDER_TEMPLATE_IDS))
     ]
@@ -170,6 +181,8 @@ def select_design_profile(
     existing_profiles: list[dict],
     *,
     exclude_signatures: set[str] | None = None,
+    family_override: str | None = None,
+    spacing_override: str | None = None,
 ) -> dict:
     """Choisit un design_profile pour cet artisan.
 
@@ -180,9 +193,14 @@ def select_design_profile(
     existing_profiles : profils deja persistes d'AUTRES sites (les plus
     recents suffisent, voir RECENT_PROFILES_WINDOW), pour l'anti-clonage.
     exclude_signatures : signatures a eviter explicitement en plus des
-    profils existants - le point d'entree prevu pour une future fonction
-    "regenerer une variante" (exclude_current_profile / generate_alternative)
-    sans casser le profil actif tant que l'alternative n'est pas acceptee.
+    profils existants - point d'entree utilise par
+    select_candidate_design_profile (Lot 4, configurateur Admin) pour
+    "regenerer une variante" sans jamais casser le profil actif tant que
+    l'alternative n'est pas acceptee.
+    family_override/spacing_override : forcent cet axe au lieu du tirage
+    base sur le seed (Lot 4 : preference Admin explicite - "garder cette
+    famille" ou "changer de famille", densite approximative). None conserve
+    le comportement historique (100% pilote par le seed).
 
     Deterministe : memes arguments -> toujours le meme resultat (aucun alea
     non reproductible)."""
@@ -193,7 +211,7 @@ def select_design_profile(
     best_candidate = None
     best_score = None
     for attempt in range(MAX_ATTEMPTS):
-        candidate = _candidate_profile(seed, attempt)
+        candidate = _candidate_profile(seed, attempt, family_override=family_override, spacing_override=spacing_override)
         signature = build_design_signature(candidate)
         if signature in exclude_signatures:
             continue
@@ -208,7 +226,53 @@ def select_design_profile(
     # Aucune tentative suffisamment distincte (diversite "raisonnable", pas
     # une unicite garantie - voir le brief) : on garde la moins similaire.
     if best_candidate is None:
-        best_candidate = _candidate_profile(seed, 0)
+        best_candidate = _candidate_profile(seed, 0, family_override=family_override, spacing_override=spacing_override)
     best_candidate["design_engine_version"] = DESIGN_ENGINE_VERSION
     best_candidate["design_signature"] = build_design_signature(best_candidate)
     return best_candidate
+
+
+def select_candidate_design_profile(
+    artisan: dict,
+    current_profile: dict,
+    existing_profiles: list[dict],
+    *,
+    preferred_family: str | None = None,
+    exclude_signatures: set[str] | None = None,
+    spacing_override: str | None = None,
+) -> tuple[dict, bool]:
+    """Choisit une ALTERNATIVE au design_profile actuel d'un site (Lot 4,
+    configurateur Admin) - reutilise integralement select_design_profile
+    (meme moteur, memes registres, meme mecanisme anti-clonage), jamais un
+    second moteur parallele.
+
+    current_profile : le design_profile actif ("current") - toujours inclus
+    dans la comparaison de similarite, avec le meme poids que n'importe quel
+    site existant (voir SIMILARITY_WEIGHTS : family/hero/services/gallery/
+    section_order comptent plus que palette/radius, conformement au brief).
+    exclude_signatures : en plus du filtrage normal, exclut explicitement la
+    signature du current (jamais de "candidate" strictement identique) et,
+    lors d'une regeneration, celle du candidate precedent (anti-repetition -
+    pas d'historique complet, juste la derniere signature vue).
+    preferred_family : si fourni, la candidate appartient a cette famille
+    (que ce soit pour "changer de famille" ou "garder cette famille" - dans
+    ce dernier cas l'appelant passe current_profile["design_family"]). None
+    laisse le moteur choisir (le seed peut retomber sur la meme famille que
+    current, c'est attendu et documente par le brief).
+
+    Retourne (profil, distinct) : distinct=False signifie qu'aucune
+    tentative n'etait suffisamment differente du current et qu'on renvoie
+    honnetement la moins similaire trouvee (jamais d'echec silencieux, voir
+    le brief : "retourner une reponse honnete")."""
+    exclude_signatures = set(exclude_signatures or set())
+    exclude_signatures.add(current_profile.get("design_signature") or "")
+    comparison_pool = [current_profile, *existing_profiles[-RECENT_PROFILES_WINDOW:]]
+
+    candidate = select_design_profile(
+        artisan, comparison_pool,
+        exclude_signatures=exclude_signatures,
+        family_override=preferred_family,
+        spacing_override=spacing_override,
+    )
+    distinct = similarity_score(candidate, current_profile) < SIMILARITY_THRESHOLD
+    return candidate, distinct

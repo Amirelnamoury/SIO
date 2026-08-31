@@ -17,14 +17,24 @@ from app.admin_schemas import (
     AdminPreviewSessionOut,
     AdminSiteListOut,
     AdminTokenOut,
+    DesignCandidateGenerateRequest,
+    DesignCandidateOut,
+    DesignPreferencesUpdate,
     SiteVitrineOut,
     SiteVitrineUpdate,
 )
 from app.admin_service import (
+    abandon_design_candidate,
+    adopt_design_candidate,
+    candidate_preview_storage_key,
     default_site_config,
+    generate_candidate_preview,
+    generate_design_candidate,
     generate_site_preview,
     merged_site_config,
     preview_storage_key,
+    sections_availability,
+    validate_design_preferences,
     validate_site_variants,
 )
 from app.config import settings
@@ -141,6 +151,9 @@ def _site_out(db: Session, artisan: Artisan, site: SiteVitrine | None) -> SiteVi
     preview_disponible = bool(
         site.storage_key == expected_key and get_storage().exists(expected_key)
     )
+    candidate_preview_disponible = bool(
+        site.candidate_design_profile and get_storage().exists(candidate_preview_storage_key(artisan.id))
+    )
     return SiteVitrineOut(
         id=site.id,
         artisan_id=artisan.id,
@@ -150,6 +163,10 @@ def _site_out(db: Session, artisan: Artisan, site: SiteVitrine | None) -> SiteVi
         storage_key=site.storage_key,
         config=merged_site_config(artisan, site),
         design_profile=site.design_profile,
+        design_preferences=site.design_preferences,
+        candidate_design_profile=site.candidate_design_profile,
+        candidate_preview_disponible=candidate_preview_disponible,
+        sections_disponibles=sections_availability(db, artisan, site),
         media_profile=media_profile_dict(db, artisan, site, admin=True),
         date_generation=site.date_generation,
         date_publication=site.date_publication,
@@ -409,6 +426,152 @@ def admin_site_generate(
     return _site_out(db, artisan, site)
 
 
+def _site_with_design_or_409(db: Session, artisan_id: int) -> tuple[Artisan, SiteVitrine]:
+    artisan = _artisan_or_404(db, artisan_id)
+    site = artisan.site_vitrine
+    if site is None or not site.design_profile:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Générez une preview du site avant de configurer son design",
+        )
+    return artisan, site
+
+
+@router.patch("/admin/api/artisans/{artisan_id}/site/design/preferences", response_model=SiteVitrineOut)
+def admin_site_design_preferences(
+    artisan_id: int,
+    payload: DesignPreferencesUpdate,
+    db: Session = Depends(get_db),
+    _admin: AdminUser = Depends(require_admin),
+):
+    """Preferences Admin (Niveau 1) - orientent une future generation
+    d'alternative, ne touchent jamais au design actuel (Lot 4)."""
+    artisan, site = _site_with_design_or_409(db, artisan_id)
+    site.design_preferences = validate_design_preferences(payload.model_dump())
+    db.commit()
+    db.refresh(site)
+    return _site_out(db, artisan, site)
+
+
+def _generate_candidate_response(
+    db: Session, artisan: Artisan, site: SiteVitrine, payload: DesignCandidateGenerateRequest, *, avoid_previous: bool,
+) -> DesignCandidateOut:
+    preferred_family = site.design_profile["design_family"] if payload.keep_current_family else payload.preferred_family
+    try:
+        candidate, distinct = generate_design_candidate(
+            db, artisan, site,
+            preferred_family=preferred_family,
+            density=payload.density,
+            overrides=payload.overrides,
+            avoid_previous_candidate=avoid_previous,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+    return DesignCandidateOut(profile=candidate, distinct=distinct)
+
+
+@router.post("/admin/api/artisans/{artisan_id}/site/design/candidate", response_model=DesignCandidateOut)
+def admin_site_design_candidate_generate(
+    artisan_id: int,
+    payload: DesignCandidateGenerateRequest = DesignCandidateGenerateRequest(),
+    db: Session = Depends(get_db),
+    _admin: AdminUser = Depends(require_admin),
+):
+    """Genere une alternative de design (Lot 4). Ne touche JAMAIS au design
+    actuel du site ni au site publie - voir generate_design_candidate."""
+    artisan, site = _site_with_design_or_409(db, artisan_id)
+    return _generate_candidate_response(db, artisan, site, payload, avoid_previous=False)
+
+
+@router.post("/admin/api/artisans/{artisan_id}/site/design/candidate/regenerate", response_model=DesignCandidateOut)
+def admin_site_design_candidate_regenerate(
+    artisan_id: int,
+    payload: DesignCandidateGenerateRequest = DesignCandidateGenerateRequest(),
+    db: Session = Depends(get_db),
+    _admin: AdminUser = Depends(require_admin),
+):
+    """Remplace l'alternative en cours par une nouvelle, differente de la
+    precedente (anti-repetition, voir le brief section 20)."""
+    artisan, site = _site_with_design_or_409(db, artisan_id)
+    if not site.candidate_design_profile:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Aucune alternative à régénérer, générez-en une d'abord")
+    return _generate_candidate_response(db, artisan, site, payload, avoid_previous=True)
+
+
+@router.delete("/admin/api/artisans/{artisan_id}/site/design/candidate", response_model=SiteVitrineOut)
+def admin_site_design_candidate_abandon(
+    artisan_id: int,
+    db: Session = Depends(get_db),
+    _admin: AdminUser = Depends(require_admin),
+):
+    """Abandonne l'alternative en cours - ne modifie jamais le design actuel
+    ni le site publié (Lot 4, brief section 19)."""
+    artisan, site = _site_with_design_or_409(db, artisan_id)
+    abandon_design_candidate(db, artisan, site)
+    return _site_out(db, artisan, site)
+
+
+@router.post("/admin/api/artisans/{artisan_id}/site/design/candidate/adopt", response_model=SiteVitrineOut)
+def admin_site_design_candidate_adopt(
+    artisan_id: int,
+    db: Session = Depends(get_db),
+    _admin: AdminUser = Depends(require_admin),
+):
+    """Adopte l'alternative en cours comme nouveau design actuel. Ne publie
+    JAMAIS automatiquement : la regeneration qui suit remet le site a l'etat
+    "généré" (voir adopt_design_candidate) - l'Admin doit explicitement
+    remarquer le site prêt puis le republier si besoin (Lot 4, sections
+    17-18)."""
+    artisan, site = _site_with_design_or_409(db, artisan_id)
+    try:
+        adopt_design_candidate(db, artisan, site)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    return _site_out(db, artisan, site)
+
+
+@router.get("/admin/api/artisans/{artisan_id}/site/preview/candidate", response_class=HTMLResponse)
+def admin_site_preview_candidate(
+    artisan_id: int,
+    db: Session = Depends(get_db),
+    preview_access: tuple[AdminUser, int | None] = Depends(_require_admin_or_preview),
+):
+    """Preview HTML de l'alternative - meme isolation que la preview
+    courante (jamais de vrai prospect, jamais de fuite cross-tenant)."""
+    if preview_access[1] is not None and preview_access[1] != artisan_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cette session ne donne pas accès à cette preview")
+    artisan = _artisan_or_404(db, artisan_id)
+    site = artisan.site_vitrine
+    if site is None or not site.candidate_design_profile:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Aucune alternative à prévisualiser")
+    key = candidate_preview_storage_key(artisan.id)
+    content = get_storage().read(key)
+    if content is None:
+        content = generate_candidate_preview(db, artisan, site).encode("utf-8")
+    return HTMLResponse(content=content)
+
+
+@router.post(
+    "/admin/api/artisans/{artisan_id}/site/preview-session/candidate",
+    response_model=AdminPreviewSessionOut,
+)
+def admin_site_preview_session_candidate(
+    artisan_id: int,
+    db: Session = Depends(get_db),
+    admin: AdminUser = Depends(require_admin),
+):
+    artisan = _artisan_or_404(db, artisan_id)
+    site = artisan.site_vitrine
+    if site is None or not site.candidate_design_profile:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Aucune alternative à prévisualiser")
+    token = create_access_token(
+        admin.id, f"admin_preview:{artisan.id}", expires_minutes=ADMIN_PREVIEW_SESSION_MINUTES,
+    )
+    return AdminPreviewSessionOut(
+        url=f"/admin/api/artisans/{artisan.id}/site/preview/open?token={token}&candidate=1"
+    )
+
+
 @router.post(
     "/admin/api/artisans/{artisan_id}/site/media/logo",
     response_model=SiteMediaOut,
@@ -661,7 +824,7 @@ def admin_site_preview_session(
 
 
 @router.get("/admin/api/artisans/{artisan_id}/site/preview/open", include_in_schema=False)
-def admin_site_preview_open(artisan_id: int, token: str, db: Session = Depends(get_db)):
+def admin_site_preview_open(artisan_id: int, token: str, candidate: int = 0, db: Session = Depends(get_db)):
     resultat = decode_access_token(token)
     if resultat is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session de preview invalide ou expirée")
@@ -673,8 +836,9 @@ def admin_site_preview_open(artisan_id: int, token: str, db: Session = Depends(g
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Compte admin introuvable ou désactivé")
     _artisan_or_404(db, artisan_id)
 
+    target = "preview/candidate" if candidate else "preview"
     response = RedirectResponse(
-        url=f"/admin/api/artisans/{artisan_id}/site/preview",
+        url=f"/admin/api/artisans/{artisan_id}/site/{target}",
         status_code=status.HTTP_303_SEE_OTHER,
     )
     response.set_cookie(

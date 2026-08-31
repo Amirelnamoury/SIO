@@ -129,6 +129,15 @@ class SiteVitrine(Base):
     # premiere generation suivant la mise a jour, jamais retroactivement en
     # masse (aucune migration de donnees destructrice).
     design_profile = Column(JSON, nullable=True)
+    # Preferences Admin (Lot 4) : orientent la generation d'une alternative,
+    # ne remplacent jamais directement design_profile. Nullable : un site sans
+    # preference laisse le moteur choisir automatiquement (voir
+    # app/admin_service.py::generate_design_candidate).
+    design_preferences = Column(JSON, nullable=True)
+    # Alternative de design proposee (Lot 4) : jamais adoptee automatiquement.
+    # Distincte de design_profile ("current") tant que l'Admin ne clique pas
+    # explicitement "Adopter cette version" (voir admin_service.adopt_design_candidate).
+    candidate_design_profile = Column(JSON, nullable=True)
     date_generation = Column(DateTime(timezone=True), nullable=True)
     date_publication = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)

@@ -113,16 +113,79 @@ tbody tr:last-child td { border-bottom: 0; }
 .admin-media-logo-row { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 18px; align-items: center; }
 .admin-logo-preview { display: grid; place-items: center; width: 180px; height: 112px; border: 1px dashed var(--line); background: #f7f9f8; overflow: hidden; }
 .admin-logo-preview img { max-width: 92%; max-height: 96px; object-fit: contain; }
-.site-design-profile { margin: 18px 0 24px; padding: 16px; border: 1px solid var(--line); background: #f7f9f8; }
-.site-design-profile-heading { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 13px; }
-.site-design-profile-heading span { color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
-.site-design-profile dl { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 0; }
-.site-design-profile dl div { min-width: 0; padding: 8px 9px; background: #fff; border: 1px solid var(--line); }
-.site-design-profile dt { color: var(--muted); font-size: 10px; font-weight: 700; text-transform: uppercase; }
-.site-design-profile dd { margin: 2px 0 0; font-size: 12px; font-weight: 700; overflow-wrap: anywhere; }
-.site-design-order { display: grid; gap: 3px; margin-top: 12px; font-size: 11px; }
-.site-design-order span { color: var(--muted); overflow-wrap: anywhere; }
-@media (max-width: 900px) { .site-design-profile dl { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.design-current { margin: 18px 0 20px; }
+.design-current-card { border: 1px solid var(--line); background: #f7f9f8; padding: 16px; }
+.design-current-family { display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.design-family-badge { display: inline-flex; align-items: center; padding: 5px 10px; border-radius: 4px; background: var(--accent); color: white; font-size: 12px; font-weight: 800; text-transform: uppercase; }
+.design-current-family p { margin: 0; color: var(--muted); font-size: 12px; }
+.design-current-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 0; }
+.design-current-grid div { min-width: 0; padding: 8px 9px; background: #fff; border: 1px solid var(--line); }
+.design-current-grid dt { color: var(--muted); font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.design-current-grid dd { margin: 2px 0 0; font-size: 12px; font-weight: 700; overflow-wrap: anywhere; }
+.design-technical { margin-top: 12px; font-size: 11px; color: var(--muted); }
+.design-technical summary { cursor: pointer; }
+.design-technical code { display: block; margin-top: 6px; overflow-wrap: anywhere; }
+.design-empty { color: var(--muted); font-size: 13px; }
+@media (max-width: 900px) { .design-current-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.design-sections-availability { margin-bottom: 20px; }
+.design-sections-availability h4 { margin-bottom: 8px; font-size: 13px; }
+.design-sections-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 18px; }
+.design-sections-list li { font-size: 12px; padding: 4px 0; border-bottom: 1px dashed var(--line); }
+.design-sections-list li.available span { color: var(--ink); font-weight: 650; }
+.design-sections-list li.unavailable span { color: var(--muted); }
+.design-sections-list li small { display: block; color: var(--muted); font-size: 10px; margin-top: 2px; }
+@media (max-width: 600px) { .design-sections-list { grid-template-columns: 1fr; } }
+
+.design-preferences { border-top: 1px solid var(--line); padding-top: 18px; margin-bottom: 16px; }
+.design-preferences h4 { font-size: 14px; margin-bottom: 4px; }
+.design-preferences > p { margin-bottom: 14px; }
+.design-family-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }
+.design-family-card { text-align: left; background: white; border: 1px solid var(--line); border-radius: 5px; padding: 10px 11px; display: grid; gap: 4px; }
+.design-family-card strong { font-size: 12px; }
+.design-family-card span { color: var(--muted); font-size: 11px; }
+.design-family-card.selected { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(22,122,91,.14); }
+.design-preferences .form-grid { margin-bottom: 14px; }
+@media (max-width: 900px) { .design-family-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .design-family-cards { grid-template-columns: 1fr; } }
+
+.advanced-panel { border: 1px solid var(--line); background: #f7f9f8; padding: 18px; margin: 14px 0 20px; display: grid; gap: 18px; }
+.override-group { display: grid; gap: 8px; }
+.override-group > span { font-size: 12px; font-weight: 700; color: #3f4a46; }
+.palette-swatches, .font-options, .image-treatment-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.palette-swatch { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--line); background: linear-gradient(135deg, #c7cfca, #9aa7a1); padding: 0; }
+.palette-swatch.auto { width: auto; height: 34px; border-radius: 5px; padding: 0 10px; font-size: 11px; background: white; color: var(--muted); }
+.palette-swatch.swatch-1 { background: linear-gradient(135deg, #e0a458, #b5651d); }
+.palette-swatch.swatch-2 { background: linear-gradient(135deg, #5a8f8a, #1f4f4a); }
+.palette-swatch.swatch-3 { background: linear-gradient(135deg, #3f4a46, #17201d); }
+.palette-swatch.selected { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(22,122,91,.18); }
+.font-option, .image-treatment-option { border: 1px solid var(--line); background: white; border-radius: 5px; padding: 7px 11px; font-size: 11px; }
+.font-option.selected, .image-treatment-option.selected { border-color: var(--accent); background: #e8f4ef; color: var(--accent-dark); font-weight: 700; }
+.image-treatment-option::before { content: ""; display: inline-block; width: 14px; height: 14px; border-radius: 3px; margin-right: 6px; vertical-align: middle; background: #9aa7a1; }
+.image-treatment-option.treatment-flat::before { background: #9aa7a1; }
+.image-treatment-option.treatment-duotone::before { background: linear-gradient(135deg, #167a5b, #b56a13); }
+.image-treatment-option.treatment-framed::before { background: #fff; border: 2px solid #9aa7a1; }
+.image-treatment-option.treatment-overlay::before { background: linear-gradient(180deg, transparent, #17201d); }
+.section-order-editor { border-top: 1px solid var(--line); padding-top: 14px; }
+.section-order-editor > span { font-size: 12px; font-weight: 700; color: #3f4a46; }
+.section-order-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; max-width: 420px; }
+.section-order-list li { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: white; border: 1px solid var(--line); border-radius: 4px; padding: 6px 10px; font-size: 12px; }
+.section-order-list li .button { min-height: 26px; padding: 2px 9px; }
+.candidate-keep-family { display: flex; align-items: center; gap: 8px; font-weight: 650; font-size: 12px; color: #3f4a46; }
+.candidate-keep-family input { width: auto; }
+
+.design-comparison { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--line); }
+.design-comparison h4 { font-size: 14px; margin-bottom: 12px; }
+.design-comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.design-comparison-card { border: 1px solid var(--line); padding: 14px; display: grid; gap: 8px; align-content: start; }
+.design-comparison-card.candidate { border-color: var(--accent); background: #f4faf7; }
+.design-comparison-tag { display: inline-flex; width: fit-content; padding: 4px 8px; border-radius: 4px; background: #ecefed; color: #4c5753; font-size: 10px; font-weight: 800; text-transform: uppercase; margin-bottom: 4px; }
+.design-comparison-card.candidate .design-comparison-tag { background: #e0f2ea; color: #126647; }
+.design-comparison-card div { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; border-bottom: 1px dashed var(--line); padding-bottom: 6px; }
+.design-comparison-card dt { color: var(--muted); font-weight: 650; }
+.design-comparison-card dd { margin: 0; font-weight: 700; text-align: right; overflow-wrap: anywhere; }
+@media (max-width: 900px) { .design-comparison-grid { grid-template-columns: 1fr; } }
+
 .admin-logo-form { display: flex; gap: 9px; align-items: end; flex-wrap: wrap; }
 .admin-logo-form label { flex: 1 1 260px; }
 .admin-media-subtitle { margin: 24px 0 11px; font-size: 13px; }

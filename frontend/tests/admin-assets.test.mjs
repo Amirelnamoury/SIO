@@ -26,11 +26,13 @@ assert.doesNotMatch(script, /location\.assign\("\/admin\/login"\)/, "l'ancienne 
 assert.match(script, /preview-session/, "Voir la preview doit demander une session protégée au backend");
 assert.match(script, /previewWindow\.location\.replace\(apiUrl\(session\.url\)\)/, "la preview doit utiliser API_BASE après le handoff authentifié");
 assert.doesNotMatch(script, /window\.open\("\/admin\/api\/artisans\//, "la preview ne doit plus viser directement le serveur statique");
-assert.match(index, /class="site-design-profile" id="site-design-profile" hidden/, "l'inspecteur du profil V2 doit exister sans devenir un configurateur");
+assert.match(index, /id="design-configurator-section"/, "le configurateur de design V2 (Lot 4) doit exister dans la fiche site");
+assert.match(index, /id="design-current"/, "le design actuel doit avoir une zone d'affichage lisible");
+assert.match(index, /id="design-comparison"/, "la comparaison version actuelle / alternative doit exister");
 for (const field of ["header_variant", "hero_variant", "services_variant", "gallery_variant", "about_variant", "reviews_variant", "cta_variant", "footer_variant", "font_pair", "radius_style", "spacing_style", "image_treatment", "section_order"]) {
   assert.match(script, new RegExp(field), `l'Admin doit exposer la décision ${field}`);
 }
-assert.match(script, /escapeHtml\(\(designProfile\.section_order \|\| \[\]\)\.join/, "l'ordre des sections doit rester échappé avant affichage");
-assert.match(css, /\.site-design-profile dl/, "le profil V2 doit avoir une présentation lisible");
+assert.match(script, /escapeHtml\(SECTION_LABELS\[section\] \|\| section\)/, "l'ordre des sections doit rester échappé avant affichage");
+assert.match(css, /\.design-current-grid/, "le profil V2 doit avoir une présentation lisible");
 
 console.log("OK - admin-assets.test.mjs");
