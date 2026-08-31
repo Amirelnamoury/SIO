@@ -9,8 +9,10 @@ from app.models import (
     SiteMediaSelection,
     SiteMediaUsage,
     SiteVitrine,
+    utcnow,
 )
 from app.site_media_service import media_to_dict
+from app.site_media_provider_service import acquire_external_media
 from generator.media_selector import MEDIA_USAGES, select_site_media
 
 
@@ -31,6 +33,7 @@ def _library_media_payload(media: SiteMediaLibrary) -> dict:
         "metier": media.metier,
         "usage_recommande": media.usage_recommande or [],
         "actif": media.actif,
+        "times_used": media.times_used,
     }
 
 
@@ -41,13 +44,16 @@ def ensure_media_profile(db: Session, artisan: Artisan, site: SiteVitrine) -> li
     if existing:
         return existing
 
+    if str((site.design_profile or {}).get("design_engine_version") or "").startswith("v3"):
+        acquire_external_media(db, artisan, site.design_profile or {})
+
     artisan_media = db.query(SiteMedia).filter(
         SiteMedia.artisan_id == artisan.id,
         SiteMedia.type_media == "photo",
         SiteMedia.actif.is_(True),
     ).order_by(SiteMedia.ordre, SiteMedia.id).all()
     library_media = db.query(SiteMediaLibrary).filter(SiteMediaLibrary.actif.is_(True)).all()
-    usage_history = db.query(SiteMediaUsage).order_by(SiteMediaUsage.selected_at.desc()).limit(100).all()
+    usage_history = db.query(SiteMediaUsage).order_by(SiteMediaUsage.selected_at.desc()).limit(settings.site_media_recent_usage_window).all()
     choices = select_site_media(
         {"artisan_id": artisan.id, "slug": artisan.slug, "metier": artisan.metier},
         [_artisan_media_payload(media) for media in artisan_media],
@@ -61,6 +67,10 @@ def ensure_media_profile(db: Session, artisan: Artisan, site: SiteVitrine) -> li
         db.add(selection)
         selections.append(selection)
         if choice["source"] == "bibliotheque":
+            library = db.query(SiteMediaLibrary).filter(SiteMediaLibrary.id == choice["library_media_id"]).first()
+            if library is not None:
+                library.times_used = (library.times_used or 0) + 1
+                library.last_used_at = utcnow()
             db.add(SiteMediaUsage(
                 artisan_id=artisan.id,
                 site_vitrine_id=site.id,
@@ -155,6 +165,9 @@ def selection_to_dict(selection: SiteMediaSelection, *, admin_artisan_id: int | 
         "largeur": None,
         "hauteur": None,
         "alt_text": None,
+        "provider": None,
+        "photographer": None,
+        "source_url": None,
     }
     if selection.source == "artisan" and selection.site_media is not None:
         media = media_to_dict(selection.site_media, admin_artisan_id=admin_artisan_id)
@@ -174,6 +187,9 @@ def selection_to_dict(selection: SiteMediaSelection, *, admin_artisan_id: int | 
             media_id=library.media_id,
             categorie=library.sous_categorie,
             credit=library.credit,
+            provider=library.provider or library.source_nom,
+            photographer=library.photographer,
+            source_url=library.source_url,
             content_url=f"{prefix}/{library.id}/content?variant=web",
             thumbnail_url=f"{prefix}/{library.id}/content?variant=thumbnail",
             largeur=library.largeur,

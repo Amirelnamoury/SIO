@@ -84,7 +84,12 @@ async def lifespan(app: FastAPI):
 
     db = SessionLocal()
     try:
-        ensure_bootstrap_admin(db)
+        try:
+            ensure_bootstrap_admin(db)
+        except Exception:
+            # Le serveur doit rester joignable pour que /ready expose l'indisponibilite
+            # de la base sans divulguer les details techniques de la connexion.
+            logger.error("Initialisation du compte Admin impossible : base de donnees indisponible")
     finally:
         db.close()
 

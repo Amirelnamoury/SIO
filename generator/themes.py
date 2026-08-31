@@ -72,6 +72,16 @@ THEMES = {
             "Ravalement de façade",
         ],
     },
+    "menuisier": {
+        "label": "Menuisier", "font": "Georgia, serif",
+        "tagline": "Agencements et ouvrages en bois conçus avec précision",
+        "services": ["Agencement intérieur sur mesure", "Mobilier et rangements intégrés", "Portes, fenêtres et menuiseries", "Escaliers et ouvrages en bois", "Rénovation de menuiseries"],
+    },
+    "renovateur": {
+        "label": "Entreprise de rénovation", "font": "Arial, sans-serif",
+        "tagline": "Transformer les espaces avec une vision d’ensemble",
+        "services": ["Rénovation complète d’intérieur", "Réaménagement des volumes", "Rénovation de cuisine et salle de bain", "Coordination des corps de métier", "Finitions et mise en valeur"],
+    },
     "general": {
         "label": "Artisan du BTP",
         "font": "'Inter', sans-serif",
@@ -139,6 +149,16 @@ PALETTE_VARIANTS = {
         {"nom": "Forest Gold", "primary": "#2d3a2e", "primary_dark": "#1a231b", "secondary": "#c8a951",
          "accent": "#6b8e4e", "background": "#f8f7f2", "text": "#22281f"},
     ],
+    "menuisier": [
+        {"nom": "Atelier", "primary": "#6f4b32", "primary_dark": "#30271f", "secondary": "#c8ad8d", "accent": "#8a4e2a", "background": "#ede5d8", "text": "#30271f"},
+        {"nom": "Noyer", "primary": "#463427", "primary_dark": "#211914", "secondary": "#b89c7c", "accent": "#a76f42", "background": "#f2ece3", "text": "#302820"},
+        {"nom": "Chêne", "primary": "#88643f", "primary_dark": "#4d3824", "secondary": "#d6c3a4", "accent": "#65704c", "background": "#f6f2e8", "text": "#342d24"},
+    ],
+    "renovateur": [
+        {"nom": "Cinéma", "primary": "#24231f", "primary_dark": "#11110f", "secondary": "#9c8d73", "accent": "#c5a46a", "background": "#f3eee3", "text": "#1b1915"},
+        {"nom": "Pierre", "primary": "#5a554d", "primary_dark": "#26231f", "secondary": "#cbc2b4", "accent": "#8c684b", "background": "#f6f3ee", "text": "#29251f"},
+        {"nom": "Galerie", "primary": "#181818", "primary_dark": "#080808", "secondary": "#ddddda", "accent": "#355d50", "background": "#fafaf7", "text": "#181818"},
+    ],
 }
 
 # ---------- Motifs decoratifs du hero (2 par metier, generiques en CSS) ----------
@@ -149,6 +169,8 @@ HERO_MOTIFS = {
     "macon": ["brick-rows", "dot-grid"],
     "peintre": ["gradient-mesh", "wave-gradient"],
     "general": ["wave-gradient", "gradient-mesh"],
+    "menuisier": ["gradient-mesh", "dot-grid"],
+    "renovateur": ["wave-gradient", "dot-grid"],
 }
 
 # ---------- Icones (SVG inline, aucune dependance externe) ----------

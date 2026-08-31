@@ -16,6 +16,7 @@ from app.main import app
 from app.models import AdminUser, Artisan, SiteVitrine
 from app.security import create_access_token
 from generator.design_registry import DESIGN_FAMILIES
+from generator.v3.grammar import ART_DIRECTIONS
 
 
 def _admin_headers() -> dict:
@@ -76,8 +77,8 @@ def test_site_sans_candidate_expose_un_etat_honnete():
         data = gen.json()
         assert data["candidate_design_profile"] is None
         assert data["candidate_preview_disponible"] is False
-        assert data["design_preferences"] is None
-        assert data["design_profile"]["design_family"] in DESIGN_FAMILIES
+        assert data["design_preferences"]["engine_version"] == "v3"
+        assert data["design_profile"]["art_direction"] in ART_DIRECTIONS
         assert isinstance(data["sections_disponibles"], list) and len(data["sections_disponibles"]) >= 8
 
 
@@ -127,8 +128,8 @@ def test_garder_la_meme_famille_donne_une_structure_differente():
             f"/admin/api/artisans/{artisan_id}/site/design/candidate",
             json={"keep_current_family": True}, headers=headers,
         ).json()
-        assert cand["profile"]["design_family"] == current["design_family"]
-        axes = ("header_variant", "hero_variant", "services_variant", "gallery_variant", "about_variant", "reviews_variant", "cta_variant", "footer_variant")
+        assert cand["profile"]["art_direction"] == current["art_direction"]
+        axes = ("header_system", "hero_system", "page_silhouette", "services_composition", "project_showcase")
         assert any(cand["profile"][axe] != current[axe] for axe in axes)
 
 
@@ -209,7 +210,9 @@ def test_preferences_persistent_et_sont_validees():
         )
         assert resp.status_code == 200
         refreshed = client.get(f"/admin/api/artisans/{artisan_id}/site", headers=headers).json()
-        assert refreshed["design_preferences"] == {"preferred_family": "technique", "density": "spacious"}
+        preferences = refreshed["design_preferences"]
+        assert preferences["preferred_family"] == "technique"
+        assert preferences["density"] == "spacious"
 
         bad = client.patch(
             f"/admin/api/artisans/{artisan_id}/site/design/preferences",
@@ -366,16 +369,16 @@ def test_preview_candidate_est_isolee_de_la_preview_current():
     artisan_id = _creer_artisan()
     with TestClient(app) as client:
         gen = client.post(f"/admin/api/artisans/{artisan_id}/site/generate", headers=headers).json()
-        current_family = gen["design_profile"]["design_family"]
-        autre_famille = next(f for f in DESIGN_FAMILIES if f != current_family)
+        current_direction = gen["design_profile"]["art_direction"]
+        autre_direction = next(value for value in ART_DIRECTIONS if value != current_direction)
         client.post(
             f"/admin/api/artisans/{artisan_id}/site/design/candidate",
-            json={"preferred_family": autre_famille}, headers=headers,
+            json={"engine_version": "v3", "preferred_direction": autre_direction}, headers=headers,
         )
         current_preview = client.get(f"/admin/api/artisans/{artisan_id}/site/preview", headers=headers)
         candidate_preview = client.get(f"/admin/api/artisans/{artisan_id}/site/preview/candidate", headers=headers)
-        assert f'class="family-{current_family}' in current_preview.text
-        assert f'class="family-{autre_famille}' in candidate_preview.text
+        assert f'direction-{current_direction}' in current_preview.text
+        assert f'direction-{autre_direction}' in candidate_preview.text
         assert current_preview.text != candidate_preview.text
 
 
@@ -461,6 +464,9 @@ def test_site_ancien_sans_candidate_ni_preference_reste_lisible():
     db = SessionLocal()
     try:
         site = db.query(SiteVitrine).filter(SiteVitrine.artisan_id == artisan_id).first()
+        site.design_preferences = None
+        db.commit()
+        db.refresh(site)
         assert site.candidate_design_profile is None
         assert site.design_preferences is None
         original_profile = dict(site.design_profile)

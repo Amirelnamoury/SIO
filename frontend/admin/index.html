@@ -188,13 +188,19 @@
               </div>
 
               <div id="design-current" class="design-current"></div>
+              <div id="site-content-warnings" class="site-content-warnings" hidden></div>
               <div id="design-sections-availability" class="design-sections-availability"></div>
 
               <div class="design-directions">
                 <h4>Essayer une autre direction</h4>
                 <p class="muted">Choisissez une famille puis générez une alternative — le design actuel n'est jamais modifié tant que vous ne l'adoptez pas.</p>
                 <input type="hidden" id="pref-family">
+                <input type="hidden" id="pref-direction">
                 <div id="design-family-cards" class="design-family-cards"></div>
+                <div class="design-simple-controls">
+                  <label>Ambiance<select id="pref-ambience"><option value="">Automatique</option><option value="calm">Calme</option><option value="bold">Affirmée</option><option value="warm">Chaleureuse</option><option value="dark">Sombre</option><option value="luminous">Lumineuse</option><option value="material">Matière</option></select></label>
+                  <label>Densité<select id="pref-density"><option value="">Automatique</option><option value="compact">Compacte</option><option value="balanced">Équilibrée</option><option value="airy">Aérée</option></select></label>
+                </div>
 
                 <details class="design-personalize" id="design-personalize">
                   <summary class="button button-secondary">Personnaliser davantage</summary>
@@ -202,7 +208,7 @@
                 </details>
 
                 <div class="workflow-bar" style="margin-top:16px;">
-                  <label class="candidate-keep-family"><input id="candidate-keep-family" type="checkbox"> Garder la même famille que le design actuel</label>
+                  <label class="candidate-keep-family"><input id="candidate-keep-family" type="checkbox"> Garder la même direction que le design actuel</label>
                 </div>
                 <div class="workflow-bar">
                   <button id="candidate-generate-button" class="button button-primary" type="button">Générer une alternative</button>

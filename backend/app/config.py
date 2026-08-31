@@ -56,6 +56,12 @@ class Settings(BaseSettings):
     site_media_max_source_dimension: int = 12_000
     site_media_web_max_dimension: int = 2_400
     site_media_thumbnail_max_dimension: int = 480
+    site_media_recent_usage_window: int = 200
+    site_media_provider_cache_ttl_hours: int = 24
+    site_media_provider_timeout_seconds: float = 8.0
+    site_media_provider_results_per_query: int = 12
+    pexels_api_key: str | None = None
+    pixabay_api_key: str | None = None
 
     # Backend de stockage des fichiers (voir app/storage.py) : "local" (disque,
     # par defaut) ou "s3" (objet, compatible AWS S3 et Cloudflare R2 via un

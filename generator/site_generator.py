@@ -57,11 +57,13 @@ except ImportError:  # execution directe historique : python site_generator.py
 
 try:
     from .v2 import is_compatible_design_profile, render_site_v2
+    from .v3 import is_compatible_design_profile as is_compatible_v3_profile, render_site_v3
 except ImportError:  # execution directe historique : python generator/site_generator.py
     import sys
 
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
     from generator.v2 import is_compatible_design_profile, render_site_v2
+    from generator.v3 import is_compatible_design_profile as is_compatible_v3_profile, render_site_v3
 
 POURQUOI_NOUS_CHOISIR = [
     ("shield", "Assurance décennale", "Tous nos chantiers sont couverts, en toute tranquillité."),
@@ -544,6 +546,11 @@ def generate_site(artisan: dict, api_base_url: str, output_path: str | None = No
     if "avis" not in artisan:
         artisan = {**artisan, "avis": fetch_avis_publies(artisan["slug"], api_base_url)}
 
+    if is_compatible_v3_profile(artisan.get("design_profile")):
+        html_v3 = render_site_v3(artisan, api_base_url)
+        if output_path:
+            Path(output_path).write_text(html_v3, encoding="utf-8")
+        return html_v3
     if is_compatible_design_profile(artisan.get("design_profile")):
         html_v2 = render_site_v2(artisan, api_base_url)
         if output_path:

@@ -197,11 +197,34 @@ class SiteMediaLibrary(Base):
     licence = Column(String, nullable=False)
     source_nom = Column(String, nullable=False)
     credit = Column(String, nullable=True)
+    provider = Column(String, nullable=True, index=True)
+    provider_asset_id = Column(String, nullable=True, index=True)
+    photographer = Column(String, nullable=True)
+    source_url = Column(String, nullable=True)
+    provider_url = Column(String, nullable=True)
+    query = Column(String, nullable=True)
+    licence_metadata = Column(JSON, nullable=True)
+    times_used = Column(Integer, nullable=False, default=0, server_default="0")
+    last_used_at = Column(DateTime(timezone=True), nullable=True, index=True)
     actif = Column(Boolean, nullable=False, default=True, server_default=sql_true())
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
 
     selections = relationship("SiteMediaSelection", back_populates="library_media")
     usages = relationship("SiteMediaUsage", back_populates="library_media")
+
+
+class SiteMediaProviderCache(Base):
+    """Short-lived normalized provider search results; never stores API keys."""
+
+    __tablename__ = "site_media_provider_cache"
+    __table_args__ = (UniqueConstraint("provider", "query_key", name="uq_site_media_provider_cache_query"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    provider = Column(String, nullable=False, index=True)
+    query_key = Column(String, nullable=False, index=True)
+    payload = Column(JSON, nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
 
 
 class SiteMediaSelection(Base):

@@ -41,6 +41,8 @@
     electricien: ["diagonal-stripes", "dot-grid"],
     macon: ["brick-rows", "dot-grid"],
     peintre: ["gradient-mesh", "wave-gradient"],
+    menuisier: ["gradient-mesh", "dot-grid"],
+    renovateur: ["wave-gradient", "dot-grid"],
     general: ["wave-gradient", "gradient-mesh"],
   };
   const statusLabels = { non_cree: "Non créé", brouillon: "Brouillon", genere: "Généré", pret: "Prêt", publie: "Publié" };
@@ -74,6 +76,23 @@
     local: "Proximité et confiance : ancrage dans le territoire.",
     signature: "Haut de gamme et photographique : très visuel.",
   };
+  const DIRECTION_LABELS = { editorial_luxury: "Éditorial luxe", bold_conversion: "Conversion premium", technical_spatial: "Technique spatial", architectural_brutalist: "Architecture brutaliste", warm_craft: "Atelier chaleureux", cinematic_luxury: "Cinématique luxe", minimal_architecture: "Architecture minimale", material_editorial: "Matière éditoriale" };
+  const DIRECTION_DESCRIPTIONS = {
+    editorial_luxury: "Magazine d’intérieur, grandes respirations et compositions asymétriques.",
+    bold_conversion: "Message direct, preuve lisible et actions immédiatement accessibles.",
+    technical_spatial: "Plans, réseau, profondeur et mouvement utile.",
+    architectural_brutalist: "Grille monumentale, matière brute et projets dominants.",
+    warm_craft: "Bois, gestes, détails et narration d’atelier.",
+    cinematic_luxury: "Scènes immersives, rythme lent et transformation.",
+    minimal_architecture: "Silence visuel, proportions précises et projets nets.",
+    material_editorial: "Textures, typographie expressive et rythme de collection.",
+  };
+  const V3_DESIGN_AXES = [
+    ["art_direction", "Direction"], ["page_silhouette", "Silhouette"], ["header_system", "En-tête"],
+    ["hero_system", "Hero"], ["typography_system", "Typographie"], ["photo_strategy", "Images"],
+    ["services_composition", "Prestations"], ["project_showcase", "Projets"], ["content_density", "Densité"],
+    ["motion_level", "Mouvement"], ["spatial_level", "Spatial / 3D"], ["mobile_personality", "Mobile"],
+  ];
   const HEADER_VARIANTS = ["classic", "minimal", "centered", "compact"];
   const HERO_VARIANTS = ["fullscreen", "split", "asymmetric", "compact", "editorial", "card"];
   const SERVICES_VARIANTS = ["cards", "editorial", "list", "grid", "alternating"];
@@ -136,6 +155,7 @@
   function axisValueLabel(axis, value) {
     if (!value) return "-";
     if (axis === "design_family") return FAMILY_LABELS[value] || value;
+    if (axis === "art_direction") return DIRECTION_LABELS[value] || value;
     if (axis === "palette") return PALETTE_LABELS[value] || value;
     if (axis === "font_pair") return FONT_PAIR_LABELS[value] || value;
     if (axis === "radius_style") return RADIUS_LABELS[value] || value;
@@ -234,7 +254,8 @@
       const preview = selection.thumbnail_url ? `<img data-media-url="${escapeHtml(selection.thumbnail_url)}" alt="">` : '<span class="selection-fallback">Sans photo</span>';
       const usageLabel = MEDIA_USAGE_LABELS[selection.usage] || selection.usage;
       const sourceLabel = MEDIA_SOURCE_LABELS[selection.source] || selection.source;
-      return `<article class="admin-selection-item" data-selection-id="${selection.id}">${preview}<div><strong>${escapeHtml(usageLabel)}${selection.position ? " " + (selection.position + 1) : ""}</strong><span>${escapeHtml(sourceLabel)}${selection.credit ? " · " + escapeHtml(selection.credit) : ""}</span></div><button class="button button-secondary" data-action="remove-selection" type="button">Retirer</button></article>`;
+      const providerDetails = selection.provider ? `<small>Source : ${escapeHtml(selection.provider)}${selection.photographer ? " · Photographe : " + escapeHtml(selection.photographer) : ""}${selection.source_url ? ` · <a href="${escapeHtml(selection.source_url)}" target="_blank" rel="noopener noreferrer">Voir la source</a>` : ""}</small>` : "";
+      return `<article class="admin-selection-item" data-selection-id="${selection.id}">${preview}<div><strong>${escapeHtml(usageLabel)}${selection.position ? " " + (selection.position + 1) : ""}</strong><span>${escapeHtml(sourceLabel)}${selection.credit ? " · " + escapeHtml(selection.credit) : ""}</span>${providerDetails}</div><button class="button button-secondary" data-action="remove-selection" type="button">Retirer</button></article>`;
     }).join("") : '<div class="empty-state"><strong>Sélection pas encore créée</strong><p>Elle sera créée à la première génération du site.</p></div>';
     await hydrateAdminMediaImages();
   }
@@ -515,12 +536,14 @@
       el.innerHTML = '<div class="empty-state"><strong>Aucun design généré</strong><p>Générez la preview du site (étape « Preview ») pour que le moteur choisisse un premier design.</p></div>';
       return;
     }
-    const rows = DESIGN_AXES.filter(function (entry) { return entry[0] !== "design_family"; }).map(function (entry) {
+    const isV3 = String(profile.design_engine_version || "").startsWith("v3");
+    const axes = isV3 ? V3_DESIGN_AXES : DESIGN_AXES.filter(function (entry) { return entry[0] !== "design_family"; });
+    const rows = axes.map(function (entry) {
       return '<div><dt>' + escapeHtml(entry[1]) + '</dt><dd>' + escapeHtml(axisValueLabel(entry[0], profile[entry[0]])) + '</dd></div>';
     }).join("");
     el.innerHTML = '<div class="design-current-card"><div class="design-current-family">' +
-      '<span class="design-family-badge">' + escapeHtml(FAMILY_LABELS[profile.design_family] || profile.design_family) + '</span>' +
-      '<p>' + escapeHtml(FAMILY_DESCRIPTIONS[profile.design_family] || "") + '</p></div>' +
+      '<span class="design-family-badge">' + escapeHtml(isV3 ? (DIRECTION_LABELS[profile.art_direction] || profile.art_direction) : (FAMILY_LABELS[profile.design_family] || profile.design_family)) + '</span>' +
+      '<p>' + escapeHtml(isV3 ? (DIRECTION_DESCRIPTIONS[profile.art_direction] || "") : (FAMILY_DESCRIPTIONS[profile.design_family] || "")) + '</p></div>' +
       '<dl class="design-current-grid">' + rows + '</dl>' +
       '<details class="design-technical"><summary>Détails techniques</summary><code>' + escapeHtml(profile.design_signature || "") + '</code></details></div>';
   }
@@ -536,17 +559,25 @@
     }).join("") + '</ul>';
   }
 
-  function renderFamilyCards(selected) {
-    document.getElementById("design-family-cards").innerHTML = Object.keys(FAMILY_LABELS).map(function (fam) {
+  function renderFamilyCards(selected, isV3) {
+    const labels = isV3 ? DIRECTION_LABELS : FAMILY_LABELS;
+    const descriptions = isV3 ? DIRECTION_DESCRIPTIONS : FAMILY_DESCRIPTIONS;
+    document.getElementById("design-family-cards").innerHTML = Object.keys(labels).map(function (fam) {
       return '<button type="button" class="design-family-card' + (fam === selected ? " selected" : "") + '" data-family="' + fam + '">' +
         '<span class="family-glyph glyph-' + fam + '" aria-hidden="true"><i></i><i></i></span>' +
-        '<strong>' + escapeHtml(FAMILY_LABELS[fam]) + '</strong><span>' + escapeHtml(FAMILY_DESCRIPTIONS[fam]) + '</span></button>';
+        '<strong>' + escapeHtml(labels[fam]) + '</strong><span>' + escapeHtml(descriptions[fam]) + '</span></button>';
     }).join("");
   }
 
+  function configureDensityOptions(isV3) {
+    const select = document.getElementById("pref-density");
+    const options = isV3
+      ? [["", "Automatique"], ["compact", "Compacte"], ["balanced", "Équilibrée"], ["airy", "Aérée"]]
+      : [["", "Automatique"], ["compact", "Compacte"], ["comfortable", "Confortable"], ["spacious", "Aérée"]];
+    select.innerHTML = options.map(function (option) { return '<option value="' + option[0] + '">' + option[1] + '</option>'; }).join("");
+  }
+
   function buildAdvancedPanel() {
-    const density = '<div class="override-group"><span>Densité</span><select id="pref-density"><option value="">Automatique</option>' +
-      '<option value="compact">Compact</option><option value="comfortable">Confortable</option><option value="spacious">Aéré</option></select></div>';
     const grid = ADVANCED_AXES.map(function (entry) {
       const axis = entry[0], label = entry[1], options = entry[2];
       const opts = options.map(function (opt) { return '<option value="' + opt + '">' + escapeHtml(axisValueLabel(axis, opt)) + '</option>'; }).join("");
@@ -566,7 +597,7 @@
       '</div></div>';
     const saveRow = '<div class="override-group"><button id="save-preferences-button" class="button button-secondary" type="button">Enregistrer cette orientation par défaut</button>' +
       '<p class="field-hint">Mémorise la famille et la densité choisies pour les prochaines alternatives.</p></div>';
-    document.getElementById("advanced-panel").innerHTML = density + '<div class="form-grid">' + grid + '</div>' + palettes + fonts + images +
+    document.getElementById("advanced-panel").innerHTML = '<div class="form-grid">' + grid + '</div>' + palettes + fonts + images +
       '<div class="section-order-editor" id="section-order-editor"><span>Ordre des sections</span></div>' + saveRow;
   }
 
@@ -617,7 +648,9 @@
     const candidate = site.candidate_design_profile;
     if (!candidate) { el.hidden = true; el.innerHTML = ""; return; }
     el.hidden = false;
-    const diffAxes = DESIGN_AXES.filter(function (entry) { return !current || current[entry[0]] !== candidate[entry[0]]; });
+    const candidateIsV3 = String(candidate.design_engine_version || "").startsWith("v3");
+    const comparisonAxes = candidateIsV3 ? V3_DESIGN_AXES : DESIGN_AXES;
+    const diffAxes = comparisonAxes.filter(function (entry) { return !current || current[entry[0]] !== candidate[entry[0]]; });
     const currentRows = diffAxes.map(function (entry) { return '<div><dt>' + escapeHtml(entry[1]) + '</dt><dd>' + escapeHtml(axisValueLabel(entry[0], current ? current[entry[0]] : null)) + '</dd></div>'; }).join("");
     const candidateRows = diffAxes.map(function (entry) { return '<div><dt>' + escapeHtml(entry[1]) + '</dt><dd>' + escapeHtml(axisValueLabel(entry[0], candidate[entry[0]])) + '</dd></div>'; }).join("");
     el.innerHTML = '<h4>Version actuelle vs alternative</h4>' +
@@ -631,12 +664,17 @@
   function candidatePayload() {
     const keepFamily = document.getElementById("candidate-keep-family").checked;
     const familySelect = document.getElementById("pref-family").value;
+    const directionSelect = document.getElementById("pref-direction").value;
     const density = document.getElementById("pref-density").value;
+    const isV3 = state.designEngine === "v3";
     return {
       keep_current_family: keepFamily,
-      preferred_family: keepFamily ? null : (familySelect || null),
+      engine_version: isV3 ? "v3" : "v2",
+      preferred_family: isV3 || keepFamily ? null : (familySelect || null),
+      preferred_direction: !isV3 || keepFamily ? null : (directionSelect || null),
+      ambience: isV3 ? (document.getElementById("pref-ambience").value || null) : null,
       density: density || null,
-      overrides: gatherOverrides(),
+      overrides: isV3 ? null : gatherOverrides(),
     };
   }
 
@@ -658,8 +696,12 @@
   }
 
   async function savePreferences() {
+    const isV3 = state.designEngine === "v3";
     const payload = {
-      preferred_family: document.getElementById("pref-family").value || null,
+      engine_version: isV3 ? "v3" : "v2",
+      preferred_family: isV3 ? null : (document.getElementById("pref-family").value || null),
+      preferred_direction: isV3 ? (document.getElementById("pref-direction").value || null) : null,
+      ambience: isV3 ? (document.getElementById("pref-ambience").value || null) : null,
       density: document.getElementById("pref-density").value || null,
     };
     await api("/admin/api/artisans/" + state.artisan.id + "/site/design/preferences", { method: "PATCH", body: JSON.stringify(payload) });
@@ -736,12 +778,22 @@
     renderProgressCard(artisan);
     renderStepBadges(artisan);
 
-    const preferredFamily = (artisan.site.design_preferences && artisan.site.design_preferences.preferred_family) || "";
+    const profileIsV3 = String((artisan.site.design_profile && artisan.site.design_profile.design_engine_version) || "").startsWith("v3");
+    const preferences = artisan.site.design_preferences || {};
+    state.designEngine = profileIsV3 || preferences.engine_version === "v3" ? "v3" : "v2";
+    configureDensityOptions(state.designEngine === "v3");
+    const preferredFamily = preferences.preferred_family || "";
+    const preferredDirection = preferences.preferred_direction || (profileIsV3 ? artisan.site.design_profile.art_direction : "");
     renderDesignCurrent(artisan.site);
     renderSectionsAvailability(artisan.site.sections_disponibles);
-    renderFamilyCards(preferredFamily);
+    renderFamilyCards(state.designEngine === "v3" ? preferredDirection : preferredFamily, state.designEngine === "v3");
     document.getElementById("pref-family").value = preferredFamily;
-    document.getElementById("pref-density").value = (artisan.site.design_preferences && artisan.site.design_preferences.density) || "";
+    document.getElementById("pref-direction").value = preferredDirection;
+    document.getElementById("pref-ambience").value = preferences.ambience || "";
+    document.getElementById("pref-density").value = preferences.density || "";
+    const warningBox = document.getElementById("site-content-warnings");
+    warningBox.hidden = !(artisan.site.content_warnings || []).length;
+    warningBox.textContent = (artisan.site.content_warnings || []).join(" ");
     document.getElementById("candidate-keep-family").checked = false;
     document.getElementById("design-personalize").open = false;
     state.originalSectionOrder = (artisan.site.design_profile && artisan.site.design_profile.section_order) || [];
@@ -874,8 +926,8 @@
   document.getElementById("design-family-cards").addEventListener("click", function (event) {
     const card = event.target.closest(".design-family-card");
     if (!card) return;
-    document.getElementById("pref-family").value = card.dataset.family;
-    renderFamilyCards(card.dataset.family);
+    document.getElementById(state.designEngine === "v3" ? "pref-direction" : "pref-family").value = card.dataset.family;
+    renderFamilyCards(card.dataset.family, state.designEngine === "v3");
   });
   document.getElementById("advanced-panel").addEventListener("click", function (event) {
     const moveButton = event.target.closest("[data-move]");

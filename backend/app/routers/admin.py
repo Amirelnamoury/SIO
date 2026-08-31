@@ -32,6 +32,7 @@ from app.admin_service import (
     generate_design_candidate,
     generate_site_preview,
     merged_site_config,
+    site_content_warnings,
     preview_storage_key,
     sections_availability,
     validate_design_preferences,
@@ -173,6 +174,7 @@ def _site_out(db: Session, artisan: Artisan, site: SiteVitrine | None) -> SiteVi
         created_at=site.created_at,
         updated_at=site.updated_at,
         preview_disponible=preview_disponible,
+        content_warnings=site_content_warnings(artisan, site),
     )
 
 
@@ -388,7 +390,7 @@ def admin_site_update(
     artisan = _artisan_or_404(db, artisan_id)
     site = artisan.site_vitrine
     if site is None:
-        site = SiteVitrine(artisan_id=artisan.id, statut="brouillon", config=default_site_config(artisan))
+        site = SiteVitrine(artisan_id=artisan.id, statut="brouillon", config=default_site_config(artisan), design_preferences={"engine_version": "v3"})
         db.add(site)
         db.flush()
 
@@ -427,7 +429,7 @@ def admin_site_generate(
     artisan = _artisan_or_404(db, artisan_id)
     site = artisan.site_vitrine
     if site is None:
-        site = SiteVitrine(artisan_id=artisan.id, statut="brouillon", config=default_site_config(artisan))
+        site = SiteVitrine(artisan_id=artisan.id, statut="brouillon", config=default_site_config(artisan), design_preferences={"engine_version": "v3"})
         db.add(site)
         db.flush()
     try:
@@ -467,7 +469,9 @@ def admin_site_design_preferences(
 def _generate_candidate_response(
     db: Session, artisan: Artisan, site: SiteVitrine, payload: DesignCandidateGenerateRequest, *, avoid_previous: bool,
 ) -> DesignCandidateOut:
-    preferred_family = site.design_profile["design_family"] if payload.keep_current_family else payload.preferred_family
+    current_is_v2 = str(site.design_profile.get("design_engine_version") or "").startswith("v2")
+    preferred_family = site.design_profile.get("design_family") if payload.keep_current_family and current_is_v2 else payload.preferred_family
+    preferred_direction = site.design_profile.get("art_direction") if payload.keep_current_family and not current_is_v2 else payload.preferred_direction
     try:
         candidate, distinct = generate_design_candidate(
             db, artisan, site,
@@ -475,6 +479,9 @@ def _generate_candidate_response(
             density=payload.density,
             overrides=payload.overrides,
             avoid_previous_candidate=avoid_previous,
+            engine_version=payload.engine_version,
+            preferred_direction=preferred_direction,
+            ambience=payload.ambience,
         )
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
@@ -672,6 +679,7 @@ def admin_site_media_library(
                 for field in (
                     "id", "media_id", "metier", "sous_categorie", "mime_type", "largeur", "hauteur",
                     "orientation", "usage_recommande", "licence", "source_nom", "credit", "actif",
+                    "provider", "provider_asset_id", "photographer", "source_url", "provider_url", "query", "times_used",
                 )
             },
             "thumbnail_url": f"/admin/api/artisans/{artisan.id}/site/media/library/{media.id}/content?variant=thumbnail",

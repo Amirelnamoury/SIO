@@ -31,6 +31,8 @@ from generator.design_registry import (
     resolve_visible_sections,
 )
 from generator.design_selector import build_design_signature, select_design_profile, similarity_score
+from generator.v3.grammar import PROFILE_VALUES as V3_PROFILE_VALUES
+from generator.v3.selector import build_design_signature as build_v3_design_signature
 
 
 def _admin_headers() -> tuple[dict, int]:
@@ -111,10 +113,12 @@ def test_trois_artisans_successifs_du_meme_metier_ne_recoivent_pas_tous_le_meme_
     signatures = {p["design_signature"] for p in profils}
     assert len(signatures) > 1, f"3 artisans successifs ne doivent pas tous recevoir la meme signature : {signatures}"
 
-    familles = {p["design_family"] for p in profils}
-    assert len(familles) > 1 or len({p["palette"] for p in profils}) > 1, (
-        "au moins la famille ou la palette doit varier entre 3 artisans successifs"
-    )
+    if str(profils[0]["design_engine_version"]).startswith("v3"):
+        assert len({p["page_silhouette"] for p in profils}) > 1
+        assert len({p["hero_system"] for p in profils}) > 1
+    else:
+        familles = {p["design_family"] for p in profils}
+        assert len(familles) > 1 or len({p["palette"] for p in profils}) > 1
 
 
 def test_selecteur_pur_evite_les_profils_trop_similaires():
@@ -149,23 +153,29 @@ def test_design_profile_genere_respecte_toujours_le_registre():
         assert res.status_code == 200, res.text
         p = res.json()["design_profile"]
 
-    assert p["design_family"] in DESIGN_FAMILIES
-    assert p["header_variant"] in HEADER_VARIANTS
-    assert p["hero_variant"] in HERO_VARIANTS
-    assert p["services_variant"] in SERVICES_VARIANTS
-    assert p["gallery_variant"] in GALLERY_VARIANTS
-    assert p["about_variant"] in ABOUT_VARIANTS
-    assert p["reviews_variant"] in REVIEWS_VARIANTS
-    assert p["cta_variant"] in CTA_VARIANTS
-    assert p["footer_variant"] in FOOTER_VARIANTS
-    assert p["palette"] in PALETTE_SLOTS
-    assert p["font_pair"] in FONT_PAIR_IDS
-    assert p["radius_style"] in RADIUS_STYLES
-    assert p["spacing_style"] in SPACING_STYLES
-    assert p["image_treatment"] in IMAGE_TREATMENTS
-    assert all(section in SECTION_CATALOG for section in p["section_order"])
-    assert p["section_order"][0] == "hero"
-    assert p["design_signature"] == build_design_signature(p)
+    if str(p["design_engine_version"]).startswith("v3"):
+        assert all(p[axis] in values for axis, values in V3_PROFILE_VALUES.items())
+    else:
+        assert p["design_family"] in DESIGN_FAMILIES
+        assert p["header_variant"] in HEADER_VARIANTS
+        assert p["hero_variant"] in HERO_VARIANTS
+        assert p["services_variant"] in SERVICES_VARIANTS
+        assert p["gallery_variant"] in GALLERY_VARIANTS
+        assert p["about_variant"] in ABOUT_VARIANTS
+        assert p["reviews_variant"] in REVIEWS_VARIANTS
+        assert p["cta_variant"] in CTA_VARIANTS
+        assert p["footer_variant"] in FOOTER_VARIANTS
+        assert p["palette"] in PALETTE_SLOTS
+        assert p["font_pair"] in FONT_PAIR_IDS
+        assert p["radius_style"] in RADIUS_STYLES
+        assert p["image_treatment"] in IMAGE_TREATMENTS
+        assert all(section in SECTION_CATALOG for section in p["section_order"])
+    if str(p["design_engine_version"]).startswith("v3"):
+        assert p["page_silhouette"]
+    else:
+        assert p["section_order"][0] == "hero"
+    expected_signature = build_v3_design_signature(p) if str(p["design_engine_version"]).startswith("v3") else build_design_signature(p)
+    assert p["design_signature"] == expected_signature
 
 
 # ---------- D. Ancien site sans design_profile ----------

@@ -19,9 +19,13 @@ const css = fs.readFileSync(path.join(adminDir, "admin.css"), "utf8");
 for (const id of ["design-current", "design-sections-availability", "design-family-cards", "pref-family"]) {
   assert.match(index, new RegExp(`id="${id}"`), `le controle ${id} doit exister`);
 }
-// pref-density est construit dynamiquement dans le panneau "Personnaliser
-// davantage" (refonte Admin) : cache derriere <details>, pas dans le HTML statique.
-assert.match(script, /id="pref-density"/, "le controle pref-density doit exister (construit par buildAdvancedPanel)");
+for (const id of ["pref-direction", "pref-ambience", "pref-density"]) {
+  assert.match(index, new RegExp(`id="${id}"`), `le controle V3 ${id} doit exister au niveau simple`);
+}
+assert.match(script, /const DIRECTION_LABELS = \{/, "les directions V3 doivent avoir des libelles lisibles");
+assert.match(script, /engine_version: isV3 \? "v3" : "v2"/, "le payload candidate doit annoncer explicitement le moteur choisi");
+assert.match(script, /preferred_direction:/, "la direction V3 choisie doit etre envoyee au backend");
+assert.match(script, /ambience:/, "l'ambiance V3 choisie doit etre envoyee au backend");
 assert.match(script, /function renderDesignCurrent/, "le design actuel doit avoir un rendu dedie");
 assert.match(script, /design-family-badge/, "la famille doit etre mise en avant visuellement");
 assert.match(script, /<details class="design-technical">/, "le detail technique (signature) doit rester discret, pas la donnee principale");
@@ -63,6 +67,7 @@ assert.match(script, /adoptCandidate\(\)\.catch\(handleError\)/, "une erreur d'a
 
 // --- Libelles francais pour les axes techniques (jamais de code brut en priorite) ---
 assert.match(script, /const FAMILY_LABELS = \{/, "les familles doivent avoir un libelle francais");
+assert.match(script, /const V3_DESIGN_AXES = \[/, "le resume V3 doit montrer ses axes de composition importants");
 assert.match(script, /const IMAGE_TREATMENT_LABELS = \{ flat: "Naturelle", duotone: "Bicolore", framed: "Encadrée", overlay: "Dégradé" \}/, "les traitements d'image doivent avoir les libelles du brief");
 assert.match(script, /const FONT_PAIR_LABELS = \{/, "les paires de polices doivent avoir une description, pas un identifiant brut");
 assert.match(script, /const PALETTE_LABELS = \{/, "les palettes doivent avoir un libelle, pas seulement un id");
@@ -86,6 +91,8 @@ for (const id of ["admin-media-section", "admin-media-photos", "admin-media-sele
   assert.match(index, new RegExp(`id="${id}"`), `la zone media existante ${id} doit rester presente et reutilisee`);
 }
 assert.doesNotMatch(script, /\/site\/media2\b|\/site\/design\/media\b/, "aucune route media dupliquee ne doit etre introduite pour le configurateur");
+assert.match(script, /Photographe :/, "la provenance photographe des medias provider doit etre affichee");
+assert.match(script, /Voir la source/, "un lien vers la source provider doit etre disponible");
 
 // --- Reactivite raisonnable (pas de redesign mobile-first, mais pas d'overflow) ---
 assert.match(css, /@media \(max-width: 900px\) \{ \.design-current-grid/, "le design actuel doit rester lisible sur tablette");

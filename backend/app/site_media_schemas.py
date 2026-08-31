@@ -83,6 +83,13 @@ class SiteMediaLibraryOut(BaseModel):
     licence: str
     source_nom: str
     credit: Optional[str] = None
+    provider: Optional[str] = None
+    provider_asset_id: Optional[str] = None
+    photographer: Optional[str] = None
+    source_url: Optional[str] = None
+    provider_url: Optional[str] = None
+    query: Optional[str] = None
+    times_used: int = 0
     actif: bool
     thumbnail_url: str
 
@@ -102,6 +109,9 @@ class SiteMediaSelectionOut(BaseModel):
     largeur: Optional[int] = None
     hauteur: Optional[int] = None
     alt_text: Optional[str] = None
+    provider: Optional[str] = None
+    photographer: Optional[str] = None
+    source_url: Optional[str] = None
 
 
 class SiteMediaProfileOut(BaseModel):

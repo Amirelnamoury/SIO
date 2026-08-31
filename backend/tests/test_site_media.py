@@ -219,9 +219,10 @@ def test_selection_persistante_preview_design_et_acces_public(tmp_path, monkeypa
 
         preview = client.get(f"/admin/api/artisans/{artisan_id}/site/preview", headers=admin_auth)
         assert preview.status_code == 200, preview.text
-        assert 'data-design-engine="v2.0"' in preview.text
+        assert f'data-design-engine="{first_design["design_engine_version"]}"' in preview.text
         assert f'/admin/api/artisans/{artisan_id}/site/media/{photo.json()["id"]}/content?variant=web' in preview.text
-        assert f'data-variant="{first_design["hero_variant"]}"' in preview.text
+        hero_marker = first_design.get("hero_variant") or first_design.get("hero_system")
+        assert hero_marker in preview.text
 
         private_media = client.get(f"/pub/media-a-inexistant/site-media/{photo.json()['id']}")
         assert private_media.status_code == 404

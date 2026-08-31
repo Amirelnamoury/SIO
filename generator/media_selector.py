@@ -18,6 +18,8 @@ METIER_ALIASES = {
     "peintre": {"peintre", "peinture", "renovation"},
     "macon": {"macon", "maconnerie", "renovation"},
     "general": {"general", "renovation"},
+    "menuisier": {"menuisier", "menuiserie", "renovation"},
+    "renovateur": {"renovateur", "renovation"},
 }
 
 
@@ -82,10 +84,9 @@ def select_site_media(
                 result.append({"usage": usage, "position": position, "source": "artisan", "site_media_id": media_id})
             continue
 
-        library_candidates = [media for media in library_media if _compatible_library(media, metier, usage)]
+        library_candidates = [media for media in library_media if _compatible_library(media, metier, usage) and media.get("id") not in used_library]
         library_candidates.sort(key=lambda media: (
             usage_counts[(media.get("id"), usage)],
-            media.get("id") in used_library,
             _stable_rank(seed, usage, media.get("media_id") or media.get("id")),
         ))
         chosen_library = library_candidates[:desired]

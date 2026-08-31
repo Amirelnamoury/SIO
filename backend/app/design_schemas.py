@@ -9,7 +9,8 @@ complet dans le Lot 1), jamais construit depuis une requete utilisateur."""
 import sys
 from pathlib import Path
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, TypeAdapter, field_validator
+from typing import Union
 
 # Meme bootstrap que app/admin_service.py : le package generator/ vit a la
 # racine du depot, hors du package backend/app - jamais suppose deja sur
@@ -35,6 +36,7 @@ from generator.design_registry import (  # noqa: E402
     SERVICES_VARIANTS,
     SPACING_STYLES,
 )
+from generator.v3.grammar import PROFILE_VALUES as V3_PROFILE_VALUES  # noqa: E402
 
 
 class DesignProfileOut(BaseModel):
@@ -163,3 +165,56 @@ class DesignProfileOut(BaseModel):
         if v not in IMAGE_TREATMENTS:
             raise ValueError(f"image_treatment doit etre l'une de : {sorted(IMAGE_TREATMENTS)}")
         return v
+
+
+class DesignGrammarOut(BaseModel):
+    """Persisted V3 grammar. Every axis is registry-backed and immutable at render time."""
+
+    art_direction: str
+    page_silhouette: str
+    header_system: str
+    hero_system: str
+    typography_system: str
+    layout_grid: str
+    spacing_rhythm: str
+    surface_system: str
+    photo_strategy: str
+    image_treatment: str
+    project_showcase: str
+    services_composition: str
+    content_density: str
+    section_transitions: str
+    cta_system: str
+    motion_level: str
+    spatial_level: str
+    decoration_system: str
+    footer_system: str
+    mobile_personality: str
+    ambience: str
+    design_engine_version: str
+    design_signature: str
+
+    @field_validator(*V3_PROFILE_VALUES.keys())
+    @classmethod
+    def _axis_valide(cls, value, info):
+        allowed = V3_PROFILE_VALUES[info.field_name]
+        if value not in allowed:
+            raise ValueError(f"{info.field_name} doit etre l'une de : {sorted(allowed)}")
+        return value
+
+    @field_validator("design_engine_version")
+    @classmethod
+    def _version_v3(cls, value):
+        if not str(value).startswith("v3."):
+            raise ValueError("design_engine_version doit etre une version v3")
+        return value
+
+
+AnyDesignProfileOut = Union[DesignProfileOut, DesignGrammarOut]
+_DESIGN_PROFILE_ADAPTER = TypeAdapter(AnyDesignProfileOut)
+
+
+def validate_design_profile(profile: dict) -> dict:
+    """Validate by explicit engine version, avoiding permissive union coercion."""
+    model = DesignGrammarOut if str(profile.get("design_engine_version") or "").startswith("v3.") else DesignProfileOut
+    return model(**profile).model_dump()

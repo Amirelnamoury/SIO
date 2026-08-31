@@ -4,7 +4,7 @@ from typing import Optional
 
 from pydantic import BaseModel, EmailStr, ConfigDict, Field, field_validator, model_validator
 
-METIERS_VALIDES = {"plombier", "electricien", "macon", "peintre", "general"}
+METIERS_VALIDES = {"plombier", "electricien", "macon", "peintre", "menuisier", "renovateur", "general"}
 CLIENT_STATUTS = {
     "nouveau", "contacte", "qualification", "visite_prevue",
     "devis_a_faire", "devis_envoye", "negociation", "gagne", "perdu",
