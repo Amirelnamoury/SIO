@@ -1,2 +1,3 @@
 graphify-out/
 frontend/env.js
+.claude/settings.local.json
