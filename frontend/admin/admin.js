@@ -245,12 +245,21 @@
     const designProfileEl = document.getElementById("site-design-profile");
     if (designProfile) {
       designProfileEl.hidden = false;
-      designProfileEl.textContent = "Profil de design (V2) : " + [
-        designProfile.design_family, designProfile.hero_variant, designProfile.services_variant,
-        designProfile.gallery_variant, designProfile.palette,
-      ].join(" · ");
+      const profileItems = [
+        ["Famille", designProfile.design_family], ["Header", designProfile.header_variant],
+        ["Hero", designProfile.hero_variant], ["Services", designProfile.services_variant],
+        ["Galerie", designProfile.gallery_variant], ["À propos", designProfile.about_variant],
+        ["Avis", designProfile.reviews_variant], ["CTA", designProfile.cta_variant],
+        ["Footer", designProfile.footer_variant], ["Palette", designProfile.palette],
+        ["Police", designProfile.font_pair], ["Rayons", designProfile.radius_style],
+        ["Espacement", designProfile.spacing_style], ["Images", designProfile.image_treatment],
+      ];
+      designProfileEl.innerHTML = '<div class="site-design-profile-heading"><strong>Profil visuel V2</strong><span>' + escapeHtml(designProfile.design_signature || "") + '</span></div><dl>' +
+        profileItems.map(function (item) { return '<div><dt>' + escapeHtml(item[0]) + '</dt><dd>' + escapeHtml(item[1] || "-") + '</dd></div>'; }).join("") +
+        '</dl><div class="site-design-order"><strong>Ordre des sections</strong><span>' + escapeHtml((designProfile.section_order || []).join(" → ")) + '</span></div>';
     } else {
       designProfileEl.hidden = true;
+      designProfileEl.innerHTML = "";
     }
     document.getElementById("site-slug").textContent = artisan.slug;
     document.getElementById("site-generated-at").textContent = formatDate(artisan.site.date_generation);

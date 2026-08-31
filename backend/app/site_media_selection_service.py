@@ -152,6 +152,9 @@ def selection_to_dict(selection: SiteMediaSelection, *, admin_artisan_id: int | 
         "credit": None,
         "content_url": None,
         "thumbnail_url": None,
+        "largeur": None,
+        "hauteur": None,
+        "alt_text": None,
     }
     if selection.source == "artisan" and selection.site_media is not None:
         media = media_to_dict(selection.site_media, admin_artisan_id=admin_artisan_id)
@@ -160,6 +163,9 @@ def selection_to_dict(selection: SiteMediaSelection, *, admin_artisan_id: int | 
             categorie=selection.site_media.categorie,
             content_url=media["content_url"],
             thumbnail_url=media["thumbnail_url"],
+            largeur=selection.site_media.largeur,
+            hauteur=selection.site_media.hauteur,
+            alt_text=selection.site_media.alt_text,
         )
     elif selection.source == "bibliotheque" and selection.library_media is not None:
         library = selection.library_media
@@ -170,6 +176,8 @@ def selection_to_dict(selection: SiteMediaSelection, *, admin_artisan_id: int | 
             credit=library.credit,
             content_url=f"{prefix}/{library.id}/content?variant=web",
             thumbnail_url=f"{prefix}/{library.id}/content?variant=thumbnail",
+            largeur=library.largeur,
+            hauteur=library.hauteur,
         )
     return result
 

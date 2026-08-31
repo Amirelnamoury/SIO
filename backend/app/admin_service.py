@@ -9,7 +9,7 @@ from app.config import settings
 from app.design_schemas import DesignProfileOut
 from app.models import AdminUser, Artisan, Avis, SiteVitrine, utcnow
 from app.security import hash_password
-from app.site_media_selection_service import ensure_media_profile, media_profile_dict
+from app.site_media_selection_service import ensure_media_profile, media_overview_dict
 from app.storage import get_storage
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -138,8 +138,10 @@ def build_generator_payload(
 ) -> dict:
     validate_site_variants(artisan, config)
     avis = db.query(Avis).filter(Avis.artisan_id == artisan.id, Avis.publie_site.is_(True)).all()
-    media_profile = media_profile_dict(db, artisan, site, admin=True)
+    media_overview = media_overview_dict(db, artisan, admin=True)
+    media_profile = media_overview["profile"]
     return {
+        "_content_escaped": True,
         "nom_entreprise": _safe_text(artisan.nom_entreprise),
         "metier": artisan.metier,
         "slug": artisan.slug,
@@ -167,6 +169,9 @@ def build_generator_payload(
         "has_gallery": media_profile["has_gallery"],
         "has_before_after": media_profile["has_before_after"],
         "selected_media": media_profile["selections"],
+        "logo": media_overview["logo"],
+        "design_profile": dict(site.design_profile) if site and site.design_profile else None,
+        "url_publique": _safe_text(site.url_publique) if site else "",
     }
 
 

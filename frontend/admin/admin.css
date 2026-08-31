@@ -113,6 +113,16 @@ tbody tr:last-child td { border-bottom: 0; }
 .admin-media-logo-row { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 18px; align-items: center; }
 .admin-logo-preview { display: grid; place-items: center; width: 180px; height: 112px; border: 1px dashed var(--line); background: #f7f9f8; overflow: hidden; }
 .admin-logo-preview img { max-width: 92%; max-height: 96px; object-fit: contain; }
+.site-design-profile { margin: 18px 0 24px; padding: 16px; border: 1px solid var(--line); background: #f7f9f8; }
+.site-design-profile-heading { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 13px; }
+.site-design-profile-heading span { color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
+.site-design-profile dl { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 0; }
+.site-design-profile dl div { min-width: 0; padding: 8px 9px; background: #fff; border: 1px solid var(--line); }
+.site-design-profile dt { color: var(--muted); font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.site-design-profile dd { margin: 2px 0 0; font-size: 12px; font-weight: 700; overflow-wrap: anywhere; }
+.site-design-order { display: grid; gap: 3px; margin-top: 12px; font-size: 11px; }
+.site-design-order span { color: var(--muted); overflow-wrap: anywhere; }
+@media (max-width: 900px) { .site-design-profile dl { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .admin-logo-form { display: flex; gap: 9px; align-items: end; flex-wrap: wrap; }
 .admin-logo-form label { flex: 1 1 260px; }
 .admin-media-subtitle { margin: 24px 0 11px; font-size: 13px; }

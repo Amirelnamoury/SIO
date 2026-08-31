@@ -99,6 +99,9 @@ class SiteMediaSelectionOut(BaseModel):
     credit: Optional[str] = None
     content_url: Optional[str] = None
     thumbnail_url: Optional[str] = None
+    largeur: Optional[int] = None
+    hauteur: Optional[int] = None
+    alt_text: Optional[str] = None
 
 
 class SiteMediaProfileOut(BaseModel):

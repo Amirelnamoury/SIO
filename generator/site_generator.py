@@ -55,6 +55,14 @@ except ImportError:  # execution directe historique : python site_generator.py
         ui_icon_svg,
     )
 
+try:
+    from .v2 import is_compatible_design_profile, render_site_v2
+except ImportError:  # execution directe historique : python generator/site_generator.py
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    from generator.v2 import is_compatible_design_profile, render_site_v2
+
 POURQUOI_NOUS_CHOISIR = [
     ("shield", "Assurance décennale", "Tous nos chantiers sont couverts, en toute tranquillité."),
     ("document", "Devis gratuit", "Un devis clair et détaillé, sans engagement, sous 48h."),
@@ -535,6 +543,12 @@ def generate_site(artisan: dict, api_base_url: str, output_path: str | None = No
 
     if "avis" not in artisan:
         artisan = {**artisan, "avis": fetch_avis_publies(artisan["slug"], api_base_url)}
+
+    if is_compatible_design_profile(artisan.get("design_profile")):
+        html_v2 = render_site_v2(artisan, api_base_url)
+        if output_path:
+            Path(output_path).write_text(html_v2, encoding="utf-8")
+        return html_v2
 
     metier = artisan.get("metier", "general")
     theme = get_theme(metier)

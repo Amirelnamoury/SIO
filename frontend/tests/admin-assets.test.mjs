@@ -8,6 +8,7 @@ const adminDir = path.resolve(testDir, "..", "admin");
 const login = fs.readFileSync(path.join(adminDir, "login.html"), "utf8");
 const index = fs.readFileSync(path.join(adminDir, "index.html"), "utf8");
 const script = fs.readFileSync(path.join(adminDir, "admin.js"), "utf8");
+const css = fs.readFileSync(path.join(adminDir, "admin.css"), "utf8");
 
 for (const [name, html] of [["login.html", login], ["index.html", index]]) {
   assert.match(html, /href="admin\.css"/, `${name} doit charger le CSS présent dans son propre dossier`);
@@ -25,5 +26,11 @@ assert.doesNotMatch(script, /location\.assign\("\/admin\/login"\)/, "l'ancienne 
 assert.match(script, /preview-session/, "Voir la preview doit demander une session protégée au backend");
 assert.match(script, /previewWindow\.location\.replace\(apiUrl\(session\.url\)\)/, "la preview doit utiliser API_BASE après le handoff authentifié");
 assert.doesNotMatch(script, /window\.open\("\/admin\/api\/artisans\//, "la preview ne doit plus viser directement le serveur statique");
+assert.match(index, /class="site-design-profile" id="site-design-profile" hidden/, "l'inspecteur du profil V2 doit exister sans devenir un configurateur");
+for (const field of ["header_variant", "hero_variant", "services_variant", "gallery_variant", "about_variant", "reviews_variant", "cta_variant", "footer_variant", "font_pair", "radius_style", "spacing_style", "image_treatment", "section_order"]) {
+  assert.match(script, new RegExp(field), `l'Admin doit exposer la décision ${field}`);
+}
+assert.match(script, /escapeHtml\(\(designProfile\.section_order \|\| \[\]\)\.join/, "l'ordre des sections doit rester échappé avant affichage");
+assert.match(css, /\.site-design-profile dl/, "le profil V2 doit avoir une présentation lisible");
 
 console.log("OK - admin-assets.test.mjs");

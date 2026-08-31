@@ -32,6 +32,7 @@ from generator.design_registry import (
     DESIGN_FAMILIES,
     DESIGN_FAMILY_RULES,
     FONT_PAIR_IDS,
+    IMAGE_TREATMENTS,
     PALETTE_SLOTS,
     RADIUS_STYLES,
     SECTION_ORDER_TEMPLATE_IDS,
@@ -128,10 +129,9 @@ def _candidate_profile(seed: str, attempt: int) -> dict:
         "font_pair": font_pair,
         "radius_style": radius_style,
         "spacing_style": spacing_style,
-        # image_treatment prepare le Lot 2 (pas encore utilise par un rendu -
-        # voir generator/design_registry.py::IMAGE_TREATMENTS) : une valeur
-        # neutre stable suffit pour ce lot, jamais recalculee au hasard.
-        "image_treatment": "flat",
+        "image_treatment": IMAGE_TREATMENTS[
+            _stable_index(seed, f"image_treatment{salt_suffix}", len(IMAGE_TREATMENTS))
+        ],
     }
 
 
