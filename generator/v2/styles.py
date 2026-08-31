@@ -88,6 +88,16 @@ p { margin: 0; }
 .hero-card-panel { position: relative; z-index: 2; margin-right: -76px; padding: clamp(34px, 5vw, 72px); color: var(--color-on-primary); background: var(--color-primary-dark); border-radius: var(--radius-lg); }
 .hero-card-media { min-height: 540px; }
 
+/* Grid items with an image child default to min-width:auto, so a broken or
+   slow-loading <img> (its HTML width/height attributes) can force its whole
+   grid track wider than the container ("grid blowout") - this breaks the
+   1fr mobile collapse used throughout (Lot 3.1b : bug reel trouve en
+   inspection visuelle, corrige ici plutot que sur chaque grille au cas par
+   cas). */
+.hero-columns > *, .hero-asymmetric-grid > *, .hero-card-stage > *, .hero-compact-row > *,
+.hero-editorial-layout > *, .about-layout > *, .featured-layout > *, .contact-layout > *,
+.service-area-layout > * { min-width: 0; }
+
 /* Content variants */
 .services { background: var(--color-background); }
 .services-layout { margin: 0; padding: 0; list-style: none; }
