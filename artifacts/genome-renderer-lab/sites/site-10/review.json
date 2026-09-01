@@ -1,0 +1,20 @@
+{
+  "fixture_id": "site-10",
+  "design_signature": "d78f89622d99d7f1a0de5c94",
+  "aesthetic_status": "NOT_REVIEWED",
+  "desktop_status": "NOT_REVIEWED",
+  "mobile_status": "NOT_REVIEWED",
+  "dimensions": [
+    "identity",
+    "composition",
+    "typography",
+    "color",
+    "media",
+    "hierarchy",
+    "conversion",
+    "mobile",
+    "originality",
+    "coherence"
+  ],
+  "notes": ""
+}

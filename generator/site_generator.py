@@ -34,6 +34,30 @@ def generate_site(artisan: dict, api_base_url: str, output_path: str | None = No
     return generated_html
 
 
+def generate_site_genome_experimental(
+    artisan: dict,
+    api_base_url: str,
+    output_path: str | None = None,
+    *,
+    site_dna: dict | None = None,
+) -> str:
+    """Render with the opt-in Genome renderer without changing the V3 runtime."""
+    from .genome_renderer import render_payload_with_genome
+
+    try:
+        generated_html, _ = render_payload_with_genome(
+            artisan,
+            api_base_url,
+            site_dna=site_dna,
+        )
+    except Exception as exc:
+        raise SiteGenerationError(f"Le rendu Design Genome experimental a echoue: {exc}") from exc
+
+    if output_path:
+        Path(output_path).write_text(generated_html, encoding="utf-8")
+    return generated_html
+
+
 if __name__ == "__main__":
     import argparse
     import json

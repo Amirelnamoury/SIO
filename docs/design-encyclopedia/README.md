@@ -8,6 +8,11 @@ The encyclopedia turns research into typed registries, compatibility rules and s
 
 ## Index
 
+### Renderer delivery
+- [Figma visual review plan](figma-visual-review-plan.md)
+- [Renderer visual review](renderer-visual-review.md)
+- [V3 removal plan](v3-removal-plan.md)
+
 ### Research
 - [Research method and deep-reference status](research-log.md)
 - [30 Gold Standard dossiers](gold-standards.md)
