@@ -1,0 +1,416 @@
+{
+  "schema_version": 1,
+  "generator": "design-genome-1",
+  "main_simulation": {
+    "sample_size": 10000,
+    "unique": 9978,
+    "collision_pairs": 23,
+    "effective_space_estimate": 2173696,
+    "method": "uniform_birthday_collision_estimate",
+    "max_signature_frequency": 3,
+    "sampled_pair_similarity": {
+      "count": 1500,
+      "mean": 0.2084,
+      "max": 0.7978
+    },
+    "distributions": {
+      "site_archetype": {
+        "conversion_first_local": 1910,
+        "premium_residential": 1731,
+        "technical_expert": 1365,
+        "warm_artisan": 1287,
+        "high_end_craft": 649,
+        "documentary_craft": 600,
+        "industrial_specialist": 593,
+        "design_build": 571,
+        "heritage_craft": 321,
+        "project_portfolio": 288,
+        "architectural_contracting": 190,
+        "luxury_renovation": 171,
+        "family_business": 170,
+        "material_led": 126,
+        "spatial_technical": 17,
+        "minimal_architecture": 10,
+        "bold_local": 1
+      },
+      "art_direction": {
+        "minimal_architecture": 2460,
+        "warm_craft": 1816,
+        "editorial_luxury": 1655,
+        "conversion_premium": 1069,
+        "technical_spatial": 1060,
+        "material_editorial": 961,
+        "architectural_brutalist": 491,
+        "cinematic_luxury": 488
+      },
+      "page_silhouette": {
+        "quote_first_service": 1910,
+        "premium_residential": 1527,
+        "technical_capabilities": 1329,
+        "warm_artisan": 1287,
+        "craft_material_story": 820,
+        "documentary_process": 600,
+        "industrial_capabilities": 571,
+        "design_build_journey": 437,
+        "transformation_story": 253,
+        "editorial_residential": 229,
+        "architectural_contracting": 191,
+        "family_trust": 165,
+        "heritage_story": 150,
+        "material_library": 145,
+        "gallery_sequence": 144,
+        "cinematic_residential": 108,
+        "specification_first": 58,
+        "project_ledger": 38,
+        "spatial_explainer": 17,
+        "minimal_statement": 12,
+        "local_service_story": 5,
+        "editorial_manifesto": 3,
+        "bold_local": 1
+      },
+      "hero_component": {
+        "workshop_gesture_cover": 1196,
+        "quiet_luxury_window": 1068,
+        "no_image_local_conversion": 751,
+        "framed_luxury_scene": 727,
+        "compact_conversion_panel": 619,
+        "edge_crop_conversion": 603,
+        "technical_nodes_network": 548,
+        "mono_technical_diagnostic": 540,
+        "blueprint_spatial_scene": 532,
+        "framed_blueprint_specification": 520,
+        "documentary_work_log_hero": 512,
+        "project_canvas_feature": 324,
+        "parallax_layered_material": 295,
+        "asymmetric_project_intro": 294,
+        "project_contact_sheet_hero": 291,
+        "triptych_material_intro": 289,
+        "material_macro_title": 282,
+        "layered_material_scene": 281,
+        "quote_first_project_brief": 263,
+        "isometric_system_explainer": 48,
+        "oversized_type_local": 8,
+        "editorial_title_index": 4,
+        "editorial_columns_manifesto": 3,
+        "no_image_editorial_manifesto": 2
+      },
+      "color_system": {
+        "wood_walnut_dark": 1154,
+        "wood_walnut_light": 1082,
+        "technical_navy_light": 868,
+        "technical_navy_dark": 855,
+        "electrical_blue_light": 799,
+        "electrical_blue_dark": 794,
+        "ink_champagne_light": 514,
+        "luxury_ivory_dark": 514,
+        "luxury_ivory_light": 514,
+        "ink_champagne_dark": 476,
+        "warm_craft_dark": 399,
+        "warm_craft_light": 372,
+        "steel_cyan_light": 242,
+        "steel_cyan_dark": 230,
+        "signal_yellow_light": 205,
+        "signal_yellow_dark": 179,
+        "copper_brass_light": 126,
+        "copper_brass_dark": 119,
+        "french_blue_light": 93,
+        "french_blue_dark": 93,
+        "construction_orange_light": 85,
+        "construction_orange_dark": 78,
+        "burgundy_luxury_dark": 44,
+        "burgundy_luxury_light": 41,
+        "concrete_graphite_light": 34,
+        "concrete_graphite_dark": 28,
+        "forest_cream_light": 25,
+        "forest_cream_dark": 25,
+        "high_contrast_monochrome_dark": 4,
+        "sage_local_light": 3,
+        "sage_local_dark": 2,
+        "terracotta_dark": 2,
+        "high_contrast_monochrome_light": 1
+      },
+      "typography_system": {
+        "humanist_workshop": 1989,
+        "swiss_information": 1613,
+        "industrial_condensed": 1454,
+        "technical_mono_grotesk": 1353,
+        "quiet_luxury_serif": 1005,
+        "warm_grotesk": 888,
+        "high_contrast_editorial": 811,
+        "architectural_serif_sans": 532,
+        "local_contemporary": 221,
+        "heritage_serif": 130,
+        "understated_architecture": 4
+      }
+    }
+  },
+  "plumber_100": {
+    "unique_signatures": 100,
+    "archetypes": {
+      "conversion_first_local": 52,
+      "technical_expert": 22,
+      "premium_residential": 21,
+      "family_business": 5
+    },
+    "heroes": {
+      "no_image_local_conversion": 21,
+      "edge_crop_conversion": 17,
+      "compact_conversion_panel": 16,
+      "quiet_luxury_window": 16,
+      "mono_technical_diagnostic": 9,
+      "technical_nodes_network": 6,
+      "blueprint_spatial_scene": 5,
+      "framed_luxury_scene": 5,
+      "framed_blueprint_specification": 4,
+      "isometric_system_explainer": 1
+    },
+    "silhouettes": {
+      "quote_first_service": 52,
+      "technical_capabilities": 22,
+      "premium_residential": 15,
+      "editorial_residential": 6,
+      "family_trust": 4,
+      "local_service_story": 1
+    },
+    "colors": {
+      "technical_navy_light": 20,
+      "electrical_blue_light": 17,
+      "technical_navy_dark": 16,
+      "electrical_blue_dark": 13,
+      "french_blue_light": 10,
+      "steel_cyan_dark": 9,
+      "steel_cyan_light": 6,
+      "concrete_graphite_dark": 3,
+      "french_blue_dark": 3,
+      "sage_local_dark": 1,
+      "forest_cream_dark": 1,
+      "forest_cream_light": 1
+    }
+  },
+  "same_city_lyon": {
+    "count": 120,
+    "unique_signatures": 120,
+    "by_trade": {
+      "plombier": 20,
+      "peintre": 20,
+      "macon": 20,
+      "electricien": 20,
+      "menuisier": 20,
+      "renovateur": 20
+    },
+    "directions": {
+      "minimal_architecture": 34,
+      "editorial_luxury": 27,
+      "material_editorial": 17,
+      "warm_craft": 14,
+      "technical_spatial": 11,
+      "conversion_premium": 9,
+      "cinematic_luxury": 6,
+      "architectural_brutalist": 2
+    }
+  },
+  "different_trades": {
+    "plombier": {
+      "count": 1667,
+      "archetypes": {
+        "conversion_first_local": 941,
+        "technical_expert": 338,
+        "premium_residential": 256,
+        "family_business": 131,
+        "warm_artisan": 1
+      },
+      "directions": {
+        "minimal_architecture": 642,
+        "conversion_premium": 607,
+        "editorial_luxury": 256,
+        "technical_spatial": 162
+      },
+      "colors": {
+        "technical_navy_light": 327,
+        "technical_navy_dark": 324,
+        "electrical_blue_dark": 274,
+        "electrical_blue_light": 252,
+        "steel_cyan_light": 101,
+        "steel_cyan_dark": 99,
+        "french_blue_light": 81,
+        "french_blue_dark": 77,
+        "concrete_graphite_light": 34,
+        "concrete_graphite_dark": 28,
+        "forest_cream_light": 25,
+        "forest_cream_dark": 25,
+        "wood_walnut_light": 7,
+        "high_contrast_monochrome_dark": 3,
+        "wood_walnut_dark": 3,
+        "sage_local_dark": 2,
+        "sage_local_light": 2,
+        "warm_craft_light": 1,
+        "high_contrast_monochrome_light": 1,
+        "copper_brass_dark": 1
+      }
+    },
+    "peintre": {
+      "count": 1667,
+      "archetypes": {
+        "warm_artisan": 972,
+        "premium_residential": 604,
+        "documentary_craft": 82,
+        "material_led": 7,
+        "project_portfolio": 2
+      },
+      "directions": {
+        "warm_craft": 1012,
+        "editorial_luxury": 605,
+        "material_editorial": 49,
+        "minimal_architecture": 1
+      },
+      "colors": {
+        "wood_walnut_dark": 413,
+        "wood_walnut_light": 371,
+        "ink_champagne_light": 159,
+        "luxury_ivory_dark": 154,
+        "ink_champagne_dark": 142,
+        "warm_craft_light": 140,
+        "warm_craft_dark": 137,
+        "luxury_ivory_light": 130,
+        "burgundy_luxury_light": 13,
+        "burgundy_luxury_dark": 8
+      }
+    },
+    "macon": {
+      "count": 1667,
+      "archetypes": {
+        "industrial_specialist": 546,
+        "technical_expert": 430,
+        "design_build": 249,
+        "architectural_contracting": 190,
+        "warm_artisan": 128,
+        "premium_residential": 101,
+        "family_business": 20,
+        "high_end_craft": 2,
+        "bold_local": 1
+      },
+      "directions": {
+        "minimal_architecture": 601,
+        "technical_spatial": 566,
+        "architectural_brutalist": 449,
+        "material_editorial": 51
+      },
+      "colors": {
+        "technical_navy_dark": 303,
+        "technical_navy_light": 302,
+        "electrical_blue_light": 290,
+        "electrical_blue_dark": 274,
+        "wood_walnut_dark": 95,
+        "wood_walnut_light": 94,
+        "steel_cyan_light": 80,
+        "steel_cyan_dark": 74,
+        "copper_brass_light": 48,
+        "copper_brass_dark": 37,
+        "warm_craft_light": 30,
+        "warm_craft_dark": 30,
+        "french_blue_dark": 4,
+        "french_blue_light": 4,
+        "luxury_ivory_dark": 1,
+        "luxury_ivory_light": 1
+      }
+    },
+    "electricien": {
+      "count": 1667,
+      "archetypes": {
+        "conversion_first_local": 969,
+        "technical_expert": 597,
+        "industrial_specialist": 47,
+        "premium_residential": 25,
+        "spatial_technical": 17,
+        "warm_artisan": 12
+      },
+      "directions": {
+        "minimal_architecture": 831,
+        "conversion_premium": 462,
+        "technical_spatial": 332,
+        "architectural_brutalist": 42
+      },
+      "colors": {
+        "electrical_blue_light": 257,
+        "electrical_blue_dark": 246,
+        "technical_navy_light": 239,
+        "technical_navy_dark": 228,
+        "signal_yellow_light": 205,
+        "signal_yellow_dark": 179,
+        "construction_orange_light": 85,
+        "construction_orange_dark": 78,
+        "steel_cyan_light": 61,
+        "steel_cyan_dark": 57,
+        "french_blue_dark": 12,
+        "french_blue_light": 8,
+        "warm_craft_dark": 3,
+        "warm_craft_light": 3,
+        "wood_walnut_light": 2,
+        "terracotta_dark": 2,
+        "sage_local_light": 1,
+        "high_contrast_monochrome_dark": 1
+      }
+    },
+    "menuisier": {
+      "count": 1666,
+      "archetypes": {
+        "high_end_craft": 647,
+        "documentary_craft": 518,
+        "heritage_craft": 321,
+        "material_led": 119,
+        "project_portfolio": 37,
+        "warm_artisan": 11,
+        "minimal_architecture": 10,
+        "premium_residential": 3
+      },
+      "directions": {
+        "material_editorial": 812,
+        "warm_craft": 804,
+        "minimal_architecture": 29,
+        "editorial_luxury": 21
+      },
+      "colors": {
+        "wood_walnut_dark": 636,
+        "wood_walnut_light": 600,
+        "warm_craft_dark": 229,
+        "warm_craft_light": 198,
+        "copper_brass_dark": 2,
+        "copper_brass_light": 1
+      }
+    },
+    "renovateur": {
+      "count": 1666,
+      "archetypes": {
+        "premium_residential": 742,
+        "design_build": 322,
+        "project_portfolio": 249,
+        "luxury_renovation": 171,
+        "warm_artisan": 163,
+        "family_business": 19
+      },
+      "directions": {
+        "editorial_luxury": 773,
+        "cinematic_luxury": 488,
+        "minimal_architecture": 356,
+        "material_editorial": 49
+      },
+      "colors": {
+        "luxury_ivory_light": 383,
+        "luxury_ivory_dark": 359,
+        "ink_champagne_light": 355,
+        "ink_champagne_dark": 334,
+        "copper_brass_dark": 79,
+        "copper_brass_light": 77,
+        "burgundy_luxury_dark": 36,
+        "burgundy_luxury_light": 28,
+        "wood_walnut_light": 8,
+        "wood_walnut_dark": 7
+      }
+    }
+  },
+  "limitations": [
+    "The effective-space figure is a collision estimate, not a count of visually reviewed pages.",
+    "SiteDNA is a knowledge contract and does not prove rendered aesthetic quality.",
+    "Simulation values are synthetic and are never production artisan claims."
+  ]
+}
