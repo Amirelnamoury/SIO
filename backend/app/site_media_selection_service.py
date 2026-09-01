@@ -44,8 +44,11 @@ def ensure_media_profile(db: Session, artisan: Artisan, site: SiteVitrine) -> li
     if existing:
         return existing
 
-    if str((site.design_profile or {}).get("design_engine_version") or "").startswith("v3"):
-        acquire_external_media(db, artisan, site.design_profile or {})
+    # A candidate for a historical V2 site already runs on V3 while the
+    # active profile remains untouched until explicit adoption.
+    generation_profile = site.candidate_design_profile or site.design_profile or {}
+    if str(generation_profile.get("design_engine_version") or "").startswith("v3"):
+        acquire_external_media(db, artisan, generation_profile)
 
     artisan_media = db.query(SiteMedia).filter(
         SiteMedia.artisan_id == artisan.id,

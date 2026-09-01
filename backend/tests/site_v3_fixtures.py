@@ -1,6 +1,5 @@
 """Eighteen deterministic acceptance fixtures for the V3 visual protocol."""
 
-from generator.themes import get_theme
 from generator.v3.selector import select_design_grammar
 
 TRADES = ("plombier", "peintre", "macon", "menuisier", "electricien", "renovateur")
@@ -16,12 +15,11 @@ def build_fixtures() -> list[dict]:
             profile, _ = select_design_grammar({"slug": slug, "metier": trade}, trade_history)
             trade_history.append(profile)
             history.append(profile)
-            theme = get_theme(trade)
             fixtures.append({
                 "nom_entreprise": f"Atelier {trade.title()} {index + 1}", "metier": trade,
                 "slug": slug, "ville": "Lyon", "code_postal": "69002",
                 "telephone": "04 00 00 00 00", "email": f"contact-{index}@example.test",
-                "tagline": theme["tagline"], "services": theme["services"], "stats": [], "avis": [],
+                "tagline": "", "services": [], "stats": [], "avis": [],
                 "process_steps": [], "reasons": [], "selected_media": [], "design_profile": profile,
             })
     return fixtures

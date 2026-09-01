@@ -154,8 +154,6 @@
                   <label class="span-2">Tagline<input name="tagline" maxlength="180"></label>
                   <label class="span-2">Prestations<textarea name="services" rows="5" placeholder="Une prestation par ligne"></textarea></label>
                   <label class="span-2">Chiffres clés<textarea name="stats" rows="3" placeholder="12 ans | d'expérience"></textarea></label>
-                  <label>Variante couleur<select name="variante_couleur"><option value="">Automatique</option><option value="0">Variante 1</option><option value="1">Variante 2</option><option value="2">Variante 3</option></select></label>
-                  <label>Motif hero<select name="variante_motif" id="motif-select"></select></label>
                   <label>Domaine<input name="domaine" placeholder="artisan.fr"></label>
                   <label>URL publique<input name="url_publique" type="url" placeholder="https://artisan.fr"></label>
                 </div>
@@ -192,9 +190,8 @@
               <div id="design-sections-availability" class="design-sections-availability"></div>
 
               <div class="design-directions">
-                <h4>Essayer une autre direction</h4>
-                <p class="muted">Choisissez une famille puis générez une alternative — le design actuel n'est jamais modifié tant que vous ne l'adoptez pas.</p>
-                <input type="hidden" id="pref-family">
+                <h4>Direction artistique</h4>
+                <p class="muted">Choisissez une direction puis générez une alternative. Le design actuel n'est jamais modifié avant adoption.</p>
                 <input type="hidden" id="pref-direction">
                 <div id="design-family-cards" class="design-family-cards"></div>
                 <div class="design-simple-controls">
@@ -202,13 +199,8 @@
                   <label>Densité<select id="pref-density"><option value="">Automatique</option><option value="compact">Compacte</option><option value="balanced">Équilibrée</option><option value="airy">Aérée</option></select></label>
                 </div>
 
-                <details class="design-personalize" id="design-personalize">
-                  <summary class="button button-secondary">Personnaliser davantage</summary>
-                  <div id="advanced-panel" class="advanced-panel"></div>
-                </details>
-
                 <div class="workflow-bar" style="margin-top:16px;">
-                  <label class="candidate-keep-family"><input id="candidate-keep-family" type="checkbox"> Garder la même direction que le design actuel</label>
+                  <label class="candidate-keep-direction"><input id="candidate-keep-direction" type="checkbox"> Garder la même direction que le design actuel</label>
                 </div>
                 <div class="workflow-bar">
                   <button id="candidate-generate-button" class="button button-primary" type="button">Générer une alternative</button>

@@ -50,7 +50,6 @@ async function run() {
 
   const direction = current.design_profile.art_direction === "warm_craft" ? "technical_spatial" : "warm_craft";
   const saved = await api.patch(`/admin/api/artisans/${artisanId}/site/design/preferences`, {
-    engine_version: "v3",
     preferred_direction: direction,
     ambience: "warm",
     density: "balanced",
@@ -59,7 +58,6 @@ async function run() {
   logEtape(`direction ${direction} choisie et enregistree`);
 
   const candidateOne = await api.post(`/admin/api/artisans/${artisanId}/site/design/candidate`, {
-    engine_version: "v3",
     preferred_direction: direction,
     ambience: "warm",
     density: "balanced",
@@ -86,7 +84,6 @@ async function run() {
 
   const secondDirection = direction === "technical_spatial" ? "editorial_luxury" : "technical_spatial";
   const candidateTwo = await api.post(`/admin/api/artisans/${artisanId}/site/design/candidate`, {
-    engine_version: "v3",
     preferred_direction: secondDirection,
     ambience: "material",
     density: "airy",

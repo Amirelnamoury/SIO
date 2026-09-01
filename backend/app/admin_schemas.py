@@ -3,7 +3,7 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, HttpUrl, field_validator
 
-from app.design_schemas import AnyDesignProfileOut, DesignProfileOut
+from app.design_schemas import DesignGrammarOut
 from app.schemas import METIERS_VALIDES
 from app.site_media_schemas import SiteMediaOverviewOut, SiteMediaProfileOut
 
@@ -14,17 +14,11 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from generator.design_registry import DESIGN_FAMILIES, SPACING_STYLES  # noqa: E402
 from generator.v3.grammar import AMBIENCES, ART_DIRECTIONS, CONTENT_DENSITIES, PROFILE_VALUES as V3_PROFILE_VALUES  # noqa: E402
 
 
 SITE_STATUTS = {"brouillon", "genere", "pret", "publie"}
-CANDIDATE_OVERRIDE_FIELDS = {
-    "header_variant", "hero_variant", "services_variant", "gallery_variant",
-    "about_variant", "reviews_variant", "cta_variant", "footer_variant",
-    "palette", "font_pair", "radius_style", "spacing_style", "image_treatment",
-    "section_order",
-}
+CANDIDATE_OVERRIDE_FIELDS = set(V3_PROFILE_VALUES)
 
 
 class DesignPreferencesUpdate(BaseModel):
@@ -33,32 +27,15 @@ class DesignPreferencesUpdate(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    preferred_family: Optional[str] = None
     density: Optional[str] = None
-    engine_version: Optional[str] = None
     preferred_direction: Optional[str] = None
     ambience: Optional[str] = None
-
-    @field_validator("preferred_family")
-    @classmethod
-    def _famille_valide(cls, v):
-        if v is not None and v not in DESIGN_FAMILIES:
-            raise ValueError(f"preferred_family doit etre l'une de : {sorted(DESIGN_FAMILIES)}")
-        return v
 
     @field_validator("density")
     @classmethod
     def _densite_valide(cls, v):
-        allowed = set(SPACING_STYLES) | set(CONTENT_DENSITIES)
-        if v is not None and v not in allowed:
-            raise ValueError(f"density doit etre l'une de : {sorted(allowed)}")
-        return v
-
-    @field_validator("engine_version")
-    @classmethod
-    def _engine_valide(cls, v):
-        if v is not None and v not in {"v2", "v3"}:
-            raise ValueError("engine_version doit etre v2 ou v3")
+        if v is not None and v not in CONTENT_DENSITIES:
+            raise ValueError(f"density doit etre l'une de : {sorted(CONTENT_DENSITIES)}")
         return v
 
     @field_validator("preferred_direction")
@@ -82,34 +59,17 @@ class DesignCandidateGenerateRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    preferred_family: Optional[str] = None
-    keep_current_family: bool = False
+    keep_current_direction: bool = False
     density: Optional[str] = None
     overrides: Optional[dict] = None
-    engine_version: Optional[str] = None
     preferred_direction: Optional[str] = None
     ambience: Optional[str] = None
-
-    @field_validator("preferred_family")
-    @classmethod
-    def _famille_valide(cls, v):
-        if v is not None and v not in DESIGN_FAMILIES:
-            raise ValueError(f"preferred_family doit etre l'une de : {sorted(DESIGN_FAMILIES)}")
-        return v
 
     @field_validator("density")
     @classmethod
     def _densite_valide(cls, v):
-        allowed = set(SPACING_STYLES) | set(CONTENT_DENSITIES)
-        if v is not None and v not in allowed:
-            raise ValueError(f"density doit etre l'une de : {sorted(allowed)}")
-        return v
-
-    @field_validator("engine_version")
-    @classmethod
-    def _candidate_engine_valide(cls, v):
-        if v is not None and v not in {"v2", "v3"}:
-            raise ValueError("engine_version doit etre v2 ou v3")
+        if v is not None and v not in CONTENT_DENSITIES:
+            raise ValueError(f"density doit etre l'une de : {sorted(CONTENT_DENSITIES)}")
         return v
 
     @field_validator("preferred_direction")
@@ -148,7 +108,7 @@ class DesignCandidateOut(BaseModel):
     """Alternative proposee + indication honnete de sa distance au design
     actuel (voir le brief, section 11 : jamais de fausse distinction)."""
 
-    profile: AnyDesignProfileOut
+    profile: DesignGrammarOut
     distinct: bool
 
 
@@ -209,8 +169,6 @@ class SiteVitrineUpdate(BaseModel):
     tagline: Optional[str] = None
     services: Optional[list[str]] = None
     stats: Optional[list[SiteStat]] = None
-    variante_couleur: Optional[int] = None
-    variante_motif: Optional[str] = None
 
     @field_validator("domaine")
     @classmethod
@@ -256,14 +214,6 @@ class SiteVitrineUpdate(BaseModel):
             raise ValueError("Le site accepte au maximum 4 statistiques")
         return value
 
-    @field_validator("variante_couleur")
-    @classmethod
-    def variante_couleur_valide(cls, value: Optional[int]):
-        if value is not None and value not in (0, 1, 2):
-            raise ValueError("La variante couleur doit etre 0, 1 ou 2")
-        return value
-
-
 class AdminArtisanUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -303,9 +253,11 @@ class SiteVitrineOut(BaseModel):
     url_publique: Optional[str] = None
     storage_key: Optional[str] = None
     config: dict
-    design_profile: Optional[AnyDesignProfileOut] = None
-    design_preferences: Optional[DesignPreferencesUpdate] = None
-    candidate_design_profile: Optional[AnyDesignProfileOut] = None
+    # Historical V2 JSON remains readable until an explicit V3 adoption. It
+    # is never accepted by generation schemas or runtime dispatchers.
+    design_profile: Optional[dict] = None
+    design_preferences: Optional[dict] = None
+    candidate_design_profile: Optional[DesignGrammarOut] = None
     candidate_preview_disponible: bool = False
     sections_disponibles: list[SectionAvailabilityOut] = Field(default_factory=list)
     media_profile: SiteMediaProfileOut = Field(default_factory=SiteMediaProfileOut)

@@ -88,8 +88,6 @@ export default async function run() {
     tagline: "Votre plombier de confiance a Villeurbanne",
     services: ["Depannage fuite express", "Renovation de salle de bain"],
     stats: [{ valeur: "12 ans", label: "d'experience" }],
-    variante_couleur: 1,
-    variante_motif: "gradient-mesh",
   }, adminToken);
   const genere = await api.post(`/admin/api/artisans/${artisanId}/site/generate`, undefined, adminToken);
   assertEqual(genere.statut, "genere", "la generation doit faire passer le site a genere");
@@ -127,8 +125,6 @@ export default async function run() {
     tagline: "Nouvelle version controlee",
     services: ["Depannage fuite express", "Renovation complete"],
     stats: [],
-    variante_couleur: 2,
-    variante_motif: "wave-gradient",
   }, adminToken);
   const regenere = await api.post(`/admin/api/artisans/${artisanId}/site/generate`, undefined, adminToken);
   assertEqual(regenere.storage_key, genere.storage_key, "la regeneration doit ecraser la meme preview");

@@ -36,15 +36,6 @@
     currentView: "dashboard", previousView: "artisans", artisan: null, mediaObjectUrls: [],
     artisanItems: [], siteItems: [], artisanFilter: "all", siteFilter: "all", currentTab: "overview",
   };
-  const motifs = {
-    plombier: ["wave-gradient", "gradient-mesh"],
-    electricien: ["diagonal-stripes", "dot-grid"],
-    macon: ["brick-rows", "dot-grid"],
-    peintre: ["gradient-mesh", "wave-gradient"],
-    menuisier: ["gradient-mesh", "dot-grid"],
-    renovateur: ["wave-gradient", "dot-grid"],
-    general: ["wave-gradient", "gradient-mesh"],
-  };
   const statusLabels = { non_cree: "Non créé", brouillon: "Brouillon", genere: "Généré", pret: "Prêt", publie: "Publié" };
   const PLAN_LABELS = { gratuit: "Gratuit", essentiel: "Essentiel", pro: "Pro", business: "Business" };
   const ARTISAN_FILTERS = [
@@ -63,19 +54,7 @@
     ["publie", "Publiés", "publie"],
   ];
 
-  // ---------- Configurateur de design V2 (Lot 4) ----------
-  // Ce vocabulaire reflete generator/design_registry.py (source de verite).
-  // Le backend revalide integralement chaque valeur ; ces listes ne servent
-  // qu'a construire des controles lisibles, jamais a la validation.
-  const FAMILY_LABELS = { atelier: "Atelier", architecture: "Architecture", impact: "Impact", technique: "Technique", local: "Local", signature: "Signature" };
-  const FAMILY_DESCRIPTIONS = {
-    atelier: "Chaleureux et artisanal : met en valeur le savoir-faire.",
-    architecture: "Premium, minimal et éditorial : très épuré.",
-    impact: "Fort et dynamique : met en avant l'action (devis, contact).",
-    technique: "Structuré et précis : clarté et expertise.",
-    local: "Proximité et confiance : ancrage dans le territoire.",
-    signature: "Haut de gamme et photographique : très visuel.",
-  };
+  // V3 is the only active design vocabulary in the Admin.
   const DIRECTION_LABELS = { editorial_luxury: "Éditorial luxe", bold_conversion: "Conversion premium", technical_spatial: "Technique spatial", architectural_brutalist: "Architecture brutaliste", warm_craft: "Atelier chaleureux", cinematic_luxury: "Cinématique luxe", minimal_architecture: "Architecture minimale", material_editorial: "Matière éditoriale" };
   const DIRECTION_DESCRIPTIONS = {
     editorial_luxury: "Magazine d’intérieur, grandes respirations et compositions asymétriques.",
@@ -92,40 +71,8 @@
     ["hero_system", "Hero"], ["typography_system", "Typographie"], ["photo_strategy", "Images"],
     ["services_composition", "Prestations"], ["project_showcase", "Projets"], ["content_density", "Densité"],
     ["motion_level", "Mouvement"], ["spatial_level", "Spatial / 3D"], ["mobile_personality", "Mobile"],
+    ["ambience", "Ambiance"],
   ];
-  const HEADER_VARIANTS = ["classic", "minimal", "centered", "compact"];
-  const HERO_VARIANTS = ["fullscreen", "split", "asymmetric", "compact", "editorial", "card"];
-  const SERVICES_VARIANTS = ["cards", "editorial", "list", "grid", "alternating"];
-  const GALLERY_VARIANTS = ["grid", "masonry", "featured", "horizontal"];
-  const ABOUT_VARIANTS = ["classic", "editorial", "split", "compact"];
-  const REVIEWS_VARIANTS = ["cards", "featured", "minimal"];
-  const CTA_VARIANTS = ["banner", "floating", "split", "minimal"];
-  const FOOTER_VARIANTS = ["simple", "columns", "centered", "map"];
-  const RADIUS_STYLES = ["sharp", "soft", "rounded", "pill"];
-  const SPACING_STYLES = ["compact", "comfortable", "spacious"];
-  const IMAGE_TREATMENTS = ["flat", "duotone", "framed", "overlay"];
-  const PALETTE_SLOTS = ["palette-1", "palette-2", "palette-3"];
-  const FONT_PAIR_IDS = ["poppins-inter", "archivo-inter", "fredoka-inter", "rajdhani-inter"];
-  const VARIANT_LABELS = {
-    header_variant: { classic: "Classique", minimal: "Minimaliste", centered: "Centré", compact: "Compact" },
-    hero_variant: { fullscreen: "Plein écran", split: "Divisé", asymmetric: "Asymétrique", compact: "Compact", editorial: "Éditorial", card: "Carte" },
-    services_variant: { cards: "Cartes", editorial: "Éditorial", list: "Liste", grid: "Grille", alternating: "Alterné" },
-    gallery_variant: { grid: "Grille", masonry: "Mosaïque", featured: "Mise en avant", horizontal: "Horizontal" },
-    about_variant: { classic: "Classique", editorial: "Éditorial", split: "Divisé", compact: "Compact" },
-    reviews_variant: { cards: "Cartes", featured: "Mise en avant", minimal: "Minimaliste" },
-    cta_variant: { banner: "Bandeau", floating: "Flottant", split: "Divisé", minimal: "Minimaliste" },
-    footer_variant: { simple: "Simple", columns: "Colonnes", centered: "Centré", map: "Carte" },
-  };
-  const RADIUS_LABELS = { sharp: "Angles nets", soft: "Légèrement arrondi", rounded: "Arrondi", pill: "Très arrondi" };
-  const SPACING_LABELS = { compact: "Compact", comfortable: "Confortable", spacious: "Aéré" };
-  const IMAGE_TREATMENT_LABELS = { flat: "Naturelle", duotone: "Bicolore", framed: "Encadrée", overlay: "Dégradé" };
-  const FONT_PAIR_LABELS = {
-    "poppins-inter": "Moderne et arrondie",
-    "archivo-inter": "Neutre et structurée",
-    "fredoka-inter": "Ludique et chaleureuse",
-    "rajdhani-inter": "Technique et anguleuse",
-  };
-  const PALETTE_LABELS = { "palette-1": "Palette 1", "palette-2": "Palette 2", "palette-3": "Palette 3" };
   const MEDIA_USAGE_LABELS = {
     hero: "Bandeau d'accueil", gallery: "Galerie photo", about: "À propos",
     featured_project: "Réalisation phare", before_after: "Avant / après",
@@ -137,31 +84,10 @@
     cta: "Appel à l'action", stats: "Chiffres clés", process: "Déroulé", before_after: "Avant / après",
     reasons: "Pourquoi nous choisir", contact: "Formulaire de contact",
   };
-  const DESIGN_AXES = [
-    ["design_family", "Famille"], ["header_variant", "En-tête"], ["hero_variant", "Bloc d'accueil"],
-    ["services_variant", "Prestations"], ["gallery_variant", "Galerie"], ["about_variant", "À propos"],
-    ["reviews_variant", "Avis"], ["cta_variant", "Appel à l'action"], ["footer_variant", "Pied de page"],
-    ["palette", "Palette"], ["font_pair", "Typographie"], ["radius_style", "Arrondis"],
-    ["spacing_style", "Espacement"], ["image_treatment", "Traitement des images"],
-  ];
-  const ADVANCED_AXES = [
-    ["header_variant", "En-tête", HEADER_VARIANTS], ["hero_variant", "Bloc d'accueil", HERO_VARIANTS],
-    ["services_variant", "Prestations", SERVICES_VARIANTS], ["gallery_variant", "Galerie", GALLERY_VARIANTS],
-    ["about_variant", "À propos", ABOUT_VARIANTS], ["reviews_variant", "Avis", REVIEWS_VARIANTS],
-    ["cta_variant", "Appel à l'action", CTA_VARIANTS], ["footer_variant", "Pied de page", FOOTER_VARIANTS],
-    ["radius_style", "Arrondis", RADIUS_STYLES], ["spacing_style", "Espacement", SPACING_STYLES],
-  ];
 
   function axisValueLabel(axis, value) {
     if (!value) return "-";
-    if (axis === "design_family") return FAMILY_LABELS[value] || value;
     if (axis === "art_direction") return DIRECTION_LABELS[value] || value;
-    if (axis === "palette") return PALETTE_LABELS[value] || value;
-    if (axis === "font_pair") return FONT_PAIR_LABELS[value] || value;
-    if (axis === "radius_style") return RADIUS_LABELS[value] || value;
-    if (axis === "spacing_style") return SPACING_LABELS[value] || value;
-    if (axis === "image_treatment") return IMAGE_TREATMENT_LABELS[value] || value;
-    if (VARIANT_LABELS[axis] && VARIANT_LABELS[axis][value]) return VARIANT_LABELS[axis][value];
     return value;
   }
 
@@ -442,14 +368,6 @@
     });
   }
 
-  function updateMotifs(metier, selected) {
-    const select = document.getElementById("motif-select");
-    select.innerHTML = `<option value="">Automatique</option>` + (motifs[metier] || motifs.general).map(function (motif) {
-      return `<option value="${motif}">${motif}</option>`;
-    }).join("");
-    select.value = selected || "";
-  }
-
   function updateWorkflow(site) {
     document.getElementById("preview-button").disabled = !site.preview_disponible;
     document.getElementById("ready-button").disabled = site.statut !== "genere";
@@ -537,13 +455,18 @@
       return;
     }
     const isV3 = String(profile.design_engine_version || "").startsWith("v3");
-    const axes = isV3 ? V3_DESIGN_AXES : DESIGN_AXES.filter(function (entry) { return entry[0] !== "design_family"; });
-    const rows = axes.map(function (entry) {
+    if (!isV3) {
+      el.innerHTML = '<div class="design-current-card"><div class="design-current-family">' +
+        '<span class="design-family-badge">Ancien design</span>' +
+        '<p>Une nouvelle génération utilisera le moteur V3. Prévisualisez puis adoptez l’alternative avant toute nouvelle publication.</p></div></div>';
+      return;
+    }
+    const rows = V3_DESIGN_AXES.map(function (entry) {
       return '<div><dt>' + escapeHtml(entry[1]) + '</dt><dd>' + escapeHtml(axisValueLabel(entry[0], profile[entry[0]])) + '</dd></div>';
     }).join("");
     el.innerHTML = '<div class="design-current-card"><div class="design-current-family">' +
-      '<span class="design-family-badge">' + escapeHtml(isV3 ? (DIRECTION_LABELS[profile.art_direction] || profile.art_direction) : (FAMILY_LABELS[profile.design_family] || profile.design_family)) + '</span>' +
-      '<p>' + escapeHtml(isV3 ? (DIRECTION_DESCRIPTIONS[profile.art_direction] || "") : (FAMILY_DESCRIPTIONS[profile.design_family] || "")) + '</p></div>' +
+      '<span class="design-family-badge">' + escapeHtml(DIRECTION_LABELS[profile.art_direction] || profile.art_direction) + '</span>' +
+      '<p>' + escapeHtml(DIRECTION_DESCRIPTIONS[profile.art_direction] || "") + '</p></div>' +
       '<dl class="design-current-grid">' + rows + '</dl>' +
       '<details class="design-technical"><summary>Détails techniques</summary><code>' + escapeHtml(profile.design_signature || "") + '</code></details></div>';
   }
@@ -559,78 +482,17 @@
     }).join("") + '</ul>';
   }
 
-  function renderFamilyCards(selected, isV3) {
-    const labels = isV3 ? DIRECTION_LABELS : FAMILY_LABELS;
-    const descriptions = isV3 ? DIRECTION_DESCRIPTIONS : FAMILY_DESCRIPTIONS;
-    document.getElementById("design-family-cards").innerHTML = Object.keys(labels).map(function (fam) {
-      return '<button type="button" class="design-family-card' + (fam === selected ? " selected" : "") + '" data-family="' + fam + '">' +
-        '<span class="family-glyph glyph-' + fam + '" aria-hidden="true"><i></i><i></i></span>' +
-        '<strong>' + escapeHtml(labels[fam]) + '</strong><span>' + escapeHtml(descriptions[fam]) + '</span></button>';
+  function renderDirectionCards(selected) {
+    document.getElementById("design-family-cards").innerHTML = Object.keys(DIRECTION_LABELS).map(function (direction) {
+      return '<button type="button" class="design-family-card' + (direction === selected ? " selected" : "") + '" data-direction="' + direction + '">' +
+        '<strong>' + escapeHtml(DIRECTION_LABELS[direction]) + '</strong><span>' + escapeHtml(DIRECTION_DESCRIPTIONS[direction]) + '</span></button>';
     }).join("");
   }
 
-  function configureDensityOptions(isV3) {
+  function configureDensityOptions() {
     const select = document.getElementById("pref-density");
-    const options = isV3
-      ? [["", "Automatique"], ["compact", "Compacte"], ["balanced", "Équilibrée"], ["airy", "Aérée"]]
-      : [["", "Automatique"], ["compact", "Compacte"], ["comfortable", "Confortable"], ["spacious", "Aérée"]];
+    const options = [["", "Automatique"], ["compact", "Compacte"], ["balanced", "Équilibrée"], ["airy", "Aérée"]];
     select.innerHTML = options.map(function (option) { return '<option value="' + option[0] + '">' + option[1] + '</option>'; }).join("");
-  }
-
-  function buildAdvancedPanel() {
-    const grid = ADVANCED_AXES.map(function (entry) {
-      const axis = entry[0], label = entry[1], options = entry[2];
-      const opts = options.map(function (opt) { return '<option value="' + opt + '">' + escapeHtml(axisValueLabel(axis, opt)) + '</option>'; }).join("");
-      return '<label>' + escapeHtml(label) + '<select data-override="' + axis + '"><option value="">Automatique</option>' + opts + '</select></label>';
-    }).join("");
-    const palettes = '<div class="override-group" data-override="palette"><span>Palette</span><div class="palette-swatches">' +
-      '<button type="button" class="palette-swatch auto selected" data-value="">Auto</button>' +
-      PALETTE_SLOTS.map(function (p, i) { return '<button type="button" class="palette-swatch swatch-' + (i + 1) + '" data-value="' + p + '" aria-label="' + escapeHtml(PALETTE_LABELS[p]) + '" title="' + escapeHtml(PALETTE_LABELS[p]) + '"></button>'; }).join("") +
-      '</div></div>';
-    const fonts = '<div class="override-group" data-override="font_pair"><span>Typographie</span><div class="font-options">' +
-      '<button type="button" class="font-option selected" data-value="">Automatique</button>' +
-      FONT_PAIR_IDS.map(function (id) { return '<button type="button" class="font-option" data-value="' + id + '">' + escapeHtml(FONT_PAIR_LABELS[id]) + '</button>'; }).join("") +
-      '</div></div>';
-    const images = '<div class="override-group" data-override="image_treatment"><span>Traitement des images</span><div class="image-treatment-options">' +
-      '<button type="button" class="image-treatment-option selected" data-value="">Automatique</button>' +
-      IMAGE_TREATMENTS.map(function (t) { return '<button type="button" class="image-treatment-option treatment-' + t + '" data-value="' + t + '">' + escapeHtml(IMAGE_TREATMENT_LABELS[t]) + '</button>'; }).join("") +
-      '</div></div>';
-    const saveRow = '<div class="override-group"><button id="save-preferences-button" class="button button-secondary" type="button">Enregistrer cette orientation par défaut</button>' +
-      '<p class="field-hint">Mémorise la famille et la densité choisies pour les prochaines alternatives.</p></div>';
-    document.getElementById("advanced-panel").innerHTML = '<div class="form-grid">' + grid + '</div>' + palettes + fonts + images +
-      '<div class="section-order-editor" id="section-order-editor"><span>Ordre des sections</span></div>' + saveRow;
-  }
-
-  function paintSectionOrderEditor() {
-    const el = document.getElementById("section-order-editor");
-    if (!el) return;
-    const order = state.sectionOrderDraft || [];
-    el.innerHTML = '<span>Ordre des sections</span><ol class="section-order-list">' + order.map(function (section, index) {
-      const label = escapeHtml(SECTION_LABELS[section] || section);
-      return '<li><span>' + label + '</span><span>' +
-        '<button type="button" class="button button-secondary" data-move="up" data-index="' + index + '" aria-label="Monter ' + label + '"' + (index === 0 ? " disabled" : "") + '>↑</button> ' +
-        '<button type="button" class="button button-secondary" data-move="down" data-index="' + index + '" aria-label="Descendre ' + label + '"' + (index === order.length - 1 ? " disabled" : "") + '>↓</button></span></li>';
-    }).join("") + '</ol>';
-  }
-
-  function resetAdvancedPanelSelections() {
-    document.querySelectorAll('#advanced-panel select[data-override]').forEach(function (select) { select.value = ""; });
-    document.querySelectorAll('#advanced-panel .override-group [data-value]').forEach(function (btn) { btn.classList.toggle("selected", btn.dataset.value === ""); });
-    state.overrideChoices = {};
-  }
-
-  function gatherOverrides() {
-    const overrides = {};
-    document.querySelectorAll('#advanced-panel select[data-override]').forEach(function (select) {
-      if (select.value) overrides[select.dataset.override] = select.value;
-    });
-    Object.entries(state.overrideChoices || {}).forEach(function (entry) {
-      if (entry[1]) overrides[entry[0]] = entry[1];
-    });
-    if (state.sectionOrderDraft && state.originalSectionOrder && JSON.stringify(state.sectionOrderDraft) !== JSON.stringify(state.originalSectionOrder)) {
-      overrides.section_order = state.sectionOrderDraft;
-    }
-    return Object.keys(overrides).length ? overrides : null;
   }
 
   function updateCandidateButtons(site) {
@@ -648,9 +510,8 @@
     const candidate = site.candidate_design_profile;
     if (!candidate) { el.hidden = true; el.innerHTML = ""; return; }
     el.hidden = false;
-    const candidateIsV3 = String(candidate.design_engine_version || "").startsWith("v3");
-    const comparisonAxes = candidateIsV3 ? V3_DESIGN_AXES : DESIGN_AXES;
-    const diffAxes = comparisonAxes.filter(function (entry) { return !current || current[entry[0]] !== candidate[entry[0]]; });
+    const currentIsV3 = current && String(current.design_engine_version || "").startsWith("v3");
+    const diffAxes = V3_DESIGN_AXES.filter(function (entry) { return !currentIsV3 || current[entry[0]] !== candidate[entry[0]]; });
     const currentRows = diffAxes.map(function (entry) { return '<div><dt>' + escapeHtml(entry[1]) + '</dt><dd>' + escapeHtml(axisValueLabel(entry[0], current ? current[entry[0]] : null)) + '</dd></div>'; }).join("");
     const candidateRows = diffAxes.map(function (entry) { return '<div><dt>' + escapeHtml(entry[1]) + '</dt><dd>' + escapeHtml(axisValueLabel(entry[0], candidate[entry[0]])) + '</dd></div>'; }).join("");
     el.innerHTML = '<h4>Version actuelle vs alternative</h4>' +
@@ -662,19 +523,14 @@
   }
 
   function candidatePayload() {
-    const keepFamily = document.getElementById("candidate-keep-family").checked;
-    const familySelect = document.getElementById("pref-family").value;
+    const keepDirection = document.getElementById("candidate-keep-direction").checked;
     const directionSelect = document.getElementById("pref-direction").value;
     const density = document.getElementById("pref-density").value;
-    const isV3 = state.designEngine === "v3";
     return {
-      keep_current_family: keepFamily,
-      engine_version: isV3 ? "v3" : "v2",
-      preferred_family: isV3 || keepFamily ? null : (familySelect || null),
-      preferred_direction: !isV3 || keepFamily ? null : (directionSelect || null),
-      ambience: isV3 ? (document.getElementById("pref-ambience").value || null) : null,
+      keep_current_direction: keepDirection,
+      preferred_direction: keepDirection ? null : (directionSelect || null),
+      ambience: document.getElementById("pref-ambience").value || null,
       density: density || null,
-      overrides: isV3 ? null : gatherOverrides(),
     };
   }
 
@@ -693,20 +549,6 @@
       regenBtn.disabled = state.artisan && state.artisan.site && !state.artisan.site.candidate_design_profile;
       throw error;
     }
-  }
-
-  async function savePreferences() {
-    const isV3 = state.designEngine === "v3";
-    const payload = {
-      engine_version: isV3 ? "v3" : "v2",
-      preferred_family: isV3 ? null : (document.getElementById("pref-family").value || null),
-      preferred_direction: isV3 ? (document.getElementById("pref-direction").value || null) : null,
-      ambience: isV3 ? (document.getElementById("pref-ambience").value || null) : null,
-      density: document.getElementById("pref-density").value || null,
-    };
-    await api("/admin/api/artisans/" + state.artisan.id + "/site/design/preferences", { method: "PATCH", body: JSON.stringify(payload) });
-    toast("Orientation enregistrée pour la prochaine alternative");
-    await openArtisan(state.artisan.id);
   }
 
   async function abandonCandidate() {
@@ -763,11 +605,9 @@
       tagline: config.tagline,
       services: (config.services || []).join("\n"),
       stats: (config.stats || []).map(function (item) { return item.valeur + " | " + item.label; }).join("\n"),
-      variante_couleur: config.variante_couleur,
       domaine: artisan.site.domaine,
       url_publique: artisan.site.url_publique,
     });
-    updateMotifs(artisan.metier, config.variante_motif);
     document.getElementById("site-slug").textContent = artisan.slug;
     document.getElementById("site-generated-at").textContent = formatDate(artisan.site.date_generation);
     document.getElementById("site-published-at").textContent = formatDate(artisan.site.date_publication);
@@ -780,26 +620,18 @@
 
     const profileIsV3 = String((artisan.site.design_profile && artisan.site.design_profile.design_engine_version) || "").startsWith("v3");
     const preferences = artisan.site.design_preferences || {};
-    state.designEngine = profileIsV3 || preferences.engine_version === "v3" ? "v3" : "v2";
-    configureDensityOptions(state.designEngine === "v3");
-    const preferredFamily = preferences.preferred_family || "";
+    configureDensityOptions();
     const preferredDirection = preferences.preferred_direction || (profileIsV3 ? artisan.site.design_profile.art_direction : "");
     renderDesignCurrent(artisan.site);
     renderSectionsAvailability(artisan.site.sections_disponibles);
-    renderFamilyCards(state.designEngine === "v3" ? preferredDirection : preferredFamily, state.designEngine === "v3");
-    document.getElementById("pref-family").value = preferredFamily;
+    renderDirectionCards(preferredDirection);
     document.getElementById("pref-direction").value = preferredDirection;
     document.getElementById("pref-ambience").value = preferences.ambience || "";
     document.getElementById("pref-density").value = preferences.density || "";
     const warningBox = document.getElementById("site-content-warnings");
     warningBox.hidden = !(artisan.site.content_warnings || []).length;
     warningBox.textContent = (artisan.site.content_warnings || []).join(" ");
-    document.getElementById("candidate-keep-family").checked = false;
-    document.getElementById("design-personalize").open = false;
-    state.originalSectionOrder = (artisan.site.design_profile && artisan.site.design_profile.section_order) || [];
-    state.sectionOrderDraft = state.originalSectionOrder.slice();
-    paintSectionOrderEditor();
-    resetAdvancedPanelSelections();
+    document.getElementById("candidate-keep-direction").checked = false;
     updateCandidateButtons(artisan.site);
     renderDesignComparison(artisan.site);
 
@@ -823,8 +655,6 @@
       tagline: String(data.get("tagline") || "").trim() || null,
       services: services,
       stats: stats,
-      variante_couleur: data.get("variante_couleur") === "" ? null : Number(data.get("variante_couleur")),
-      variante_motif: data.get("variante_motif") || null,
       domaine: String(data.get("domaine") || "").trim() || null,
       url_publique: String(data.get("url_publique") || "").trim() || null,
     };
@@ -846,6 +676,16 @@
     const nextSite = sitePayload();
     await api("/admin/api/artisans/" + state.artisan.id, { method: "PATCH", body: JSON.stringify(artisanPayload()) });
     await api("/admin/api/artisans/" + state.artisan.id + "/site", { method: "PATCH", body: JSON.stringify(nextSite) });
+    const currentVersion = String((state.artisan.site.design_profile && state.artisan.site.design_profile.design_engine_version) || "");
+    if (currentVersion.startsWith("v2")) {
+      await api("/admin/api/artisans/" + state.artisan.id + "/site/design/candidate", {
+        method: "POST",
+        body: JSON.stringify(candidatePayload()),
+      });
+      toast("Alternative V3 générée. Prévisualisez-la puis adoptez-la avant publication.");
+      await openArtisan(state.artisan.id);
+      return;
+    }
     await api("/admin/api/artisans/" + state.artisan.id + "/site/generate", { method: "POST" });
     toast("Preview générée");
     await openArtisan(state.artisan.id);
@@ -915,41 +755,18 @@
       await openArtisan(state.artisan.id);
     } catch (error) { handleError(error); }
   });
-  document.getElementById("artisan-form").elements.metier.addEventListener("change", function (event) { updateMotifs(event.target.value, ""); });
   document.getElementById("logout-button").addEventListener("click", async function () {
     await api("/admin/auth/logout", { method: "POST" });
     window.sessionStorage.removeItem(ADMIN_TOKEN_KEY);
     window.location.assign("/admin/login.html");
   });
 
-  buildAdvancedPanel();
   document.getElementById("design-family-cards").addEventListener("click", function (event) {
     const card = event.target.closest(".design-family-card");
     if (!card) return;
-    document.getElementById(state.designEngine === "v3" ? "pref-direction" : "pref-family").value = card.dataset.family;
-    renderFamilyCards(card.dataset.family, state.designEngine === "v3");
+    document.getElementById("pref-direction").value = card.dataset.direction;
+    renderDirectionCards(card.dataset.direction);
   });
-  document.getElementById("advanced-panel").addEventListener("click", function (event) {
-    const moveButton = event.target.closest("[data-move]");
-    if (moveButton) {
-      const index = Number(moveButton.dataset.index);
-      const swapIndex = index + (moveButton.dataset.move === "up" ? -1 : 1);
-      const order = state.sectionOrderDraft;
-      if (!order || swapIndex < 0 || swapIndex >= order.length) return;
-      const tmp = order[index];
-      order[index] = order[swapIndex];
-      order[swapIndex] = tmp;
-      paintSectionOrderEditor();
-      return;
-    }
-    const choiceButton = event.target.closest(".override-group [data-value]");
-    if (!choiceButton) return;
-    const group = choiceButton.closest(".override-group");
-    state.overrideChoices = state.overrideChoices || {};
-    state.overrideChoices[group.dataset.override] = choiceButton.dataset.value || null;
-    group.querySelectorAll("[data-value]").forEach(function (el) { el.classList.toggle("selected", el === choiceButton); });
-  });
-  document.getElementById("save-preferences-button").addEventListener("click", function () { savePreferences().catch(handleError); });
   document.getElementById("candidate-generate-button").addEventListener("click", function () { generateCandidate(false).catch(handleError); });
   document.getElementById("candidate-regenerate-button").addEventListener("click", function () { generateCandidate(true).catch(handleError); });
   document.getElementById("candidate-abandon-button").addEventListener("click", function () { abandonCandidate().catch(handleError); });

@@ -1,4 +1,4 @@
-"""Selection pure et deterministe des medias d'un futur rendu de site V2."""
+"""Selection pure et deterministe des medias d'un rendu Site Vitrine V3."""
 from collections import Counter
 from hashlib import sha256
 

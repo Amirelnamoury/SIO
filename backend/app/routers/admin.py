@@ -36,7 +36,6 @@ from app.admin_service import (
     preview_storage_key,
     sections_availability,
     validate_design_preferences,
-    validate_site_variants,
 )
 from app.config import settings
 from app.database import get_db
@@ -155,6 +154,12 @@ def _site_out(db: Session, artisan: Artisan, site: SiteVitrine | None) -> SiteVi
     candidate_preview_disponible = bool(
         site.candidate_design_profile and get_storage().exists(candidate_preview_storage_key(artisan.id))
     )
+    preferences = site.design_preferences or {}
+    public_preferences = {
+        key: preferences[key]
+        for key in ("preferred_direction", "ambience", "density")
+        if preferences.get(key) is not None
+    }
     return SiteVitrineOut(
         id=site.id,
         artisan_id=artisan.id,
@@ -164,7 +169,7 @@ def _site_out(db: Session, artisan: Artisan, site: SiteVitrine | None) -> SiteVi
         storage_key=site.storage_key,
         config=merged_site_config(artisan, site),
         design_profile=site.design_profile,
-        design_preferences=site.design_preferences,
+        design_preferences=public_preferences,
         candidate_design_profile=site.candidate_design_profile,
         candidate_preview_disponible=candidate_preview_disponible,
         sections_disponibles=sections_availability(db, artisan, site),
@@ -390,23 +395,19 @@ def admin_site_update(
     artisan = _artisan_or_404(db, artisan_id)
     site = artisan.site_vitrine
     if site is None:
-        site = SiteVitrine(artisan_id=artisan.id, statut="brouillon", config=default_site_config(artisan), design_preferences={"engine_version": "v3"})
+        site = SiteVitrine(artisan_id=artisan.id, statut="brouillon", config=default_site_config(artisan), design_preferences={})
         db.add(site)
         db.flush()
 
     updates = payload.model_dump(exclude_unset=True)
     if "url_publique" in updates:
         updates["url_publique"] = str(updates["url_publique"]) if updates["url_publique"] is not None else None
-    config_fields = {"tagline", "services", "stats", "variante_couleur", "variante_motif"}
+    config_fields = {"tagline", "services", "stats"}
     config_updates = {key: value for key, value in updates.items() if key in config_fields}
     if "stats" in config_updates and config_updates["stats"] is not None:
         config_updates["stats"] = [item.model_dump() if hasattr(item, "model_dump") else item for item in config_updates["stats"]]
     current_config = merged_site_config(artisan, site)
     new_config = {**current_config, **config_updates}
-    try:
-        validate_site_variants(artisan, new_config)
-    except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
     site.config = new_config
     if "domaine" in updates:
         site.domaine = updates["domaine"]
@@ -429,7 +430,7 @@ def admin_site_generate(
     artisan = _artisan_or_404(db, artisan_id)
     site = artisan.site_vitrine
     if site is None:
-        site = SiteVitrine(artisan_id=artisan.id, statut="brouillon", config=default_site_config(artisan), design_preferences={"engine_version": "v3"})
+        site = SiteVitrine(artisan_id=artisan.id, statut="brouillon", config=default_site_config(artisan), design_preferences={})
         db.add(site)
         db.flush()
     try:
@@ -459,7 +460,17 @@ def admin_site_design_preferences(
 ):
     """Preferences Admin (Niveau 1) - orientent une future generation
     d'alternative, ne touchent jamais au design actuel (Lot 4)."""
-    artisan, site = _site_with_design_or_409(db, artisan_id)
+    artisan = _artisan_or_404(db, artisan_id)
+    site = artisan.site_vitrine
+    if site is None:
+        site = SiteVitrine(
+            artisan_id=artisan.id,
+            statut="brouillon",
+            config=default_site_config(artisan),
+            design_preferences={},
+        )
+        db.add(site)
+        db.flush()
     site.design_preferences = validate_design_preferences(payload.model_dump())
     db.commit()
     db.refresh(site)
@@ -469,17 +480,14 @@ def admin_site_design_preferences(
 def _generate_candidate_response(
     db: Session, artisan: Artisan, site: SiteVitrine, payload: DesignCandidateGenerateRequest, *, avoid_previous: bool,
 ) -> DesignCandidateOut:
-    current_is_v2 = str(site.design_profile.get("design_engine_version") or "").startswith("v2")
-    preferred_family = site.design_profile.get("design_family") if payload.keep_current_family and current_is_v2 else payload.preferred_family
-    preferred_direction = site.design_profile.get("art_direction") if payload.keep_current_family and not current_is_v2 else payload.preferred_direction
+    current_is_v3 = str(site.design_profile.get("design_engine_version") or "").startswith("v3")
+    preferred_direction = site.design_profile.get("art_direction") if payload.keep_current_direction and current_is_v3 else payload.preferred_direction
     try:
         candidate, distinct = generate_design_candidate(
             db, artisan, site,
-            preferred_family=preferred_family,
             density=payload.density,
             overrides=payload.overrides,
             avoid_previous_candidate=avoid_previous,
-            engine_version=payload.engine_version,
             preferred_direction=preferred_direction,
             ambience=payload.ambience,
         )
