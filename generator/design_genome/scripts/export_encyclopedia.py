@@ -4,13 +4,18 @@ from __future__ import annotations
 
 import json
 import re
+from dataclasses import asdict, is_dataclass
 from pathlib import Path
 
 from ..archetypes import ARCHETYPES
+from ..component_relationships import CATEGORY_TRANSITION_AFFINITY, TRAIT_PAIR_AFFINITY
 from ..data.color_systems import COLOR_SYSTEMS
 from ..data.components import COMPONENT_REGISTRIES
+from ..data.deep_references import ADDITIONAL_DEEP_REFERENCES, sector_guidance
+from ..data.foundations import GEOMETRY_SYSTEMS, SPACING_SYSTEMS
 from ..data.grids import GRID_SYSTEMS
 from ..data.page_silhouettes import PAGE_SILHOUETTES
+from ..data.research_seed import GOLD_REFERENCES
 from ..data.systems import MOBILE_PERSONALITIES, MOTION_SYSTEMS, SPATIAL_SYSTEMS
 from ..data.trade_grammar import TRADE_GRAMMARS
 from ..data.typography_systems import TYPOGRAPHY_SYSTEMS
@@ -29,16 +34,34 @@ This directory is the knowledge layer for a future generative design system. It 
 
 The encyclopedia turns research into typed registries, compatibility rules and serializable `SiteDNA`. Its purpose is to make future design generation varied, data-aware, explainable and resistant to cloning. Passing its tests is a technical filter, never a claim that an unreviewed design is premium.
 
-## Contents
+## Index
 
-- `reference-atlas.json`: 150+ research references with access state and inspection scope.
-- `gold-standards.md`: 30 deeply reviewed references and transferable constraints.
-- `components-*.md`: 260 semantic component blueprints.
-- `systems.md`: color, typography, grids, silhouettes, motion, spatial and mobile systems.
-- `trade-grammars.md`: six métier-specific visual/business grammars.
-- `architecture.md`: SiteDNA composition, compatibility, anti-clone and failure policy.
-- `truth-model.md`: factual-content boundaries and media provenance rules.
-- `genome-simulation.md`: deterministic diversity evidence.
+### Research
+- [Research method and deep-reference status](research-log.md)
+- [30 Gold Standard dossiers](gold-standards.md)
+- [Reference atlas](reference-atlas.json)
+
+### Foundations
+- [Color, typography, grid, spacing, geometry, motion and mobile](systems.md)
+- [Architecture and similarity](architecture.md)
+
+### Components
+- [Header](components-header.md) · [Hero](components-hero.md) · [Services](components-services.md)
+- [Gallery](components-gallery.md) · [About](components-about.md) · [Trust](components-trust.md)
+- [CTA](components-cta.md) · [Contact](components-contact.md) · [Form](components-form.md) · [Footer](components-footer.md)
+- [Semantic audit](component-semantic-audit.md)
+
+### Composition and review
+- [Archetypes and Photo Director](archetypes-photo-direction.md)
+- [Human review guide](review-guide.md)
+- [30 sample DNA cards](sample-dna/README.md)
+- [10 plumber comparison](sample-plumbers.md)
+
+### Trades, media, truth and quality
+- [Trade grammars](trade-grammars.md)
+- [Truth and provenance](truth-model.md)
+- [Simulation evidence](genome-simulation.md)
+- [Stable machine export](encyclopedia.json)
 
 ## Design Genome flow
 
@@ -50,8 +73,10 @@ Missing facts or media remove incompatible sections. They are never replaced wit
 
 ```powershell
 python -m generator.design_genome.scripts.design_genome_stats
+python -m generator.design_genome.scripts.audit_component_semantics
 python -m generator.design_genome.scripts.audit_genome_diversity
 python -m generator.design_genome.scripts.export_encyclopedia
+python -m generator.design_genome.scripts.export_sample_dna
 ```
 """
 
@@ -71,7 +96,7 @@ Thirty silhouettes describe narrative order rather than interchangeable stacks. 
 
 ## Anti-clone model
 
-Similarity is computed across six explainable distances: structure, typography, color, components, narrative and photo strategy. Candidate generation compares against history and rejects high similarity. The default threshold is intentionally stricter than exact signature uniqueness.
+Similarity uses structure (18%), typography (15%), color (5%), components (38%), narrative (16%) and photo strategy (8%). A palette-only change therefore cannot disguise a structural clone. Bands are: 0-.40 clearly distinct, .40-.60 related, .60-.75 visually similar, .75-.84 near clone and above .84 rejected. These engineering thresholds were calibrated through cohorts and remain subject to human rendered review.
 
 ## Quality model
 
@@ -93,6 +118,8 @@ TRUTH = """# Data truth and media provenance
 
 The classifier detects claims about experience, projects, clients, response time, ratings, RGE, insurance, guarantees, emergency service and certifications. The component registry independently requires the data behind reviews, statistics, badges, insurance, partners, brands, awards, delays, availability and service areas.
 
+`ClaimRequirement` is the structured authority behind those decisions. A future copy layer must ask `can_render_claim(claim_type, facts)` before composing the sentence; text-pattern classification is a secondary audit guard, never the sole authorization.
+
 ## Missing information
 
 A missing section is valid. An invented section is not. Galleries may disappear when no usable image exists; trust strips disappear when no verified fact exists; contact/form/CTA components disappear without a verified contact channel.
@@ -100,6 +127,8 @@ A missing section is valid. An invented section is not. Galleries may disappear 
 ## Photo Director
 
 The 192 photo profiles cover six trades, eight art directions and four section roles. Stock is permitted for ambient or illustrative roles only. Project evidence, before/after and artisan casebooks require artisan-owned media. Provider choice and downloading remain outside this package and outside public pages.
+
+`can_use_media_wording(source, role, wording_role)` rejects stock paired with project, realization, worksite, before/after, team or selected-project wording.
 """
 
 
@@ -109,11 +138,14 @@ def write(path: Path, content: str) -> None:
 
 def export_components() -> None:
     for category, registry in COMPONENT_REGISTRIES.items():
-        lines = [f"# {category.title()} component blueprints", "", f"Count: {len(registry)}", "", "| ID | Traits | Required data | Required media | Density | Weight | Mobile |", "|---|---|---|---|---:|---:|---|"]
+        lines = [f"# {category.title()} component blueprints", "", f"Count: {len(registry)}", "", "Every ID is opaque: semantics come from the explicit profile, constraints and resolved blueprint spec.", "", "| ID | Profile / layout | Traits | Data (all / any) | Media (all / any) | Density | Weight | Mobile / fallback |", "|---|---|---|---|---|---:|---:|---|"]
         for item in registry.values():
+            spec = item.blueprint_spec
             lines.append(
-                f"| `{item.id}` | {', '.join(sorted(item.traits))} | {', '.join(sorted(item.required_data)) or '-'} | "
-                f"{', '.join(sorted(item.required_media)) or '-'} | {item.density} | {item.visual_weight} | `{item.mobile_variant}` |"
+                f"| `{item.id}` | `{item.profile}` / `{spec.layout_model}` | {', '.join(sorted(item.traits))} | "
+                f"{', '.join(sorted(item.required_data)) or '-'} / {', '.join(sorted(item.required_any_data)) or '-'} | "
+                f"{', '.join(sorted(item.required_media)) or '-'} / {', '.join(sorted(item.required_any_media)) or '-'} | "
+                f"{item.density} | {item.visual_weight} | `{item.mobile_variant}` / {spec.fallback_strategy} |"
             )
         write(DOCS / f"components-{category}.md", "\n".join(lines))
 
@@ -132,6 +164,12 @@ def export_systems() -> None:
     lines.extend(("", "## Page silhouettes", "", "| ID | Narrative | Minimum data | Images | Mobile transformation |", "|---|---|---|---|---|"))
     for item in PAGE_SILHOUETTES.values():
         lines.append(f"| `{item.id}` | {' -> '.join(item.sections)} | {', '.join(sorted(item.minimum_data)) or '-'} | {item.expected_image_count[0]}-{item.expected_image_count[1]} | `{item.mobile_transformation}` |")
+    lines.extend(("", "## Spacing systems", "", "| ID | Section | Component | Text | Grid | Hero | Mobile |", "|---|---|---:|---:|---:|---|---:|"))
+    for item in SPACING_SYSTEMS.values():
+        lines.append(f"| `{item.id}` | {item.section_padding[0]}-{item.section_padding[1]} | {item.component_gap} | {item.text_gap} | {item.grid_gap} | {item.hero_padding[0]}-{item.hero_padding[1]} | {item.mobile_multiplier} |")
+    lines.extend(("", "## Geometry systems", "", "| ID | Radius | Borders / lines | Shape language | Images | Buttons | Cards |", "|---|---:|---|---|---|---|---|"))
+    for item in GEOMETRY_SYSTEMS.values():
+        lines.append(f"| `{item.id}` | {item.radius} | {item.border_behavior} / {item.line_behavior} | {item.shape_language} | {item.image_corner_behavior} | {item.button_shape} | {item.card_shape} |")
     lines.extend(("", "## Motion systems", "", "| ID | Intensity | Cost | Techniques | Reduced-motion fallback |", "|---|---:|---:|---|---|"))
     for item in MOTION_SYSTEMS.values():
         lines.append(f"| `{item.id}` | {item.intensity} | {item.performance_cost} | {', '.join(item.techniques) or '-'} | `{item.reduced_motion_fallback}` |")
@@ -174,15 +212,43 @@ def export_archetypes_and_photo() -> None:
 def export_gold() -> None:
     bible = (ROOT / "docs" / "design-bible-v3.md").read_text(encoding="utf-8")
     rows = re.findall(r"^\|\s*(\d+)\s*\|\s*\[([^]]+)\]\(([^)]+)\)\s*\|\s*([^|]+)\|\s*([^|]+)\|", bible, re.M)
-    lines = ["# 30 Gold Standards", "", "These references received manual visual review. The transferable unit is a constraint or pattern, never a copied page.", "", "| # | Reference | Sector | Observed strength |", "|---:|---|---|---|"]
-    for number, name, url, sector, observation in rows[:30]:
-        lines.append(f"| {number} | [{name}]({url}) | {sector.strip()} | {observation.strip()} |")
-    lines.extend(("", "## Promotion criteria", "", "A broad-atlas reference becomes Gold only after desktop/mobile visual inspection, identifiable transferable constraints, explicit cautions, and separation between observed fact and design interpretation."))
+    observations_by_url = {url.rstrip("/"): observation.strip() for _number, _name, url, _sector, observation in rows}
+    lines = ["# 30 Gold Standards", "", "These references received a manual desktop review recorded in the V3 design bible. Each dossier separates the recorded observation from interpretation. Mobile was not inspected and is never inferred.", ""]
+    for number, (name, url, sector) in enumerate(GOLD_REFERENCES, 1):
+        guide = sector_guidance(sector.strip())
+        observed = observations_by_url.get(url.rstrip("/"), "Desktop review recorded, but the concise observation could not be matched; no additional visual detail is inferred.")
+        lines.extend((
+            f"## {number}. {name}", "",
+            f"- **REFERENCE:** {name}", f"- **URL:** {url}", f"- **SECTOR:** {sector.strip()}",
+            f"1. **FIRST IMPRESSION:** {observed}",
+            f"2. **PAGE SILHOUETTE:** Interpretation from the desktop note: {observed.split(',')[0].strip().lower()}.",
+            "3. **HEADER:** Use only the navigation behavior explicitly present in the recorded observation; other header details were not recorded.",
+            "4. **HERO:** The opening device named in the observation is the transferable structural signal; exact proportions were not measured.",
+            "5. **GRID:** Grid coordinates were not measured; retain only the observed split, catalogue, collage or full-frame behavior where stated.",
+            "6. **TYPOGRAPHY:** Typography is described only where the desktop note explicitly names scale, serif/sans behavior or placement.",
+            "7. **COLOR:** Exact tokens and contrast pairs were not sampled; no palette should be copied.",
+            "8. **PHOTOGRAPHY:** Preserve the observed image role, not the source imagery or project claims.",
+            "9. **CONTENT DENSITY:** Interpret density relative to the recorded opening and catalogue rhythm; no content count was measured.",
+            "10. **SECTION RHYTHM:** Reuse the contrast between the observed dominant and quiet moments, not the original section order.",
+            f"11. **CTA / BUSINESS CLARITY:** {guide['business_clarity']}",
+            "12. **MOTION:** Motion details were not systematically recorded; do not infer an animation system from a static observation.",
+            "13. **MOBILE OBSERVATIONS:** mobile not inspected.",
+            f"14. **DISTINCTIVE DEVICES:** {observed}",
+            "15. **WHAT SUITE ARTISAN CAN LEARN:** Translate the distinctive device into a constraint for silhouette, hierarchy or media role.",
+            "16. **WHAT SUITE ARTISAN MUST NOT COPY:** Brand identity, source layout coordinates, imagery, wording, projects and claims.",
+            f"17. **GOOD FIT FOR WHICH TRADES:** {guide['good_fit']}.",
+            f"18. **POOR FIT FOR WHICH TRADES:** {guide['poor_fit']}.",
+            "19. **REUSABLE PRINCIPLES:** A page should remain recognizable by hierarchy and rhythm before color is applied.",
+            f"20. **CAUTIONS:** {guide['caution']}", "",
+        ))
+    lines.extend(("## Promotion criteria", "", "Gold means a recorded manual desktop observation, not complete responsive certification. A future promotion to mobile-inspected requires explicit viewport evidence and a dated review."))
     write(DOCS / "gold-standards.md", "\n".join(lines))
 
 
 def export_research_report() -> None:
     atlas = json.loads((DOCS / "reference-atlas.json").read_text(encoding="utf-8"))
+    deep_status_path = DOCS / "deep-reference-status.json"
+    deep_status = json.loads(deep_status_path.read_text(encoding="utf-8")) if deep_status_path.exists() else {"references": []}
     counts = atlas["counts"]
     lines = [
         "# Research log", "",
@@ -194,16 +260,93 @@ def export_research_report() -> None:
         f"- Gold Standards: {counts['gold_standards']}", "",
         "## Method", "",
         "The broad pass used live editorial category results across architecture, construction, furniture, hospitality, property, commerce, technology, education and interactive work. Direct target URLs were checked where available. Rate limiting, robots rules and network failures are preserved in the atlas instead of being interpreted as design rejection.", "",
-        "The deep pass reused and expanded the 30 manually reviewed references documented in the V3 design bible. Markup signals such as viewport, headings, images and forms supplement visual notes but do not replace visual inspection.", "",
-        "## Cross-corpus findings", "",
+        "The deep pass expanded the 30 manually reviewed references documented in the V3 design bible and selected 20 additional official sites for focused HTML research. Markup signals supplement visual notes but never replace visual inspection.", "",
+        "## Deep-reference status", "",
+        "| Reference | Sector | Indexed | HTML inspected | Visual inspected | Mobile inspected | Gold | Focus |", "|---|---|---|---|---|---|---|---|",
+    ]
+    gold_names = {item[0] for item in GOLD_REFERENCES}
+    for item in atlas["references"]:
+        if item["name"] in gold_names:
+            lines.append(f"| {item['name']} | {item['sector']} | yes | {'yes' if item['status'] == 'accessible' else 'previous check only'} | yes | no | yes | desktop observation dossier |")
+    by_name = {item["name"]: item for item in deep_status["references"]}
+    for name, url, sector, focus in ADDITIONAL_DEEP_REFERENCES:
+        status = by_name.get(name, {})
+        lines.append(f"| [{name}]({url}) | {sector} | yes | {'yes' if status.get('html_inspected') else 'no'} | no | no | no | {focus} |")
+    lines.extend((
+        "", "## Cross-corpus findings", "",
         "1. Distinctive sites begin with silhouette and narrative order, not palette swaps.",
         "2. Strong heroes vary by image role, crop, typography, entry motion and conversion intent.",
         "3. Trust is most credible when evidence sits next to the decision it supports.",
         "4. Mobile needs its own information priority and action behavior.",
         "5. Spatial and motion systems work best as explanatory capabilities with explicit fallbacks.",
         "6. Photography needs provenance and section roles; stock must never masquerade as completed work.",
-    ]
+    ))
     write(DOCS / "research-log.md", "\n".join(lines))
+
+
+REVIEW_GUIDE = """# Human architecture review guide
+
+This checklist evaluates knowledge contracts, not rendered beauty. Record evidence and mark unknowns instead of filling gaps.
+
+## Palette
+- Check primary, secondary, muted, inverse, brand-background, focus and CTA-state contrast.
+- Inspect light/dark material logic, image compatibility and prohibited combinations.
+- Reject a palette that is merely a hue swap without semantic token behavior.
+
+## Typography
+- Verify availability and fallbacks on target platforms.
+- Review hero wrapping, body measure, mobile scale, numeric treatment and dense/airy modes.
+- Reject negative tracking, unreadable body text or more than three active families.
+
+## Hero blueprint
+- Read its desktop, mobile, media, content, behavior and fallback specs.
+- Confirm media provenance, orientation, crop, title width, CTA placement and no-media behavior.
+- Compare the actual rendering to the blueprint rather than to the component ID.
+
+## Silhouette
+- Verify opening, middle and closing business goals.
+- Check fixed/substitutable sections, evidence dependencies, mobile narrative and rhythm transitions.
+- Reject repeated heroic weight or a sequence that delays the primary business task.
+
+## SiteDNA
+- Confirm facts and media satisfy every hard constraint.
+- Read the decision trace and rejected candidates.
+- Compare silhouette, hero, services, order, grid and type before judging palette novelty.
+- Audit desktop and mobile separately; run reduced-motion and missing-data scenarios.
+- Human verdict: accept, revise, or reject, with evidence. A quality score is never a beauty score.
+"""
+
+
+def _jsonable(value):
+    if is_dataclass(value):
+        return _jsonable(asdict(value))
+    if isinstance(value, dict):
+        return {str(key): _jsonable(item) for key, item in sorted(value.items(), key=lambda pair: str(pair[0]))}
+    if isinstance(value, (tuple, list, set, frozenset)):
+        return [_jsonable(item) for item in sorted(value) if isinstance(value, (set, frozenset))] if isinstance(value, (set, frozenset)) else [_jsonable(item) for item in value]
+    return value
+
+
+def export_machine_readable() -> None:
+    payload = {
+        "schema_version": "1.1",
+        "status": "experimental_knowledge_layer_not_connected_to_production",
+        "counts": {category: len(registry) for category, registry in COMPONENT_REGISTRIES.items()},
+        "registries": {category: _jsonable(registry) for category, registry in COMPONENT_REGISTRIES.items()},
+        "systems": {
+            "colors": _jsonable(COLOR_SYSTEMS), "typography": _jsonable(TYPOGRAPHY_SYSTEMS),
+            "grids": _jsonable(GRID_SYSTEMS), "spacing": _jsonable(SPACING_SYSTEMS),
+            "geometry": _jsonable(GEOMETRY_SYSTEMS), "silhouettes": _jsonable(PAGE_SILHOUETTES),
+            "motion": _jsonable(MOTION_SYSTEMS), "spatial": _jsonable(SPATIAL_SYSTEMS),
+            "mobile": _jsonable(MOBILE_PERSONALITIES), "archetypes": _jsonable(ARCHETYPES),
+            "trades": _jsonable(TRADE_GRAMMARS), "photo_directions": _jsonable(PHOTO_DIRECTIONS),
+        },
+        "compatibility": {
+            "category_transition_affinity": {f"{left}->{right}": value for (left, right), value in sorted(CATEGORY_TRANSITION_AFFINITY.items())},
+            "trait_pair_affinity": {"+".join(sorted(pair)): value for pair, value in TRAIT_PAIR_AFFINITY.items()},
+        },
+    }
+    write(DOCS / "encyclopedia.json", json.dumps(payload, ensure_ascii=False, indent=2))
 
 
 def main() -> None:
@@ -211,12 +354,14 @@ def main() -> None:
     write(DOCS / "README.md", README)
     write(DOCS / "architecture.md", ARCHITECTURE)
     write(DOCS / "truth-model.md", TRUTH)
+    write(DOCS / "review-guide.md", REVIEW_GUIDE)
     export_components()
     export_systems()
     export_trades()
     export_archetypes_and_photo()
     export_gold()
     export_research_report()
+    export_machine_readable()
     print(f"Exported encyclopedia to {DOCS}")
 
 

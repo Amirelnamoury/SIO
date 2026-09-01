@@ -1,0 +1,379 @@
+{
+  "schema_version": 1,
+  "audited_at": "2026-09-01",
+  "scope": "20 focused non-Gold references; status does not imply visual inspection.",
+  "counts": {
+    "total": 20,
+    "html_inspected": 17
+  },
+  "references": [
+    {
+      "name": "Vitra",
+      "url": "https://www.vitra.com/en-us/product",
+      "sector": "furniture",
+      "focus": "catalogue taxonomy and object hierarchy",
+      "indexed": true,
+      "html_inspected": false,
+      "visual_inspected": false,
+      "mobile_inspected": false,
+      "gold_standard": false,
+      "http_status": null,
+      "final_url": null,
+      "html_signals": {},
+      "note": "Live HTML inspection unavailable: HTTPError."
+    },
+    {
+      "name": "Muuto",
+      "url": "https://www.muuto.com/products/",
+      "sector": "furniture",
+      "focus": "calm product system and category navigation",
+      "indexed": true,
+      "html_inspected": true,
+      "visual_inspected": false,
+      "mobile_inspected": false,
+      "gold_standard": false,
+      "http_status": 200,
+      "final_url": "https://www.muuto.com/products/",
+      "html_signals": {
+        "headings": 11,
+        "images": 61,
+        "navigation_landmarks": 6
+      },
+      "note": "HTML structure inspected; visual and mobile behavior not inspected."
+    },
+    {
+      "name": "FRAMA",
+      "url": "https://framacph.com/",
+      "sector": "furniture",
+      "focus": "material-led editorial commerce",
+      "indexed": true,
+      "html_inspected": true,
+      "visual_inspected": false,
+      "mobile_inspected": false,
+      "gold_standard": false,
+      "http_status": 200,
+      "final_url": "https://framacph.com/",
+      "html_signals": {
+        "headings": 36,
+        "images": 52,
+        "navigation_landmarks": 1
+      },
+      "note": "HTML structure inspected; visual and mobile behavior not inspected."
+    },
+    {
+      "name": "USM",
+      "url": "https://www.usm.com/",
+      "sector": "furniture",
+      "focus": "modular product grammar",
+      "indexed": true,
+      "html_inspected": true,
+      "visual_inspected": false,
+      "mobile_inspected": false,
+      "gold_standard": false,
+      "http_status": 200,
+      "final_url": "https://www.usm.com/fr-fr",
+      "html_signals": {
+        "headings": 4,
+        "images": 34,
+        "navigation_landmarks": 1
+      },
+      "note": "HTML structure inspected; visual and mobile behavior not inspected."
+    },
+    {
+      "name": "Flos",
+      "url": "https://flos.com/en/us/",
+      "sector": "lighting",
+      "focus": "light-led narrative and category rhythm",
+      "indexed": true,
+      "html_inspected": true,
+      "visual_inspected": false,
+      "mobile_inspected": false,
+      "gold_standard": false,
+      "http_status": 200,
+      "final_url": "https://flos.com/en/us/",
+      "html_signals": {
+        "headings": 22,
+        "images": 160,
+        "navigation_landmarks": 2
+      },
+      "note": "HTML structure inspected; visual and mobile behavior not inspected."
+    },
+    {
+      "name": "Artemide",
+      "url": "https://www.artemide.com/",
+      "sector": "lighting",
+      "focus": "technical product storytelling",
+      "indexed": true,
+      "html_inspected": true,
+      "visual_inspected": false,
+      "mobile_inspected": false,
+      "gold_standard": false,
+      "http_status": 200,
+      "final_url": "https://www.artemide.com/en/home",
+      "html_signals": {
+        "headings": 11,
+        "images": 44,
+        "navigation_landmarks": 4
+      },
+      "note": "HTML structure inspected; visual and mobile behavior not inspected."
+    },
+    {
+      "name": "Gaggenau",
+      "url": "https://www.gaggenau.com/",
+      "sector": "appliances",
+      "focus": "premium technical restraint",
+      "indexed": true,
+      "html_inspected": true,
+      "visual_inspected": false,
+      "mobile_inspected": false,
+      "gold_standard": false,
+      "http_status": 200,
+      "final_url": "https://www.gaggenau.com/",
+      "html_signals": {
+        "headings": 3,
+        "images": 3,
+        "navigation_landmarks": 2
+      },
+      "note": "HTML structure inspected; visual and mobile behavior not inspected."
+    },
+    {
+      "name": "Bang & Olufsen",
+      "url": "https://www.bang-olufsen.com/",
+      "sector": "technology",
+      "focus": "object photography and controlled conversion",
+      "indexed": true,
+      "html_inspected": true,
+      "visual_inspected": false,
+      "mobile_inspected": false,
+      "gold_standard": false,
+      "http_status": 200,
+      "final_url": "https://www.bang-olufsen.com/fr/fr",
+      "html_signals": {
+        "headings": 5,
+        "images": 33,
+        "navigation_landmarks": 1
+      },
+      "note": "HTML structure inspected; visual and mobile behavior not inspected."
+    },
+    {
+      "name": "Aman",
+      "url": "https://www.aman.com/hotels-and-resorts",
+      "sector": "hospitality",
+      "focus": "immersive place-led arrival",
+      "indexed": true,
+      "html_inspected": true,
+      "visual_inspected": false,
+      "mobile_inspected": false,
+      "gold_standard": false,
+      "http_status": 200,
+      "final_url": "https://www.aman.com/hotels-and-resorts",
+      "html_signals": {
+        "headings": 44,
+        "images": 71,
+        "navigation_landmarks": 5
+      },
+      "note": "HTML structure inspected; visual and mobile behavior not inspected."
+    },
+    {
+      "name": "Six Senses",
+      "url": "https://www.sixsenses.com/",
+      "sector": "hospitality",
+      "focus": "location narrative and booking clarity",
+      "indexed": true,
+      "html_inspected": true,
+      "visual_inspected": false,
+      "mobile_inspected": false,
+      "gold_standard": false,
+      "http_status": 200,
+      "final_url": "https://www.sixsenses.com/en/",
+      "html_signals": {
+        "headings": 2,
+        "images": 0,
+        "navigation_landmarks": 0
+      },
+      "note": "HTML structure inspected; visual and mobile behavior not inspected."
+    },
+    {
+      "name": "Ace Hotel",
+      "url": "https://acehotel.com/",
+      "sector": "hospitality",
+      "focus": "local identity across a multi-property system",
+      "indexed": true,
+      "html_inspected": true,
+      "visual_inspected": false,
+      "mobile_inspected": false,
+      "gold_standard": false,
+      "http_status": 200,
+      "final_url": "https://acehotel.com/",
+      "html_signals": {
+        "headings": 62,
+        "images": 56,
+        "navigation_landmarks": 4
+      },
+      "note": "HTML structure inspected; visual and mobile behavior not inspected."
+    },
+    {
+      "name": "Habitas",
+      "url": "https://www.ourhabitas.com/",
+      "sector": "hospitality",
+      "focus": "chapter-led experiential narrative",
+      "indexed": true,
+      "html_inspected": true,
+      "visual_inspected": false,
+      "mobile_inspected": false,
+      "gold_standard": false,
+      "http_status": 200,
+      "final_url": "https://www.ourhabitas.com/",
+      "html_signals": {
+        "headings": 24,
+        "images": 67,
+        "navigation_landmarks": 1
+      },
+      "note": "HTML structure inspected; visual and mobile behavior not inspected."
+    },
+    {
+      "name": "Pentagram",
+      "url": "https://www.pentagram.com/",
+      "sector": "design_studio",
+      "focus": "dense but navigable portfolio taxonomy",
+      "indexed": true,
+      "html_inspected": true,
+      "visual_inspected": false,
+      "mobile_inspected": false,
+      "gold_standard": false,
+      "http_status": 200,
+      "final_url": "https://www.pentagram.com/",
+      "html_signals": {
+        "headings": 147,
+        "images": 209,
+        "navigation_landmarks": 4
+      },
+      "note": "HTML structure inspected; visual and mobile behavior not inspected."
+    },
+    {
+      "name": "COLLINS",
+      "url": "https://www.wearecollins.com/",
+      "sector": "design_studio",
+      "focus": "case-study pacing and typographic identity",
+      "indexed": true,
+      "html_inspected": true,
+      "visual_inspected": false,
+      "mobile_inspected": false,
+      "gold_standard": false,
+      "http_status": 200,
+      "final_url": "https://wearecollins.com/",
+      "html_signals": {
+        "headings": 4,
+        "images": 14,
+        "navigation_landmarks": 2
+      },
+      "note": "HTML structure inspected; visual and mobile behavior not inspected."
+    },
+    {
+      "name": "Koto",
+      "url": "https://koto.studio/",
+      "sector": "design_studio",
+      "focus": "project framing and bold editorial hierarchy",
+      "indexed": true,
+      "html_inspected": true,
+      "visual_inspected": false,
+      "mobile_inspected": false,
+      "gold_standard": false,
+      "http_status": 200,
+      "final_url": "https://koto.com/",
+      "html_signals": {
+        "headings": 48,
+        "images": 55,
+        "navigation_landmarks": 2
+      },
+      "note": "HTML structure inspected; visual and mobile behavior not inspected."
+    },
+    {
+      "name": "Build in Amsterdam",
+      "url": "https://www.buildinamsterdam.com/",
+      "sector": "design_studio",
+      "focus": "commerce case-study sequencing",
+      "indexed": true,
+      "html_inspected": true,
+      "visual_inspected": false,
+      "mobile_inspected": false,
+      "gold_standard": false,
+      "http_status": 200,
+      "final_url": "https://www.buildinamsterdam.com/",
+      "html_signals": {
+        "headings": 2,
+        "images": 1,
+        "navigation_landmarks": 1
+      },
+      "note": "HTML structure inspected; visual and mobile behavior not inspected."
+    },
+    {
+      "name": "Locomotive",
+      "url": "https://locomotive.ca/",
+      "sector": "design_studio",
+      "focus": "motion used as narrative transition",
+      "indexed": true,
+      "html_inspected": true,
+      "visual_inspected": false,
+      "mobile_inspected": false,
+      "gold_standard": false,
+      "http_status": 200,
+      "final_url": "https://locomotive.ca/en",
+      "html_signals": {
+        "headings": 17,
+        "images": 7,
+        "navigation_landmarks": 3
+      },
+      "note": "HTML structure inspected; visual and mobile behavior not inspected."
+    },
+    {
+      "name": "Aesop",
+      "url": "https://www.aesop.com/",
+      "sector": "ecommerce",
+      "focus": "material restraint and readable commerce",
+      "indexed": true,
+      "html_inspected": false,
+      "visual_inspected": false,
+      "mobile_inspected": false,
+      "gold_standard": false,
+      "http_status": null,
+      "final_url": null,
+      "html_signals": {},
+      "note": "Live HTML inspection unavailable: HTTPError."
+    },
+    {
+      "name": "Fantastic Frank",
+      "url": "https://www.fantasticfrank.com/",
+      "sector": "real_estate",
+      "focus": "image-led property catalogue",
+      "indexed": true,
+      "html_inspected": false,
+      "visual_inspected": false,
+      "mobile_inspected": false,
+      "gold_standard": false,
+      "http_status": null,
+      "final_url": null,
+      "html_signals": {},
+      "note": "Live HTML inspection unavailable: HTTPError."
+    },
+    {
+      "name": "Airbnb Design",
+      "url": "https://airbnb.design/",
+      "sector": "editorial",
+      "focus": "article hierarchy and design-system communication",
+      "indexed": true,
+      "html_inspected": true,
+      "visual_inspected": false,
+      "mobile_inspected": false,
+      "gold_standard": false,
+      "http_status": 200,
+      "final_url": "https://www.airbnb.com/",
+      "html_signals": {
+        "headings": 4,
+        "images": 1,
+        "navigation_landmarks": 1
+      },
+      "note": "HTML structure inspected; visual and mobile behavior not inspected."
+    }
+  ]
+}

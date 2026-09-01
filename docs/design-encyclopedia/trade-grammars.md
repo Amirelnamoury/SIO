@@ -4,7 +4,7 @@ Each grammar combines user fears, evidence, photographic opportunity and cliché
 
 ## Plombier
 
-- Business intents: emergency, repair, bathroom_renovation, heating, residential
+- Business intents: emergency, local_quote, premium_residential, renovation_project, technical_expertise
 - Customer fears: slow response, water damage, unclear price, unqualified provider
 - Trust signals: verified insurance, real reviews, clear service area, real project photos
 - Photo opportunities: bathroom interiors, installation details, fixtures, documented works
@@ -15,7 +15,7 @@ Each grammar combines user fears, evidence, photographic opportunity and cliché
 
 ## Peintre
 
-- Business intents: finish_quality, interior_refresh, facade, decorative_finish, color_guidance
+- Business intents: premium_residential, renovation_project, craft, portfolio, trust_first
 - Customer fears: poor finish, mess, wrong color, unprotected interior
 - Trust signals: real finish details, verified reviews, documented process, real before_after
 - Photo opportunities: pigment texture, painted interior, surface detail, real transformation
@@ -26,7 +26,7 @@ Each grammar combines user fears, evidence, photographic opportunity and cliché
 
 ## Macon
 
-- Business intents: extension, structure, facade, renovation, outdoor_work
+- Business intents: renovation_project, technical_expertise, commercial_b2b, portfolio, trust_first
 - Customer fears: structural risk, schedule uncertainty, site cleanliness, hidden cost
 - Trust signals: verified insurance, real projects, process clarity, technical detail
 - Photo opportunities: raw material, masonry detail, construction sequence, finished architecture
@@ -37,7 +37,7 @@ Each grammar combines user fears, evidence, photographic opportunity and cliché
 
 ## Electricien
 
-- Business intents: safety, compliance, repair, lighting, smart_home
+- Business intents: technical_expertise, emergency, local_quote, commercial_b2b, premium_residential
 - Customer fears: safety risk, noncompliance, outage, unclear diagnosis
 - Trust signals: certification when verified, technical explanation, real reviews, documented installation
 - Photo opportunities: architectural lighting, panel detail, smart controls, cable routing
@@ -48,7 +48,7 @@ Each grammar combines user fears, evidence, photographic opportunity and cliché
 
 ## Menuisier
 
-- Business intents: bespoke, storage, furniture, restoration, joinery
+- Business intents: craft, premium_residential, portfolio, renovation_project, trust_first
 - Customer fears: poor fit, material quality, finish, loss of space
 - Trust signals: real workshop, material provenance, project details, documented process
 - Photo opportunities: joinery detail, wood grain, workshop gesture, completed interior
@@ -59,7 +59,7 @@ Each grammar combines user fears, evidence, photographic opportunity and cliché
 
 ## Renovateur
 
-- Business intents: whole_home, coordination, transformation, interior_design, energy_upgrade
+- Business intents: renovation_project, premium_residential, portfolio, trust_first, commercial_b2b
 - Customer fears: coordination failure, budget drift, delay, poor finish
 - Trust signals: real transformations, process clarity, verified reviews, project scope
 - Photo opportunities: residential sequence, before_after, material palette, site documentation

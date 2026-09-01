@@ -1,29 +1,23 @@
 # Design Genome simulation report
 
-Generated from deterministic knowledge-engine simulations. This report evaluates combinatorial diversity, not rendered aesthetic quality.
+All cohorts use the public generation pipeline with linting, heuristic quality scoring, bounded history and anti-clone rejection. This is combinatorial evidence, not rendered aesthetic approval.
 
-## 10,000 SiteDNA cohort
+## Main cohort
+- Requested: 10,000
+- Generated / failed / unique: 10,000 / 0 / 10,000
+- Similarity / linter / quality rejections: 32 / 182 / 0
+- Mean / maximum attempts: 1.0214 / 4
+- Sampled mean / maximum pair similarity: 0.2183 / 0.7768
+- Collision pairs: 0; effective-space estimate: 49,995,000 (`lower_bound_under_zero_observed_collisions`)
 
-- Samples: 10,000
-- Unique signatures: 9,978
-- Collision pairs: 23
-- Effective compatible space estimate: 2,173,696
-- Estimation method: `uniform_birthday_collision_estimate`
-- Mean sampled visual similarity: 0.2084
-- Maximum sampled visual similarity: 0.7978
+## 100 plumbers with shared history
+- Generated / failed / unique: 100 / 0 / 100
+- Maximum pair similarity: 0.8378
+- Distinct silhouettes / heroes / palettes / typography: 7 / 26 / 12 / 4
 
-## 100 plumbers
-
-- Unique signatures: 100 / 100
-- Archetypes used: 4
-- Heroes used: 10
-- Silhouettes used: 6
-- Color systems used: 12
-
-## Same city
-
-The Lyon cohort produced 120 unique signatures across 120 inputs and all six trade grammars.
+## 50 identical-input plumbers
+Only the artisan seed changes. Generated / failed / unique: 50 / 0 / 50.
+Distinct silhouettes / heroes / palettes / section compositions: 2 / 15 / 4 / 2. Maximum pair similarity: 0.8068.
 
 ## Interpretation boundary
-
-The estimate is useful as an anti-clone engineering signal. It is not a claim that every combination is aesthetically excellent; visual review remains required before production integration.
+The Design Genome is a knowledge contract. Human desktop/mobile rendering review remains mandatory before any production integration.

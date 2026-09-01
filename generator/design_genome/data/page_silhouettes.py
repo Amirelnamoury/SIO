@@ -1,5 +1,7 @@
 """Thirty narrative page silhouettes, not interchangeable section stacks."""
 
+from dataclasses import replace
+
 from ..models import PageSilhouette
 
 
@@ -54,6 +56,125 @@ PAGE_SILHOUETTES = {
         _s("before_after_casebook", "header hero casebook before_after services process contact footer", "luxury_renovation documentary_craft", "casebook", "stock_before_after", "services before_after", 3, (6, 20), "", .40, "paired_sliders_to_stack", "project_led documentary transformation"),
     )
 }
+
+
+NARRATIVE_PROFILES = {
+    "conversion": {
+        "business_story": "Resolve immediate relevance, make services scannable, prove legitimacy, remove contact friction.",
+        "opening_goal": "Identify the business and the visitor's actionable need.",
+        "middle_goal": "Connect services, local context and verified proof.",
+        "closing_goal": "Remove objections and present one primary contact route.",
+        "ideal_content_level": "concise_operational", "recommended_media": ("ambient_optional",),
+        "trust_dependency": "high_verified", "conversion_mode": "direct",
+        "mobile_narrative": "identity -> action -> services -> proof -> contact",
+    },
+    "premium": {
+        "business_story": "Establish taste, frame the service as a considered project, then convert through confidence.",
+        "opening_goal": "Create a distinctive but truthful residential or material impression.",
+        "middle_goal": "Develop services, process and selected visual context with breathing room.",
+        "closing_goal": "Turn aspiration into a clear project conversation.",
+        "ideal_content_level": "editorial_balanced", "recommended_media": ("landscape", "portrait", "material"),
+        "trust_dependency": "medium_verified", "conversion_mode": "consultative",
+        "mobile_narrative": "identity -> scene -> services -> method -> contact",
+    },
+    "project": {
+        "business_story": "Lead with documented work, explain capability through evidence, then invite a related project.",
+        "opening_goal": "Make real artisan project media the primary evidence.",
+        "middle_goal": "Sequence projects, capabilities and process without stock-as-project ambiguity.",
+        "closing_goal": "Connect demonstrated work to an enquiry.",
+        "ideal_content_level": "project_rich", "recommended_media": ("artisan_project", "landscape", "portrait"),
+        "trust_dependency": "project_evidence", "conversion_mode": "portfolio_to_enquiry",
+        "mobile_narrative": "project cover -> casebook -> capability -> contact",
+    },
+    "technical": {
+        "business_story": "Clarify a complex capability, expose method and verified proof, then offer diagnosis or contact.",
+        "opening_goal": "Frame the technical problem in understandable terms.",
+        "middle_goal": "Organize capabilities, specifications and process progressively.",
+        "closing_goal": "Convert understanding into a scoped technical conversation.",
+        "ideal_content_level": "dense_structured", "recommended_media": ("diagram", "artisan_detail"),
+        "trust_dependency": "high_verified", "conversion_mode": "diagnostic",
+        "mobile_narrative": "summary -> capability accordions -> proof -> diagnostic action",
+    },
+    "craft": {
+        "business_story": "Reveal material judgment and method, connect craft to useful services, then invite discussion.",
+        "opening_goal": "Create tactile identity without relying on heritage claims.",
+        "middle_goal": "Show materials, gestures and process with honest provenance.",
+        "closing_goal": "Offer a calm consultation path.",
+        "ideal_content_level": "narrative_material", "recommended_media": ("material", "artisan_process"),
+        "trust_dependency": "process_or_project", "conversion_mode": "consultative",
+        "mobile_narrative": "material signal -> services -> process -> contact",
+    },
+    "cinematic": {
+        "business_story": "Use controlled visual chapters to frame transformation while preserving factual clarity.",
+        "opening_goal": "Set one strong scene and a legible project promise.",
+        "middle_goal": "Alternate visual intensity with quiet explanation and verified project context.",
+        "closing_goal": "End movement and present a stable contact decision.",
+        "ideal_content_level": "visual_chapters", "recommended_media": ("artisan_project", "ambient_landscape"),
+        "trust_dependency": "medium_verified", "conversion_mode": "chapter_end",
+        "mobile_narrative": "poster -> linear chapters -> stable contact",
+    },
+    "minimal": {
+        "business_story": "Express identity through proportion and restraint, then provide only the information needed to decide.",
+        "opening_goal": "Establish a precise, memorable statement without decorative claims.",
+        "middle_goal": "Present selected services or work with strict hierarchy.",
+        "closing_goal": "Offer a quiet, unmistakable contact route.",
+        "ideal_content_level": "low_density", "recommended_media": ("single_selected_image",),
+        "trust_dependency": "only_when_verified", "conversion_mode": "quiet_direct",
+        "mobile_narrative": "statement -> essentials -> contact",
+    },
+    "editorial": {
+        "business_story": "Build a magazine-like argument from point of view to services, context and enquiry.",
+        "opening_goal": "Introduce a clear editorial premise and identity.",
+        "middle_goal": "Use chapters, images and service information with varied rhythm.",
+        "closing_goal": "Return from narrative to a concrete business action.",
+        "ideal_content_level": "editorial_rich", "recommended_media": ("mixed_orientation", "material"),
+        "trust_dependency": "contextual_verified", "conversion_mode": "narrative_to_contact",
+        "mobile_narrative": "contents -> chapters -> services -> contact",
+    },
+    "documentary": {
+        "business_story": "Explain how work happens through documented sequence, then connect process credibility to services.",
+        "opening_goal": "Introduce real context or a fact-neutral documentary frame.",
+        "middle_goal": "Move through method, people only when verified, and artisan work.",
+        "closing_goal": "Translate process confidence into contact.",
+        "ideal_content_level": "documentary_medium", "recommended_media": ("artisan_process", "artisan_project"),
+        "trust_dependency": "process_evidence", "conversion_mode": "trust_then_contact",
+        "mobile_narrative": "context -> chronological process -> services -> contact",
+    },
+}
+
+NARRATIVE_GROUPS = {
+    "conversion": ("local_conversion", "urgent_local", "quote_first_service", "phone_first_service", "bold_local", "service_matrix"),
+    "premium": ("premium_residential", "family_trust", "local_service_story"),
+    "project": ("project_ledger", "architectural_contracting", "gallery_sequence", "before_after_casebook"),
+    "technical": ("technical_capabilities", "specification_first", "industrial_capabilities", "spatial_explainer"),
+    "craft": ("craft_material_story", "warm_artisan", "heritage_story", "material_library"),
+    "cinematic": ("cinematic_residential", "transformation_story"),
+    "minimal": ("minimal_statement", "quiet_luxury"),
+    "editorial": ("editorial_residential", "magazine_service", "editorial_manifesto"),
+    "documentary": ("documentary_process", "design_build_journey"),
+}
+
+for profile_name, silhouette_ids in NARRATIVE_GROUPS.items():
+    profile = NARRATIVE_PROFILES[profile_name]
+    for silhouette_id in silhouette_ids:
+        silhouette = PAGE_SILHOUETTES[silhouette_id]
+        roles = {}
+        for index, section in enumerate(silhouette.sections):
+            if index == 0:
+                roles[section] = "maintain identity and navigation continuity"
+            elif index == 1:
+                roles[section] = profile["opening_goal"]
+            elif index == len(silhouette.sections) - 1:
+                roles[section] = "close navigation, contact and legal context"
+            else:
+                roles[section] = "advance the middle argument without repeating the previous section"
+        PAGE_SILHOUETTES[silhouette_id] = replace(
+            silhouette,
+            **profile,
+            section_roles=roles,
+            substitutable_sections={"proof": ("verified_facts", "reviews", "documented_process"), "gallery": ("visual_break", "artisan_projects")},
+            fixed_sections=(silhouette.sections[0], silhouette.sections[1], silhouette.sections[-1]),
+        )
 
 
 assert len(PAGE_SILHOUETTES) == 30

@@ -9,6 +9,17 @@ from enum import StrEnum
 from typing import Any, Mapping
 
 
+VISUAL_SIGNATURE_FIELDS = (
+    "site_archetype", "art_direction", "page_silhouette", "color_system",
+    "typography_system", "grid_system", "spacing_system", "geometry_system",
+    "photo_direction", "header_component", "hero_component", "services_component",
+    "gallery_component", "about_component", "trust_component", "cta_component",
+    "contact_component", "footer_component", "form_component", "motion_system",
+    "spatial_system", "mobile_personality", "section_order", "density",
+    "conversion_intensity",
+)
+
+
 class TruthClass(StrEnum):
     FACT = "fact"
     DERIVED_FACT = "derived_fact"
@@ -67,14 +78,32 @@ class DesignInput:
 
 
 @dataclass(frozen=True)
+class ComponentBlueprintSpec:
+    """Resolved structural contract consumed by a future renderer."""
+
+    schema_version: str
+    layout_model: str
+    content_alignment: str
+    desktop_spec: Mapping[str, Any]
+    mobile_spec: Mapping[str, Any]
+    media_spec: Mapping[str, Any]
+    content_spec: Mapping[str, Any]
+    behavior_spec: Mapping[str, Any]
+    fallback_strategy: str
+
+
+@dataclass(frozen=True)
 class ComponentDefinition:
     id: str
     category: str
     traits: frozenset[str]
+    profile: str = ""
     compatible_archetypes: frozenset[str] = frozenset()
     compatible_directions: frozenset[str] = frozenset()
     required_data: frozenset[str] = frozenset()
+    required_any_data: frozenset[str] = frozenset()
     required_media: frozenset[str] = frozenset()
+    required_any_media: frozenset[str] = frozenset()
     allowed_media_sources: frozenset[str] = frozenset({"artisan", "stock", "none"})
     incompatible_components: frozenset[str] = frozenset()
     density: int = 3
@@ -87,6 +116,7 @@ class ComponentDefinition:
     image_dependency: float = 0.0
     content_zones: tuple[str, ...] = ()
     notes: str = ""
+    blueprint_spec: ComponentBlueprintSpec | None = None
 
 
 @dataclass(frozen=True)
@@ -105,6 +135,17 @@ class ColorSystem:
     compatible_typography: tuple[str, ...]
     compatible_image_strategies: tuple[str, ...]
     incompatible_traits: frozenset[str] = frozenset()
+    material_inspiration: str = "neutral architectural material"
+    temperature: str = "neutral"
+    contrast_personality: str = "balanced"
+    dominant_behavior: str = "canvas-led"
+    accent_behavior: str = "measured"
+    surface_philosophy: str = "surfaces follow material hierarchy"
+    border_philosophy: str = "borders clarify structure"
+    image_treatment_preference: str = "natural"
+    recommended_typography_categories: tuple[str, ...] = ()
+    recommended_archetypes: tuple[str, ...] = ()
+    bad_combinations: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -132,6 +173,21 @@ class TypographySystem:
     conversion_score: float
     readability_score: float
     traits: frozenset[str]
+    personality: str = "neutral"
+    display_behavior: str = "measured"
+    heading_behavior: str = "clear hierarchy"
+    body_behavior: str = "readable"
+    accent_behavior: str = "restrained"
+    title_proportions: str = "balanced"
+    uppercase_policy: str = "labels_only"
+    numeric_style: str = "lining"
+    hero_wrapping_policy: str = "balanced_lines"
+    section_wrapping: str = "two_lines_max"
+    dense_mode_behavior: str = "reduce display scale"
+    airy_mode_behavior: str = "increase whitespace, not tracking"
+    availability: str = "system_safe"
+    fallback_stack: tuple[str, ...] = ("Arial", "sans-serif")
+    max_font_count: int = 2
 
 
 @dataclass(frozen=True)
@@ -145,6 +201,13 @@ class GridSystem:
     breakpoints: tuple[int, ...]
     mobile_transformation: str
     traits: frozenset[str]
+    tablet_columns: int = 8
+    mobile_columns: int = 4
+    outer_margins: tuple[int, int, int] = (24, 20, 16)
+    nested_content_width: str = "readable"
+    media_overflow_policy: str = "clip_to_grid"
+    full_bleed_policy: str = "explicit_sections_only"
+    alignment_lines: tuple[str, ...] = ("outer", "content", "media")
 
 
 @dataclass(frozen=True)
@@ -161,6 +224,18 @@ class PageSilhouette:
     conversion_intensity: float
     mobile_transformation: str
     traits: frozenset[str]
+    business_story: str = "establish, explain, reassure, convert"
+    opening_goal: str = "establish identity and relevance"
+    middle_goal: str = "explain services and evidence"
+    closing_goal: str = "remove objections and offer contact"
+    section_roles: Mapping[str, str] = field(default_factory=dict)
+    ideal_content_level: str = "balanced"
+    recommended_media: tuple[str, ...] = ()
+    trust_dependency: str = "optional_when_verified"
+    conversion_mode: str = "balanced"
+    mobile_narrative: str = "preserve decision order"
+    substitutable_sections: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
+    fixed_sections: tuple[str, ...] = ("header", "hero", "footer")
 
 
 @dataclass(frozen=True)
@@ -175,6 +250,12 @@ class SiteArchetype:
     target_density: int
     trust_need: int
     image_need: int
+    business_purpose: str = "clarify offer and support a decision"
+    visual_purpose: str = "create a coherent non-template identity"
+    content_needs: tuple[str, ...] = ("services", "identity")
+    media_needs: tuple[str, ...] = ()
+    trust_needs: tuple[str, ...] = ()
+    recommended_narrative: str = "identity -> services -> evidence -> contact"
 
 
 @dataclass(frozen=True)
@@ -207,6 +288,17 @@ class PhotoDirection:
     saturation: str
     texture: str
     allowed_roles: frozenset[str]
+    positive_queries: tuple[str, ...] = ()
+    negative_queries: tuple[str, ...] = ()
+    subject_priority: tuple[str, ...] = ()
+    composition_priority: tuple[str, ...] = ()
+    people_policy: str = "people only when contextually credible"
+    tool_policy: str = "tools support the work; never isolated cliché"
+    environment_policy: str = "realistic trade context"
+    camera_feel: str = "natural documentary"
+    material_focus: tuple[str, ...] = ()
+    crop: str = "preserve subject and material context"
+    stock_cliche_risk: str = "medium"
 
 
 @dataclass(frozen=True)
@@ -217,6 +309,14 @@ class MotionSystem:
     performance_cost: int
     reduced_motion_fallback: str
     traits: frozenset[str]
+    entry_behavior: str = "none"
+    scroll_behavior: str = "native"
+    image_reveal: str = "none"
+    text_reveal: str = "none"
+    stagger: str = "none"
+    hover_behavior: str = "state_only"
+    navigation_behavior: str = "instant"
+    performance_budget_ms: int = 0
 
 
 @dataclass(frozen=True)
@@ -241,6 +341,34 @@ class MobilePersonality:
     motion_policy: str
     content_priority: tuple[str, ...]
     traits: frozenset[str]
+    header_height: int = 64
+    image_crop: str = "subject_safe"
+    type_scale: float = .72
+    section_spacing: int = 64
+
+
+@dataclass(frozen=True)
+class SpacingSystem:
+    id: str
+    section_padding: tuple[int, int]
+    component_gap: int
+    text_gap: int
+    grid_gap: int
+    hero_padding: tuple[int, int]
+    mobile_multiplier: float
+    density: int
+
+
+@dataclass(frozen=True)
+class GeometrySystem:
+    id: str
+    radius: int
+    border_behavior: str
+    line_behavior: str
+    shape_language: str
+    image_corner_behavior: str
+    button_shape: str
+    card_shape: str
 
 
 @dataclass(frozen=True)
@@ -288,9 +416,8 @@ class SiteDNA:
 
     @staticmethod
     def signature_for(payload: Mapping[str, Any]) -> str:
-        excluded = {"design_signature", "seed"}
         canonical = json.dumps(
-            {key: payload[key] for key in sorted(payload) if key not in excluded},
+            {key: payload[key] for key in VISUAL_SIGNATURE_FIELDS},
             ensure_ascii=True,
             sort_keys=True,
             separators=(",", ":"),
@@ -304,6 +431,13 @@ class CompatibilityResult:
     score: float
     hard_failures: tuple[str, ...] = ()
     reasons: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class PairAffinityResult:
+    score: float
+    hard_failure: bool
+    reasons: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -323,6 +457,7 @@ class RhythmReport:
     weights: tuple[int, ...]
     energies: tuple[str, ...]
     issues: tuple[str, ...]
+    pair_affinity: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -350,3 +485,36 @@ class LintIssue:
     severity: str
     message: str
     field: str | None = None
+
+
+@dataclass(frozen=True)
+class DecisionRecord:
+    field: str
+    selected: str
+    reasons: tuple[str, ...]
+    rejected: tuple[Mapping[str, Any], ...] = ()
+
+
+@dataclass(frozen=True)
+class DesignDecisionTrace:
+    seed: str
+    attempts: int
+    decisions: tuple[DecisionRecord, ...]
+    rejected_candidates: tuple[Mapping[str, Any], ...]
+    linter_rejections: int = 0
+    similarity_rejections: int = 0
+    quality_rejections: int = 0
+
+
+@dataclass(frozen=True)
+class GenerationResult:
+    dna: SiteDNA
+    trace: DesignDecisionTrace
+
+
+@dataclass(frozen=True)
+class ClaimRequirement:
+    claim_type: str
+    required_field: str
+    expected_value: Any | None = None
+    description: str = ""

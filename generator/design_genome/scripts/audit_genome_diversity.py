@@ -1,20 +1,25 @@
-"""Run deterministic diversity experiments and publish machine-readable evidence."""
+"""Run diversity experiments through the public Design Genome pipeline."""
 
 from __future__ import annotations
 
 import argparse
 import json
 import random
-from collections import Counter, defaultdict
+from collections import Counter, defaultdict, deque
+from dataclasses import replace
 from pathlib import Path
+from statistics import mean
 
-from ..generator import _build_candidate
-from ..models import DesignInput, MediaInventory, SiteDNA
+from ..generator import DesignGenome
+from ..models import DesignDecisionTrace, DesignInput, MediaInventory, SiteDNA
 from ..similarity import compare_dna
 from ..taxonomy import TRADES
 
 
-INTENTS = ("balanced", "quote", "residential", "technical", "projects", "craft", "local")
+INTENTS = (
+    "balanced", "local_quote", "premium_residential", "renovation_project",
+    "technical_expertise", "portfolio", "craft", "commercial_b2b", "trust_first",
+)
 SERVICES = {
     "plombier": ("Dépannage", "Salle de bains", "Chauffage"),
     "peintre": ("Peinture intérieure", "Façade", "Finitions"),
@@ -29,148 +34,147 @@ def make_input(index: int, trade: str, city: str = "") -> DesignInput:
     rng = random.Random(f"genome:{trade}:{city}:{index}")
     project_photos = rng.choice((0, 0, 2, 4, 8))
     stock_photos = rng.choice((0, 2, 4, 6))
-    facts = {"phone": "0100000000", "email": "contact@example.test", "process": ("Échange", "Réalisation")}
+    facts = {"phone": "verified-simulation-channel", "email": "verified-simulation-channel", "process": ("phase-1", "phase-2")}
     if rng.random() < .42:
-        facts["reviews"] = ({"rating": 5, "text": "Donnée de simulation"},)
+        facts["reviews"] = ({"rating": 5, "text": "verified-simulation-fact"},)
     if rng.random() < .26:
-        facts["insurance"] = "verified-simulation-value"
+        facts["insurance"] = "verified-simulation-fact"
     if rng.random() < .22:
-        facts["service_areas"] = (city or "Zone test",)
+        facts["service_areas"] = (city or "verified-simulation-area",)
     if rng.random() < .18:
-        facts["verified_facts"] = ("fact-simulation",)
+        facts["verified_facts"] = ("verified-simulation-fact",)
     return DesignInput(
-        trade=trade,
-        seed=f"simulation-{index}-{trade}-{city}",
-        city=city,
-        business_intent=rng.choice(INTENTS),
-        services=SERVICES[trade][:rng.randint(1, 3)],
+        trade=trade, seed=f"simulation-{index}-{trade}-{city}", city=city,
+        business_intent=rng.choice(INTENTS), services=SERVICES[trade][:rng.randint(1, 3)],
         facts=facts,
         media=MediaInventory(
-            artisan_photos=project_photos,
-            stock_photos=stock_photos,
-            project_photos=project_photos,
+            artisan_photos=project_photos, stock_photos=stock_photos, project_photos=project_photos,
             before_after_pairs=1 if project_photos >= 4 and rng.random() < .3 else 0,
             portrait_photos=1 if project_photos and rng.random() < .4 else 0,
-            landscape_photos=1 if project_photos or stock_photos else 0,
-            has_logo=rng.random() < .7,
+            landscape_photos=1 if project_photos or stock_photos else 0, has_logo=rng.random() < .7,
         ),
     )
+
+
+def same_plumber_input(index: int) -> DesignInput:
+    base = DesignInput(
+        trade="plombier", seed="same-input", city="Lyon", business_intent="premium_residential",
+        services=SERVICES["plombier"],
+        facts={"phone": "verified-simulation-channel", "email": "verified-simulation-channel", "process": ("phase-1", "phase-2")},
+        media=MediaInventory(artisan_photos=4, stock_photos=4, project_photos=4, portrait_photos=1, landscape_photos=1, has_logo=True),
+    )
+    return replace(base, seed=f"same-input-plumber-{index}")
 
 
 def distribution(dnas: list[SiteDNA], field: str) -> dict[str, int]:
     return dict(Counter(str(getattr(dna, field)) for dna in dnas).most_common())
 
 
-def cohort(count: int, trade_selector, city: str = "") -> list[SiteDNA]:
-    inputs = [make_input(index, trade_selector(index), city) for index in range(count)]
-    return [_build_candidate(item, f"{item.seed}:audit") for item in inputs]
+def generate_cohort(inputs: list[DesignInput], history_limit: int = 32, history_by_trade: bool = False) -> tuple[list[SiteDNA], dict]:
+    genome = DesignGenome(candidate_count=32)
+    histories: dict[str, deque[SiteDNA]] = defaultdict(lambda: deque(maxlen=history_limit))
+    all_history: deque[SiteDNA] = deque(maxlen=history_limit)
+    dnas: list[SiteDNA] = []
+    traces: list[DesignDecisionTrace] = []
+    failures: list[str] = []
+    for item in inputs:
+        history = histories[item.trade] if history_by_trade else all_history
+        try:
+            dna = genome.generate(item, tuple(history), traces)
+        except RuntimeError as error:
+            failures.append(str(error))
+            continue
+        dnas.append(dna)
+        history.append(dna)
+    metrics = {
+        "generated": len(dnas), "failed": len(failures),
+        "unique": len({item.design_signature for item in dnas}),
+        "rejected_by_similarity": sum(item.similarity_rejections for item in traces),
+        "rejected_by_linter": sum(item.linter_rejections for item in traces),
+        "rejected_by_quality": sum(item.quality_rejections for item in traces),
+        "mean_attempts": round(mean(item.attempts for item in traces), 4) if traces else 0,
+        "max_attempts": max((item.attempts for item in traces), default=0),
+        "failure_examples": failures[:3],
+    }
+    return dnas, metrics
 
 
-def collision_estimate(signatures: Counter[str]) -> dict[str, int | float | str]:
+def maximum_cohort_similarity(dnas: list[SiteDNA]) -> float:
+    return max((compare_dna(left, right).overall_visual_similarity for index, left in enumerate(dnas) for right in dnas[index + 1:]), default=0.0)
+
+
+def cohort_detail(dnas: list[SiteDNA]) -> dict:
+    fields = (
+        "site_archetype", "art_direction", "page_silhouette", "hero_component",
+        "header_component", "services_component", "color_system", "typography_system",
+        "grid_system", "photo_direction", "section_order",
+    )
+    return {
+        "unique_signatures": len({dna.design_signature for dna in dnas}),
+        "maximum_pair_similarity": maximum_cohort_similarity(dnas),
+        "distributions": {field: distribution(dnas, field) for field in fields},
+    }
+
+
+def collision_estimate(signatures: Counter[str]) -> dict[str, int | str]:
     sample_size = sum(signatures.values())
     collision_pairs = sum(count * (count - 1) // 2 for count in signatures.values())
-    if collision_pairs == 0:
-        estimate = sample_size * (sample_size - 1) // 2
-        qualifier = "lower_bound_under_zero_observed_collisions"
-    else:
-        estimate = round(sample_size * (sample_size - 1) / (2 * collision_pairs))
-        qualifier = "uniform_birthday_collision_estimate"
-    return {"sample_size": sample_size, "unique": len(signatures), "collision_pairs": collision_pairs, "effective_space_estimate": estimate, "method": qualifier}
+    estimate = sample_size * (sample_size - 1) // 2 if collision_pairs == 0 else round(sample_size * (sample_size - 1) / (2 * collision_pairs))
+    method = "lower_bound_under_zero_observed_collisions" if collision_pairs == 0 else "uniform_birthday_collision_estimate"
+    return {"sample_size": sample_size, "collision_pairs": collision_pairs, "effective_space_estimate": estimate, "method": method}
 
 
 def run(count: int) -> dict:
-    all_dnas = cohort(count, lambda index: TRADES[index % len(TRADES)])
-    plumber_dnas = cohort(100, lambda _index: "plombier")
-    same_city = cohort(120, lambda index: TRADES[index % len(TRADES)], "Lyon")
-
+    main_inputs = [make_input(index, TRADES[index % len(TRADES)]) for index in range(count)]
+    all_dnas, main_metrics = generate_cohort(main_inputs, history_limit=24, history_by_trade=True)
+    plumber_dnas, plumber_metrics = generate_cohort([make_input(index, "plombier", "Lyon") for index in range(100)], history_limit=100)
+    same_dnas, same_metrics = generate_cohort([same_plumber_input(index) for index in range(50)], history_limit=50)
     signatures = Counter(dna.design_signature for dna in all_dnas)
-    sampled_similarities = []
-    for index in range(0, min(len(all_dnas) - 1, 3000), 2):
-        sampled_similarities.append(compare_dna(all_dnas[index], all_dnas[index + 1]).overall_visual_similarity)
-
-    by_trade: dict[str, list[SiteDNA]] = defaultdict(list)
-    for dna, trade in zip(all_dnas, (TRADES[index % len(TRADES)] for index in range(count))):
-        by_trade[trade].append(dna)
-
+    sampled_similarities = [compare_dna(all_dnas[index], all_dnas[index + 1]).overall_visual_similarity for index in range(0, min(len(all_dnas) - 1, 4_000), 2)]
     return {
-        "schema_version": 1,
-        "generator": "design-genome-1",
+        "schema_version": 2,
+        "pipeline": "DesignGenome.generate with audit trace collection",
+        "history_policy": "bounded recent visual history; 24 per trade for main cohort, full prior cohort for focused tests",
         "main_simulation": {
-            **collision_estimate(signatures),
-            "max_signature_frequency": max(signatures.values()),
-            "sampled_pair_similarity": {
-                "count": len(sampled_similarities),
-                "mean": round(sum(sampled_similarities) / max(1, len(sampled_similarities)), 4),
-                "max": max(sampled_similarities, default=0.0),
-            },
-            "distributions": {
-                field: distribution(all_dnas, field)
-                for field in ("site_archetype", "art_direction", "page_silhouette", "hero_component", "color_system", "typography_system")
-            },
+            **main_metrics, **collision_estimate(signatures),
+            "sampled_pair_similarity": {"count": len(sampled_similarities), "mean": round(mean(sampled_similarities), 4) if sampled_similarities else 0, "max": max(sampled_similarities, default=0.0)},
+            "distributions": {field: distribution(all_dnas, field) for field in ("site_archetype", "art_direction", "page_silhouette", "hero_component", "color_system", "typography_system")},
         },
-        "plumber_100": {
-            "unique_signatures": len({dna.design_signature for dna in plumber_dnas}),
-            "archetypes": distribution(plumber_dnas, "site_archetype"),
-            "heroes": distribution(plumber_dnas, "hero_component"),
-            "silhouettes": distribution(plumber_dnas, "page_silhouette"),
-            "colors": distribution(plumber_dnas, "color_system"),
-        },
-        "same_city_lyon": {
-            "count": len(same_city),
-            "unique_signatures": len({dna.design_signature for dna in same_city}),
-            "by_trade": dict(Counter(TRADES[index % len(TRADES)] for index in range(len(same_city)))),
-            "directions": distribution(same_city, "art_direction"),
-        },
-        "different_trades": {
-            trade: {
-                "count": len(items),
-                "archetypes": distribution(items, "site_archetype"),
-                "directions": distribution(items, "art_direction"),
-                "colors": distribution(items, "color_system"),
-            }
-            for trade, items in by_trade.items()
-        },
+        "plumber_100": {**plumber_metrics, **cohort_detail(plumber_dnas)},
+        "same_input_plumber_50": {**same_metrics, **cohort_detail(same_dnas)},
         "limitations": [
             "The effective-space figure is a collision estimate, not a count of visually reviewed pages.",
-            "SiteDNA is a knowledge contract and does not prove rendered aesthetic quality.",
-            "Simulation values are synthetic and are never production artisan claims.",
+            "SiteDNA diversity and heuristic quality do not prove rendered aesthetic quality.",
+            "Simulation facts are typed capability placeholders and never production artisan claims.",
         ],
     }
 
 
 def markdown(payload: dict) -> str:
-    main = payload["main_simulation"]
-    plumber = payload["plumber_100"]
-    city = payload["same_city_lyon"]
+    main, plumber, same = payload["main_simulation"], payload["plumber_100"], payload["same_input_plumber_50"]
     return f"""# Design Genome simulation report
 
-Generated from deterministic knowledge-engine simulations. This report evaluates combinatorial diversity, not rendered aesthetic quality.
+All cohorts use the public generation pipeline with linting, heuristic quality scoring, bounded history and anti-clone rejection. This is combinatorial evidence, not rendered aesthetic approval.
 
-## 10,000 SiteDNA cohort
+## Main cohort
+- Requested: {main['sample_size'] + main['failed']:,}
+- Generated / failed / unique: {main['generated']:,} / {main['failed']:,} / {main['unique']:,}
+- Similarity / linter / quality rejections: {main['rejected_by_similarity']:,} / {main['rejected_by_linter']:,} / {main['rejected_by_quality']:,}
+- Mean / maximum attempts: {main['mean_attempts']} / {main['max_attempts']}
+- Sampled mean / maximum pair similarity: {main['sampled_pair_similarity']['mean']} / {main['sampled_pair_similarity']['max']}
+- Collision pairs: {main['collision_pairs']:,}; effective-space estimate: {main['effective_space_estimate']:,} (`{main['method']}`)
 
-- Samples: {main['sample_size']:,}
-- Unique signatures: {main['unique']:,}
-- Collision pairs: {main['collision_pairs']:,}
-- Effective compatible space estimate: {main['effective_space_estimate']:,}
-- Estimation method: `{main['method']}`
-- Mean sampled visual similarity: {main['sampled_pair_similarity']['mean']}
-- Maximum sampled visual similarity: {main['sampled_pair_similarity']['max']}
+## 100 plumbers with shared history
+- Generated / failed / unique: {plumber['generated']} / {plumber['failed']} / {plumber['unique_signatures']}
+- Maximum pair similarity: {plumber['maximum_pair_similarity']}
+- Distinct silhouettes / heroes / palettes / typography: {len(plumber['distributions']['page_silhouette'])} / {len(plumber['distributions']['hero_component'])} / {len(plumber['distributions']['color_system'])} / {len(plumber['distributions']['typography_system'])}
 
-## 100 plumbers
-
-- Unique signatures: {plumber['unique_signatures']} / 100
-- Archetypes used: {len(plumber['archetypes'])}
-- Heroes used: {len(plumber['heroes'])}
-- Silhouettes used: {len(plumber['silhouettes'])}
-- Color systems used: {len(plumber['colors'])}
-
-## Same city
-
-The Lyon cohort produced {city['unique_signatures']} unique signatures across {city['count']} inputs and all six trade grammars.
+## 50 identical-input plumbers
+Only the artisan seed changes. Generated / failed / unique: {same['generated']} / {same['failed']} / {same['unique_signatures']}.
+Distinct silhouettes / heroes / palettes / section compositions: {len(same['distributions']['page_silhouette'])} / {len(same['distributions']['hero_component'])} / {len(same['distributions']['color_system'])} / {len(same['distributions']['section_order'])}. Maximum pair similarity: {same['maximum_pair_similarity']}.
 
 ## Interpretation boundary
-
-The estimate is useful as an anti-clone engineering signal. It is not a claim that every combination is aesthetically excellent; visual review remains required before production integration.
+The Design Genome is a knowledge contract. Human desktop/mobile rendering review remains mandatory before any production integration.
 """
 
 

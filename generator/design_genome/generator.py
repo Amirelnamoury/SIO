@@ -7,22 +7,39 @@ from typing import Iterable, Mapping, TypeVar
 
 from .archetypes import ARCHETYPES
 from .compatibility import evaluate_component
+from .component_relationships import component_pair_affinity
 from .data.color_systems import COLOR_SYSTEMS
-from .data.components import COMPONENT_REGISTRIES
+from .data.components import ALL_COMPONENTS, COMPONENT_REGISTRIES
 from .data.grids import GRID_SYSTEMS
+from .data.foundations import GEOMETRY_SYSTEMS, SPACING_SYSTEMS
 from .data.page_silhouettes import PAGE_SILHOUETTES
 from .data.systems import MOBILE_PERSONALITIES, MOTION_SYSTEMS, SPATIAL_SYSTEMS
 from .data.trade_grammar import TRADE_GRAMMARS
 from .data.typography_systems import TYPOGRAPHY_SYSTEMS
 from .linter import lint_dna
-from .models import ComponentDefinition, DesignInput, SiteArchetype, SiteDNA
+from .models import (
+    ComponentDefinition, DecisionRecord, DesignDecisionTrace, DesignInput,
+    GenerationResult, SiteArchetype, SiteDNA,
+)
 from .quality import evaluate_quality
 from .similarity import maximum_similarity
+from .taxonomy import normalize_business_intent
 
 
 T = TypeVar("T")
-SPACING_SYSTEMS = ("compact_technical", "balanced_operational", "generous_editorial", "cinematic_pause", "material_breathing")
-GEOMETRY_SYSTEMS = ("square_precise", "soft_residential", "framed_architectural", "offset_editorial", "material_organic")
+
+CATEGORY_SECTION_MARKERS = {
+    "header": ("header",),
+    "hero": ("hero",),
+    "services": ("service", "capabil", "specification", "issue", "scope"),
+    "gallery": ("gallery", "project", "before_after", "material", "image", "casebook", "reveal", "workshop"),
+    "about": ("about", "story", "narrative", "manifesto", "process", "people", "essay", "heritage", "introduction", "brief", "design", "build"),
+    "trust": ("trust", "proof", "review", "testimonial", "certification", "stat"),
+    "cta": ("action", "quote", "urgent"),
+    "contact": ("contact", "form"),
+    "form": ("form",),
+    "footer": ("footer",),
+}
 
 
 def _noise(seed: str, value: str) -> float:
@@ -42,13 +59,14 @@ def _select_archetype(design_input: DesignInput, seed: str) -> SiteArchetype:
     if grammar is None:
         raise ValueError(f"Unsupported trade: {design_input.trade}")
     values = [item for item in ARCHETYPES.values() if design_input.trade in item.compatible_trades]
+    business_intent = normalize_business_intent(design_input.business_intent)
     return _best(
         seed,
         values,
         lambda item: item.id,
         lambda item: (
             (1.0 if item.id in grammar.preferred_archetypes else 0.0)
-            + (1.0 if design_input.business_intent in item.business_intents else 0.0)
+            + (1.0 if business_intent in item.business_intents else 0.0)
             + (1.0 - abs(item.conversion_intensity - grammar.conversion_need)) * .55
         ),
     )
@@ -96,10 +114,12 @@ def _select_component(
     selected: tuple[str, ...],
 ) -> ComponentDefinition:
     scored = []
+    previous = ALL_COMPONENTS[selected[-1]] if selected else None
     for component in COMPONENT_REGISTRIES[category].values():
         result = evaluate_component(component, design_input, archetype, art_direction, selected)
         if result.allowed:
-            scored.append((component, result.score))
+            relationship = component_pair_affinity(previous, component, archetype.traits).score if previous else 1.0
+            scored.append((component, result.score * .72 + relationship * .28))
     scores_by_id = {component.id: score for component, score in scored}
     return _best(
         seed,
@@ -127,23 +147,14 @@ def _optional_component(
 
 
 def _section_order(silhouette_sections: tuple[str, ...], selected: Mapping[str, ComponentDefinition | None]) -> tuple[str, ...]:
-    aliases = {
-        "header": ("header",),
-        "hero": ("hero",),
-        "services": ("service", "capabil", "specification", "issue", "scope"),
-        "gallery": ("gallery", "project", "before_after", "material", "image", "casebook", "reveal"),
-        "about": ("about", "story", "narrative", "manifesto", "process", "people", "essay", "heritage", "introduction", "brief", "design", "build"),
-        "trust": ("trust", "proof", "review", "testimonial", "certification", "stat"),
-        "cta": ("action", "quote"),
-        "contact": ("contact", "form"),
-        "footer": ("footer",),
-    }
     positions: dict[str, int] = {}
     fallback_positions = {
         "header": -20, "hero": -10, "services": 30, "gallery": 40,
         "about": 50, "trust": 60, "cta": 70, "contact": 80, "footer": 1000,
     }
-    for category, needles in aliases.items():
+    for category, needles in CATEGORY_SECTION_MARKERS.items():
+        if category == "form":
+            continue
         if not selected.get(category):
             continue
         positions[category] = min(
@@ -196,13 +207,18 @@ def _build_candidate(design_input: DesignInput, seed: str) -> SiteDNA:
         "response_delay", "process", "verified_facts",
     }) or has_project_media
     has_contact = bool(design_input.available_data & {"phone", "email"})
+    silhouette_sections = silhouette.sections
+    supports = {
+        category: any(any(marker in section for marker in markers) for section in silhouette_sections)
+        for category, markers in CATEGORY_SECTION_MARKERS.items()
+    }
     conditions = {
-        "gallery": has_images,
-        "about": True,
-        "trust": has_truth,
-        "cta": has_contact,
-        "contact": has_contact,
-        "form": has_contact,
+        "gallery": has_images and supports["gallery"],
+        "about": supports["about"],
+        "trust": has_truth and supports["trust"],
+        "cta": has_contact and supports["cta"],
+        "contact": has_contact and supports["contact"],
+        "form": has_contact and supports["form"],
     }
     for category in ("gallery", "about", "trust", "cta", "contact", "form"):
         component = _optional_component(category, conditions[category], design_input, archetype, direction, f"{seed}:{category}", tuple(selected_ids))
@@ -216,8 +232,8 @@ def _build_candidate(design_input: DesignInput, seed: str) -> SiteDNA:
     motion = _best(seed, MOTION_SYSTEMS.values(), lambda item: item.id, lambda item: len(item.traits & traits) * .45 - item.performance_cost * .08)
     spatial = _best(seed, SPATIAL_SYSTEMS.values(), lambda item: item.id, lambda item: (.7 if "spatial" in traits and item.level in {2, 3} else 0.0) - item.performance_cost * .11)
     mobile = _best(seed, MOBILE_PERSONALITIES.values(), lambda item: item.id, lambda item: len(item.traits & traits) * .5)
-    spacing = _best(seed, SPACING_SYSTEMS, str, lambda item: .5 if ("editorial" in item and "editorial" in traits) or ("technical" in item and "technical" in traits) else 0.0)
-    geometry = _best(seed, GEOMETRY_SYSTEMS, str, lambda item: .5 if ("material" in item and traits & {"material", "material_led"}) or ("architectural" in item and "architectural" in traits) else 0.0)
+    spacing = _best(seed, SPACING_SYSTEMS.values(), lambda item: item.id, lambda item: .5 if ("editorial" in item.id and "editorial" in traits) or ("technical" in item.id and "technical" in traits) else 0.0)
+    geometry = _best(seed, GEOMETRY_SYSTEMS.values(), lambda item: item.id, lambda item: .5 if ("material" in item.id and traits & {"material", "material_led"}) or ("architectural" in item.id and "architectural" in traits) else 0.0)
 
     order = _section_order(silhouette.sections, selected)
     payload = {
@@ -228,8 +244,8 @@ def _build_candidate(design_input: DesignInput, seed: str) -> SiteDNA:
         "color_system": color.id,
         "typography_system": typography.id,
         "grid_system": grid.id,
-        "spacing_system": spacing,
-        "geometry_system": geometry,
+        "spacing_system": spacing.id,
+        "geometry_system": geometry.id,
         "photo_direction": f"{design_input.trade}:{direction}:hero",
         "header_component": selected["header"].id,
         "hero_component": selected["hero"].id,
@@ -254,26 +270,101 @@ def _build_candidate(design_input: DesignInput, seed: str) -> SiteDNA:
     return SiteDNA.from_dict(payload)
 
 
+def _trace_decisions(dna: SiteDNA, design_input: DesignInput) -> tuple[DecisionRecord, ...]:
+    component_fields = (
+        "header_component", "hero_component", "services_component", "gallery_component",
+        "about_component", "trust_component", "cta_component", "contact_component", "footer_component", "form_component",
+    )
+    decisions = [
+        DecisionRecord("site_archetype", dna.site_archetype, (f"trade:{design_input.trade}", f"business_intent:{design_input.business_intent}", "trade grammar and conversion fit")),
+        DecisionRecord("art_direction", dna.art_direction, ("compatible with trade grammar", f"archetype:{dna.site_archetype}")),
+        DecisionRecord("page_silhouette", dna.page_silhouette, ("minimum data satisfied", "narrative affinity", f"business_intent:{design_input.business_intent}")),
+        DecisionRecord("color_system", dna.color_system, (f"trade affinity:{design_input.trade}", "archetype tone fit", "accessible semantic tokens")),
+        DecisionRecord("typography_system", dna.typography_system, ("color-system compatibility", "readability floor", "archetype personality")),
+        DecisionRecord("grid_system", dna.grid_system, ("silhouette traits", "archetype density", "mobile transformation available")),
+    ]
+    for field in component_fields:
+        component_id = getattr(dna, field)
+        if not component_id:
+            decisions.append(DecisionRecord(field, "omitted", ("no honest compatible evidence or channel required this section",)))
+            continue
+        component = ALL_COMPONENTS[component_id]
+        decisions.append(DecisionRecord(
+            field,
+            component_id,
+            (
+                f"explicit_profile:{component.profile}",
+                f"density:{component.density}",
+                f"energy:{component.section_energy}",
+                "hard data and media constraints satisfied",
+                "pair affinity considered against previous section",
+            ),
+        ))
+    decisions.extend((
+        DecisionRecord("spacing_system", dna.spacing_system, ("density and narrative pacing",)),
+        DecisionRecord("geometry_system", dna.geometry_system, ("shape language and art direction",)),
+        DecisionRecord("motion_system", dna.motion_system, ("trait affinity", "performance cost penalty", "reduced-motion fallback")),
+        DecisionRecord("mobile_personality", dna.mobile_personality, ("archetype content priority", "mobile-specific transformation")),
+    ))
+    return tuple(decisions)
+
+
 class DesignGenome:
     """Generate inspectable DNA while enforcing data truth and anti-clone limits."""
 
-    def __init__(self, reject_similarity: float = .84, candidate_count: int = 24):
+    def __init__(self, reject_similarity: float = .84, candidate_count: int = 24, quality_floor: float = 58.0):
         self.reject_similarity = reject_similarity
         self.candidate_count = candidate_count
+        self.quality_floor = quality_floor
 
-    def generate(self, design_input: DesignInput, history: tuple[SiteDNA, ...] = ()) -> SiteDNA:
-        accepted: list[tuple[float, SiteDNA]] = []
+    def generate(
+        self,
+        design_input: DesignInput,
+        history: tuple[SiteDNA, ...] = (),
+        audit_traces: list[DesignDecisionTrace] | None = None,
+    ) -> SiteDNA:
+        result = self.generate_with_trace(design_input, history)
+        if audit_traces is not None:
+            audit_traces.append(result.trace)
+        return result.dna
+
+    def generate_with_trace(self, design_input: DesignInput, history: tuple[SiteDNA, ...] = ()) -> GenerationResult:
+        rejected: list[dict[str, object]] = []
+        linter_rejections = 0
+        similarity_rejections = 0
+        quality_rejections = 0
         for index in range(self.candidate_count):
             candidate = _build_candidate(design_input, f"{design_input.seed}:{index}")
             similarity = maximum_similarity(candidate, history)
             errors = [issue for issue in lint_dna(candidate, design_input) if issue.severity == "error"]
-            if errors or similarity >= self.reject_similarity:
+            if errors:
+                linter_rejections += 1
+                rejected.append({"attempt": index + 1, "signature": candidate.design_signature, "reason": "linter", "issues": tuple(issue.code for issue in errors)})
+                continue
+            if similarity >= self.reject_similarity:
+                similarity_rejections += 1
+                rejected.append({"attempt": index + 1, "signature": candidate.design_signature, "reason": "similarity", "score": similarity})
                 continue
             quality = evaluate_quality(candidate, design_input, originality=1.0 - similarity)
-            accepted.append((quality.total, candidate))
-        if not accepted:
-            raise RuntimeError("No honest, compatible and sufficiently distinct SiteDNA candidate was found.")
-        return max(accepted, key=lambda item: (item[0], item[1].design_signature))[1]
+            if quality.total < self.quality_floor:
+                quality_rejections += 1
+                rejected.append({"attempt": index + 1, "signature": candidate.design_signature, "reason": "quality_floor", "score": quality.total})
+                continue
+            trace = DesignDecisionTrace(
+                seed=design_input.seed,
+                attempts=index + 1,
+                decisions=_trace_decisions(candidate, design_input),
+                rejected_candidates=tuple(rejected),
+                linter_rejections=linter_rejections,
+                similarity_rejections=similarity_rejections,
+                quality_rejections=quality_rejections,
+            )
+            return GenerationResult(candidate, trace)
+        raise RuntimeError(
+            "No honest, compatible and sufficiently distinct SiteDNA candidate was found "
+            f"after {self.candidate_count} attempts (linter={linter_rejections}, "
+            f"similarity={similarity_rejections}, quality={quality_rejections})."
+        )
 
 
 def generate_site_dna(design_input: DesignInput, history: tuple[SiteDNA, ...] = ()) -> SiteDNA:

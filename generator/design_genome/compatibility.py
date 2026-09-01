@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from .component_relationships import sequence_affinity
 from .models import CompatibilityResult, ComponentDefinition, DesignInput, SiteArchetype
 
 
@@ -21,6 +22,10 @@ def evaluate_component(
         failures.append(f"missing_data:{','.join(sorted(missing_data))}")
     if missing_media:
         failures.append(f"missing_media:{','.join(sorted(missing_media))}")
+    if component.required_any_data and not component.required_any_data.intersection(design_input.available_data):
+        failures.append(f"missing_any_data:{','.join(sorted(component.required_any_data))}")
+    if component.required_any_media and not component.required_any_media.intersection(design_input.media.available_roles()):
+        failures.append(f"missing_any_media:{','.join(sorted(component.required_any_media))}")
     incompatible = component.incompatible_components.intersection(selected_ids)
     if incompatible:
         failures.append(f"incompatible_components:{','.join(sorted(incompatible))}")
@@ -57,5 +62,8 @@ def sequence_compatibility(components: tuple[ComponentDefinition, ...]) -> Compa
         conflicts = component.incompatible_components.intersection(selected)
         if conflicts:
             failures.append(f"{component.id}:{','.join(sorted(conflicts))}")
+    relationships = sequence_affinity(components)
+    if relationships.hard_failure:
+        failures.extend(relationships.reasons)
     allowed = not failures
-    return CompatibilityResult(allowed, 1.0 if allowed else 0.0, tuple(failures))
+    return CompatibilityResult(allowed, relationships.score if allowed else 0.0, tuple(failures), relationships.reasons)

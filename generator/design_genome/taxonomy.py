@@ -32,6 +32,25 @@ ART_DIRECTIONS = (
     "warm_craft", "cinematic_luxury", "minimal_architecture", "material_editorial",
 )
 
+BUSINESS_INTENTS = (
+    "emergency", "local_quote", "premium_residential", "renovation_project",
+    "technical_expertise", "portfolio", "craft", "commercial_b2b",
+    "trust_first", "balanced",
+)
+
+BUSINESS_INTENT_ALIASES = {
+    "quote": "local_quote", "phone": "emergency", "residential": "premium_residential",
+    "renovation": "renovation_project", "technical": "technical_expertise",
+    "projects": "portfolio", "local": "trust_first", "b2b": "commercial_b2b",
+}
+
+
+def normalize_business_intent(value: str) -> str:
+    normalized = BUSINESS_INTENT_ALIASES.get(value, value)
+    if normalized not in BUSINESS_INTENTS:
+        return "balanced"
+    return normalized
+
 FACT_REQUIRED_FIELDS = frozenset({
     "years_experience", "project_count", "average_rating", "review_count", "rge", "qualibat",
     "qualipac", "insurance", "guarantee", "emergency_service", "response_delay", "opening_hours",

@@ -1,24 +1,25 @@
-"""Fifty structurally distinct hero blueprints."""
+"""Fifty heroes with resolved renderer-oriented blueprint specs."""
 
 from ._factory import registry
+from .profiles import HERO_PROFILES
 
-HERO_IDS = (
-    "full_bleed_photo_cover", "photo_left_service_intro", "photo_right_residential_intro",
-    "centered_image_frame", "panorama_architectural", "cinematic_overlay_story", "editorial_photo_collage",
-    "project_contact_sheet_hero", "material_macro_title", "vertical_portrait_manifesto", "floating_image_statement",
-    "stacked_photos_narrative", "edge_crop_conversion", "oversized_type_local", "editorial_title_index",
-    "centered_statement_quiet", "compact_conversion_panel", "mono_technical_diagnostic",
-    "condensed_industrial_capability", "split_service_photo", "offset_residential_photo",
-    "framed_luxury_scene", "layered_material_scene", "asymmetric_project_intro", "editorial_columns_manifesto",
-    "project_canvas_feature", "gallery_led_sequence", "service_led_selector", "blueprint_spatial_scene",
-    "isometric_system_explainer", "diagrammatic_process_map", "parallax_layered_material",
-    "technical_nodes_network", "no_image_typographic_signal", "no_image_editorial_manifesto",
-    "no_image_local_conversion", "diptych_transformation_intro", "triptych_material_intro",
-    "before_after_transformation_pair", "documentary_work_log_hero", "workshop_gesture_cover",
-    "lighting_atmosphere_cover", "architectural_void_statement", "brutalist_block_intro",
-    "quiet_luxury_window", "residential_brief_intro", "phone_first_problem_solution",
-    "quote_first_project_brief", "horizontal_rail_preview", "framed_blueprint_specification",
+HERO_GROUPS = {
+    "photo_cover": ("full_bleed_photo_cover", "centered_image_frame", "panorama_architectural", "lighting_atmosphere_cover"),
+    "split_photo": ("photo_left_service_intro", "photo_right_residential_intro", "split_service_photo", "offset_residential_photo", "residential_brief_intro"),
+    "collage": ("editorial_photo_collage", "floating_image_statement", "stacked_photos_narrative", "diptych_transformation_intro", "triptych_material_intro"),
+    "cinematic": ("cinematic_overlay_story", "framed_luxury_scene", "quiet_luxury_window"),
+    "project": ("project_contact_sheet_hero", "asymmetric_project_intro", "project_canvas_feature", "gallery_led_sequence", "documentary_work_log_hero"),
+    "material": ("material_macro_title", "layered_material_scene", "parallax_layered_material", "workshop_gesture_cover"),
+    "typographic": ("oversized_type_local", "editorial_title_index", "centered_statement_quiet", "editorial_columns_manifesto", "no_image_typographic_signal", "no_image_editorial_manifesto", "no_image_local_conversion", "architectural_void_statement", "brutalist_block_intro"),
+    "conversion": ("edge_crop_conversion", "compact_conversion_panel", "service_led_selector", "phone_first_problem_solution", "quote_first_project_brief"),
+    "technical": ("mono_technical_diagnostic", "condensed_industrial_capability", "diagrammatic_process_map", "technical_nodes_network", "framed_blueprint_specification"),
+    "spatial": ("blueprint_spatial_scene", "isometric_system_explainer"),
+    "transformation": ("before_after_transformation_pair",),
+    "rail": ("horizontal_rail_preview", "vertical_portrait_manifesto"),
+}
+
+HERO_COMPONENTS = registry(
+    "hero", HERO_GROUPS, HERO_PROFILES,
+    {"phone_first_problem_solution": {"required_data": ("phone",), "required_any_data": ()}},
 )
-
-HERO_COMPONENTS = registry("hero", HERO_IDS)
 assert len(HERO_COMPONENTS) == 50

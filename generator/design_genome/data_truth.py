@@ -6,7 +6,7 @@ import re
 from dataclasses import dataclass
 from typing import Any, Mapping
 
-from .models import TruthClass
+from .models import ClaimRequirement, TruthClass
 
 
 @dataclass(frozen=True)
@@ -30,6 +30,20 @@ CLAIM_RULES = {
     "certifications": re.compile(r"\b(?:certifi(?:é|cation)|Qualibat|Qualipac)\b", re.I),
 }
 
+CLAIM_REQUIREMENTS = {
+    "years_experience": ClaimRequirement("years_experience", "years_experience", description="Exact supplied duration required."),
+    "project_count": ClaimRequirement("project_count", "project_count", description="Count must come from artisan data."),
+    "client_count": ClaimRequirement("client_count", "client_count", description="Count must come from artisan data."),
+    "response_delay": ClaimRequirement("response_delay", "response_delay", description="No default response promise."),
+    "average_rating": ClaimRequirement("average_rating", "average_rating", description="Rating and source must be supplied."),
+    "rge": ClaimRequirement("rge", "rge", True, "RGE may render only when explicitly true."),
+    "insurance": ClaimRequirement("insurance", "insurance", description="Verified insurance data required."),
+    "guarantee": ClaimRequirement("guarantee", "guarantee", description="Terms must be supplied."),
+    "emergency_service": ClaimRequirement("emergency_service", "emergency_service", True, "Emergency availability may render only when explicitly true."),
+    "certifications": ClaimRequirement("certifications", "certifications", description="Named supplied certifications required."),
+    "availability": ClaimRequirement("availability", "availability", description="Availability must be current supplied data."),
+}
+
 SAFE_PATTERNS = (
     re.compile(r"^Découvrez (?:nos|les) ", re.I),
     re.compile(r"^Parlons de votre projet", re.I),
@@ -38,11 +52,30 @@ SAFE_PATTERNS = (
 )
 
 
+def can_render_claim(claim_type: str, facts: Mapping[str, Any]) -> bool:
+    """Authorize a structured claim before any copy is composed."""
+    requirement = CLAIM_REQUIREMENTS.get(claim_type)
+    if requirement is None:
+        return False
+    value = facts.get(requirement.required_field)
+    if requirement.expected_value is not None:
+        return value is requirement.expected_value or value == requirement.expected_value
+    return value not in (None, "", [], (), False)
+
+
+def can_use_media_wording(media_source: str, media_role: str, wording_role: str) -> bool:
+    """Block stock imagery from project, team and transformation semantics."""
+    artisan_only_roles = {"project", "realisation", "chantier", "before_after", "team", "selected_project"}
+    if wording_role in artisan_only_roles:
+        return media_source == "artisan" and media_role in {"artisan_project", "before_after", "portrait"}
+    return media_source in {"artisan", "stock", "none"}
+
+
 def classify_claim(claim: str, facts: Mapping[str, Any]) -> ClaimAssessment:
     normalized = claim.strip()
     for field, pattern in CLAIM_RULES.items():
         if pattern.search(normalized):
-            if facts.get(field) not in (None, "", [], ()):
+            if can_render_claim(field, facts):
                 return ClaimAssessment(normalized, TruthClass.FACT, field, "verified_field_present")
             return ClaimAssessment(normalized, TruthClass.FORBIDDEN_INVENTION, field, "required_field_missing")
     if normalized in {str(value) for value in facts.values() if isinstance(value, (str, int, float))}:

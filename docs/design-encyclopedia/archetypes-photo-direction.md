@@ -4,26 +4,26 @@
 
 | ID | Intents | Traits | Preferred silhouettes | Directions |
 |---|---|---|---|---|
-| `local_emergency_service` | emergency, phone | conversion_led, local, phone_first | urgent_local, phone_first_service | conversion_premium |
-| `premium_residential` | renovation, residential | luxurious, trust_led, visual_led | premium_residential, editorial_residential | editorial_luxury, cinematic_luxury |
-| `high_end_craft` | bespoke, craft | material_led, tactile, warm | craft_material_story, workshop_journey | warm_craft, material_editorial |
-| `architectural_contracting` | architecture, contracting | architectural, project_led, technical | architectural_contracting, project_ledger | minimal_architecture, architectural_brutalist |
-| `technical_expert` | expertise, technical | information_dense, technical, trust_led | technical_capabilities, specification_first | technical_spatial, minimal_architecture |
-| `family_business` | local, relationship | local, trust_led, warm | family_trust, local_service_story | warm_craft, conversion_premium |
-| `project_portfolio` | portfolio, projects | portfolio, project_led, visual_led | project_ledger, gallery_sequence | minimal_architecture, editorial_luxury |
-| `luxury_renovation` | luxury, renovation | cinematic, luxurious, story_led | transformation_story, cinematic_residential | cinematic_luxury, editorial_luxury |
-| `industrial_specialist` | b2b, industrial | industrial, information_dense, technical | industrial_capabilities, technical_capabilities | technical_spatial, architectural_brutalist |
-| `conversion_first_local` | local, quote | conversion_led, local, service_led | local_conversion, quote_first_service | conversion_premium, minimal_architecture |
-| `editorial_studio` | brand, editorial | asymmetric, editorial, story_led | editorial_manifesto, magazine_service | editorial_luxury, material_editorial |
-| `warm_artisan` | craft, local | documentary, local, warm | warm_artisan, workshop_journey | warm_craft |
-| `minimal_architecture` | minimal, projects | architectural, minimal, quiet | minimal_statement, project_ledger | minimal_architecture |
-| `bold_local` | local, visibility | bold, conversion_led, service_led | bold_local, local_conversion | conversion_premium, architectural_brutalist |
-| `documentary_craft` | craft, process | documentary, story_led, tactile | documentary_process, craft_material_story | warm_craft, material_editorial |
-| `design_build` | build, design | architectural, project_led, story_led | design_build_journey, transformation_story | minimal_architecture, editorial_luxury |
-| `heritage_craft` | heritage, restoration | editorial, material_led, warm | heritage_story, craft_material_story | material_editorial, warm_craft |
-| `spatial_technical` | innovation, technical | futuristic, layered, technical | spatial_explainer, technical_capabilities | technical_spatial |
-| `material_led` | finish, materials | material, tactile, visual_led | material_library, editorial_manifesto | material_editorial, warm_craft |
-| `quiet_luxury` | calm, luxury | luxurious, minimal, quiet | quiet_luxury, premium_residential | editorial_luxury, minimal_architecture |
+| `local_emergency_service` | emergency, local_quote | conversion_led, local, phone_first | urgent_local, phone_first_service | conversion_premium |
+| `premium_residential` | premium_residential, renovation_project | luxurious, trust_led, visual_led | premium_residential, editorial_residential | editorial_luxury, cinematic_luxury |
+| `high_end_craft` | craft, premium_residential | material_led, tactile, warm | craft_material_story, workshop_journey | warm_craft, material_editorial |
+| `architectural_contracting` | commercial_b2b, renovation_project | architectural, project_led, technical | architectural_contracting, project_ledger | minimal_architecture, architectural_brutalist |
+| `technical_expert` | commercial_b2b, technical_expertise | information_dense, technical, trust_led | technical_capabilities, specification_first | technical_spatial, minimal_architecture |
+| `family_business` | local_quote, trust_first | local, trust_led, warm | family_trust, local_service_story | warm_craft, conversion_premium |
+| `project_portfolio` | portfolio, renovation_project | portfolio, project_led, visual_led | project_ledger, gallery_sequence | minimal_architecture, editorial_luxury |
+| `luxury_renovation` | premium_residential, renovation_project | cinematic, luxurious, story_led | transformation_story, cinematic_residential | cinematic_luxury, editorial_luxury |
+| `industrial_specialist` | commercial_b2b, technical_expertise | industrial, information_dense, technical | industrial_capabilities, technical_capabilities | technical_spatial, architectural_brutalist |
+| `conversion_first_local` | local_quote, trust_first | conversion_led, local, service_led | local_conversion, quote_first_service | conversion_premium, minimal_architecture |
+| `editorial_studio` | craft, portfolio | asymmetric, editorial, story_led | editorial_manifesto, magazine_service | editorial_luxury, material_editorial |
+| `warm_artisan` | craft, trust_first | documentary, local, warm | warm_artisan, workshop_journey | warm_craft |
+| `minimal_architecture` | balanced, portfolio | architectural, minimal, quiet | minimal_statement, project_ledger | minimal_architecture |
+| `bold_local` | balanced, local_quote | bold, conversion_led, service_led | bold_local, local_conversion | conversion_premium, architectural_brutalist |
+| `documentary_craft` | craft, portfolio | documentary, story_led, tactile | documentary_process, craft_material_story | warm_craft, material_editorial |
+| `design_build` | premium_residential, renovation_project | architectural, project_led, story_led | design_build_journey, transformation_story | minimal_architecture, editorial_luxury |
+| `heritage_craft` | craft, trust_first | editorial, material_led, warm | heritage_story, craft_material_story | material_editorial, warm_craft |
+| `spatial_technical` | commercial_b2b, technical_expertise | futuristic, layered, technical | spatial_explainer, technical_capabilities | technical_spatial |
+| `material_led` | craft, premium_residential | material, tactile, visual_led | material_library, editorial_manifesto | material_editorial, warm_craft |
+| `quiet_luxury` | balanced, premium_residential | luxurious, minimal, quiet | quiet_luxury, premium_residential | editorial_luxury, minimal_architecture |
 
 ## Photo Director matrix
 

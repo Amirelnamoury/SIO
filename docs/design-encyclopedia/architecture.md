@@ -14,7 +14,7 @@ Thirty silhouettes describe narrative order rather than interchangeable stacks. 
 
 ## Anti-clone model
 
-Similarity is computed across six explainable distances: structure, typography, color, components, narrative and photo strategy. Candidate generation compares against history and rejects high similarity. The default threshold is intentionally stricter than exact signature uniqueness.
+Similarity uses structure (18%), typography (15%), color (5%), components (38%), narrative (16%) and photo strategy (8%). A palette-only change therefore cannot disguise a structural clone. Bands are: 0-.40 clearly distinct, .40-.60 related, .60-.75 visually similar, .75-.84 near clone and above .84 rejected. These engineering thresholds were calibrated through cohorts and remain subject to human rendered review.
 
 ## Quality model
 

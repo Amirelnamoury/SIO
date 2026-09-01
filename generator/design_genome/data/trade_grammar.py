@@ -7,7 +7,7 @@ TRADE_GRAMMARS = {
     item.trade: item for item in (
         TradeGrammar(
             "plombier",
-            ("emergency", "repair", "bathroom_renovation", "heating", "residential"),
+            ("emergency", "local_quote", "premium_residential", "renovation_project", "technical_expertise"),
             ("slow response", "water damage", "unclear price", "unqualified provider"),
             ("verified insurance", "real reviews", "clear service area", "real project photos"),
             ("bathroom interiors", "installation details", "fixtures", "documented works"),
@@ -21,7 +21,7 @@ TRADE_GRAMMARS = {
         ),
         TradeGrammar(
             "peintre",
-            ("finish_quality", "interior_refresh", "facade", "decorative_finish", "color_guidance"),
+            ("premium_residential", "renovation_project", "craft", "portfolio", "trust_first"),
             ("poor finish", "mess", "wrong color", "unprotected interior"),
             ("real finish details", "verified reviews", "documented process", "real before_after"),
             ("pigment texture", "painted interior", "surface detail", "real transformation"),
@@ -35,7 +35,7 @@ TRADE_GRAMMARS = {
         ),
         TradeGrammar(
             "macon",
-            ("extension", "structure", "facade", "renovation", "outdoor_work"),
+            ("renovation_project", "technical_expertise", "commercial_b2b", "portfolio", "trust_first"),
             ("structural risk", "schedule uncertainty", "site cleanliness", "hidden cost"),
             ("verified insurance", "real projects", "process clarity", "technical detail"),
             ("raw material", "masonry detail", "construction sequence", "finished architecture"),
@@ -49,7 +49,7 @@ TRADE_GRAMMARS = {
         ),
         TradeGrammar(
             "electricien",
-            ("safety", "compliance", "repair", "lighting", "smart_home"),
+            ("technical_expertise", "emergency", "local_quote", "commercial_b2b", "premium_residential"),
             ("safety risk", "noncompliance", "outage", "unclear diagnosis"),
             ("certification when verified", "technical explanation", "real reviews", "documented installation"),
             ("architectural lighting", "panel detail", "smart controls", "cable routing"),
@@ -63,7 +63,7 @@ TRADE_GRAMMARS = {
         ),
         TradeGrammar(
             "menuisier",
-            ("bespoke", "storage", "furniture", "restoration", "joinery"),
+            ("craft", "premium_residential", "portfolio", "renovation_project", "trust_first"),
             ("poor fit", "material quality", "finish", "loss of space"),
             ("real workshop", "material provenance", "project details", "documented process"),
             ("joinery detail", "wood grain", "workshop gesture", "completed interior"),
@@ -77,7 +77,7 @@ TRADE_GRAMMARS = {
         ),
         TradeGrammar(
             "renovateur",
-            ("whole_home", "coordination", "transformation", "interior_design", "energy_upgrade"),
+            ("renovation_project", "premium_residential", "portfolio", "trust_first", "commercial_b2b"),
             ("coordination failure", "budget drift", "delay", "poor finish"),
             ("real transformations", "process clarity", "verified reviews", "project scope"),
             ("residential sequence", "before_after", "material palette", "site documentation"),

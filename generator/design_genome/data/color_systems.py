@@ -19,6 +19,17 @@ def contrast_ratio(left: str, right: str) -> float:
     return round((bright + .05) / (dark + .05), 2)
 
 
+def _mix(left: str, right: str, ratio: float) -> str:
+    a = tuple(round(channel * 255) for channel in _rgb(left))
+    b = tuple(round(channel * 255) for channel in _rgb(right))
+    values = tuple(round(x * (1 - ratio) + y * ratio) for x, y in zip(a, b))
+    return "#" + "".join(f"{value:02x}" for value in values)
+
+
+def _text_on(background: str) -> str:
+    return "#111111" if contrast_ratio("#111111", background) >= contrast_ratio("#ffffff", background) else "#ffffff"
+
+
 FAMILIES = (
     ("architectural_neutral", "#f4f3f0", "#181817", "#50504c", "#b9b7b0", .45, .72, .72, .42, .42, .42),
     ("limestone", "#f3efe5", "#24211c", "#83745d", "#c6ad84", .72, .72, .32, .70, .44, .38),
@@ -42,25 +53,69 @@ FAMILIES = (
     ("high_contrast_monochrome", "#ffffff", "#0a0a0a", "#1e1e1e", "#bdbdbd", .30, .70, .78, .25, .80, .82),
 )
 
+FAMILY_METADATA = {
+    "architectural_neutral": ("limestone, paper and graphite", "neutral", "quiet precise", "canvas-led", "single functional accent", "flat mineral layers", "hairline structural", "architectural natural", ("understated_architecture", "neo_grotesk"), ("minimal_architecture", "architectural_contracting"), ("playful saturation",)),
+    "limestone": ("cut limestone and lime plaster", "warm", "soft editorial", "light material field", "muted mineral accent", "tonal plaster surfaces", "low-contrast material rules", "warm natural", ("serif_sans", "transitional_serif"), ("premium_residential", "heritage_craft"), ("neon technical imagery",)),
+    "concrete_graphite": ("concrete, steel and graphite", "cool", "firm technical", "graphite anchors", "steel signal", "dense mineral surfaces", "strong measured rules", "cool documentary", ("swiss_grotesk", "technical_mono"), ("technical_expert", "industrial_specialist"), ("soft romantic serif overload",)),
+    "warm_craft": ("clay, leather and workshop wood", "warm", "tactile balanced", "warm canvas", "earth accent", "layered craft materials", "subtle hand-built divisions", "documentary warm", ("humanist_sans", "heritage_serif"), ("warm_artisan", "documentary_craft"), ("cold spatial diagrams",)),
+    "linen_clay": ("linen, chalk and fired clay", "warm", "soft residential", "linen canvas", "clay highlight", "soft tonal surfaces", "restrained warm rules", "soft residential", ("soft_humanist", "editorial_serif"), ("premium_residential", "family_business"), ("industrial warning graphics",)),
+    "terracotta": ("terracotta and mineral pigment", "warm", "expressive grounded", "light mineral field", "terracotta action", "pigment-led surfaces", "earth-toned boundaries", "sunlit material", ("humanist_sans", "display_serif"), ("peintre", "material_led"), ("blue-heavy technical systems",)),
+    "wood_walnut": ("walnut, oak and workshop shadow", "warm", "deep craft", "wood-toned field", "joinery accent", "grain-inspired tonal surfaces", "joinery-like lines", "tactile low saturation", ("heritage_serif", "warm_grotesk"), ("high_end_craft", "heritage_craft"), ("glossy corporate blue",)),
+    "copper_brass": ("aged brass and brushed copper", "warm", "luminous luxury", "dark-light metal contrast", "metallic accent used sparingly", "matte metal surfaces", "fine engraved rules", "warm directional light", ("luxury_serif", "serif_sans"), ("quiet_luxury", "high_end_craft"), ("multiple competing gold accents",)),
+    "technical_navy": ("navy enamel and technical drawings", "cool", "high technical", "navy structure", "blue diagnostic signal", "controlled technical panels", "blueprint rules", "cool precise", ("technical_mono", "swiss_grotesk"), ("technical_expert", "spatial_technical"), ("warm heritage storytelling",)),
+    "steel_cyan": ("stainless steel and cyan instrumentation", "cool", "clear diagnostic", "cool neutral field", "cyan information accent", "clean instrument surfaces", "precise cool borders", "bright technical", ("engineering_sans", "technical_mono"), ("technical_expert", "industrial_specialist"), ("cinematic warm luxury",)),
+    "electrical_blue": ("electrical schematics and cobalt enamel", "cool", "signal contrast", "clean technical field", "cobalt action", "high-clarity surfaces", "functional signal lines", "architectural lighting", ("technical_mono", "engineering_sans"), ("technical_expert", "conversion_first_local"), ("decorative pastel collage",)),
+    "luxury_ivory": ("ivory paper and honed stone", "warm", "quiet high contrast", "ivory field", "stone-gold accent", "large calm surfaces", "rare refined rules", "soft editorial", ("luxury_serif", "high_contrast_editorial"), ("quiet_luxury", "premium_residential"), ("dense bento grids",)),
+    "ink_champagne": ("black ink and champagne metal", "warm-neutral", "editorial dramatic", "ink-led structure", "champagne detail", "paper and ink planes", "fine editorial lines", "low-saturation cinematic", ("high_contrast_editorial", "serif_sans"), ("editorial_studio", "luxury_renovation"), ("high-frequency utility UI",)),
+    "burgundy_luxury": ("burgundy textile and dark timber", "warm", "rich restrained", "soft pale field", "burgundy emphasis", "textile-toned surfaces", "tonal dark-red rules", "warm cinematic", ("cinematic_serif", "transitional_serif"), ("luxury_renovation", "premium_residential"), ("construction warning orange",)),
+    "forest_cream": ("forest paint and natural cream", "balanced-warm", "organic calm", "cream field", "forest action", "natural painted surfaces", "botanical dark rules", "natural documentary", ("humanist_sans", "heritage_serif"), ("warm_artisan", "family_business"), ("electric neon accents",)),
+    "french_blue": ("painted joinery and French blue pigment", "cool-balanced", "residential clear", "pale blue-grey field", "French blue emphasis", "painted architectural surfaces", "blue-grey dividers", "soft daylight", ("transitional_serif", "local_contemporary"), ("premium_residential", "peintre"), ("black-yellow industrial language",)),
+    "sage_local": ("sage paint and local stone", "warm-balanced", "approachable calm", "soft sage field", "leaf-dark action", "domestic matte surfaces", "soft local boundaries", "natural local", ("local_contemporary", "soft_humanist"), ("family_business", "warm_artisan"), ("brutalist density",)),
+    "construction_orange": ("site signage and raw aggregate", "warm-signal", "direct high contrast", "neutral work surface", "orange action only", "practical durable surfaces", "strong construction lines", "documentary site", ("construction_grotesk", "condensed_grotesk"), ("conversion_first_local", "industrial_specialist"), ("quiet luxury serif",)),
+    "signal_yellow": ("safety marking and technical labels", "warm-signal", "urgent legible", "high-clarity field", "yellow signal with dark text", "functional flat surfaces", "black signal rules", "technical documentary", ("engineering_sans", "industrial_condensed"), ("local_emergency_service", "technical_expert"), ("large yellow decorative fields",)),
+    "high_contrast_monochrome": ("ink, paper and photographic contact sheets", "neutral", "maximum graphic", "black-white structure", "single monochrome reversal", "flat paper-like surfaces", "strong black rules", "monochrome or natural", ("brutalist_sans", "understated_architecture"), ("minimal_architecture", "editorial_studio"), ("multiple weak grey accents",)),
+}
+
 
 def _tokens(light: str, dark: str, brand: str, accent: str, mode: str) -> dict[str, str]:
     if mode == "light":
+        canvas_alt = _mix(light, dark, .065)
+        surface = _mix(light, "#ffffff", .62)
+        surface_raised = _mix(light, "#ffffff", .82)
+        text_primary = dark
+        text_secondary = _mix(dark, light, .20)
+        text_muted = _mix(dark, light, .31)
+        brand_hover = _mix(brand, dark, .18)
+        brand_active = _mix(brand, dark, .30)
+        focus = accent if contrast_ratio(accent, light) >= 3 else dark
         return {
-            "canvas": light, "canvas_alt": "#eeeeea", "surface": "#ffffff", "surface_raised": "#ffffff",
-            "surface_inverse": dark, "text_primary": "#171717", "text_secondary": "#3f3f3f",
-            "text_muted": "#606060", "text_inverse": "#ffffff", "border_soft": "#d8d8d4",
-            "border_default": "#a6a6a0", "border_strong": "#565650", "brand": brand,
-            "brand_hover": dark, "brand_active": "#000000", "accent": accent,
-            "accent_secondary": "#7f8d8d", "focus": "#005fcc", "success": "#18794e",
+            "canvas": light, "canvas_alt": canvas_alt, "surface": surface, "surface_raised": surface_raised,
+            "surface_inverse": dark, "text_primary": text_primary, "text_secondary": text_secondary,
+            "text_muted": text_muted, "text_inverse": _text_on(dark), "border_soft": _mix(light, dark, .16),
+            "border_default": _mix(light, dark, .34), "border_strong": _mix(light, dark, .68), "brand": brand,
+            "brand_text": _text_on(brand), "brand_hover": brand_hover, "brand_hover_text": _text_on(brand_hover),
+            "brand_active": brand_active, "brand_active_text": _text_on(brand_active), "accent": accent,
+            "accent_secondary": _mix(accent, light, .36), "focus": focus, "success": "#18794e",
             "warning": "#8a5a00", "danger": "#b42318",
         }
+    canvas_alt = _mix(dark, light, .09)
+    surface = _mix(dark, light, .055)
+    surface_raised = _mix(dark, light, .12)
+    text_primary = light
+    text_secondary = _mix(light, dark, .18)
+    text_muted = _mix(light, dark, .30)
+    brand_value = accent
+    brand_hover = _mix(brand_value, light, .20)
+    brand_active = _mix(brand_value, light, .32)
+    focus = accent if contrast_ratio(accent, dark) >= 3 else light
     return {
-        "canvas": dark, "canvas_alt": "#242424", "surface": "#1e1e1e", "surface_raised": "#292929",
-        "surface_inverse": light, "text_primary": "#f7f7f5", "text_secondary": "#d2d2ce",
-        "text_muted": "#aaaaa5", "text_inverse": "#171717", "border_soft": "#3f3f3d",
-        "border_default": "#686864", "border_strong": "#b7b7b0", "brand": accent,
-        "brand_hover": "#ffffff", "brand_active": light, "accent": brand,
-        "accent_secondary": "#95a4a4", "focus": "#78b7ff", "success": "#5dd39e",
+        "canvas": dark, "canvas_alt": canvas_alt, "surface": surface, "surface_raised": surface_raised,
+        "surface_inverse": light, "text_primary": text_primary, "text_secondary": text_secondary,
+        "text_muted": text_muted, "text_inverse": _text_on(light), "border_soft": _mix(dark, light, .18),
+        "border_default": _mix(dark, light, .34), "border_strong": _mix(dark, light, .70), "brand": brand_value,
+        "brand_text": _text_on(brand_value), "brand_hover": brand_hover, "brand_hover_text": _text_on(brand_hover),
+        "brand_active": brand_active, "brand_active_text": _text_on(brand_active), "accent": brand,
+        "accent_secondary": _mix(brand, dark, .28), "focus": focus, "success": "#5dd39e",
         "warning": "#ffd166", "danger": "#ff7b72",
     }
 
@@ -77,6 +132,7 @@ def _typography(luxury: float, technical: float, craft: float) -> tuple[str, ...
 
 COLOR_SYSTEMS: dict[str, ColorSystem] = {}
 for family, light, dark, brand, accent, warmth, luxury, technical, craft, conversion, _signal in FAMILIES:
+    material, temperature, contrast_personality, dominant, accent_behavior, surface, border, image_treatment, type_categories, archetypes, bad = FAMILY_METADATA[family]
     scores = {"plombier": technical, "electricien": max(technical, conversion), "macon": max(technical, craft), "peintre": max(warmth, luxury), "menuisier": craft, "renovateur": luxury}
     for mode in ("light", "dark"):
         tokens = _tokens(light, dark, brand, accent, mode)
@@ -99,6 +155,17 @@ for family, light, dark, brand, accent, warmth, luxury, technical, craft, conver
             compatible_typography=_typography(luxury, technical, craft),
             compatible_image_strategies=("natural", "documentary", "material") if warmth >= .6 else ("architectural", "technical", "monochrome"),
             incompatible_traits=frozenset({"playful"}) if luxury >= .8 else frozenset(),
+            material_inspiration=material,
+            temperature=temperature,
+            contrast_personality=contrast_personality,
+            dominant_behavior=dominant,
+            accent_behavior=accent_behavior,
+            surface_philosophy=surface,
+            border_philosophy=border,
+            image_treatment_preference=image_treatment,
+            recommended_typography_categories=type_categories,
+            recommended_archetypes=archetypes,
+            bad_combinations=bad,
         )
 
 

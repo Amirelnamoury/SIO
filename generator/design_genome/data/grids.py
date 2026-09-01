@@ -27,10 +27,20 @@ SPECS = (
 )
 
 
-GRID_SYSTEMS = {
-    id: GridSystem(id, columns, width, gutter, content, spacing, (640, 900, 1200), mobile, frozenset(traits.split()))
-    for id, columns, width, gutter, content, spacing, mobile, traits in SPECS
-}
+GRID_SYSTEMS = {}
+for id, columns, width, gutter, content, spacing, mobile, traits in SPECS:
+    GRID_SYSTEMS[id] = GridSystem(
+        id=id, columns=columns, max_width=width, gutter=gutter, content_widths=content,
+        section_spacing=spacing, breakpoints=(640, 900, 1200),
+        mobile_transformation=mobile, traits=frozenset(traits.split()),
+        tablet_columns=8 if columns >= 8 else min(columns, 6),
+        mobile_columns=4 if columns >= 4 else columns,
+        outer_margins=(max(24, gutter), max(20, gutter - 4), 16),
+        nested_content_width="66ch" if "editorial" in traits or "quiet" in traits else "min(100%, 960px)",
+        media_overflow_policy="explicit_edge_bleed" if "full_bleed" in traits or "edge_to_edge" in traits else "clip_to_alignment_lines",
+        full_bleed_policy="hero_and_visual_breaks_only" if "full_bleed" in traits else "opt_in_per_section",
+        alignment_lines=("outer_margin", "content_start", "content_end", "media_edge", f"grid_{columns}"),
+    )
 
 
 assert len(GRID_SYSTEMS) == 20

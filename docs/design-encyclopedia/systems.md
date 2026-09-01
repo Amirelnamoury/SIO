@@ -4,81 +4,81 @@
 
 | ID | Mode | Contrast | Trade affinities | Type compatibility |
 |---|---|---:|---|---|
-| `architectural_neutral_light` | light | 16.16 | electricien:0.72, macon:0.72, menuisier:0.42, peintre:0.72, plombier:0.72, renovateur:0.72 | neo_grotesk_clarity, understated_architecture, local_contemporary |
-| `architectural_neutral_dark` | dark | 16.16 | electricien:0.72, macon:0.72, menuisier:0.42, peintre:0.72, plombier:0.72, renovateur:0.72 | neo_grotesk_clarity, understated_architecture, local_contemporary |
-| `limestone_light` | light | 15.61 | electricien:0.44, macon:0.70, menuisier:0.70, peintre:0.72, plombier:0.32, renovateur:0.72 | neo_grotesk_clarity, understated_architecture, local_contemporary |
-| `limestone_dark` | dark | 14.95 | electricien:0.44, macon:0.70, menuisier:0.70, peintre:0.72, plombier:0.32, renovateur:0.72 | neo_grotesk_clarity, understated_architecture, local_contemporary |
-| `concrete_graphite_light` | light | 15.17 | electricien:0.88, macon:0.88, menuisier:0.38, peintre:0.52, plombier:0.88, renovateur:0.52 | technical_mono_grotesk, industrial_condensed, swiss_information |
-| `concrete_graphite_dark` | dark | 15.17 | electricien:0.88, macon:0.88, menuisier:0.38, peintre:0.52, plombier:0.88, renovateur:0.52 | technical_mono_grotesk, industrial_condensed, swiss_information |
-| `warm_craft_light` | light | 15.57 | electricien:0.48, macon:0.96, menuisier:0.96, peintre:0.88, plombier:0.22, renovateur:0.55 | humanist_workshop, heritage_serif, warm_grotesk |
-| `warm_craft_dark` | dark | 15.14 | electricien:0.48, macon:0.96, menuisier:0.96, peintre:0.88, plombier:0.22, renovateur:0.55 | humanist_workshop, heritage_serif, warm_grotesk |
-| `linen_clay_light` | light | 15.75 | electricien:0.42, macon:0.82, menuisier:0.82, peintre:0.86, plombier:0.20, renovateur:0.65 | humanist_workshop, heritage_serif, warm_grotesk |
-| `linen_clay_dark` | dark | 14.68 | electricien:0.42, macon:0.82, menuisier:0.82, peintre:0.86, plombier:0.20, renovateur:0.65 | humanist_workshop, heritage_serif, warm_grotesk |
-| `terracotta_light` | light | 15.71 | electricien:0.58, macon:0.78, menuisier:0.78, peintre:0.92, plombier:0.22, renovateur:0.48 | neo_grotesk_clarity, understated_architecture, local_contemporary |
-| `terracotta_dark` | dark | 15.11 | electricien:0.58, macon:0.78, menuisier:0.78, peintre:0.92, plombier:0.22, renovateur:0.48 | neo_grotesk_clarity, understated_architecture, local_contemporary |
-| `wood_walnut_light` | light | 14.88 | electricien:0.40, macon:0.98, menuisier:0.98, peintre:0.90, plombier:0.25, renovateur:0.60 | humanist_workshop, heritage_serif, warm_grotesk |
-| `wood_walnut_dark` | dark | 14.88 | electricien:0.40, macon:0.98, menuisier:0.98, peintre:0.90, plombier:0.25, renovateur:0.60 | humanist_workshop, heritage_serif, warm_grotesk |
-| `copper_brass_light` | light | 15.57 | electricien:0.52, macon:0.82, menuisier:0.82, peintre:0.84, plombier:0.38, renovateur:0.84 | high_contrast_editorial, quiet_luxury_serif, architectural_serif_sans |
-| `copper_brass_dark` | dark | 15.50 | electricien:0.52, macon:0.82, menuisier:0.82, peintre:0.84, plombier:0.38, renovateur:0.84 | high_contrast_editorial, quiet_luxury_serif, architectural_serif_sans |
-| `technical_navy_light` | light | 16.06 | electricien:0.98, macon:0.98, menuisier:0.18, peintre:0.58, plombier:0.98, renovateur:0.58 | technical_mono_grotesk, industrial_condensed, swiss_information |
-| `technical_navy_dark` | dark | 16.06 | electricien:0.98, macon:0.98, menuisier:0.18, peintre:0.58, plombier:0.98, renovateur:0.58 | technical_mono_grotesk, industrial_condensed, swiss_information |
-| `steel_cyan_light` | light | 16.21 | electricien:0.96, macon:0.96, menuisier:0.25, peintre:0.45, plombier:0.96, renovateur:0.45 | technical_mono_grotesk, industrial_condensed, swiss_information |
-| `steel_cyan_dark` | dark | 16.04 | electricien:0.96, macon:0.96, menuisier:0.25, peintre:0.45, plombier:0.96, renovateur:0.45 | technical_mono_grotesk, industrial_condensed, swiss_information |
-| `electrical_blue_light` | light | 16.27 | electricien:0.98, macon:0.98, menuisier:0.16, peintre:0.44, plombier:0.98, renovateur:0.44 | technical_mono_grotesk, industrial_condensed, swiss_information |
-| `electrical_blue_dark` | dark | 16.27 | electricien:0.98, macon:0.98, menuisier:0.16, peintre:0.44, plombier:0.98, renovateur:0.44 | technical_mono_grotesk, industrial_condensed, swiss_information |
-| `luxury_ivory_light` | light | 16.62 | electricien:0.36, macon:0.58, menuisier:0.58, peintre:0.98, plombier:0.18, renovateur:0.98 | high_contrast_editorial, quiet_luxury_serif, architectural_serif_sans |
-| `luxury_ivory_dark` | dark | 15.63 | electricien:0.36, macon:0.58, menuisier:0.58, peintre:0.98, plombier:0.18, renovateur:0.98 | high_contrast_editorial, quiet_luxury_serif, architectural_serif_sans |
-| `ink_champagne_light` | light | 15.81 | electricien:0.46, macon:0.50, menuisier:0.50, peintre:0.98, plombier:0.46, renovateur:0.98 | high_contrast_editorial, quiet_luxury_serif, architectural_serif_sans |
-| `ink_champagne_dark` | dark | 15.81 | electricien:0.46, macon:0.50, menuisier:0.50, peintre:0.98, plombier:0.46, renovateur:0.98 | high_contrast_editorial, quiet_luxury_serif, architectural_serif_sans |
-| `burgundy_luxury_light` | light | 15.99 | electricien:0.48, macon:0.48, menuisier:0.48, peintre:0.94, plombier:0.28, renovateur:0.94 | high_contrast_editorial, quiet_luxury_serif, architectural_serif_sans |
-| `burgundy_luxury_dark` | dark | 15.99 | electricien:0.48, macon:0.48, menuisier:0.48, peintre:0.94, plombier:0.28, renovateur:0.94 | high_contrast_editorial, quiet_luxury_serif, architectural_serif_sans |
-| `forest_cream_light` | light | 16.05 | electricien:0.52, macon:0.74, menuisier:0.74, peintre:0.75, plombier:0.52, renovateur:0.75 | neo_grotesk_clarity, understated_architecture, local_contemporary |
-| `forest_cream_dark` | dark | 15.54 | electricien:0.52, macon:0.74, menuisier:0.74, peintre:0.75, plombier:0.52, renovateur:0.75 | neo_grotesk_clarity, understated_architecture, local_contemporary |
-| `french_blue_light` | light | 16.25 | electricien:0.86, macon:0.86, menuisier:0.32, peintre:0.72, plombier:0.86, renovateur:0.72 | technical_mono_grotesk, industrial_condensed, swiss_information |
-| `french_blue_dark` | dark | 15.78 | electricien:0.86, macon:0.86, menuisier:0.32, peintre:0.72, plombier:0.86, renovateur:0.72 | technical_mono_grotesk, industrial_condensed, swiss_information |
-| `sage_local_light` | light | 16.07 | electricien:0.58, macon:0.76, menuisier:0.76, peintre:0.66, plombier:0.45, renovateur:0.48 | neo_grotesk_clarity, understated_architecture, local_contemporary |
-| `sage_local_dark` | dark | 14.98 | electricien:0.58, macon:0.76, menuisier:0.76, peintre:0.66, plombier:0.45, renovateur:0.48 | neo_grotesk_clarity, understated_architecture, local_contemporary |
-| `construction_orange_light` | light | 16.42 | electricien:0.98, macon:0.70, menuisier:0.40, peintre:0.84, plombier:0.70, renovateur:0.30 | neo_grotesk_clarity, understated_architecture, local_contemporary |
-| `construction_orange_dark` | dark | 15.64 | electricien:0.98, macon:0.70, menuisier:0.40, peintre:0.84, plombier:0.70, renovateur:0.30 | neo_grotesk_clarity, understated_architecture, local_contemporary |
-| `signal_yellow_light` | light | 16.96 | electricien:1.00, macon:0.80, menuisier:0.32, peintre:0.78, plombier:0.80, renovateur:0.22 | technical_mono_grotesk, industrial_condensed, swiss_information |
-| `signal_yellow_dark` | dark | 15.92 | electricien:1.00, macon:0.80, menuisier:0.32, peintre:0.78, plombier:0.80, renovateur:0.22 | technical_mono_grotesk, industrial_condensed, swiss_information |
-| `high_contrast_monochrome_light` | light | 17.93 | electricien:0.80, macon:0.78, menuisier:0.25, peintre:0.70, plombier:0.78, renovateur:0.70 | neo_grotesk_clarity, understated_architecture, local_contemporary |
-| `high_contrast_monochrome_dark` | dark | 17.93 | electricien:0.80, macon:0.78, menuisier:0.25, peintre:0.70, plombier:0.78, renovateur:0.70 | neo_grotesk_clarity, understated_architecture, local_contemporary |
+| `architectural_neutral_light` | light | 16.01 | electricien:0.72, macon:0.72, menuisier:0.42, peintre:0.72, plombier:0.72, renovateur:0.72 | neo_grotesk_clarity, understated_architecture, local_contemporary |
+| `architectural_neutral_dark` | dark | 16.01 | electricien:0.72, macon:0.72, menuisier:0.42, peintre:0.72, plombier:0.72, renovateur:0.72 | neo_grotesk_clarity, understated_architecture, local_contemporary |
+| `limestone_light` | light | 13.97 | electricien:0.44, macon:0.70, menuisier:0.70, peintre:0.72, plombier:0.32, renovateur:0.72 | neo_grotesk_clarity, understated_architecture, local_contemporary |
+| `limestone_dark` | dark | 13.97 | electricien:0.44, macon:0.70, menuisier:0.70, peintre:0.72, plombier:0.32, renovateur:0.72 | neo_grotesk_clarity, understated_architecture, local_contemporary |
+| `concrete_graphite_light` | light | 15.04 | electricien:0.88, macon:0.88, menuisier:0.38, peintre:0.52, plombier:0.88, renovateur:0.52 | technical_mono_grotesk, industrial_condensed, swiss_information |
+| `concrete_graphite_dark` | dark | 15.04 | electricien:0.88, macon:0.88, menuisier:0.38, peintre:0.52, plombier:0.88, renovateur:0.52 | technical_mono_grotesk, industrial_condensed, swiss_information |
+| `warm_craft_light` | light | 14.10 | electricien:0.48, macon:0.96, menuisier:0.96, peintre:0.88, plombier:0.22, renovateur:0.55 | humanist_workshop, heritage_serif, warm_grotesk |
+| `warm_craft_dark` | dark | 14.10 | electricien:0.48, macon:0.96, menuisier:0.96, peintre:0.88, plombier:0.22, renovateur:0.55 | humanist_workshop, heritage_serif, warm_grotesk |
+| `linen_clay_light` | light | 14.02 | electricien:0.42, macon:0.82, menuisier:0.82, peintre:0.86, plombier:0.20, renovateur:0.65 | humanist_workshop, heritage_serif, warm_grotesk |
+| `linen_clay_dark` | dark | 14.02 | electricien:0.42, macon:0.82, menuisier:0.82, peintre:0.86, plombier:0.20, renovateur:0.65 | humanist_workshop, heritage_serif, warm_grotesk |
+| `terracotta_light` | light | 14.20 | electricien:0.58, macon:0.78, menuisier:0.78, peintre:0.92, plombier:0.22, renovateur:0.48 | neo_grotesk_clarity, understated_architecture, local_contemporary |
+| `terracotta_dark` | dark | 14.20 | electricien:0.58, macon:0.78, menuisier:0.78, peintre:0.92, plombier:0.22, renovateur:0.48 | neo_grotesk_clarity, understated_architecture, local_contemporary |
+| `wood_walnut_light` | light | 14.20 | electricien:0.40, macon:0.98, menuisier:0.98, peintre:0.90, plombier:0.25, renovateur:0.60 | humanist_workshop, heritage_serif, warm_grotesk |
+| `wood_walnut_dark` | dark | 14.20 | electricien:0.40, macon:0.98, menuisier:0.98, peintre:0.90, plombier:0.25, renovateur:0.60 | humanist_workshop, heritage_serif, warm_grotesk |
+| `copper_brass_light` | light | 14.44 | electricien:0.52, macon:0.82, menuisier:0.82, peintre:0.84, plombier:0.38, renovateur:0.84 | high_contrast_editorial, quiet_luxury_serif, architectural_serif_sans |
+| `copper_brass_dark` | dark | 14.44 | electricien:0.52, macon:0.82, menuisier:0.82, peintre:0.84, plombier:0.38, renovateur:0.84 | high_contrast_editorial, quiet_luxury_serif, architectural_serif_sans |
+| `technical_navy_light` | light | 15.87 | electricien:0.98, macon:0.98, menuisier:0.18, peintre:0.58, plombier:0.98, renovateur:0.58 | technical_mono_grotesk, industrial_condensed, swiss_information |
+| `technical_navy_dark` | dark | 15.87 | electricien:0.98, macon:0.98, menuisier:0.18, peintre:0.58, plombier:0.98, renovateur:0.58 | technical_mono_grotesk, industrial_condensed, swiss_information |
+| `steel_cyan_light` | light | 15.56 | electricien:0.96, macon:0.96, menuisier:0.25, peintre:0.45, plombier:0.96, renovateur:0.45 | technical_mono_grotesk, industrial_condensed, swiss_information |
+| `steel_cyan_dark` | dark | 15.56 | electricien:0.96, macon:0.96, menuisier:0.25, peintre:0.45, plombier:0.96, renovateur:0.45 | technical_mono_grotesk, industrial_condensed, swiss_information |
+| `electrical_blue_light` | light | 16.17 | electricien:0.98, macon:0.98, menuisier:0.16, peintre:0.44, plombier:0.98, renovateur:0.44 | technical_mono_grotesk, industrial_condensed, swiss_information |
+| `electrical_blue_dark` | dark | 16.17 | electricien:0.98, macon:0.98, menuisier:0.16, peintre:0.44, plombier:0.98, renovateur:0.44 | technical_mono_grotesk, industrial_condensed, swiss_information |
+| `luxury_ivory_light` | light | 15.54 | electricien:0.36, macon:0.58, menuisier:0.58, peintre:0.98, plombier:0.18, renovateur:0.98 | high_contrast_editorial, quiet_luxury_serif, architectural_serif_sans |
+| `luxury_ivory_dark` | dark | 15.54 | electricien:0.36, macon:0.58, menuisier:0.58, peintre:0.98, plombier:0.18, renovateur:0.98 | high_contrast_editorial, quiet_luxury_serif, architectural_serif_sans |
+| `ink_champagne_light` | light | 16.23 | electricien:0.46, macon:0.50, menuisier:0.50, peintre:0.98, plombier:0.46, renovateur:0.98 | high_contrast_editorial, quiet_luxury_serif, architectural_serif_sans |
+| `ink_champagne_dark` | dark | 16.23 | electricien:0.46, macon:0.50, menuisier:0.50, peintre:0.98, plombier:0.46, renovateur:0.98 | high_contrast_editorial, quiet_luxury_serif, architectural_serif_sans |
+| `burgundy_luxury_light` | light | 15.44 | electricien:0.48, macon:0.48, menuisier:0.48, peintre:0.94, plombier:0.28, renovateur:0.94 | high_contrast_editorial, quiet_luxury_serif, architectural_serif_sans |
+| `burgundy_luxury_dark` | dark | 15.44 | electricien:0.48, macon:0.48, menuisier:0.48, peintre:0.94, plombier:0.28, renovateur:0.94 | high_contrast_editorial, quiet_luxury_serif, architectural_serif_sans |
+| `forest_cream_light` | light | 14.92 | electricien:0.52, macon:0.74, menuisier:0.74, peintre:0.75, plombier:0.52, renovateur:0.75 | neo_grotesk_clarity, understated_architecture, local_contemporary |
+| `forest_cream_dark` | dark | 14.92 | electricien:0.52, macon:0.74, menuisier:0.74, peintre:0.75, plombier:0.52, renovateur:0.75 | neo_grotesk_clarity, understated_architecture, local_contemporary |
+| `french_blue_light` | light | 15.35 | electricien:0.86, macon:0.86, menuisier:0.32, peintre:0.72, plombier:0.86, renovateur:0.72 | technical_mono_grotesk, industrial_condensed, swiss_information |
+| `french_blue_dark` | dark | 15.35 | electricien:0.86, macon:0.86, menuisier:0.32, peintre:0.72, plombier:0.86, renovateur:0.72 | technical_mono_grotesk, industrial_condensed, swiss_information |
+| `sage_local_light` | light | 14.62 | electricien:0.58, macon:0.76, menuisier:0.76, peintre:0.66, plombier:0.45, renovateur:0.48 | neo_grotesk_clarity, understated_architecture, local_contemporary |
+| `sage_local_dark` | dark | 14.62 | electricien:0.58, macon:0.76, menuisier:0.76, peintre:0.66, plombier:0.45, renovateur:0.48 | neo_grotesk_clarity, understated_architecture, local_contemporary |
+| `construction_orange_light` | light | 15.37 | electricien:0.98, macon:0.70, menuisier:0.40, peintre:0.84, plombier:0.70, renovateur:0.30 | neo_grotesk_clarity, understated_architecture, local_contemporary |
+| `construction_orange_dark` | dark | 15.37 | electricien:0.98, macon:0.70, menuisier:0.40, peintre:0.84, plombier:0.70, renovateur:0.30 | neo_grotesk_clarity, understated_architecture, local_contemporary |
+| `signal_yellow_light` | light | 16.15 | electricien:1.00, macon:0.80, menuisier:0.32, peintre:0.78, plombier:0.80, renovateur:0.22 | technical_mono_grotesk, industrial_condensed, swiss_information |
+| `signal_yellow_dark` | dark | 16.15 | electricien:1.00, macon:0.80, menuisier:0.32, peintre:0.78, plombier:0.80, renovateur:0.22 | technical_mono_grotesk, industrial_condensed, swiss_information |
+| `high_contrast_monochrome_light` | light | 19.80 | electricien:0.80, macon:0.78, menuisier:0.25, peintre:0.70, plombier:0.78, renovateur:0.70 | neo_grotesk_clarity, understated_architecture, local_contemporary |
+| `high_contrast_monochrome_dark` | dark | 18.88 | electricien:0.80, macon:0.78, menuisier:0.25, peintre:0.70, plombier:0.78, renovateur:0.70 | neo_grotesk_clarity, understated_architecture, local_contemporary |
 
 ## Typography systems
 
 | ID | Category | Display / body | Hero px | Measure | Traits |
 |---|---|---|---|---:|---|
 | `neo_grotesk_clarity` | neo_grotesk | Arial / Arial | 48-88 | 66 | clear, conversion, neutral |
-| `swiss_information` | swiss_grotesk | Helvetica Neue / Arial | 48-88 | 66 | grid, precise, technical |
+| `swiss_information` | swiss_grotesk | Helvetica Neue / Arial | 44-84 | 66 | grid, precise, technical |
 | `geometric_residential` | geometric_sans | Avenir Next / Arial | 48-88 | 72 | calm, minimal, residential |
 | `humanist_workshop` | humanist_sans | Gill Sans / Trebuchet MS | 48-88 | 72 | craft, tactile, warm |
-| `industrial_condensed` | industrial_condensed | Arial Narrow / Arial | 48-88 | 72 | bold, industrial, technical |
-| `editorial_residential` | editorial_serif | Georgia / Arial | 48-112 | 72 | editorial, elegant, residential |
-| `quiet_luxury_serif` | luxury_serif | Bodoni 72 / Helvetica Neue | 48-112 | 72 | high_contrast, luxurious, quiet |
+| `industrial_condensed` | industrial_condensed | Arial Narrow / Arial | 44-84 | 72 | bold, industrial, technical |
+| `editorial_residential` | editorial_serif | Georgia / Arial | 48-116 | 62 | editorial, elegant, residential |
+| `quiet_luxury_serif` | luxury_serif | Bodoni 72 / Helvetica Neue | 48-116 | 62 | high_contrast, luxurious, quiet |
 | `transitional_trust` | transitional_serif | Charter / Arial | 48-88 | 66 | institutional, readable, trust |
 | `structural_slab` | slab | Rockwell / Arial | 48-88 | 72 | bold, material, structural |
-| `technical_mono_grotesk` | technical_mono | ui-monospace / Arial | 48-88 | 72 | diagrammatic, precise, technical |
-| `mono_accent_local` | mono_accent | Arial / Arial | 48-88 | 72 | accent, local, technical |
+| `technical_mono_grotesk` | technical_mono | ui-monospace / Arial | 44-84 | 72 | diagrammatic, precise, technical |
+| `mono_accent_local` | mono_accent | Arial / Arial | 48-84 | 72 | accent, local, technical |
 | `display_sans_statement` | display_sans | Arial Black / Arial | 48-88 | 72 | bold, conversion, statement |
-| `display_serif_material` | display_serif | Georgia / Verdana | 48-112 | 72 | editorial, material, tactile |
-| `architectural_serif_sans` | serif_sans | Times New Roman / Arial | 48-112 | 72 | architectural, editorial, elegant |
-| `condensed_grotesk_signal` | condensed_grotesk | Arial Narrow / Helvetica Neue | 48-88 | 72 | compact, conversion, signal |
-| `mono_grotesk_blueprint` | mono_grotesk | Courier New / Arial | 48-88 | 72 | blueprint, spatial, technical |
-| `high_contrast_editorial` | high_contrast_editorial | Bodoni 72 / Helvetica Neue | 48-112 | 72 | dramatic, editorial, luxurious |
-| `understated_architecture` | understated_architecture | Helvetica Neue / Arial | 48-88 | 66 | architectural, minimal, quiet |
+| `display_serif_material` | display_serif | Georgia / Verdana | 48-116 | 62 | editorial, material, tactile |
+| `architectural_serif_sans` | serif_sans | Times New Roman / Arial | 48-116 | 62 | architectural, editorial, elegant |
+| `condensed_grotesk_signal` | condensed_grotesk | Arial Narrow / Helvetica Neue | 48-84 | 72 | compact, conversion, signal |
+| `mono_grotesk_blueprint` | mono_grotesk | Courier New / Arial | 44-84 | 72 | blueprint, spatial, technical |
+| `high_contrast_editorial` | high_contrast_editorial | Bodoni 72 / Helvetica Neue | 48-116 | 62 | dramatic, editorial, luxurious |
+| `understated_architecture` | understated_architecture | Helvetica Neue / Arial | 48-96 | 66 | architectural, minimal, quiet |
 | `local_contemporary` | local_contemporary | Trebuchet MS / Arial | 48-88 | 66 | approachable, local, warm |
 | `warm_grotesk` | warm_grotesk | Verdana / Arial | 48-88 | 66 | craft, readable, warm |
 | `gallery_neutral` | gallery_sans | Helvetica Neue / Arial | 48-88 | 66 | gallery, neutral, visual_led |
-| `heritage_serif` | heritage_serif | Palatino / Arial | 48-112 | 72 | craft, editorial, heritage |
-| `construction_grotesk` | construction_grotesk | Arial / Arial | 48-88 | 72 | construction, practical, strong |
-| `lighting_modernist` | modernist_sans | Futura / Arial | 48-88 | 72 | lighting, modern, technical |
+| `heritage_serif` | heritage_serif | Palatino / Arial | 48-116 | 62 | craft, editorial, heritage |
+| `construction_grotesk` | construction_grotesk | Arial / Arial | 44-84 | 72 | construction, practical, strong |
+| `lighting_modernist` | modernist_sans | Futura / Arial | 48-84 | 72 | lighting, modern, technical |
 | `soft_residential` | soft_humanist | Trebuchet MS / Verdana | 48-88 | 66 | calm, residential, warm |
 | `brutalist_index` | brutalist_sans | Arial Black / Arial | 48-88 | 72 | bold, brutal, index |
-| `cinematic_serif` | cinematic_serif | Baskerville / Helvetica Neue | 48-112 | 72 | cinematic, luxurious, story_led |
+| `cinematic_serif` | cinematic_serif | Baskerville / Helvetica Neue | 48-116 | 62 | cinematic, luxurious, story_led |
 | `documentary_humanist` | documentary_sans | Gill Sans / Arial | 48-88 | 66 | documentary, human, warm |
 | `material_slab_sans` | slab_sans | Rockwell / Arial | 48-88 | 72 | craft, material, structural |
-| `precision_engineering` | engineering_sans | DIN Condensed / Arial | 48-88 | 72 | engineering, precision, technical |
+| `precision_engineering` | engineering_sans | DIN Condensed / Arial | 44-84 | 72 | engineering, precision, technical |
 
 ## Grid systems
 
@@ -140,6 +140,26 @@
 | `service_matrix` | utility_header -> compact_hero -> service_matrix -> process -> proof -> faq -> contact -> footer | services | 0-4 | `matrix_to_accordion` |
 | `before_after_casebook` | header -> hero -> casebook -> before_after -> services -> process -> contact -> footer | before_after, services | 6-20 | `paired_sliders_to_stack` |
 
+## Spacing systems
+
+| ID | Section | Component | Text | Grid | Hero | Mobile |
+|---|---|---:|---:|---:|---|---:|
+| `compact_technical` | 64-104 | 20 | 12 | 16 | 72-96 | 0.72 |
+| `balanced_operational` | 80-128 | 28 | 16 | 24 | 88-128 | 0.76 |
+| `generous_editorial` | 112-176 | 40 | 20 | 28 | 120-176 | 0.68 |
+| `cinematic_pause` | 136-220 | 48 | 24 | 32 | 144-224 | 0.64 |
+| `material_breathing` | 96-160 | 36 | 18 | 24 | 112-160 | 0.72 |
+
+## Geometry systems
+
+| ID | Radius | Borders / lines | Shape language | Images | Buttons | Cards |
+|---|---:|---|---|---|---|---|
+| `square_precise` | 0 | one-pixel structural / continuous alignment | orthogonal | square | square_or_2px | unframed_rows |
+| `soft_residential` | 6 | soft low-contrast / short dividers | measured soft corners | 4px | 4px | individual_items_only |
+| `framed_architectural` | 2 | strong frame at page or media level / architectural rules | rectilinear framed | square | square | no_nested_cards |
+| `offset_editorial` | 0 | selective hairline / offset baseline rules | asymmetric rectangular | square | text_link_or_square | unframed_editorial_zones |
+| `material_organic` | 4 | material-toned subtle / rare dividers | natural rectangles without blobs | 2px | 2px | sample_items_not_page_sections |
+
 ## Motion systems
 
 | ID | Intensity | Cost | Techniques | Reduced-motion fallback |
@@ -175,10 +195,10 @@
 
 | ID | Navigation | Hero | Gallery | CTA | Motion |
 |---|---|---|---|---|---|
-| `editorial_crop` | compact_drawer | preserve_title_then_crop | vertical_folio | inline | reduced |
+| `editorial_crop` | compact_drawer | title_then_subject_crop | vertical_folio | inline | reduced |
 | `conversion_immediate` | compact_top_bar | action_above_fold | two_column_to_swipe | sticky_bottom | micro_only |
 | `technical_compact` | accordion_navigation | flatten_diagram | technical_list | inline | reduced |
-| `brutalist_grid` | oversized_overlay | retain_type_scale | edge_scroll | fixed_corner | limited |
+| `brutalist_grid` | oversized_overlay | retain_type_signal | edge_scroll | fixed_corner | limited |
 | `craft_immersive` | warm_drawer | detail_first_crop | material_swipe | inline | soft |
 | `cinematic_sequence` | full_screen_menu | poster_then_story | chapter_stack | end_chapter | reduced |
 | `minimal_calm` | logo_menu | statement_first | single_image | quiet_link | none |

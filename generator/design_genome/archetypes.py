@@ -4,6 +4,30 @@ from .models import SiteArchetype
 from .taxonomy import TRADES
 
 
+ARCHETYPE_PURPOSES = {
+    "local_emergency_service": (("emergency", "local_quote"), "resolve urgent local need", "immediate legibility and action", ("services", "phone", "city"), ("ambient_optional",), ("emergency_service", "service_areas"), "problem -> action -> services -> verified availability"),
+    "premium_residential": (("premium_residential", "renovation_project"), "win considered residential projects", "calm spatial and material confidence", ("services", "approach"), ("residential_ambient",), ("reviews", "process"), "scene -> services -> approach -> contact"),
+    "high_end_craft": (("craft", "premium_residential"), "present bespoke craft value", "make material judgment visible", ("services", "process"), ("material", "artisan_process"), ("process",), "material -> craft -> services -> consultation"),
+    "architectural_contracting": (("renovation_project", "commercial_b2b"), "establish project delivery capability", "project-led architectural structure", ("services", "process"), ("artisan_project",), ("insurance", "project_evidence"), "project -> capabilities -> process -> contact"),
+    "technical_expert": (("technical_expertise", "commercial_b2b"), "make technical capability understandable", "precise information hierarchy", ("services", "process"), ("diagram", "artisan_detail"), ("certifications", "process"), "problem -> system -> proof -> diagnostic"),
+    "family_business": (("trust_first", "local_quote"), "build local relational trust", "warm credible familiarity", ("services", "identity", "city"), ("artisan_portrait_optional",), ("reviews", "service_areas"), "identity -> services -> proof -> contact"),
+    "project_portfolio": (("portfolio", "renovation_project"), "convert documented work into enquiries", "give projects visual priority", ("project_context", "services"), ("artisan_project",), ("project_evidence",), "project cover -> casebook -> services -> enquiry"),
+    "luxury_renovation": (("premium_residential", "renovation_project"), "frame complex renovation as a guided project", "cinematic but restrained transformation", ("services", "process"), ("artisan_project", "ambient"), ("reviews", "process"), "scene -> transformation -> method -> contact"),
+    "industrial_specialist": (("commercial_b2b", "technical_expertise"), "communicate B2B capability and scope", "dense industrial clarity", ("services", "sectors", "process"), ("artisan_detail",), ("certifications", "insurance"), "capability -> sectors -> proof -> contact"),
+    "conversion_first_local": (("local_quote", "trust_first"), "generate qualified local enquiries", "fast scannability without cheap urgency", ("services", "city", "contact"), ("ambient_optional",), ("reviews", "service_areas"), "need -> services -> proof -> quote"),
+    "editorial_studio": (("portfolio", "craft"), "express a distinctive point of view", "editorial hierarchy and rhythm", ("manifesto", "services"), ("mixed_editorial",), (), "premise -> chapters -> services -> contact"),
+    "warm_artisan": (("craft", "trust_first"), "connect craft and local service", "warm documentary credibility", ("services", "process"), ("artisan_process",), ("process",), "identity -> gesture -> services -> contact"),
+    "minimal_architecture": (("portfolio", "balanced"), "present selected work with restraint", "proportion and architectural calm", ("services",), ("selected_image",), (), "statement -> selected work -> contact"),
+    "bold_local": (("local_quote", "balanced"), "create strong local visibility", "bold type and direct service hierarchy", ("services", "city"), ("ambient_optional",), ("service_areas",), "signal -> services -> proof -> action"),
+    "documentary_craft": (("craft", "portfolio"), "demonstrate method through real process", "chronological documentary texture", ("process", "services"), ("artisan_process",), ("process",), "context -> process -> work -> contact"),
+    "design_build": (("renovation_project", "premium_residential"), "explain integrated project journey", "phase-led architectural narrative", ("process", "services"), ("artisan_project",), ("process", "project_evidence"), "brief -> design -> build -> reveal -> contact"),
+    "heritage_craft": (("craft", "trust_first"), "present restoration or inherited skill honestly", "material history without invented heritage", ("history", "services"), ("artisan_archive",), ("history",), "verified history -> material -> process -> contact"),
+    "spatial_technical": (("technical_expertise", "commercial_b2b"), "explain systems spatially", "layered technical relationships", ("services", "system_map"), ("diagram",), ("process",), "system -> capabilities -> process -> contact"),
+    "material_led": (("craft", "premium_residential"), "lead with finish and material judgment", "macro-to-context material rhythm", ("services", "materials"), ("material",), (), "material -> applications -> services -> contact"),
+    "quiet_luxury": (("premium_residential", "balanced"), "signal high consideration through restraint", "quiet contrast and generous space", ("services", "approach"), ("selected_image",), ("process",), "statement -> selected services -> approach -> contact"),
+}
+
+
 def _a(
     id: str,
     intents: tuple[str, ...],
@@ -16,9 +40,10 @@ def _a(
     images: int,
     trades: tuple[str, ...] = TRADES,
 ) -> SiteArchetype:
+    mapped_intents, business, visual, content, media, trust_needs, narrative = ARCHETYPE_PURPOSES[id]
     return SiteArchetype(
         id=id,
-        business_intents=frozenset(intents),
+        business_intents=frozenset(mapped_intents),
         compatible_trades=frozenset(trades),
         traits=frozenset(traits),
         preferred_silhouettes=silhouettes,
@@ -27,6 +52,12 @@ def _a(
         target_density=density,
         trust_need=trust,
         image_need=images,
+        business_purpose=business,
+        visual_purpose=visual,
+        content_needs=content,
+        media_needs=media,
+        trust_needs=trust_needs,
+        recommended_narrative=narrative,
     )
 
 

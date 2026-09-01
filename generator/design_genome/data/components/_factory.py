@@ -1,170 +1,213 @@
-"""Metadata inference for concise, semantic component blueprint declarations."""
+"""Declarative helpers for component blueprints.
 
-from ...models import ComponentDefinition
+Identifiers are opaque keys. This module never inspects an ID to infer business,
+media, compatibility or layout semantics.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Mapping, Sequence
+from copy import deepcopy
+from typing import Any
+
+from ...models import ComponentBlueprintSpec, ComponentDefinition
 
 
-TRAIT_WORDS = {
-    "editorial": "editorial", "magazine": "editorial", "index": "editorial",
-    "cinematic": "cinematic", "overlay": "cinematic", "panorama": "cinematic",
-    "technical": "technical", "blueprint": "technical", "specification": "technical",
-    "warm": "warm", "workshop": "warm", "craft": "tactile", "material": "material",
-    "minimal": "minimal", "quiet": "quiet", "statement": "quiet",
-    "local": "local", "phone": "phone_first", "quote": "quote_first",
-    "conversion": "conversion_led", "action": "conversion_led", "emergency": "conversion_led",
-    "project": "project_led", "casebook": "project_led", "portfolio": "portfolio",
-    "gallery": "visual_led", "photo": "visual_led", "image": "visual_led", "visual": "visual_led",
-    "documentary": "documentary", "industrial": "industrial", "brutalist": "brutal",
-    "spatial": "spatial", "isometric": "spatial", "layered": "layered",
-    "split": "split", "offset": "offset", "masonry": "masonry", "rail": "rail",
-    "full_bleed": "full_bleed", "framed": "framed", "centered": "centered",
-    "luxury": "luxurious", "residential": "residential", "service": "service_led",
-    "trust": "trust_led", "proof": "trust_led", "story": "story_led",
-}
-
-ARCHETYPES_BY_TRAIT = {
-    "technical": {"technical_expert", "industrial_specialist", "spatial_technical"},
-    "conversion_led": {"conversion_first_local", "local_emergency_service", "bold_local"},
-    "project_led": {"project_portfolio", "architectural_contracting", "design_build"},
-    "luxurious": {"premium_residential", "luxury_renovation", "quiet_luxury"},
-    "warm": {"warm_artisan", "family_business", "high_end_craft"},
-    "material": {"material_led", "high_end_craft", "heritage_craft"},
-    "editorial": {"editorial_studio", "quiet_luxury", "material_led"},
-    "local": {"conversion_first_local", "family_business", "bold_local"},
-    "documentary": {"documentary_craft", "heritage_craft", "design_build"},
-    "spatial": {"spatial_technical", "technical_expert"},
-    "minimal": {"minimal_architecture", "quiet_luxury"},
-}
-
-DIRECTIONS_BY_TRAIT = {
-    "technical": {"technical_spatial", "minimal_architecture"},
-    "conversion_led": {"conversion_premium", "architectural_brutalist"},
-    "project_led": {"minimal_architecture", "editorial_luxury"},
-    "luxurious": {"editorial_luxury", "cinematic_luxury"},
-    "warm": {"warm_craft", "material_editorial"},
-    "material": {"material_editorial", "warm_craft"},
-    "editorial": {"editorial_luxury", "material_editorial"},
-    "documentary": {"warm_craft", "material_editorial"},
-    "spatial": {"technical_spatial"},
-    "minimal": {"minimal_architecture", "editorial_luxury"},
-}
-
-TRADE_AFFINITY = {
-    "technical": {"electricien": .95, "plombier": .75, "macon": .72},
-    "material": {"menuisier": .96, "peintre": .88, "macon": .80, "renovateur": .72},
-    "warm": {"menuisier": .92, "peintre": .74, "renovateur": .66},
-    "conversion_led": {"plombier": .95, "electricien": .92, "renovateur": .64},
-    "project_led": {"renovateur": .94, "macon": .86, "menuisier": .78, "peintre": .68},
+CONTENT_ZONES = {
+    "header": ("brand", "navigation", "primary_action", "secondary_information"),
+    "hero": ("eyebrow", "title", "supporting_copy", "actions", "media"),
+    "services": ("section_title", "service_items", "service_detail", "service_action"),
+    "gallery": ("section_title", "media_items", "captions", "project_context"),
+    "about": ("section_title", "narrative", "supporting_media", "verified_facts"),
+    "trust": ("verified_facts", "fact_labels", "evidence_source"),
+    "cta": ("prompt", "primary_action", "secondary_action", "supporting_context"),
+    "contact": ("contact_details", "form", "context", "privacy"),
+    "footer": ("brand", "navigation", "legal", "contact", "optional_action"),
+    "form": ("fields", "consent", "submit", "status", "error_summary"),
 }
 
 
-def make_component(category: str, component_id: str, extra_traits: tuple[str, ...] = ()) -> ComponentDefinition:
-    traits = set(extra_traits)
-    for word, trait in TRAIT_WORDS.items():
-        if word in component_id:
-            traits.add(trait)
-    if not traits:
-        traits.add("balanced")
-
-    archetypes = set()
-    directions = set()
-    trade_affinity = {}
-    for trait in traits:
-        archetypes.update(ARCHETYPES_BY_TRAIT.get(trait, ()))
-        directions.update(DIRECTIONS_BY_TRAIT.get(trait, ()))
-        for trade, score in TRADE_AFFINITY.get(trait, {}).items():
-            trade_affinity[trade] = max(score, trade_affinity.get(trade, 0.0))
-
-    required_data = set()
-    required_media = set()
-    allowed_sources = {"artisan", "stock", "none"}
-    if category == "services":
-        required_data.add("services")
-    if "phone" in component_id:
-        required_data.add("phone")
-    if "review" in component_id or "testimonial" in component_id:
-        required_data.add("reviews")
-    if "insurance" in component_id:
-        required_data.add("insurance")
-    if "certification" in component_id or "badge" in component_id:
-        required_data.add("certifications")
-    if "stat" in component_id or "number" in component_id:
-        required_data.add("statistics")
-    if "team" in component_id or "people" in component_id:
-        required_data.add("team")
-    if "area" in component_id or "map" in component_id:
-        required_data.add("service_areas")
-    if "process" in component_id:
-        required_data.add("process")
-    if "partner" in component_id:
-        required_data.add("partners")
-    if "brand_authorization" in component_id:
-        required_data.add("brands")
-    if "award" in component_id:
-        required_data.add("awards")
-    if "guarantee" in component_id:
-        required_data.add("guarantee")
-    if "opening_hours" in component_id:
-        required_data.add("opening_hours")
-    if "emergency_availability" in component_id:
-        required_data.add("emergency_service")
-    if "response_delay" in component_id:
-        required_data.add("response_delay")
-    if "combined_verified_fact" in component_id or "minimal_verified_fact" in component_id:
-        required_data.add("verified_facts")
-    if "before_after" in component_id or "transformation_pair" in component_id:
-        required_media.add("before_after")
-        allowed_sources = {"artisan"}
-    if any(word in component_id for word in ("project", "casebook", "realisation", "work_log")) and category == "gallery":
-        required_media.add("artisan_project")
-        allowed_sources = {"artisan"}
-    if "artisan_project_evidence" in component_id:
-        required_media.add("artisan_project")
-        allowed_sources = {"artisan"}
-    if "portrait" in component_id:
-        required_media.add("portrait")
-    if "panorama" in component_id:
-        required_media.add("landscape")
-
-    visual = 4 if any(word in component_id for word in ("oversized", "full_bleed", "cinematic", "monumental", "spatial")) else 2 if any(word in component_id for word in ("quiet", "minimal", "compact")) else 3
-    density = 4 if any(word in component_id for word in ("matrix", "table", "directory", "mega", "technical")) else 2 if any(word in component_id for word in ("quiet", "minimal", "statement")) else 3
-    energy = "heroic" if visual == 5 else "strong" if visual >= 4 else "quiet" if visual <= 2 else "medium"
-    image_dependency = .9 if required_media or any(word in component_id for word in ("photo", "gallery", "image", "cinematic", "project")) else .2
-    conversion = .9 if "conversion_led" in traits or category in {"cta", "contact", "form"} else .45
-    editorial = .88 if "editorial" in traits or "story_led" in traits else .42
-    zones = {
-        "header": ("brand", "navigation", "primary_action"),
-        "hero": ("eyebrow", "title", "supporting_copy", "actions", "media"),
-        "services": ("section_title", "service_items", "service_detail"),
-        "gallery": ("section_title", "media_items", "captions"),
-        "about": ("section_title", "narrative", "supporting_media"),
-        "trust": ("verified_facts", "fact_labels"),
-        "cta": ("prompt", "primary_action", "secondary_action"),
-        "contact": ("contact_details", "form", "context"),
-        "footer": ("brand", "navigation", "legal", "contact"),
-        "form": ("fields", "consent", "submit", "status"),
-    }[category]
-    mobile = "bottom_action" if "phone" in component_id else "horizontal_scroll" if "rail" in component_id else "stack_priority_order"
-    return ComponentDefinition(
-        id=component_id,
-        category=category,
-        traits=frozenset(traits),
-        compatible_archetypes=frozenset(archetypes),
-        compatible_directions=frozenset(directions),
-        required_data=frozenset(required_data),
-        required_media=frozenset(required_media),
-        allowed_media_sources=frozenset(allowed_sources),
-        density=density,
-        visual_weight=visual,
-        section_energy=energy,
-        mobile_variant=mobile,
-        trade_affinity=trade_affinity,
-        conversion_score=conversion,
-        editorial_score=editorial,
-        image_dependency=image_dependency,
-        content_zones=zones,
-        notes=f"Blueprint {component_id.replace('_', ' ')}; structure only, no production markup.",
+def blueprint(
+    layout_model: str,
+    content_alignment: str,
+    *,
+    desktop: Mapping[str, Any],
+    mobile: Mapping[str, Any],
+    media: Mapping[str, Any],
+    content: Mapping[str, Any],
+    behavior: Mapping[str, Any],
+    fallback: str,
+) -> ComponentBlueprintSpec:
+    return ComponentBlueprintSpec(
+        schema_version="component-blueprint-1.1",
+        layout_model=layout_model,
+        content_alignment=content_alignment,
+        desktop_spec=dict(desktop),
+        mobile_spec=dict(mobile),
+        media_spec=dict(media),
+        content_spec=dict(content),
+        behavior_spec=dict(behavior),
+        fallback_strategy=fallback,
     )
 
 
-def registry(category: str, ids: tuple[str, ...]) -> dict[str, ComponentDefinition]:
-    return {component_id: make_component(category, component_id) for component_id in ids}
+def hero_blueprint(
+    layout_model: str,
+    *,
+    alignment: str,
+    media_layout: str,
+    media_count: tuple[int, int],
+    orientations: tuple[str, ...],
+    crop: str,
+    spans: tuple[int, int],
+    desktop_order: tuple[str, ...],
+    mobile_order: tuple[str, ...],
+    title_scale: str = "display_l",
+    max_title_width: int = 18,
+    overlay: str = "none",
+    background: str = "canvas",
+    supports_no_media: bool = False,
+    supports_stock: bool = True,
+    supports_artisan: bool = True,
+    mobile_media: str = "subject_safe_crop",
+    mobile_title: str = "reduce_scale_preserve_hierarchy",
+    motion: tuple[str, ...] = ("soft_fade",),
+    fallback: str = "replace media with a neutral material or typographic composition",
+) -> ComponentBlueprintSpec:
+    return blueprint(
+        layout_model,
+        alignment,
+        desktop={
+            "grid_columns": 12,
+            "content_span": spans[0],
+            "media_span": spans[1],
+            "desktop_order": desktop_order,
+            "min_height_behavior": "min(82vh, 880px)",
+            "section_padding_behavior": "spacing_system.hero_padding",
+            "overlap_behavior": "controlled" if "layer" in layout_model or "collage" in layout_model else "none",
+        },
+        mobile={
+            "mobile_order": mobile_order,
+            "media_behavior": mobile_media,
+            "title_behavior": mobile_title,
+            "min_height_behavior": "content_driven_with_viewport_cap",
+        },
+        media={
+            "media_layout": media_layout,
+            "media_count_min": media_count[0],
+            "media_count_max": media_count[1],
+            "preferred_orientations": orientations,
+            "image_crop_behavior": crop,
+            "media_span": spans[1],
+            "overlay_behavior": overlay,
+            "background_behavior": background,
+            "supports_no_media": supports_no_media,
+            "supports_stock_media": supports_stock,
+            "supports_artisan_media": supports_artisan,
+        },
+        content={
+            "title_position": "primary_content_zone",
+            "cta_position": "after_supporting_copy",
+            "supporting_copy_position": "adjacent_to_title",
+            "eyebrow_position": "before_title",
+            "max_title_width_ch": max_title_width,
+            "title_scale": title_scale,
+        },
+        behavior={"motion_capabilities": motion, "interaction_priority": "content_before_effect"},
+        fallback=fallback,
+    )
+
+
+def component_profile(
+    spec: ComponentBlueprintSpec,
+    *,
+    traits: Sequence[str],
+    required_data: Sequence[str] = (),
+    required_any_data: Sequence[str] = (),
+    required_media: Sequence[str] = (),
+    required_any_media: Sequence[str] = (),
+    allowed_media_sources: Sequence[str] = ("artisan", "stock", "none"),
+    compatible_archetypes: Sequence[str] = (),
+    compatible_directions: Sequence[str] = (),
+    incompatible_components: Sequence[str] = (),
+    density: int = 3,
+    visual_weight: int = 3,
+    section_energy: str = "medium",
+    mobile_variant: str = "stack_priority_order",
+    trade_affinity: Mapping[str, float] | None = None,
+    conversion_score: float = .5,
+    editorial_score: float = .5,
+    image_dependency: float = 0.0,
+    notes: str = "",
+) -> dict[str, Any]:
+    return {
+        "spec": spec,
+        "traits": tuple(traits),
+        "required_data": tuple(required_data),
+        "required_any_data": tuple(required_any_data),
+        "required_media": tuple(required_media),
+        "required_any_media": tuple(required_any_media),
+        "allowed_media_sources": tuple(allowed_media_sources),
+        "compatible_archetypes": tuple(compatible_archetypes),
+        "compatible_directions": tuple(compatible_directions),
+        "incompatible_components": tuple(incompatible_components),
+        "density": density,
+        "visual_weight": visual_weight,
+        "section_energy": section_energy,
+        "mobile_variant": mobile_variant,
+        "trade_affinity": dict(trade_affinity or {}),
+        "conversion_score": conversion_score,
+        "editorial_score": editorial_score,
+        "image_dependency": image_dependency,
+        "notes": notes,
+    }
+
+
+def make_component(category: str, component_id: str, profile_name: str, profiles: Mapping[str, Mapping[str, Any]], overrides: Mapping[str, Any] | None = None) -> ComponentDefinition:
+    """Resolve an explicitly assigned profile without inspecting component_id."""
+    if profile_name not in profiles:
+        raise ValueError(f"Unknown explicit profile {category}.{profile_name}")
+    data = deepcopy(dict(profiles[profile_name]))
+    if overrides:
+        data.update(overrides)
+    return ComponentDefinition(
+        id=component_id,
+        category=category,
+        traits=frozenset(data["traits"]),
+        profile=profile_name,
+        compatible_archetypes=frozenset(data["compatible_archetypes"]),
+        compatible_directions=frozenset(data["compatible_directions"]),
+        required_data=frozenset(data["required_data"]),
+        required_any_data=frozenset(data["required_any_data"]),
+        required_media=frozenset(data["required_media"]),
+        required_any_media=frozenset(data["required_any_media"]),
+        allowed_media_sources=frozenset(data["allowed_media_sources"]),
+        incompatible_components=frozenset(data["incompatible_components"]),
+        density=data["density"],
+        visual_weight=data["visual_weight"],
+        section_energy=data["section_energy"],
+        mobile_variant=data["mobile_variant"],
+        trade_affinity=data["trade_affinity"],
+        conversion_score=data["conversion_score"],
+        editorial_score=data["editorial_score"],
+        image_dependency=data["image_dependency"],
+        content_zones=CONTENT_ZONES[category],
+        notes=data["notes"] or f"Explicit {category} profile: {profile_name}.",
+        blueprint_spec=data["spec"],
+    )
+
+
+def registry(
+    category: str,
+    groups: Mapping[str, Sequence[str]],
+    profiles: Mapping[str, Mapping[str, Any]],
+    overrides: Mapping[str, Mapping[str, Any]] | None = None,
+) -> dict[str, ComponentDefinition]:
+    overrides = overrides or {}
+    result: dict[str, ComponentDefinition] = {}
+    for profile_name, component_ids in groups.items():
+        for component_id in component_ids:
+            if component_id in result:
+                raise ValueError(f"Duplicate component id in {category}: {component_id}")
+            result[component_id] = make_component(category, component_id, profile_name, profiles, overrides.get(component_id))
+    return result

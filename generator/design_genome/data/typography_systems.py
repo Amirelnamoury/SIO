@@ -38,7 +38,31 @@ SPECS = (
 
 
 TYPOGRAPHY_SYSTEMS = {}
-for system_id, category, display, heading, body, accent, traits, editorial, luxury, technical, warmth, conversion, readability in SPECS:
+LIMITED_FONTS = {"Bodoni 72", "Gill Sans", "Avenir Next", "DIN Condensed", "Futura", "Charter"}
+SERIF_FONTS = {"Georgia", "Bodoni 72", "Times New Roman", "Charter", "Palatino", "Baskerville"}
+
+for index, (system_id, category, display, heading, body, accent, traits, editorial, luxury, technical, warmth, conversion, readability) in enumerate(SPECS):
+    if len(set((display, heading, body, accent))) > 3:
+        accent = heading
+    availability = "platform_limited" if display in LIMITED_FONTS or heading in LIMITED_FONTS else "system_safe"
+    generic = "serif" if display in SERIF_FONTS else "sans-serif"
+    fallback_stack = tuple(dict.fromkeys((display, heading, body, "Georgia" if generic == "serif" else "Arial", generic)))
+    scale_bias = (index % 4) * .03
+    hero_ceiling = 116 if editorial > .85 else 96 if luxury > .7 else 84 if technical > .75 else 88
+    size_scale = (
+        round(.76 + scale_bias / 3, 3), round(.88 + scale_bias / 3, 3), 1.0,
+        round(1.22 + scale_bias, 3), round(1.56 + editorial * .12 + scale_bias, 3),
+        round(2.05 + luxury * .22 + scale_bias, 3), round(2.82 + technical * .12 + editorial * .18, 3),
+        round(3.75 + editorial * .55 + luxury * .35, 3),
+    )
+    line_heights = (
+        round(1.0 + max(0, technical - .7) * .04, 3),
+        round(1.10 + warmth * .08, 3),
+        round(1.40 + readability * .16, 3),
+        round(1.55 + readability * .15, 3),
+    )
+    uppercase_policy = "short_labels_only" if technical > .7 or conversion > .85 else "preserve_natural_case"
+    personality = "editorial" if editorial > .8 else "technical" if technical > .8 else "warm" if warmth > .75 else "architectural_neutral"
     TYPOGRAPHY_SYSTEMS[system_id] = TypographySystem(
         id=system_id,
         category=category,
@@ -46,16 +70,16 @@ for system_id, category, display, heading, body, accent, traits, editorial, luxu
         heading_family=heading,
         body_family=body,
         accent_family=accent,
-        weights=(400, 500, 700),
-        size_scale=(.78, .88, 1.0, 1.25, 1.62, 2.2, 3.1, 4.4),
-        line_height_scale=(1.05, 1.15, 1.45, 1.65),
-        letter_spacing_scale=(0.0, .01, .04, .08),
-        case_behavior="uppercase_labels" if technical > .7 or conversion > .85 else "natural",
+        weights=(400, 500, 700) if technical > .6 or conversion > .7 else (400, 500),
+        size_scale=size_scale,
+        line_height_scale=line_heights,
+        letter_spacing_scale=(0.0,),
+        case_behavior=uppercase_policy,
         max_title_width=14 if luxury > .8 else 20,
-        hero_size_range=(48, 112 if editorial > .8 else 88),
-        section_title_range=(30, 64),
-        body_measure=66 if readability > .95 else 72,
-        mobile_scale=.62 if editorial > .85 else .72,
+        hero_size_range=(44 if technical > .8 else 48, hero_ceiling),
+        section_title_range=(28 if technical > .8 else 32, 58 if luxury > .8 else 64),
+        body_measure=62 if editorial > .85 else 66 if readability > .95 else 72,
+        mobile_scale=.60 if editorial > .9 else .66 if luxury > .8 else .72 if technical > .7 else .70,
         editorial_score=editorial,
         luxury_score=luxury,
         technical_score=technical,
@@ -63,6 +87,21 @@ for system_id, category, display, heading, body, accent, traits, editorial, luxu
         conversion_score=conversion,
         readability_score=readability,
         traits=frozenset(traits.split()),
+        personality=personality,
+        display_behavior="dramatic_short_lines" if editorial > .85 else "condensed_signal" if technical > .8 else "measured_identity",
+        heading_behavior="compact_information" if technical > .75 else "editorial_chapters" if editorial > .75 else "clear_sections",
+        body_behavior="dense_but_scannable" if technical > .75 else "long_form_readable" if editorial > .75 else "concise_readable",
+        accent_behavior="mono_labels" if "mono" in category else "serif_contrast" if accent in SERIF_FONTS else "same_family_emphasis",
+        title_proportions="narrow_tall" if "condensed" in category else "wide_editorial" if editorial > .8 else "balanced",
+        uppercase_policy=uppercase_policy,
+        numeric_style="tabular_lining" if technical > .65 or conversion > .8 else "proportional_lining",
+        hero_wrapping_policy="two_to_four_intentional_lines" if editorial > .8 else "two_lines_preferred",
+        section_wrapping="two_lines_max_mobile_three" if editorial > .7 else "two_lines_max",
+        dense_mode_behavior="reduce_display_steps_and_preserve_body_measure",
+        airy_mode_behavior="increase_space_and_measure_not_letter_spacing",
+        availability=availability,
+        fallback_stack=fallback_stack,
+        max_font_count=len(set((display, heading, body, accent))),
     )
 
 
