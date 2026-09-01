@@ -41,7 +41,7 @@ from app.config import settings
 from app.database import get_db
 from app.deps import ADMIN_COOKIE_NAME, bearer_scheme, require_admin
 from app.media_processing import MediaValidationError
-from app.models import AdminUser, Artisan, Client, Devis, Facture, Membre, SiteMedia, SiteMediaLibrary, SiteVitrine, utcnow
+from app.models import AdminUser, Artisan, Client, Devis, Facture, Membre, SiteMedia, SiteMediaLibrary, SiteMediaSelection, SiteVitrine, utcnow
 from app.rate_limit import rate_limiter
 from app.security import create_access_token, decode_access_token, verify_password
 from app.site_media_schemas import (

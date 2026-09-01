@@ -1,4 +1,5 @@
 from io import BytesIO
+from urllib.parse import urlparse
 from uuid import uuid4
 
 import pytest
@@ -287,3 +288,81 @@ def test_bibliotheque_persistante_et_admin_peut_retirer_selection(tmp_path, monk
         assert db.query(SiteMediaSelection).filter(SiteMediaSelection.id == hero["id"]).first() is None
     finally:
         db.close()
+
+
+def test_media_bibliotheque_servi_dans_session_preview_limitee(tmp_path, monkeypatch):
+    storage = LocalFilesystemStorage(str(tmp_path))
+    monkeypatch.setattr(storage_module, "_storage", storage)
+    artisan_id, autre_artisan_id, admin_id = create_accounts()
+    web_content = image_bytes("WEBP", size=(96, 72), color=(20, 90, 150))
+    thumbnail_content = image_bytes("WEBP", size=(48, 36), color=(40, 120, 180))
+
+    db = SessionLocal()
+    try:
+        site = SiteVitrine(artisan_id=artisan_id, statut="brouillon", config={})
+        selected_media = SiteMediaLibrary(
+            media_id=f"pexels-selected-{uuid4().hex}", metier="plomberie", sous_categorie="chantier",
+            storage_key=f"library/{uuid4().hex}.webp", thumbnail_key=f"library/{uuid4().hex}-thumb.webp",
+            mime_type="image/webp", largeur=96, hauteur=72, orientation="paysage",
+            usage_recommande=["hero"], licence="Pexels", source_nom="Pexels", credit="Photographe Test", actif=True,
+        )
+        unselected_media = SiteMediaLibrary(
+            media_id=f"pexels-unselected-{uuid4().hex}", metier="plomberie", sous_categorie="chantier",
+            storage_key=f"library/{uuid4().hex}.webp", thumbnail_key=f"library/{uuid4().hex}-thumb.webp",
+            mime_type="image/webp", largeur=96, hauteur=72, orientation="paysage",
+            usage_recommande=["gallery"], licence="Pexels", source_nom="Pexels", credit="Autre photographe", actif=True,
+        )
+        db.add_all([site, selected_media, unselected_media])
+        db.flush()
+        db.add(SiteMediaSelection(
+            site_vitrine_id=site.id,
+            usage="hero",
+            position=0,
+            source="bibliotheque",
+            library_media_id=selected_media.id,
+        ))
+        db.commit()
+        selected_id = selected_media.id
+        unselected_id = unselected_media.id
+        storage.save(selected_media.storage_key, web_content)
+        storage.save(selected_media.thumbnail_key, thumbnail_content)
+        storage.save(unselected_media.storage_key, web_content)
+        storage.save(unselected_media.thumbnail_key, thumbnail_content)
+    finally:
+        db.close()
+
+    admin_auth = admin_headers(admin_id)
+    selected_url = f"/admin/api/artisans/{artisan_id}/site/media/library/{selected_id}/content"
+    with TestClient(app) as client:
+        generated = client.post(f"/admin/api/artisans/{artisan_id}/site/generate", headers=admin_auth)
+        assert generated.status_code == 200, generated.text
+
+        admin_web = client.get(f"{selected_url}?variant=web", headers=admin_auth)
+        admin_thumbnail = client.get(f"{selected_url}?variant=thumbnail", headers=admin_auth)
+        assert admin_web.status_code == admin_thumbnail.status_code == 200
+        assert admin_web.content == web_content
+        assert admin_thumbnail.content == thumbnail_content
+
+        session = client.post(f"/admin/api/artisans/{artisan_id}/site/preview-session", headers=admin_auth)
+        assert session.status_code == 200, session.text
+        opened = client.get(session.json()["url"], follow_redirects=False)
+        assert opened.status_code == 303
+        assert urlparse(opened.headers["location"]).path == f"/admin/api/artisans/{artisan_id}/site/preview"
+
+        preview_web = client.get(f"{selected_url}?variant=web")
+        preview_thumbnail = client.get(f"{selected_url}?variant=thumbnail")
+        assert preview_web.status_code == preview_thumbnail.status_code == 200
+        assert preview_web.headers["content-type"] == "image/webp"
+        assert preview_thumbnail.headers["content-type"] == "image/webp"
+        assert preview_web.content == web_content
+        assert preview_thumbnail.content == thumbnail_content
+
+        other_artisan = client.get(
+            f"/admin/api/artisans/{autre_artisan_id}/site/media/library/{selected_id}/content?variant=web"
+        )
+        assert other_artisan.status_code == 403
+
+        unselected = client.get(
+            f"/admin/api/artisans/{artisan_id}/site/media/library/{unselected_id}/content?variant=web"
+        )
+        assert unselected.status_code == 404
