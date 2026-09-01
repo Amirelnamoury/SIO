@@ -97,12 +97,34 @@ class ComponentBlueprintSpec:
 
 
 @dataclass(frozen=True)
+class StructuralVariantSpec:
+    """Explicit component-level composition layered over a family blueprint."""
+
+    variant_id: str
+    design_intent: str
+    flow_direction: str
+    alignment_anchor: str
+    frame_behavior: str
+    collapse_strategy: str
+    priority_anchor: str
+    focus_progression: str
+    variant_source: str = "explicit"
+    desktop_overrides: Mapping[str, Any] = field(default_factory=dict)
+    mobile_overrides: Mapping[str, Any] = field(default_factory=dict)
+    media_overrides: Mapping[str, Any] = field(default_factory=dict)
+    content_overrides: Mapping[str, Any] = field(default_factory=dict)
+    behavior_overrides: Mapping[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
 class ComponentDefinition:
     id: str
     category: str
     traits: frozenset[str]
     family_id: str
     variant_id: str
+    design_intent: str = ""
+    variant_source: str = "explicit"
     is_alias: bool = False
     alias_of: str | None = None
     profile: str = ""

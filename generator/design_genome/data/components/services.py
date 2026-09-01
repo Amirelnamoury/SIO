@@ -2,6 +2,7 @@
 
 from ._factory import registry
 from .profiles import SERVICES_PROFILES
+from .variants import SERVICES_VARIANTS
 
 SERVICE_GROUPS = {
     "rows": ("editorial_service_rows", "numbered_service_list", "sticky_service_detail", "alternating_service_feature", "quiet_service_chapters", "editorial_service_folio"),
@@ -19,5 +20,5 @@ SERVICE_GROUPS = {
     "material": ("material_service_catalogue", "project_type_services", "workshop_service_samples"),
 }
 
-SERVICES_COMPONENTS = registry("services", SERVICE_GROUPS, SERVICES_PROFILES)
+SERVICES_COMPONENTS = registry("services", SERVICE_GROUPS, SERVICES_PROFILES, SERVICES_VARIANTS)
 assert len(SERVICES_COMPONENTS) == 35

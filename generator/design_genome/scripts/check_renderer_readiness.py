@@ -19,6 +19,8 @@ def check() -> tuple[dict[str, tuple[str, ...]], dict[str, dict]]:
             missing = []
             for field, value in (
                 ("family", component.family_id), ("variant", component.variant_id),
+                ("variant_source", component.variant_source),
+                ("design_intent", component.design_intent),
                 ("blueprint", spec), ("layout_pattern", spec.layout_pattern if spec else None),
                 ("edge_behavior", spec.edge_behavior if spec else None),
                 ("type_scale_role", spec.type_scale_role if spec else None),
@@ -34,6 +36,19 @@ def check() -> tuple[dict[str, tuple[str, ...]], dict[str, dict]]:
                 missing.append("media_intensity_range")
             if spec and spec.type_scale_role not in {"quiet", "normal", "large", "oversized", "monumental"}:
                 missing.append("type_scale_role_enum")
+            if component.variant_source != "explicit":
+                missing.append("variant_source_explicit")
+            if spec:
+                for field, mapping in (
+                    ("flow_direction", spec.desktop_spec),
+                    ("alignment_anchor", spec.desktop_spec),
+                    ("frame_behavior", spec.desktop_spec),
+                    ("collapse_strategy", spec.mobile_spec),
+                    ("priority_anchor", spec.mobile_spec),
+                    ("focus_progression", spec.behavior_spec),
+                ):
+                    if not mapping.get(field):
+                        missing.append(field)
             if missing:
                 issues[component.id] = tuple(missing)
             blueprint_fingerprint(component)
@@ -50,7 +65,7 @@ def markdown(issues: dict[str, tuple[str, ...]], summaries: dict[str, dict]) -> 
         f"- Missing structural contracts: {len(issues)}",
         f"- Exact duplicate groups: {exact}",
         f"- Categories: {', '.join(f'{key}={value}' for key, value in counts.items())}", "",
-        "Every component exposes family, variant, layout pattern, edge behavior, media intensity, type-scale role, desktop/mobile/media/content/behavior specs, fallback and compatibility metadata.", "",
+        "Every component exposes an explicit family, explicit variant, design intent, renderer-visible structural spec, fallback and compatibility metadata. Registry order cannot select or alter a variant.", "",
         "## Next lot", "",
         "`DESIGN GENOME EXPERIMENTAL RENDERER V0.1` will interpret selected SiteDNA in an isolated visual laboratory. It is not implemented here.",
     ))

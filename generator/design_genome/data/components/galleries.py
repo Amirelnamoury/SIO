@@ -2,6 +2,7 @@
 
 from ._factory import registry
 from .profiles import GALLERY_PROFILES
+from .variants import GALLERY_VARIANTS
 
 GALLERY_GROUPS = {
     "ambient": ("inspiration_gallery_mosaic", "visual_atmosphere_sequence", "lighting_atmosphere_gallery", "stock_ambient_collage", "portrait_landscape_dialogue"),
@@ -15,5 +16,5 @@ GALLERY_GROUPS = {
     "mobile": ("mobile_swipe_gallery",),
 }
 
-GALLERY_COMPONENTS = registry("gallery", GALLERY_GROUPS, GALLERY_PROFILES)
+GALLERY_COMPONENTS = registry("gallery", GALLERY_GROUPS, GALLERY_PROFILES, GALLERY_VARIANTS)
 assert len(GALLERY_COMPONENTS) == 30

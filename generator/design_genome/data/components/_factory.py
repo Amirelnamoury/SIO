@@ -10,7 +10,7 @@ from collections.abc import Mapping, Sequence
 from copy import deepcopy
 from typing import Any
 
-from ...models import ComponentBlueprintSpec, ComponentDefinition
+from ...models import ComponentBlueprintSpec, ComponentDefinition, StructuralVariantSpec
 
 
 CONTENT_ZONES = {
@@ -195,21 +195,31 @@ def component_profile(
     }
 
 
-def make_component(category: str, component_id: str, profile_name: str, profiles: Mapping[str, Mapping[str, Any]], overrides: Mapping[str, Any] | None = None) -> ComponentDefinition:
+def make_component(
+    category: str,
+    component_id: str,
+    profile_name: str,
+    profiles: Mapping[str, Mapping[str, Any]],
+    variant: StructuralVariantSpec,
+    overrides: Mapping[str, Any] | None = None,
+) -> ComponentDefinition:
     """Resolve an explicitly assigned profile without inspecting component_id."""
     if profile_name not in profiles:
         raise ValueError(f"Unknown explicit profile {category}.{profile_name}")
+    if variant.variant_source != "explicit":
+        raise ValueError(f"Component {component_id} has forbidden variant source: {variant.variant_source}")
     data = deepcopy(dict(profiles[profile_name]))
     if overrides:
         data.update(overrides)
-    variant_index = int(data.pop("variant_index", 0))
-    spec = _apply_structural_variant(data["spec"], variant_index)
+    spec = _apply_structural_variant(data["spec"], variant)
     return ComponentDefinition(
         id=component_id,
         category=category,
         traits=frozenset(data["traits"]),
         family_id=f"{category}.{profile_name}",
-        variant_id=f"v{variant_index + 1:02d}",
+        variant_id=variant.variant_id,
+        design_intent=variant.design_intent,
+        variant_source=variant.variant_source,
         profile=profile_name,
         compatible_archetypes=frozenset(data["compatible_archetypes"]),
         compatible_directions=frozenset(data["compatible_directions"]),
@@ -233,69 +243,28 @@ def make_component(category: str, component_id: str, profile_name: str, profiles
     )
 
 
-STRUCTURAL_VARIANTS = (
-    {
-        "flow_direction": "natural_sequence", "alignment_anchor": "content_start",
-        "frame_behavior": "unframed", "collapse_strategy": "linear_stack",
-        "priority_anchor": "content_first", "focus_progression": "top_to_bottom",
-    },
-    {
-        "flow_direction": "reverse_axis", "alignment_anchor": "content_end",
-        "frame_behavior": "inset_rule", "collapse_strategy": "media_then_content",
-        "priority_anchor": "media_first", "focus_progression": "edge_to_center",
-    },
-    {
-        "flow_direction": "offset_sequence", "alignment_anchor": "offset_grid_line",
-        "frame_behavior": "complete_frame", "collapse_strategy": "framed_stack",
-        "priority_anchor": "title_first", "focus_progression": "frame_then_content",
-    },
-    {
-        "flow_direction": "horizontal_progression", "alignment_anchor": "viewport_edge",
-        "frame_behavior": "edge_rule", "collapse_strategy": "snap_rail",
-        "priority_anchor": "action_first", "focus_progression": "horizontal_scan",
-    },
-    {
-        "flow_direction": "layered_progression", "alignment_anchor": "visual_center",
-        "frame_behavior": "overlap_mask", "collapse_strategy": "separate_layers",
-        "priority_anchor": "evidence_first", "focus_progression": "depth_then_action",
-    },
-    {
-        "flow_direction": "centered_axis", "alignment_anchor": "central_baseline",
-        "frame_behavior": "contained_axis", "collapse_strategy": "centered_stack",
-        "priority_anchor": "statement_first", "focus_progression": "center_outward",
-    },
-    {
-        "flow_direction": "vertical_chapters", "alignment_anchor": "chapter_rule",
-        "frame_behavior": "chapter_dividers", "collapse_strategy": "chapter_stack",
-        "priority_anchor": "sequence_first", "focus_progression": "chapter_by_chapter",
-    },
-    {
-        "flow_direction": "diagonal_offset", "alignment_anchor": "asymmetric_intersection",
-        "frame_behavior": "partial_frame", "collapse_strategy": "alternating_stack",
-        "priority_anchor": "contrast_first", "focus_progression": "diagonal_scan",
-    },
-    {
-        "flow_direction": "modular_matrix", "alignment_anchor": "module_baseline",
-        "frame_behavior": "module_rules", "collapse_strategy": "priority_matrix",
-        "priority_anchor": "primary_module_first", "focus_progression": "module_scan",
-    },
-    {
-        "flow_direction": "panoramic_band", "alignment_anchor": "horizon_line",
-        "frame_behavior": "letterbox_frame", "collapse_strategy": "crop_then_stack",
-        "priority_anchor": "panorama_first", "focus_progression": "horizon_to_detail",
-    },
-)
-
-
-def _apply_structural_variant(spec: ComponentBlueprintSpec, variant_index: int) -> ComponentBlueprintSpec:
-    """Combine a family blueprint with an explicit, renderer-visible variant grammar."""
-    variant = STRUCTURAL_VARIANTS[variant_index % len(STRUCTURAL_VARIANTS)]
+def _apply_structural_variant(spec: ComponentBlueprintSpec, variant: StructuralVariantSpec) -> ComponentBlueprintSpec:
+    """Layer one declared component composition over its shared family grammar."""
     desktop = dict(spec.desktop_spec)
-    desktop.update({key: variant[key] for key in ("flow_direction", "alignment_anchor", "frame_behavior")})
+    desktop.update({
+        "flow_direction": variant.flow_direction,
+        "alignment_anchor": variant.alignment_anchor,
+        "frame_behavior": variant.frame_behavior,
+    })
+    desktop.update(variant.desktop_overrides)
     mobile = dict(spec.mobile_spec)
-    mobile.update({key: variant[key] for key in ("collapse_strategy", "priority_anchor")})
+    mobile.update({
+        "collapse_strategy": variant.collapse_strategy,
+        "priority_anchor": variant.priority_anchor,
+    })
+    mobile.update(variant.mobile_overrides)
+    media = dict(spec.media_spec)
+    media.update(variant.media_overrides)
+    content = dict(spec.content_spec)
+    content.update(variant.content_overrides)
     behavior = dict(spec.behavior_spec)
-    behavior["focus_progression"] = variant["focus_progression"]
+    behavior["focus_progression"] = variant.focus_progression
+    behavior.update(variant.behavior_overrides)
     return ComponentBlueprintSpec(
         schema_version=spec.schema_version,
         layout_model=spec.layout_model,
@@ -306,8 +275,8 @@ def _apply_structural_variant(spec: ComponentBlueprintSpec, variant_index: int) 
         content_alignment=spec.content_alignment,
         desktop_spec=desktop,
         mobile_spec=mobile,
-        media_spec=spec.media_spec,
-        content_spec=spec.content_spec,
+        media_spec=media,
+        content_spec=content,
         behavior_spec=behavior,
         fallback_strategy=spec.fallback_strategy,
     )
@@ -317,15 +286,25 @@ def registry(
     category: str,
     groups: Mapping[str, Sequence[str]],
     profiles: Mapping[str, Mapping[str, Any]],
+    variants: Mapping[str, StructuralVariantSpec],
     overrides: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> dict[str, ComponentDefinition]:
     overrides = overrides or {}
+    component_ids = {component_id for ids in groups.values() for component_id in ids}
+    missing = component_ids - set(variants)
+    unexpected = set(variants) - component_ids
+    if missing or unexpected:
+        raise ValueError(
+            f"Explicit variant registry mismatch for {category}: "
+            f"missing={sorted(missing)}, unexpected={sorted(unexpected)}"
+        )
     result: dict[str, ComponentDefinition] = {}
-    for profile_name, component_ids in groups.items():
-        for variant_index, component_id in enumerate(component_ids):
+    for profile_name, profile_component_ids in groups.items():
+        for component_id in profile_component_ids:
             if component_id in result:
                 raise ValueError(f"Duplicate component id in {category}: {component_id}")
-            component_overrides = dict(overrides.get(component_id, {}))
-            component_overrides["variant_index"] = variant_index
-            result[component_id] = make_component(category, component_id, profile_name, profiles, component_overrides)
+            result[component_id] = make_component(
+                category, component_id, profile_name, profiles,
+                variants[component_id], overrides.get(component_id),
+            )
     return result

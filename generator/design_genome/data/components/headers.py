@@ -2,6 +2,7 @@
 
 from ._factory import registry
 from .profiles import HEADER_PROFILES
+from .variants import HEADER_VARIANTS
 
 HEADER_GROUPS = {
     "classic": ("classic_brand_left", "split_navigation", "compact_sticky_nav", "framed_canvas_header"),
@@ -17,7 +18,7 @@ HEADER_GROUPS = {
 }
 
 HEADER_COMPONENTS = registry(
-    "header", HEADER_GROUPS, HEADER_PROFILES,
+    "header", HEADER_GROUPS, HEADER_PROFILES, HEADER_VARIANTS,
     {"phone_first_compact": {"required_data": ("phone",), "required_any_data": ()}},
 )
 assert len(HEADER_COMPONENTS) == 25

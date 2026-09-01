@@ -2,6 +2,7 @@
 
 from ._factory import registry
 from .profiles import ABOUT_PROFILES
+from .variants import ABOUT_VARIANTS
 
 ABOUT_GROUPS = {
     "identity": ("simple_business_identity", "residential_approach_about", "studio_statement_about"),
@@ -16,5 +17,5 @@ ABOUT_GROUPS = {
     "minimal": ("quiet_editorial_about", "brutalist_factless_about", "mobile_compact_about"),
 }
 
-ABOUT_COMPONENTS = registry("about", ABOUT_GROUPS, ABOUT_PROFILES)
+ABOUT_COMPONENTS = registry("about", ABOUT_GROUPS, ABOUT_PROFILES, ABOUT_VARIANTS)
 assert len(ABOUT_COMPONENTS) == 20

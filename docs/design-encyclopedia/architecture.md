@@ -18,7 +18,7 @@ Similarity is structure-first: blueprint distance, family relation and layout/ed
 
 ## Blueprint differentiation
 
-Every component declares a family, variant, layout pattern, edge behavior, media intensity and type-scale role. `blueprint_fingerprint()` hashes only renderer-visible structure. `blueprint_structural_distance()` reports layout, content, media, mobile, behavior and rhythm differences; identity labels, notes and seeds never create visual novelty.
+Every component declares a shared family and an explicit `StructuralVariantSpec` with design intent, desktop flow/anchor/frame, mobile collapse/priority and focus progression. Registry position, component-name inference, hashing and seeds never select a structure. `blueprint_fingerprint()` hashes only the merged renderer-visible structure; `design_intent`, identity labels and notes remain documentation metadata.
 
 ## Quality model
 

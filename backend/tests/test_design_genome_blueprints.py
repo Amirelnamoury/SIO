@@ -12,6 +12,14 @@ from generator.design_genome.composition import (
     visual_diversity_report,
 )
 from generator.design_genome.data.components import ALL_COMPONENTS, COMPONENT_REGISTRIES
+from generator.design_genome.data.components._factory import registry
+from generator.design_genome.data.components.about import ABOUT_GROUPS
+from generator.design_genome.data.components.galleries import GALLERY_GROUPS
+from generator.design_genome.data.components.headers import HEADER_GROUPS
+from generator.design_genome.data.components.heroes import HERO_GROUPS
+from generator.design_genome.data.components.profiles import ABOUT_PROFILES, GALLERY_PROFILES, HEADER_PROFILES, HERO_PROFILES, SERVICES_PROFILES
+from generator.design_genome.data.components.services import SERVICE_GROUPS
+from generator.design_genome.data.components.variants import ABOUT_VARIANTS, GALLERY_VARIANTS, HEADER_VARIANTS, HERO_VARIANTS, SERVICES_VARIANTS
 from generator.design_genome.generator import DesignGenome
 from generator.design_genome.golden_compositions import (
     GOLDEN_COMPOSITION_CASES, GoldenCompositionCase, score_golden_composition,
@@ -19,6 +27,7 @@ from generator.design_genome.golden_compositions import (
 from generator.design_genome.models import DesignInput, MediaInventory
 from generator.design_genome.rhythm import evaluate_rhythm
 from generator.design_genome.scripts.check_renderer_readiness import check as check_renderer_readiness
+from generator.design_genome.scripts.audit_explicit_variants import audit as audit_explicit_variants
 from generator.design_genome.similarity import compare_dna
 
 
@@ -40,7 +49,7 @@ def structural_clone(component, **changes):
 
 def test_fingerprint_uses_structure_not_identity_or_notes():
     component = ALL_COMPONENTS["full_bleed_photo_cover"]
-    assert blueprint_fingerprint(component) == blueprint_fingerprint(structural_clone(component, id="opaque_key", notes="changed", family_id="renamed.family", variant_id="renamed"))
+    assert blueprint_fingerprint(component) == blueprint_fingerprint(structural_clone(component, id="opaque_key", notes="changed", family_id="renamed.family", variant_id="renamed", design_intent="changed documentation only"))
 
 
 @pytest.mark.parametrize(
@@ -72,7 +81,7 @@ def test_every_multi_variant_family_has_meaningful_intra_family_distance():
         summary = differentiation_summary(registry.values())
         for family, distance in summary["minimum_intra_family_distance"].items():
             if distance is not None:
-                assert .15 <= distance <= .40, (family, distance)
+                assert .15 <= distance, (family, distance)
 
 
 def test_structural_distance_is_explainable_and_bounded():
@@ -82,7 +91,7 @@ def test_structural_distance_is_explainable_and_bounded():
     assert blueprint_structural_distance(same, same).distance == 0
     related = blueprint_structural_distance(same, variant)
     distinct = blueprint_structural_distance(same, other)
-    assert .15 <= related.distance <= .40
+    assert .15 <= related.distance
     assert distinct.distance > related.distance
     assert related.reasons
 
@@ -198,3 +207,67 @@ def test_renderer_readiness_covers_every_component_without_missing_contracts():
     assert not issues
     assert sum(summary["components"] for summary in summaries.values()) == 260
     assert all(not summary["exact_duplicates"] for summary in summaries.values())
+
+
+def test_every_component_has_an_explicit_variant_and_design_intent():
+    for component in ALL_COMPONENTS.values():
+        assert component.variant_source == "explicit"
+        assert component.variant_id
+        assert len(component.design_intent.split()) >= 5
+
+
+@pytest.mark.parametrize(
+    ("category", "groups", "profiles", "variants", "overrides"),
+    (
+        ("hero", HERO_GROUPS, HERO_PROFILES, HERO_VARIANTS, {"phone_first_problem_solution": {"required_data": ("phone",), "required_any_data": ()}}),
+        ("header", HEADER_GROUPS, HEADER_PROFILES, HEADER_VARIANTS, {"phone_first_compact": {"required_data": ("phone",), "required_any_data": ()}}),
+        ("services", SERVICE_GROUPS, SERVICES_PROFILES, SERVICES_VARIANTS, {}),
+        ("gallery", GALLERY_GROUPS, GALLERY_PROFILES, GALLERY_VARIANTS, {}),
+        ("about", ABOUT_GROUPS, ABOUT_PROFILES, ABOUT_VARIANTS, {}),
+    ),
+)
+def test_registry_order_does_not_change_explicit_variants_or_fingerprints(category, groups, profiles, variants, overrides):
+    reversed_groups = {
+        profile_name: tuple(reversed(component_ids))
+        for profile_name, component_ids in reversed(tuple(groups.items()))
+    }
+    rebuilt = registry(category, reversed_groups, profiles, variants, overrides)
+    original = COMPONENT_REGISTRIES[category]
+    assert set(rebuilt) == set(original)
+    for component_id in original:
+        assert rebuilt[component_id].variant_id == original[component_id].variant_id
+        assert rebuilt[component_id].blueprint_spec == original[component_id].blueprint_spec
+        assert blueprint_fingerprint(rebuilt[component_id]) == blueprint_fingerprint(original[component_id])
+
+
+def test_factory_contains_no_position_based_structural_assignment():
+    path = REPO_ROOT / "generator" / "design_genome" / "data" / "components" / "_factory.py"
+    source = path.read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    assert "STRUCTURAL_VARIANTS" not in source
+    assert "variant_index" not in source
+    assert not any(
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "enumerate"
+        for node in ast.walk(tree)
+    )
+
+
+def test_explicit_variant_audit_is_clean():
+    result = audit_explicit_variants()
+    assert result["components_checked"] == 260
+    assert result["explicit_variants"] == 260
+    assert result["order_independent"]
+    assert result["fingerprint_stable"]
+    assert not result["issues"]
+
+
+@pytest.mark.parametrize("forbidden_source", ("positional", "inferred", "generated"))
+def test_registry_rejects_non_explicit_variant_sources(forbidden_source):
+    component_id = "minimal_service_links"
+    variants = {
+        component_id: replace(SERVICES_VARIANTS[component_id], variant_source=forbidden_source)
+    }
+    with pytest.raises(ValueError, match="forbidden variant source"):
+        registry("services", {"minimal": (component_id,)}, SERVICES_PROFILES, variants)

@@ -2,6 +2,7 @@
 
 from ._factory import registry
 from .profiles import FOOTER_PROFILES
+from .variants import FOOTER_VARIANTS
 
 FOOTER_GROUPS = {
     "minimal": ("ultra_minimal_footer", "legal_compact_footer", "centered_mark_footer"),
@@ -16,5 +17,5 @@ FOOTER_GROUPS = {
     "visual": ("visual_image_footer", "dark_overlay_footer"),
 }
 
-FOOTER_COMPONENTS = registry("footer", FOOTER_GROUPS, FOOTER_PROFILES)
+FOOTER_COMPONENTS = registry("footer", FOOTER_GROUPS, FOOTER_PROFILES, FOOTER_VARIANTS)
 assert len(FOOTER_COMPONENTS) == 20

@@ -2,6 +2,7 @@
 
 from ._factory import registry
 from .profiles import CONTACT_PROFILES, FORM_PROFILES
+from .variants import CONTACT_VARIANTS, FORM_VARIANTS
 
 CONTACT_GROUPS = {
     "phone": ("phone_first_contact", "floating_contact_action", "mobile_action_contact"),
@@ -26,7 +27,7 @@ FORM_GROUPS = {
     "accessible": ("accessible_minimal_form",),
 }
 
-CONTACT_COMPONENTS = registry("contact", CONTACT_GROUPS, CONTACT_PROFILES)
-FORM_COMPONENTS = registry("form", FORM_GROUPS, FORM_PROFILES)
+CONTACT_COMPONENTS = registry("contact", CONTACT_GROUPS, CONTACT_PROFILES, CONTACT_VARIANTS)
+FORM_COMPONENTS = registry("form", FORM_GROUPS, FORM_PROFILES, FORM_VARIANTS)
 assert len(CONTACT_COMPONENTS) == 20
 assert len(FORM_COMPONENTS) == 15

@@ -2,6 +2,7 @@
 
 from ._factory import registry
 from .profiles import CTA_PROFILES
+from .variants import CTA_VARIANTS
 
 CTA_GROUPS = {
     "phone": ("phone_first_cta", "floating_phone_action", "callback_request_cta", "mobile_action_dock_cta"),
@@ -15,5 +16,5 @@ CTA_GROUPS = {
     "statement": ("monumental_statement_cta",),
 }
 
-CTA_COMPONENTS = registry("cta", CTA_GROUPS, CTA_PROFILES)
+CTA_COMPONENTS = registry("cta", CTA_GROUPS, CTA_PROFILES, CTA_VARIANTS)
 assert len(CTA_COMPONENTS) == 25

@@ -2,6 +2,7 @@
 
 from ._factory import registry
 from .profiles import HERO_PROFILES
+from .variants import HERO_VARIANTS
 
 HERO_GROUPS = {
     "photo_cover": ("full_bleed_photo_cover", "centered_image_frame", "panorama_architectural", "lighting_atmosphere_cover"),
@@ -19,7 +20,7 @@ HERO_GROUPS = {
 }
 
 HERO_COMPONENTS = registry(
-    "hero", HERO_GROUPS, HERO_PROFILES,
+    "hero", HERO_GROUPS, HERO_PROFILES, HERO_VARIANTS,
     {"phone_first_problem_solution": {"required_data": ("phone",), "required_any_data": ()}},
 )
 assert len(HERO_COMPONENTS) == 50

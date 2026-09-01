@@ -2,6 +2,7 @@
 
 from ._factory import registry
 from .profiles import TRUST_PROFILES
+from .variants import TRUST_VARIANTS
 
 TRUST_GROUPS = {
     "insurance": ("verified_insurance_line",),
@@ -23,5 +24,5 @@ TRUST_GROUPS = {
     "facts": ("combined_verified_fact_strip", "minimal_verified_fact_index"),
 }
 
-TRUST_COMPONENTS = registry("trust", TRUST_GROUPS, TRUST_PROFILES)
+TRUST_COMPONENTS = registry("trust", TRUST_GROUPS, TRUST_PROFILES, TRUST_VARIANTS)
 assert len(TRUST_COMPONENTS) == 20
