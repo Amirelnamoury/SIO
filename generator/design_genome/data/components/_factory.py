@@ -26,11 +26,30 @@ CONTENT_ZONES = {
     "form": ("fields", "consent", "submit", "status", "error_summary"),
 }
 
+HERO_BLUEPRINT_SEMANTICS = {
+    "full_bleed_cover": ("full_bleed", "viewport_edge", 4, "oversized"),
+    "split_editorial": ("split", "contained", 3, "oversized"),
+    "asymmetric_editorial_collage": ("asymmetric", "offset", 4, "oversized"),
+    "cinematic_scene": ("overlay", "viewport_edge", 4, "oversized"),
+    "project_evidence_intro": ("grid", "contained", 3, "large"),
+    "material_study": ("split", "offset", 3, "oversized"),
+    "typographic_statement": ("typographic", "contained", 0, "monumental"),
+    "conversion_problem_solution": ("split", "contained", 1, "large"),
+    "technical_explainer": ("matrix", "framed", 1, "large"),
+    "spatial_explainer": ("overlay", "framed", 1, "oversized"),
+    "verified_transformation_pair": ("split", "contained", 4, "large"),
+    "horizontal_preview_rail": ("rail", "viewport_edge", 4, "large"),
+}
+
 
 def blueprint(
     layout_model: str,
     content_alignment: str,
     *,
+    layout_pattern: str | None = None,
+    edge_behavior: str = "contained",
+    media_intensity: int = 0,
+    type_scale_role: str = "normal",
     desktop: Mapping[str, Any],
     mobile: Mapping[str, Any],
     media: Mapping[str, Any],
@@ -39,8 +58,12 @@ def blueprint(
     fallback: str,
 ) -> ComponentBlueprintSpec:
     return ComponentBlueprintSpec(
-        schema_version="component-blueprint-1.1",
+        schema_version="component-blueprint-1.2",
         layout_model=layout_model,
+        layout_pattern=layout_pattern or layout_model,
+        edge_behavior=edge_behavior,
+        media_intensity=media_intensity,
+        type_scale_role=type_scale_role,
         content_alignment=content_alignment,
         desktop_spec=dict(desktop),
         mobile_spec=dict(mobile),
@@ -73,10 +96,19 @@ def hero_blueprint(
     mobile_title: str = "reduce_scale_preserve_hierarchy",
     motion: tuple[str, ...] = ("soft_fade",),
     fallback: str = "replace media with a neutral material or typographic composition",
+    layout_pattern: str | None = None,
+    edge_behavior: str | None = None,
+    media_intensity: int | None = None,
+    type_scale_role: str | None = None,
 ) -> ComponentBlueprintSpec:
+    default_pattern, default_edge, default_media, default_type = HERO_BLUEPRINT_SEMANTICS[layout_model]
     return blueprint(
         layout_model,
         alignment,
+        layout_pattern=layout_pattern or default_pattern,
+        edge_behavior=edge_behavior or default_edge,
+        media_intensity=default_media if media_intensity is None else media_intensity,
+        type_scale_role=default_type if type_scale_role is None else type_scale_role,
         desktop={
             "grid_columns": 12,
             "content_span": spans[0],
@@ -170,10 +202,14 @@ def make_component(category: str, component_id: str, profile_name: str, profiles
     data = deepcopy(dict(profiles[profile_name]))
     if overrides:
         data.update(overrides)
+    variant_index = int(data.pop("variant_index", 0))
+    spec = _apply_structural_variant(data["spec"], variant_index)
     return ComponentDefinition(
         id=component_id,
         category=category,
         traits=frozenset(data["traits"]),
+        family_id=f"{category}.{profile_name}",
+        variant_id=f"v{variant_index + 1:02d}",
         profile=profile_name,
         compatible_archetypes=frozenset(data["compatible_archetypes"]),
         compatible_directions=frozenset(data["compatible_directions"]),
@@ -193,7 +229,87 @@ def make_component(category: str, component_id: str, profile_name: str, profiles
         image_dependency=data["image_dependency"],
         content_zones=CONTENT_ZONES[category],
         notes=data["notes"] or f"Explicit {category} profile: {profile_name}.",
-        blueprint_spec=data["spec"],
+        blueprint_spec=spec,
+    )
+
+
+STRUCTURAL_VARIANTS = (
+    {
+        "flow_direction": "natural_sequence", "alignment_anchor": "content_start",
+        "frame_behavior": "unframed", "collapse_strategy": "linear_stack",
+        "priority_anchor": "content_first", "focus_progression": "top_to_bottom",
+    },
+    {
+        "flow_direction": "reverse_axis", "alignment_anchor": "content_end",
+        "frame_behavior": "inset_rule", "collapse_strategy": "media_then_content",
+        "priority_anchor": "media_first", "focus_progression": "edge_to_center",
+    },
+    {
+        "flow_direction": "offset_sequence", "alignment_anchor": "offset_grid_line",
+        "frame_behavior": "complete_frame", "collapse_strategy": "framed_stack",
+        "priority_anchor": "title_first", "focus_progression": "frame_then_content",
+    },
+    {
+        "flow_direction": "horizontal_progression", "alignment_anchor": "viewport_edge",
+        "frame_behavior": "edge_rule", "collapse_strategy": "snap_rail",
+        "priority_anchor": "action_first", "focus_progression": "horizontal_scan",
+    },
+    {
+        "flow_direction": "layered_progression", "alignment_anchor": "visual_center",
+        "frame_behavior": "overlap_mask", "collapse_strategy": "separate_layers",
+        "priority_anchor": "evidence_first", "focus_progression": "depth_then_action",
+    },
+    {
+        "flow_direction": "centered_axis", "alignment_anchor": "central_baseline",
+        "frame_behavior": "contained_axis", "collapse_strategy": "centered_stack",
+        "priority_anchor": "statement_first", "focus_progression": "center_outward",
+    },
+    {
+        "flow_direction": "vertical_chapters", "alignment_anchor": "chapter_rule",
+        "frame_behavior": "chapter_dividers", "collapse_strategy": "chapter_stack",
+        "priority_anchor": "sequence_first", "focus_progression": "chapter_by_chapter",
+    },
+    {
+        "flow_direction": "diagonal_offset", "alignment_anchor": "asymmetric_intersection",
+        "frame_behavior": "partial_frame", "collapse_strategy": "alternating_stack",
+        "priority_anchor": "contrast_first", "focus_progression": "diagonal_scan",
+    },
+    {
+        "flow_direction": "modular_matrix", "alignment_anchor": "module_baseline",
+        "frame_behavior": "module_rules", "collapse_strategy": "priority_matrix",
+        "priority_anchor": "primary_module_first", "focus_progression": "module_scan",
+    },
+    {
+        "flow_direction": "panoramic_band", "alignment_anchor": "horizon_line",
+        "frame_behavior": "letterbox_frame", "collapse_strategy": "crop_then_stack",
+        "priority_anchor": "panorama_first", "focus_progression": "horizon_to_detail",
+    },
+)
+
+
+def _apply_structural_variant(spec: ComponentBlueprintSpec, variant_index: int) -> ComponentBlueprintSpec:
+    """Combine a family blueprint with an explicit, renderer-visible variant grammar."""
+    variant = STRUCTURAL_VARIANTS[variant_index % len(STRUCTURAL_VARIANTS)]
+    desktop = dict(spec.desktop_spec)
+    desktop.update({key: variant[key] for key in ("flow_direction", "alignment_anchor", "frame_behavior")})
+    mobile = dict(spec.mobile_spec)
+    mobile.update({key: variant[key] for key in ("collapse_strategy", "priority_anchor")})
+    behavior = dict(spec.behavior_spec)
+    behavior["focus_progression"] = variant["focus_progression"]
+    return ComponentBlueprintSpec(
+        schema_version=spec.schema_version,
+        layout_model=spec.layout_model,
+        layout_pattern=spec.layout_pattern,
+        edge_behavior=spec.edge_behavior,
+        media_intensity=spec.media_intensity,
+        type_scale_role=spec.type_scale_role,
+        content_alignment=spec.content_alignment,
+        desktop_spec=desktop,
+        mobile_spec=mobile,
+        media_spec=spec.media_spec,
+        content_spec=spec.content_spec,
+        behavior_spec=behavior,
+        fallback_strategy=spec.fallback_strategy,
     )
 
 
@@ -206,8 +322,10 @@ def registry(
     overrides = overrides or {}
     result: dict[str, ComponentDefinition] = {}
     for profile_name, component_ids in groups.items():
-        for component_id in component_ids:
+        for variant_index, component_id in enumerate(component_ids):
             if component_id in result:
                 raise ValueError(f"Duplicate component id in {category}: {component_id}")
-            result[component_id] = make_component(category, component_id, profile_name, profiles, overrides.get(component_id))
+            component_overrides = dict(overrides.get(component_id, {}))
+            component_overrides["variant_index"] = variant_index
+            result[component_id] = make_component(category, component_id, profile_name, profiles, component_overrides)
     return result

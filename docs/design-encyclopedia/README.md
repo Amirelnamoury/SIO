@@ -22,12 +22,16 @@ The encyclopedia turns research into typed registries, compatibility rules and s
 - [Gallery](components-gallery.md) · [About](components-about.md) · [Trust](components-trust.md)
 - [CTA](components-cta.md) · [Contact](components-contact.md) · [Form](components-form.md) · [Footer](components-footer.md)
 - [Semantic audit](component-semantic-audit.md)
+- [Component families](component-families.md)
+- [Hero blueprint catalog](hero-blueprint-catalog.md)
 
 ### Composition and review
 - [Archetypes and Photo Director](archetypes-photo-direction.md)
 - [Human review guide](review-guide.md)
 - [30 sample DNA cards](sample-dna/README.md)
 - [10 plumber comparison](sample-plumbers.md)
+- [Blueprint differentiation audit](blueprint-differentiation-audit.md)
+- [Renderer readiness](renderer-readiness.md)
 
 ### Trades, media, truth and quality
 - [Trade grammars](trade-grammars.md)
@@ -46,7 +50,10 @@ Missing facts or media remove incompatible sections. They are never replaced wit
 ```powershell
 python -m generator.design_genome.scripts.design_genome_stats
 python -m generator.design_genome.scripts.audit_component_semantics
+python -m generator.design_genome.scripts.audit_blueprint_differentiation
+python -m generator.design_genome.scripts.check_renderer_readiness
 python -m generator.design_genome.scripts.audit_genome_diversity
+python -m generator.design_genome.scripts.export_blueprint_catalogs
 python -m generator.design_genome.scripts.export_encyclopedia
 python -m generator.design_genome.scripts.export_sample_dna
 ```

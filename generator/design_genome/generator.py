@@ -7,7 +7,9 @@ from typing import Iterable, Mapping, TypeVar
 
 from .archetypes import ARCHETYPES
 from .compatibility import evaluate_component
+from .blueprints import blueprint_fingerprint
 from .component_relationships import component_pair_affinity
+from .composition import composition_signature_for
 from .data.color_systems import COLOR_SYSTEMS
 from .data.components import ALL_COMPONENTS, COMPONENT_REGISTRIES
 from .data.grids import GRID_SYSTEMS
@@ -22,7 +24,7 @@ from .models import (
     GenerationResult, SiteArchetype, SiteDNA,
 )
 from .quality import evaluate_quality
-from .similarity import maximum_similarity
+from .similarity import compare_dna, maximum_similarity
 from .taxonomy import normalize_business_intent
 
 
@@ -232,12 +234,27 @@ def _build_candidate(design_input: DesignInput, seed: str) -> SiteDNA:
     motion = _best(seed, MOTION_SYSTEMS.values(), lambda item: item.id, lambda item: len(item.traits & traits) * .45 - item.performance_cost * .08)
     spatial = _best(seed, SPATIAL_SYSTEMS.values(), lambda item: item.id, lambda item: (.7 if "spatial" in traits and item.level in {2, 3} else 0.0) - item.performance_cost * .11)
     mobile = _best(seed, MOBILE_PERSONALITIES.values(), lambda item: item.id, lambda item: len(item.traits & traits) * .5)
-    spacing = _best(seed, SPACING_SYSTEMS.values(), lambda item: item.id, lambda item: .5 if ("editorial" in item.id and "editorial" in traits) or ("technical" in item.id and "technical" in traits) else 0.0)
-    geometry = _best(seed, GEOMETRY_SYSTEMS.values(), lambda item: item.id, lambda item: .5 if ("material" in item.id and traits & {"material", "material_led"}) or ("architectural" in item.id and "architectural" in traits) else 0.0)
+    spacing = _best(
+        seed, SPACING_SYSTEMS.values(), lambda item: item.id,
+        lambda item: (
+            len(item.traits & traits) * .35
+            + (0.45 if archetype.id in item.compatible_archetypes else 0.0)
+            + (0.45 if direction in item.compatible_directions else 0.0)
+            + (0.25 if item.density_range[0] <= archetype.target_density <= item.density_range[1] else -0.15)
+        ),
+    )
+    geometry = _best(
+        seed, GEOMETRY_SYSTEMS.values(), lambda item: item.id,
+        lambda item: (
+            len(item.traits & traits) * .35
+            + (0.45 if archetype.id in item.compatible_archetypes else 0.0)
+            + (0.45 if direction in item.compatible_directions else 0.0)
+        ),
+    )
 
     order = _section_order(silhouette.sections, selected)
     payload = {
-        "version": "design-genome-1",
+        "version": "design-genome-1.2",
         "site_archetype": archetype.id,
         "art_direction": direction,
         "page_silhouette": silhouette.id,
@@ -263,10 +280,12 @@ def _build_candidate(design_input: DesignInput, seed: str) -> SiteDNA:
         "section_order": order,
         "density": archetype.target_density,
         "conversion_intensity": round(archetype.conversion_intensity, 3),
+        "composition_signature": "",
         "design_signature": "",
         "seed": seed,
     }
     payload["design_signature"] = SiteDNA.signature_for(payload)
+    payload["composition_signature"] = composition_signature_for(payload)
     return SiteDNA.from_dict(payload)
 
 
@@ -283,23 +302,39 @@ def _trace_decisions(dna: SiteDNA, design_input: DesignInput) -> tuple[DecisionR
         DecisionRecord("typography_system", dna.typography_system, ("color-system compatibility", "readability floor", "archetype personality")),
         DecisionRecord("grid_system", dna.grid_system, ("silhouette traits", "archetype density", "mobile transformation available")),
     ]
+    previous_component = None
     for field in component_fields:
         component_id = getattr(dna, field)
         if not component_id:
             decisions.append(DecisionRecord(field, "omitted", ("no honest compatible evidence or channel required this section",)))
             continue
         component = ALL_COMPONENTS[component_id]
+        transition = component_pair_affinity(previous_component, component) if previous_component else None
+        structural_reasons = (
+            (f"transition_score:{transition.score}",)
+            + tuple(f"transition_reason:{reason}" for reason in transition.reasons)
+            if transition else ("opening_component",)
+        )
         decisions.append(DecisionRecord(
             field,
             component_id,
             (
                 f"explicit_profile:{component.profile}",
+                f"family:{component.family_id}",
+                f"variant:{component.variant_id}",
+                f"blueprint_fingerprint:{blueprint_fingerprint(component)}",
+                f"layout_pattern:{component.blueprint_spec.layout_pattern}",
+                f"edge_behavior:{component.blueprint_spec.edge_behavior}",
+                f"media_intensity:{component.blueprint_spec.media_intensity}",
+                f"type_scale_role:{component.blueprint_spec.type_scale_role}",
                 f"density:{component.density}",
                 f"energy:{component.section_energy}",
                 "hard data and media constraints satisfied",
                 "pair affinity considered against previous section",
+                *structural_reasons,
             ),
         ))
+        previous_component = component
     decisions.extend((
         DecisionRecord("spacing_system", dna.spacing_system, ("density and narrative pacing",)),
         DecisionRecord("geometry_system", dna.geometry_system, ("shape language and art direction",)),
@@ -333,8 +368,13 @@ class DesignGenome:
         linter_rejections = 0
         similarity_rejections = 0
         quality_rejections = 0
+        structural_duplicate_rejections = 0
         for index in range(self.candidate_count):
             candidate = _build_candidate(design_input, f"{design_input.seed}:{index}")
+            if any(candidate.composition_signature == previous.composition_signature for previous in history):
+                structural_duplicate_rejections += 1
+                rejected.append({"attempt": index + 1, "signature": candidate.design_signature, "composition_signature": candidate.composition_signature, "reason": "structural_duplicate"})
+                continue
             similarity = maximum_similarity(candidate, history)
             errors = [issue for issue in lint_dna(candidate, design_input) if issue.severity == "error"]
             if errors:
@@ -343,7 +383,15 @@ class DesignGenome:
                 continue
             if similarity >= self.reject_similarity:
                 similarity_rejections += 1
-                rejected.append({"attempt": index + 1, "signature": candidate.design_signature, "reason": "similarity", "score": similarity})
+                closest = max((compare_dna(candidate, previous) for previous in history), key=lambda item: item.overall_visual_similarity)
+                rejected.append({
+                    "attempt": index + 1, "signature": candidate.design_signature,
+                    "composition_signature": candidate.composition_signature,
+                    "reason": "blueprint_similarity", "score": similarity,
+                    "blueprint_distance": closest.blueprint_distance,
+                    "family_distance": closest.family_distance,
+                    "layout_rhythm_distance": closest.layout_rhythm_distance,
+                })
                 continue
             quality = evaluate_quality(candidate, design_input, originality=1.0 - similarity)
             if quality.total < self.quality_floor:
@@ -358,12 +406,14 @@ class DesignGenome:
                 linter_rejections=linter_rejections,
                 similarity_rejections=similarity_rejections,
                 quality_rejections=quality_rejections,
+                structural_duplicate_rejections=structural_duplicate_rejections,
             )
             return GenerationResult(candidate, trace)
         raise RuntimeError(
             "No honest, compatible and sufficiently distinct SiteDNA candidate was found "
             f"after {self.candidate_count} attempts (linter={linter_rejections}, "
-            f"similarity={similarity_rejections}, quality={quality_rejections})."
+            f"similarity={similarity_rejections}, quality={quality_rejections}, "
+            f"structural_duplicates={structural_duplicate_rejections})."
         )
 
 

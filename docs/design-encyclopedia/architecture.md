@@ -2,7 +2,7 @@
 
 ## Contract
 
-`SiteDNA` is a frozen, JSON-serializable contract. It records archetype, art direction, page silhouette, semantic color and type systems, grid, spacing, geometry, photo direction, component blueprints, motion, spatial fallback, mobile personality, section order and a stable signature. The seed is retained for reproducibility but excluded from the signature.
+`SiteDNA` is a frozen, JSON-serializable contract. It records archetype, art direction, page silhouette, semantic color and type systems, grid, spacing, geometry, photo direction, component blueprints, motion, spatial fallback, mobile personality and section order. `design_signature` spans visual styling; `composition_signature` spans component family/variant/fingerprint, order, layout/edge/media/type rhythms and structural systems. The seed is retained for reproducibility but excluded from both signatures.
 
 ## Compatibility before randomness
 
@@ -10,11 +10,15 @@ Selection uses hard constraints first: required business data, required artisan 
 
 ## Narrative and rhythm
 
-Thirty silhouettes describe narrative order rather than interchangeable stacks. The rhythm evaluator inspects visual weight and energy, rejects runs of three heavy sections, warns about flat pages, and rewards measured transitions. Sections absent for lack of evidence are removed before the final order is serialized.
+Thirty silhouettes describe narrative order rather than interchangeable stacks. The rhythm evaluator inspects visual weight, energy, layout pattern, edge behavior, media intensity and type-scale role. It penalizes repeated structural runs and rewards measured transitions. Sections absent for lack of evidence are removed before the final order is serialized.
 
 ## Anti-clone model
 
-Similarity uses structure (18%), typography (15%), color (5%), components (38%), narrative (16%) and photo strategy (8%). A palette-only change therefore cannot disguise a structural clone. Bands are: 0-.40 clearly distinct, .40-.60 related, .60-.75 visually similar, .75-.84 near clone and above .84 rejected. These engineering thresholds were calibrated through cohorts and remain subject to human rendered review.
+Similarity is structure-first: blueprint distance, family relation and layout/edge/media/type rhythm carry most of the weight; component IDs and color carry little. A palette-only change therefore cannot disguise a structural clone, while two IDs with the same blueprint remain near-identical. Bands are: 0-.40 clearly distinct, .40-.60 related, .60-.75 visually similar, .75-.84 near clone and above .84 rejected. These engineering thresholds were calibrated through cohorts and remain subject to human rendered review.
+
+## Blueprint differentiation
+
+Every component declares a family, variant, layout pattern, edge behavior, media intensity and type-scale role. `blueprint_fingerprint()` hashes only renderer-visible structure. `blueprint_structural_distance()` reports layout, content, media, mobile, behavior and rhythm differences; identity labels, notes and seeds never create visual novelty.
 
 ## Quality model
 

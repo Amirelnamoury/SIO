@@ -11,6 +11,9 @@ from pathlib import Path
 from statistics import mean
 
 from ..generator import DesignGenome
+from ..blueprints import blueprint_fingerprint
+from ..composition import composition_report, visual_diversity_report
+from ..data.components import ALL_COMPONENTS
 from ..models import DesignDecisionTrace, DesignInput, MediaInventory, SiteDNA
 from ..similarity import compare_dna
 from ..taxonomy import TRADES
@@ -87,11 +90,13 @@ def generate_cohort(inputs: list[DesignInput], history_limit: int = 32, history_
         dnas.append(dna)
         history.append(dna)
     metrics = {
-        "generated": len(dnas), "failed": len(failures),
+        "requested": len(inputs), "generated": len(dnas), "failed": len(failures),
         "unique": len({item.design_signature for item in dnas}),
+        "unique_composition_signatures": len({item.composition_signature for item in dnas}),
         "rejected_by_similarity": sum(item.similarity_rejections for item in traces),
         "rejected_by_linter": sum(item.linter_rejections for item in traces),
         "rejected_by_quality": sum(item.quality_rejections for item in traces),
+        "rejected_structural_duplicates": sum(item.structural_duplicate_rejections for item in traces),
         "mean_attempts": round(mean(item.attempts for item in traces), 4) if traces else 0,
         "max_attempts": max((item.attempts for item in traces), default=0),
         "failure_examples": failures[:3],
@@ -109,9 +114,30 @@ def cohort_detail(dnas: list[SiteDNA]) -> dict:
         "header_component", "services_component", "color_system", "typography_system",
         "grid_system", "photo_direction", "section_order",
     )
+    heroes = [ALL_COMPONENTS[dna.hero_component] for dna in dnas]
+    reports = [composition_report(dna) for dna in dnas]
+    ablation_similarities = [
+        compare_dna(left, right, include_color=False, include_typography=False).overall_visual_similarity
+        for index, left in enumerate(dnas)
+        for right in dnas[index + 1:]
+    ]
     return {
         "unique_signatures": len({dna.design_signature for dna in dnas}),
+        "unique_composition_signatures": len({dna.composition_signature for dna in dnas}),
         "maximum_pair_similarity": maximum_cohort_similarity(dnas),
+        "ablation_without_color_typography": {
+            "maximum_pair_similarity": max(ablation_similarities, default=0.0),
+            "unique_composition_signatures": len({dna.composition_signature for dna in dnas}),
+            "unique_layout_rhythms": len({report.layout_rhythm for report in reports}),
+        },
+        "visual_diversity": visual_diversity_report(dnas),
+        "hero_families": dict(Counter(item.family_id for item in heroes)),
+        "hero_variants": dict(Counter(f"{item.family_id}:{item.variant_id}" for item in heroes)),
+        "hero_fingerprints": dict(Counter(blueprint_fingerprint(item) for item in heroes)),
+        "header_fingerprints": len({blueprint_fingerprint(ALL_COMPONENTS[dna.header_component]) for dna in dnas}),
+        "services_fingerprints": len({blueprint_fingerprint(ALL_COMPONENTS[dna.services_component]) for dna in dnas}),
+        "gallery_fingerprints": len({blueprint_fingerprint(ALL_COMPONENTS[dna.gallery_component]) for dna in dnas if dna.gallery_component}),
+        "layout_rhythms": len({report.layout_rhythm for report in reports}),
         "distributions": {field: distribution(dnas, field) for field in fields},
     }
 
@@ -132,12 +158,13 @@ def run(count: int) -> dict:
     signatures = Counter(dna.design_signature for dna in all_dnas)
     sampled_similarities = [compare_dna(all_dnas[index], all_dnas[index + 1]).overall_visual_similarity for index in range(0, min(len(all_dnas) - 1, 4_000), 2)]
     return {
-        "schema_version": 2,
+        "schema_version": 3,
         "pipeline": "DesignGenome.generate with audit trace collection",
         "history_policy": "bounded recent visual history; 24 per trade for main cohort, full prior cohort for focused tests",
         "main_simulation": {
             **main_metrics, **collision_estimate(signatures),
             "sampled_pair_similarity": {"count": len(sampled_similarities), "mean": round(mean(sampled_similarities), 4) if sampled_similarities else 0, "max": max(sampled_similarities, default=0.0)},
+            "visual_diversity": visual_diversity_report(all_dnas),
             "distributions": {field: distribution(all_dnas, field) for field in ("site_archetype", "art_direction", "page_silhouette", "hero_component", "color_system", "typography_system")},
         },
         "plumber_100": {**plumber_metrics, **cohort_detail(plumber_dnas)},
@@ -159,19 +186,24 @@ All cohorts use the public generation pipeline with linting, heuristic quality s
 ## Main cohort
 - Requested: {main['sample_size'] + main['failed']:,}
 - Generated / failed / unique: {main['generated']:,} / {main['failed']:,} / {main['unique']:,}
-- Similarity / linter / quality rejections: {main['rejected_by_similarity']:,} / {main['rejected_by_linter']:,} / {main['rejected_by_quality']:,}
+- Similarity / linter / quality / structural duplicate rejections: {main['rejected_by_similarity']:,} / {main['rejected_by_linter']:,} / {main['rejected_by_quality']:,} / {main['rejected_structural_duplicates']:,}
+- Unique design / composition signatures: {main['unique']:,} / {main['unique_composition_signatures']:,}
 - Mean / maximum attempts: {main['mean_attempts']} / {main['max_attempts']}
 - Sampled mean / maximum pair similarity: {main['sampled_pair_similarity']['mean']} / {main['sampled_pair_similarity']['max']}
 - Collision pairs: {main['collision_pairs']:,}; effective-space estimate: {main['effective_space_estimate']:,} (`{main['method']}`)
 
 ## 100 plumbers with shared history
 - Generated / failed / unique: {plumber['generated']} / {plumber['failed']} / {plumber['unique_signatures']}
+- Unique composition signatures / hero fingerprints / layout rhythms: {plumber['unique_composition_signatures']} / {len(plumber['hero_fingerprints'])} / {plumber['layout_rhythms']}
 - Maximum pair similarity: {plumber['maximum_pair_similarity']}
 - Distinct silhouettes / heroes / palettes / typography: {len(plumber['distributions']['page_silhouette'])} / {len(plumber['distributions']['hero_component'])} / {len(plumber['distributions']['color_system'])} / {len(plumber['distributions']['typography_system'])}
 
 ## 50 identical-input plumbers
-Only the artisan seed changes. Generated / failed / unique: {same['generated']} / {same['failed']} / {same['unique_signatures']}.
+Only the artisan seed changes. Generated / failed / unique: {same['generated']} / {same['failed']} / {same['unique_signatures']}. Unique composition signatures: {same['unique_composition_signatures']}.
 Distinct silhouettes / heroes / palettes / section compositions: {len(same['distributions']['page_silhouette'])} / {len(same['distributions']['hero_component'])} / {len(same['distributions']['color_system'])} / {len(same['distributions']['section_order'])}. Maximum pair similarity: {same['maximum_pair_similarity']}.
+
+## Color/type ablation
+With color and typography removed from comparison, the 100-plumber cohort retains {plumber['ablation_without_color_typography']['unique_composition_signatures']} composition signatures and {plumber['ablation_without_color_typography']['unique_layout_rhythms']} layout rhythms. Maximum pair similarity is {plumber['ablation_without_color_typography']['maximum_pair_similarity']}.
 
 ## Interpretation boundary
 The Design Genome is a knowledge contract. Human desktop/mobile rendering review remains mandatory before any production integration.

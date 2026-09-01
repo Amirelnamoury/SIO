@@ -2,43 +2,89 @@
 
 from __future__ import annotations
 
-from ._factory import blueprint, component_profile, hero_blueprint
+from ._factory import blueprint as _blueprint, component_profile, hero_blueprint
+
+
+LAYOUT_PATTERNS = {
+    "classic_horizontal": "rows", "centered_brand": "centered", "contact_utility": "rows",
+    "transparent_overlay": "overlay", "editorial_index": "asymmetric", "architectural_rail": "rail",
+    "local_information": "rows", "technical_utility": "matrix", "statement_brand": "typographic",
+    "gallery_navigation": "rail", "editorial_rows": "rows", "service_grid": "grid",
+    "photo_service_cards": "grid", "horizontal_service_rail": "rail", "typographic_index": "rows",
+    "service_accordion": "stack", "capability_matrix": "matrix", "process_services": "timeline",
+    "technical_specification": "matrix", "minimal_links": "rows", "asymmetric_bento": "asymmetric",
+    "conversion_selector": "rows", "material_catalogue": "grid", "ambient_mosaic": "asymmetric",
+    "project_grid": "grid", "before_after_pairs": "split", "masonry_archive": "masonry",
+    "horizontal_rail": "rail", "editorial_casebook": "rows", "material_study": "grid",
+    "documentary_work_log": "timeline", "mobile_swipe": "rail", "business_identity": "split",
+    "founder_story": "split", "documentary_process": "rows", "material_philosophy": "split",
+    "local_commitment": "rows", "team_portrait": "grid", "heritage_timeline": "timeline",
+    "technical_expertise": "matrix", "project_context": "split", "quiet_statement": "typographic",
+    "verified_line": "rows", "verified_badges": "grid", "verified_reviews": "rows",
+    "verified_statistics": "grid", "team_credentials": "grid", "service_area": "split",
+    "partner_directory": "grid", "brand_authorizations": "grid", "awards_ledger": "rows",
+    "guarantee_statement": "typographic", "opening_hours": "rows", "emergency_availability": "rows",
+    "response_delay": "typographic", "documented_process": "timeline", "artisan_project_evidence": "split",
+    "before_after_evidence": "split", "verified_fact_index": "rows", "phone_action": "floating",
+    "quote_action": "centered", "contact_prompt": "typographic", "project_enquiry": "split",
+    "emergency_phone": "full_bleed", "email_link": "typographic", "availability_checked": "rows",
+    "material_consultation": "split", "monumental_action": "typographic", "phone_first": "floating",
+    "quote_first": "split", "minimal_details": "stack", "split_details_form": "split",
+    "persistent_panel": "floating", "project_brief": "split", "emergency_contact": "full_bleed",
+    "local_context": "split", "technical_diagnostic": "matrix", "editorial_statement": "typographic",
+    "multi_channel": "grid", "minimal": "stack", "business_information": "grid",
+    "navigation_columns": "grid", "service_directory": "grid", "contact_first": "split",
+    "brand_statement": "typographic", "project_index": "grid", "technical_spec": "matrix",
+    "visual_close": "overlay", "single_column": "stack", "split_fields": "split",
+    "compact_callback": "stack", "multi_step": "timeline", "technical_scope": "matrix",
+    "accessible_minimal": "stack",
+}
+
+
+def layout_pattern(layout: str) -> str:
+    """Resolve an explicit renderer pattern without consulting any component ID."""
+    return LAYOUT_PATTERNS[layout]
+
+
+def blueprint(layout_model, content_alignment, **kwargs):
+    kwargs["layout_pattern"] = layout_pattern(layout_model)
+    return _blueprint(layout_model, content_alignment, **kwargs)
 
 
 def header_spec(layout, brand, nav, cta, *, sticky="measured", transparent=False, secondary="none", mobile="drawer"):
-    return blueprint(layout, "horizontal", desktop={"brand_placement": brand, "nav_placement": nav, "cta_placement": cta, "height_px": 80, "secondary_information": secondary}, mobile={"navigation_behavior": mobile, "brand_behavior": "preserve_legibility", "cta_behavior": "one_primary_action", "height_px": 64}, media={"logo_behavior": "intrinsic_ratio", "background_transparency": transparent}, content={"navigation_limit": 7, "secondary_information": secondary}, behavior={"sticky_behavior": sticky, "transparency": transparent, "scroll_transition": "contrast_safe"}, fallback="text brand and compact accessible navigation")
+    return blueprint(layout, "horizontal", layout_pattern=layout, edge_behavior="viewport_edge" if transparent else "contained", media_intensity=0, type_scale_role="normal", desktop={"brand_placement": brand, "nav_placement": nav, "cta_placement": cta, "height_px": 80, "secondary_information": secondary}, mobile={"navigation_behavior": mobile, "brand_behavior": "preserve_legibility", "cta_behavior": "one_primary_action", "height_px": 64}, media={"logo_behavior": "intrinsic_ratio", "background_transparency": transparent}, content={"navigation_limit": 7, "secondary_information": secondary}, behavior={"sticky_behavior": sticky, "transparency": transparent, "scroll_transition": "contrast_safe"}, fallback="text brand and compact accessible navigation")
 
 
 def services_spec(layout, item_layout, columns, *, item_density="medium", image="optional_ambient", index="none", interaction="none"):
-    return blueprint(layout, "content_grid", desktop={"item_layout": item_layout, "columns": columns[0], "item_density": item_density, "index_behavior": index}, mobile={"tablet_columns": columns[1], "columns": columns[2], "transformation": "accordion" if interaction == "accordion" else "linear_stack", "action_behavior": "action_follows_item"}, media={"relationship": image, "count_policy": "one_per_item_only_when_relevant", "crop": "consistent_by_service_set"}, content={"title_limit": 48, "description_limit": 180, "item_action": "optional"}, behavior={"interaction": interaction, "sequence_energy": "medium"}, fallback="text-only services preserving hierarchy")
+    return blueprint(layout, "content_grid", layout_pattern=layout, edge_behavior="viewport_edge" if layout == "horizontal_service_rail" else "contained", media_intensity=2 if image not in {"optional_ambient", "none"} else 1, type_scale_role="large", desktop={"item_layout": item_layout, "columns": columns[0], "item_density": item_density, "index_behavior": index}, mobile={"tablet_columns": columns[1], "columns": columns[2], "transformation": "accordion" if interaction == "accordion" else "linear_stack", "action_behavior": "action_follows_item"}, media={"relationship": image, "count_policy": "one_per_item_only_when_relevant", "crop": "consistent_by_service_set"}, content={"title_limit": 48, "description_limit": 180, "item_action": "optional"}, behavior={"interaction": interaction, "sequence_energy": "medium"}, fallback="text-only services preserving hierarchy")
 
 
 def gallery_spec(layout, provenance, count, ratios, *, captions, mobile, energy="strong"):
-    return blueprint(layout, "visual_grid", desktop={"layout_behavior": layout, "item_count_min": count[0], "item_count_max": count[1], "rhythm": "vary_scale_with_alignment_anchor"}, mobile={"transformation": mobile, "caption_behavior": "attached_to_media"}, media={"provenance": provenance, "ratios": ratios, "crop": "role_specific", "stock_project_wording_forbidden": True}, content={"captions": captions, "project_claim_policy": "artisan_media_only"}, behavior={"sequence_energy": energy, "interaction": "native_scroll_or_snap"}, fallback="omit when minimum honest media is unavailable")
+    return blueprint(layout, "visual_grid", layout_pattern=layout, edge_behavior="viewport_edge" if layout in {"horizontal_rail", "documentary_work_log"} else "contained", media_intensity=4 if layout in {"ambient_mosaic", "masonry_archive", "documentary_work_log"} else 3, type_scale_role="normal", desktop={"layout_behavior": layout, "item_count_min": count[0], "item_count_max": count[1], "rhythm": "vary_scale_with_alignment_anchor"}, mobile={"transformation": mobile, "caption_behavior": "attached_to_media"}, media={"provenance": provenance, "ratios": ratios, "crop": "role_specific", "stock_project_wording_forbidden": True}, content={"captions": captions, "project_claim_policy": "artisan_media_only"}, behavior={"sequence_energy": energy, "interaction": "native_scroll_or_snap"}, fallback="omit when minimum honest media is unavailable")
 
 
 def about_spec(layout, narrative, image, facts):
-    return blueprint(layout, "narrative", desktop={"narrative_zones": narrative, "image_placement": image, "facts_placement": facts, "columns": 12}, mobile={"order": ("title", "narrative", "image", "verified_facts"), "image_behavior": "context_safe"}, media={"relationship": image, "provenance": "artisan_preferred_stock_ambient_only"}, content={"narrative_limit": 600, "facts_policy": "verified_only", "quote_policy": "attributed_or_omit"}, behavior={"reading_rhythm": "quiet", "sticky": False}, fallback="text narrative without factual embellishment")
+    return blueprint(layout, "narrative", layout_pattern=layout, edge_behavior="contained", media_intensity=0 if image == "none" else 2, type_scale_role="large", desktop={"narrative_zones": narrative, "image_placement": image, "facts_placement": facts, "columns": 12}, mobile={"order": ("title", "narrative", "image", "verified_facts"), "image_behavior": "context_safe"}, media={"relationship": image, "provenance": "artisan_preferred_stock_ambient_only"}, content={"narrative_limit": 600, "facts_policy": "verified_only", "quote_policy": "attributed_or_omit"}, behavior={"reading_rhythm": "quiet", "sticky": False}, fallback="text narrative without factual embellishment")
 
 
 def trust_spec(layout, evidence, max_facts, visual):
-    return blueprint(layout, "evidence", desktop={"visual_structure": visual, "columns": min(max_facts, 4), "maximum_facts": max_facts}, mobile={"transformation": "compact_verified_list", "priority": "decision_relevant_first"}, media={"provenance": "artisan_evidence_only", "decorative_stock": False}, content={"required_evidence": evidence, "fact_formats": ("label_value", "attributed_excerpt", "verified_badge"), "unsupported_fact_policy": "omit"}, behavior={"energy": "quiet", "placement": "near_supported_decision"}, fallback="omit trust block")
+    return blueprint(layout, "evidence", layout_pattern=layout, edge_behavior="contained", media_intensity=1 if "project" in evidence or "before_after" in evidence else 0, type_scale_role="normal", desktop={"visual_structure": visual, "columns": min(max_facts, 4), "maximum_facts": max_facts}, mobile={"transformation": "compact_verified_list", "priority": "decision_relevant_first"}, media={"provenance": "artisan_evidence_only", "decorative_stock": False}, content={"required_evidence": evidence, "fact_formats": ("label_value", "attributed_excerpt", "verified_badge"), "unsupported_fact_policy": "omit"}, behavior={"energy": "quiet", "placement": "near_supported_decision"}, fallback="omit trust block")
 
 
 def cta_spec(layout, scale, primary, secondary, *, media="none"):
-    return blueprint(layout, "action", desktop={"section_scale": scale, "primary_action": primary, "secondary_action": secondary, "action_alignment": "with_message"}, mobile={"transformation": "stack_message_then_actions", "persistence": "profile_dependent"}, media={"relationship": media, "supports_no_media": media == "none"}, content={"message_role": "decision_prompt_not_claim", "primary_limit": 1, "secondary_limit": 1}, behavior={"conversion_priority": "primary", "motion": "micro_feedback_only"}, fallback="single honest contact action")
+    return blueprint(layout, "action", layout_pattern=layout, edge_behavior="contained", media_intensity=0 if media == "none" else 2, type_scale_role="monumental" if scale == "monumental" else "large", desktop={"section_scale": scale, "primary_action": primary, "secondary_action": secondary, "action_alignment": "with_message"}, mobile={"transformation": "stack_message_then_actions", "persistence": "profile_dependent"}, media={"relationship": media, "supports_no_media": media == "none"}, content={"message_role": "decision_prompt_not_claim", "primary_limit": 1, "secondary_limit": 1}, behavior={"conversion_priority": "primary", "motion": "micro_feedback_only"}, fallback="single honest contact action")
 
 
 def contact_spec(layout, details, form, hierarchy):
-    return blueprint(layout, "conversion", desktop={"details_form_balance": (details, form), "layout": layout, "cta_hierarchy": hierarchy}, mobile={"order": ("primary_channel", "details", "form"), "persistent_action": "profile_dependent"}, media={"relationship": "none_or_contextual_ambient", "project_claims": False}, content={"required_channel": "phone_or_email_or_working_form", "privacy_notice": "required_with_form"}, behavior={"focus_order": "visual_matches_dom", "success_state": "explicit"}, fallback="verified contact details only")
+    return blueprint(layout, "conversion", layout_pattern=layout, edge_behavior="contained", media_intensity=1, type_scale_role="large", desktop={"details_form_balance": (details, form), "layout": layout, "cta_hierarchy": hierarchy}, mobile={"order": ("primary_channel", "details", "form"), "persistent_action": "profile_dependent"}, media={"relationship": "none_or_contextual_ambient", "project_claims": False}, content={"required_channel": "phone_or_email_or_working_form", "privacy_notice": "required_with_form"}, behavior={"focus_order": "visual_matches_dom", "success_state": "explicit"}, fallback="verified contact details only")
 
 
 def footer_spec(layout, columns, brand, contact, action):
-    return blueprint(layout, "information", desktop={"columns": columns, "brand_placement": brand, "contact_placement": contact, "navigation": "grouped", "legal": "final_row", "cta_possibility": action}, mobile={"transformation": "single_column_priority", "order": ("brand", "contact", "navigation", "legal")}, media={"relationship": "none_by_default", "logo_behavior": "intrinsic"}, content={"navigation_limit_per_group": 7, "legal_required": True}, behavior={"energy": "quiet_close", "sticky": False}, fallback="brand, contact and legal minimum")
+    return blueprint(layout, "information", layout_pattern=layout, edge_behavior="contained", media_intensity=1 if layout == "visual_close" else 0, type_scale_role="oversized" if layout == "brand_statement" else "normal", desktop={"columns": columns, "brand_placement": brand, "contact_placement": contact, "navigation": "grouped", "legal": "final_row", "cta_possibility": action}, mobile={"transformation": "single_column_priority", "order": ("brand", "contact", "navigation", "legal")}, media={"relationship": "none_by_default", "logo_behavior": "intrinsic"}, content={"navigation_limit_per_group": 7, "legal_required": True}, behavior={"energy": "quiet_close", "sticky": False}, fallback="brand, contact and legal minimum")
 
 
 def form_spec(layout, fields, steps):
-    return blueprint(layout, "form", desktop={"field_layout": fields, "steps": steps, "label_position": "visible_above_control"}, mobile={"transformation": "single_column", "input_size": "touch_safe", "error_summary": "before_fields"}, media={"relationship": "none"}, content={"consent": "explicit_when_required", "status": "announced", "required_fields": "minimum_viable"}, behavior={"validation": "field_and_summary", "submission": "single_idempotent_action"}, fallback="compact accessible enquiry form")
+    return blueprint(layout, "form", layout_pattern=layout, edge_behavior="contained", media_intensity=0, type_scale_role="normal", desktop={"field_layout": fields, "steps": steps, "label_position": "visible_above_control"}, mobile={"transformation": "single_column", "input_size": "touch_safe", "error_summary": "before_fields"}, media={"relationship": "none"}, content={"consent": "explicit_when_required", "status": "announced", "required_fields": "minimum_viable"}, behavior={"validation": "field_and_summary", "submission": "single_idempotent_action"}, fallback="compact accessible enquiry form")
 
 
 HEADER_PROFILES = {

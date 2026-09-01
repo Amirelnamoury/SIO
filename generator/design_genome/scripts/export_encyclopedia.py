@@ -50,12 +50,16 @@ The encyclopedia turns research into typed registries, compatibility rules and s
 - [Gallery](components-gallery.md) · [About](components-about.md) · [Trust](components-trust.md)
 - [CTA](components-cta.md) · [Contact](components-contact.md) · [Form](components-form.md) · [Footer](components-footer.md)
 - [Semantic audit](component-semantic-audit.md)
+- [Component families](component-families.md)
+- [Hero blueprint catalog](hero-blueprint-catalog.md)
 
 ### Composition and review
 - [Archetypes and Photo Director](archetypes-photo-direction.md)
 - [Human review guide](review-guide.md)
 - [30 sample DNA cards](sample-dna/README.md)
 - [10 plumber comparison](sample-plumbers.md)
+- [Blueprint differentiation audit](blueprint-differentiation-audit.md)
+- [Renderer readiness](renderer-readiness.md)
 
 ### Trades, media, truth and quality
 - [Trade grammars](trade-grammars.md)
@@ -74,7 +78,10 @@ Missing facts or media remove incompatible sections. They are never replaced wit
 ```powershell
 python -m generator.design_genome.scripts.design_genome_stats
 python -m generator.design_genome.scripts.audit_component_semantics
+python -m generator.design_genome.scripts.audit_blueprint_differentiation
+python -m generator.design_genome.scripts.check_renderer_readiness
 python -m generator.design_genome.scripts.audit_genome_diversity
+python -m generator.design_genome.scripts.export_blueprint_catalogs
 python -m generator.design_genome.scripts.export_encyclopedia
 python -m generator.design_genome.scripts.export_sample_dna
 ```
@@ -84,7 +91,7 @@ ARCHITECTURE = """# Design Genome architecture
 
 ## Contract
 
-`SiteDNA` is a frozen, JSON-serializable contract. It records archetype, art direction, page silhouette, semantic color and type systems, grid, spacing, geometry, photo direction, component blueprints, motion, spatial fallback, mobile personality, section order and a stable signature. The seed is retained for reproducibility but excluded from the signature.
+`SiteDNA` is a frozen, JSON-serializable contract. It records archetype, art direction, page silhouette, semantic color and type systems, grid, spacing, geometry, photo direction, component blueprints, motion, spatial fallback, mobile personality and section order. `design_signature` spans visual styling; `composition_signature` spans component family/variant/fingerprint, order, layout/edge/media/type rhythms and structural systems. The seed is retained for reproducibility but excluded from both signatures.
 
 ## Compatibility before randomness
 
@@ -92,11 +99,15 @@ Selection uses hard constraints first: required business data, required artisan 
 
 ## Narrative and rhythm
 
-Thirty silhouettes describe narrative order rather than interchangeable stacks. The rhythm evaluator inspects visual weight and energy, rejects runs of three heavy sections, warns about flat pages, and rewards measured transitions. Sections absent for lack of evidence are removed before the final order is serialized.
+Thirty silhouettes describe narrative order rather than interchangeable stacks. The rhythm evaluator inspects visual weight, energy, layout pattern, edge behavior, media intensity and type-scale role. It penalizes repeated structural runs and rewards measured transitions. Sections absent for lack of evidence are removed before the final order is serialized.
 
 ## Anti-clone model
 
-Similarity uses structure (18%), typography (15%), color (5%), components (38%), narrative (16%) and photo strategy (8%). A palette-only change therefore cannot disguise a structural clone. Bands are: 0-.40 clearly distinct, .40-.60 related, .60-.75 visually similar, .75-.84 near clone and above .84 rejected. These engineering thresholds were calibrated through cohorts and remain subject to human rendered review.
+Similarity is structure-first: blueprint distance, family relation and layout/edge/media/type rhythm carry most of the weight; component IDs and color carry little. A palette-only change therefore cannot disguise a structural clone, while two IDs with the same blueprint remain near-identical. Bands are: 0-.40 clearly distinct, .40-.60 related, .60-.75 visually similar, .75-.84 near clone and above .84 rejected. These engineering thresholds were calibrated through cohorts and remain subject to human rendered review.
+
+## Blueprint differentiation
+
+Every component declares a family, variant, layout pattern, edge behavior, media intensity and type-scale role. `blueprint_fingerprint()` hashes only renderer-visible structure. `blueprint_structural_distance()` reports layout, content, media, mobile, behavior and rhythm differences; identity labels, notes and seeds never create visual novelty.
 
 ## Quality model
 
@@ -329,7 +340,7 @@ def _jsonable(value):
 
 def export_machine_readable() -> None:
     payload = {
-        "schema_version": "1.1",
+        "schema_version": "1.2",
         "status": "experimental_knowledge_layer_not_connected_to_production",
         "counts": {category: len(registry) for category, registry in COMPONENT_REGISTRIES.items()},
         "registries": {category: _jsonable(registry) for category, registry in COMPONENT_REGISTRIES.items()},

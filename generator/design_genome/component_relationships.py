@@ -41,10 +41,34 @@ def component_pair_affinity(left: ComponentDefinition, right: ComponentDefinitio
         return PairAffinityResult(0.0, True, ("explicit_component_conflict",))
 
     score = CATEGORY_TRANSITION_AFFINITY.get((left.category, right.category), .66)
+    left_spec = left.blueprint_spec
+    right_spec = right.blueprint_spec
+    assert left_spec is not None and right_spec is not None
     shared = left.traits & right.traits
     if shared:
         score += min(.18, len(shared) * .06)
         reasons.append(f"shared_traits:{','.join(sorted(shared))}")
+    if left.family_id == right.family_id:
+        score += .08 if left.variant_id != right.variant_id else -.16
+        reasons.append("same_family_related_variant" if left.variant_id != right.variant_id else "same_family_same_variant")
+    if left_spec.layout_pattern == right_spec.layout_pattern:
+        score -= .18
+        reasons.append(f"repeated_layout_pattern:{left_spec.layout_pattern}")
+    if left_spec.edge_behavior == right_spec.edge_behavior and left_spec.edge_behavior in {"full_bleed", "viewport_edge", "framed"}:
+        score -= .12
+        reasons.append(f"repeated_edge_behavior:{left_spec.edge_behavior}")
+    if left_spec.media_intensity >= 3 and right_spec.media_intensity >= 3:
+        score -= .14
+        reasons.append("adjacent_media_led_sections")
+    elif abs(left_spec.media_intensity - right_spec.media_intensity) in {1, 2}:
+        score += .06
+        reasons.append("useful_media_intensity_transition")
+    if left_spec.type_scale_role == right_spec.type_scale_role and left_spec.type_scale_role in {"oversized", "monumental"}:
+        score -= .14
+        reasons.append(f"repeated_type_scale:{left_spec.type_scale_role}")
+    elif left_spec.type_scale_role != right_spec.type_scale_role:
+        score += .04
+        reasons.append("type_scale_transition")
     for pair, value in TRAIT_PAIR_AFFINITY.items():
         if pair <= (left.traits | right.traits):
             score += value
@@ -90,7 +114,26 @@ def sequence_affinity(components: tuple[ComponentDefinition, ...], archetype_tra
         for index in range(max(0, len(components) - 2))
     )
     score -= heroic_runs * .10
+    pattern_runs = sum(
+        len({component.blueprint_spec.layout_pattern for component in components[index:index + 3]}) == 1
+        for index in range(max(0, len(components) - 2))
+    )
+    media_runs = sum(
+        all(component.blueprint_spec.media_intensity >= 3 for component in components[index:index + 3])
+        for index in range(max(0, len(components) - 2))
+    )
+    type_runs = sum(
+        all(component.blueprint_spec.type_scale_role in {"oversized", "monumental"} for component in components[index:index + 3])
+        for index in range(max(0, len(components) - 2))
+    )
+    score -= pattern_runs * .12 + media_runs * .10 + type_runs * .10
     reasons = [reason for item in pairs for reason in item.reasons]
     if heroic_runs:
         reasons.append(f"strong_energy_runs:{heroic_runs}")
+    if pattern_runs:
+        reasons.append(f"layout_pattern_runs:{pattern_runs}")
+    if media_runs:
+        reasons.append(f"media_intensity_runs:{media_runs}")
+    if type_runs:
+        reasons.append(f"type_scale_runs:{type_runs}")
     return PairAffinityResult(round(max(0.0, min(1.0, score)), 4), False, tuple(reasons))

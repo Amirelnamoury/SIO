@@ -29,11 +29,15 @@ def ordered_dna_components(dna: SiteDNA) -> tuple[ComponentDefinition, ...]:
 
 def evaluate_rhythm(components: tuple[ComponentDefinition, ...]) -> RhythmReport:
     if not components:
-        return RhythmReport(0.0, (), (), ("empty_sequence",), 0.0)
+        return RhythmReport(0.0, (), (), ("empty_sequence",), 0.0, (), (), (), ())
 
     weights = tuple(component.visual_weight for component in components)
     energies = tuple(component.section_energy for component in components)
     issues: list[str] = []
+    patterns = tuple(component.blueprint_spec.layout_pattern for component in components)
+    edges = tuple(component.blueprint_spec.edge_behavior for component in components)
+    media_intensities = tuple(component.blueprint_spec.media_intensity for component in components)
+    type_scale_roles = tuple(component.blueprint_spec.type_scale_role for component in components)
 
     for index in range(len(weights) - 2):
         window = weights[index:index + 3]
@@ -46,8 +50,18 @@ def evaluate_rhythm(components: tuple[ComponentDefinition, ...]) -> RhythmReport
     if sum(weight >= 4 for weight in weights) > max(2, len(weights) // 2):
         issues.append("overweighted_page")
     for index, (left, right) in enumerate(zip(components, components[1:])):
-        if left.profile == right.profile and left.category != right.category:
+        if left.family_id == right.family_id and left.category != right.category:
             issues.append(f"duplicate_component_pattern:{index}")
+    for label, values in (("pattern", patterns), ("edge", edges), ("media", media_intensities), ("type", type_scale_roles)):
+        for index in range(max(0, len(values) - 2)):
+            if len(set(values[index:index + 3])) == 1:
+                issues.append(f"three_repeated_{label}:{values[index]}:{index}")
+    for index in range(max(0, len(media_intensities) - 3)):
+        window = media_intensities[index:index + 4]
+        if all(value == 4 for value in window):
+            issues.append(f"four_cinematic_sections:{index}")
+        if all(value == 0 for value in window):
+            issues.append(f"four_media_free_sections:{index}")
 
     transitions = [abs(left - right) for left, right in zip(weights, weights[1:])]
     useful_change = sum(1 for value in transitions if value in (1, 2))
@@ -55,4 +69,7 @@ def evaluate_rhythm(components: tuple[ComponentDefinition, ...]) -> RhythmReport
     transition_score = useful_change / max(1, len(transitions))
     relationships = sequence_affinity(components)
     score = .42 + transition_score * .24 + relationships.score * .34 - len(issues) * .10 - violent_change * .04
-    return RhythmReport(round(max(0.0, min(1.0, score)), 4), weights, energies, tuple(issues), relationships.score)
+    return RhythmReport(
+        round(max(0.0, min(1.0, score)), 4), weights, energies, tuple(issues), relationships.score,
+        patterns, edges, media_intensities, type_scale_roles,
+    )

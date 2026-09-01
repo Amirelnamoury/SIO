@@ -87,7 +87,7 @@ def test_site_dna_is_deterministic_serializable_and_signed():
 def test_each_trade_generates_valid_linted_dna(trade):
     source = design_input(trade, f"seed-{trade}")
     dna = generate_site_dna(source)
-    assert dna.version == "design-genome-1"
+    assert dna.version == "design-genome-1.2"
     assert dna.art_direction in TRADE_GRAMMARS[trade].compatible_directions
     assert not [issue for issue in lint_dna(dna, source) if issue.severity == "error"]
 
@@ -249,7 +249,11 @@ def test_all_260_components_pass_semantic_audit_and_structural_contract():
         assert component.section_energy in valid_energies
         assert component.mobile_variant
         spec = component.blueprint_spec
-        assert spec and spec.schema_version == "component-blueprint-1.1"
+        assert component.family_id and component.variant_id
+        assert spec and spec.schema_version == "component-blueprint-1.2"
+        assert spec.layout_pattern and spec.edge_behavior
+        assert 0 <= spec.media_intensity <= 4
+        assert spec.type_scale_role in {"quiet", "normal", "large", "oversized", "monumental"}
         assert spec.layout_model and spec.desktop_spec and spec.mobile_spec
         assert spec.media_spec and spec.content_spec and spec.behavior_spec and spec.fallback_strategy
         assert not (component.required_data & component.required_any_data)
@@ -360,8 +364,8 @@ def test_decision_trace_explains_selection_and_rejections():
     assert {item.field for item in first.trace.decisions} >= {"site_archetype", "hero_component", "color_system", "page_silhouette"}
     assert all(item.reasons for item in first.trace.decisions)
     assert second.trace.attempts > 1
-    assert second.trace.similarity_rejections >= 1
-    assert any(item["reason"] == "similarity" for item in second.trace.rejected_candidates)
+    assert second.trace.similarity_rejections + second.trace.structural_duplicate_rejections >= 1
+    assert any(item["reason"] in {"blueprint_similarity", "structural_duplicate"} for item in second.trace.rejected_candidates)
 
 
 def test_design_signature_uses_visual_dimensions_only():
@@ -375,7 +379,7 @@ def test_design_signature_uses_visual_dimensions_only():
 
 def test_machine_export_is_versioned_and_contains_resolved_blueprints():
     payload = json.loads((REPO_ROOT / "docs" / "design-encyclopedia" / "encyclopedia.json").read_text(encoding="utf-8"))
-    assert payload["schema_version"] == "1.1"
+    assert payload["schema_version"] == "1.2"
     assert sum(payload["counts"].values()) == 260
     assert payload["registries"]["hero"]["editorial_photo_collage"]["blueprint_spec"]["layout_model"]
     assert payload["systems"]["spacing"] and payload["compatibility"]["trait_pair_affinity"]

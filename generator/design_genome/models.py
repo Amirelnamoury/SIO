@@ -83,6 +83,10 @@ class ComponentBlueprintSpec:
 
     schema_version: str
     layout_model: str
+    layout_pattern: str
+    edge_behavior: str
+    media_intensity: int
+    type_scale_role: str
     content_alignment: str
     desktop_spec: Mapping[str, Any]
     mobile_spec: Mapping[str, Any]
@@ -97,6 +101,10 @@ class ComponentDefinition:
     id: str
     category: str
     traits: frozenset[str]
+    family_id: str
+    variant_id: str
+    is_alias: bool = False
+    alias_of: str | None = None
     profile: str = ""
     compatible_archetypes: frozenset[str] = frozenset()
     compatible_directions: frozenset[str] = frozenset()
@@ -357,6 +365,10 @@ class SpacingSystem:
     hero_padding: tuple[int, int]
     mobile_multiplier: float
     density: int
+    traits: frozenset[str] = frozenset()
+    compatible_archetypes: frozenset[str] = frozenset()
+    compatible_directions: frozenset[str] = frozenset()
+    density_range: tuple[int, int] = (1, 5)
 
 
 @dataclass(frozen=True)
@@ -369,6 +381,9 @@ class GeometrySystem:
     image_corner_behavior: str
     button_shape: str
     card_shape: str
+    traits: frozenset[str] = frozenset()
+    compatible_archetypes: frozenset[str] = frozenset()
+    compatible_directions: frozenset[str] = frozenset()
 
 
 @dataclass(frozen=True)
@@ -399,6 +414,7 @@ class SiteDNA:
     section_order: tuple[str, ...]
     density: int
     conversion_intensity: float
+    composition_signature: str
     design_signature: str
     seed: str
 
@@ -412,6 +428,7 @@ class SiteDNA:
     def from_dict(cls, payload: Mapping[str, Any]) -> "SiteDNA":
         values = dict(payload)
         values["section_order"] = tuple(values["section_order"])
+        values.setdefault("composition_signature", "")
         return cls(**values)
 
     @staticmethod
@@ -449,6 +466,9 @@ class SimilarityReport:
     narrative_distance: float
     photo_strategy_distance: float
     overall_visual_similarity: float
+    blueprint_distance: float = 0.0
+    family_distance: float = 0.0
+    layout_rhythm_distance: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -458,6 +478,10 @@ class RhythmReport:
     energies: tuple[str, ...]
     issues: tuple[str, ...]
     pair_affinity: float = 0.0
+    patterns: tuple[str, ...] = ()
+    edges: tuple[str, ...] = ()
+    media_intensities: tuple[int, ...] = ()
+    type_scale_roles: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -504,6 +528,43 @@ class DesignDecisionTrace:
     linter_rejections: int = 0
     similarity_rejections: int = 0
     quality_rejections: int = 0
+    structural_duplicate_rejections: int = 0
+
+
+@dataclass(frozen=True)
+class StructuralDistanceReport:
+    distance: float
+    layout_distance: float
+    content_distance: float
+    media_distance: float
+    mobile_distance: float
+    behavior_distance: float
+    rhythm_distance: float
+    reasons: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class CompositionComponentEntry:
+    section: str
+    component_id: str
+    family_id: str
+    variant_id: str
+    layout_pattern: str
+    edge_behavior: str
+    media_intensity: int
+    type_scale_role: str
+    fingerprint: str
+
+
+@dataclass(frozen=True)
+class SiteDNACompositionReport:
+    composition_signature: str
+    components: tuple[CompositionComponentEntry, ...]
+    transitions: tuple[Mapping[str, Any], ...]
+    layout_rhythm: tuple[str, ...]
+    edge_rhythm: tuple[str, ...]
+    media_rhythm: tuple[int, ...]
+    type_rhythm: tuple[str, ...]
 
 
 @dataclass(frozen=True)
