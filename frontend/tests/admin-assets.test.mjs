@@ -24,4 +24,14 @@ assert.match(script, /location\.assign\("\/admin\/login\.html"\)/, "une session 
 assert.doesNotMatch(script, /location\.assign\("\/admin\/login"\)/, "l'ancienne redirection backend-only ne doit plus subsister");
 assert.doesNotMatch(script, /preview-session|design\/candidate|site\/generate/, "le moteur de generation retire ne doit laisser aucun appel mort dans l'Admin");
 
+// Micro-lot "nettoyer le workflow admin des sites vitrines" : aucun texte ni
+// bouton ne doit plus laisser croire qu'une generation automatique de site
+// existe ou peut encore se produire (voir aussi admin-dom-consistency, qui
+// verifie mecaniquement l'absence de bouton mort/orphelin).
+assert.doesNotMatch(index + script, /Générés?\b/, "le mot \"Généré(s)\" (moteur retire) ne doit plus apparaître dans l'UI Admin");
+assert.doesNotMatch(index + script, /Generez une preview|Dernière génération/i, "les formulations de generation retirees ne doivent plus apparaître");
+assert.doesNotMatch(index, /id="generate-button"|id="preview-button"/, "aucun bouton generer\/preview ne doit exister dans la fiche site");
+assert.doesNotMatch(script, /Générés à vérifier/, "le dashboard ne doit plus présenter les sites \"genere\" comme une génération à vérifier");
+assert.match(script, /statusLabels[\s\S]*?genere:\s*"À finaliser"/, "le statut historique \"genere\" doit être présenté comme à finaliser, pas comme généré");
+
 console.log("OK - admin-assets.test.mjs");

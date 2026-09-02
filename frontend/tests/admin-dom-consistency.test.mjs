@@ -74,7 +74,7 @@ const idsRempliesUniquementParInnerHtmlOuCss = new Set([
   "artisan-count", "artisan-table", "site-count", "site-table",
   "detail-title", "detail-meta", "detail-stats",
   "progress-rows", "progress-hint",
-  "site-slug", "site-generated-at", "site-published-at",
+  "site-slug", "site-published-at",
   "step-contenu-badge", "step-medias-badge", "step-publication-badge",
   "media-summary-logo", "media-summary-photos",
   "pub-statut", "pub-domaine", "pub-url", "pub-date",

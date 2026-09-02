@@ -301,10 +301,17 @@ def admin_site_update(
 
 @router.post("/admin/api/artisans/{artisan_id}/site/ready", response_model=SiteVitrineOut)
 def admin_site_ready(artisan_id: int, db: Session = Depends(get_db), _admin: AdminUser = Depends(require_admin)):
+    """Marque un site pret a etre publie. Le site peut desormais etre realise
+    en dehors de Suite Artisan (il n'y a plus de moteur de generation local) :
+    aucune preview ni date_generation n'est requise. "genere" reste accepte
+    comme etat transitoire historique pour les sites crees avant le retrait
+    du moteur, mais n'est plus une etape obligatoire ni produite par quoi que
+    ce soit aujourd'hui. Un site deja "pret" ou "publie" n'est pas une
+    transition valide vers "pret"."""
     artisan = _artisan_or_404(db, artisan_id)
     site = artisan.site_vitrine
-    if site is None or site.statut != "genere" or not site.date_generation:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Generez une preview avant de marquer le site pret")
+    if site is None or site.statut not in ("brouillon", "genere"):
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Le site doit être en préparation avant d'être marqué prêt")
     site.statut = "pret"
     db.commit()
     db.refresh(site)

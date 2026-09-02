@@ -36,20 +36,25 @@
     currentView: "dashboard", previousView: "artisans", artisan: null,
     artisanItems: [], siteItems: [], artisanFilter: "all", siteFilter: "all", currentTab: "overview",
   };
-  const statusLabels = { non_cree: "Non créé", brouillon: "Brouillon", genere: "Généré", pret: "Prêt", publie: "Publié" };
+  // "genere" est un statut technique historique (sites crees avant le
+  // retrait du moteur de generation) : il reste lisible tel quel en base,
+  // mais son libelle affiche ne doit plus jamais laisser croire qu'une
+  // generation automatique vient de se produire ou peut encore se produire.
+  // Il est presente comme un site encore a finaliser.
+  const statusLabels = { non_cree: "Non créé", brouillon: "Brouillon", genere: "À finaliser", pret: "Prêt", publie: "Publié" };
   const PLAN_LABELS = { gratuit: "Gratuit", essentiel: "Essentiel", pro: "Pro", business: "Business" };
   const ARTISAN_FILTERS = [
     ["all", "Tous", null],
     ["non_cree", "Sans site", "non_cree"],
     ["brouillon", "À préparer", "brouillon"],
-    ["genere", "Générés", "genere"],
+    ["genere", "À finaliser", "genere"],
     ["pret", "Prêts", "pret"],
     ["publie", "Publiés", "publie"],
   ];
   const SITE_FILTERS = [
     ["all", "Tous", null],
     ["brouillon", "À préparer", "brouillon"],
-    ["genere", "Générés", "genere"],
+    ["genere", "À finaliser", "genere"],
     ["pret", "Prêts", "pret"],
     ["publie", "Publiés", "publie"],
   ];
@@ -145,10 +150,13 @@
   }
 
   function renderDashboardMetrics(data) {
+    // "sites_generes" est un decompte technique (statut historique "genere"
+    // en base) : cote UI il compte comme un site encore a preparer, jamais
+    // comme une production active du moteur retire.
     const metrics = [
       ["Artisans", data.artisans_total, false],
-      ["Sites en production", data.sites_generes + data.sites_prets, false],
-      ["Prêts à publier", data.sites_prets, data.sites_prets > 0],
+      ["Sites à préparer", data.sites_brouillon + data.sites_generes, false],
+      ["Sites prêts", data.sites_prets, data.sites_prets > 0],
       ["Sites publiés", data.sites_publies, false],
     ];
     document.getElementById("metric-grid").innerHTML = metrics.map(function (item) {
@@ -170,9 +178,9 @@
   function renderAttentionGroups(items) {
     const groups = [
       ["Sites à démarrer", "Aucun site à démarrer pour l'instant.", items.filter(function (i) { return i.site_statut === "non_cree" || i.site_statut === "brouillon"; })],
-      ["Générés à vérifier", "Rien à vérifier pour le moment.", items.filter(function (i) { return i.site_statut === "genere"; })],
+      ["Sites à finaliser", "Rien à finaliser pour le moment.", items.filter(function (i) { return i.site_statut === "genere"; })],
       ["Prêts à publier", "Aucun site en attente de publication.", items.filter(function (i) { return i.site_statut === "pret"; })],
-      ["Médias manquants", "Tous les sites générés ont au moins un média actif.", items.filter(function (i) { return i.media_manquant; })],
+      ["Médias manquants", "Tous les sites suivis ont au moins un média actif.", items.filter(function (i) { return i.media_manquant; })],
     ];
     const el = document.getElementById("attention-groups");
     el.innerHTML = groups.map(function (group) {
@@ -190,7 +198,7 @@
     const sites = items.filter(function (i) { return i.site_statut !== "non_cree"; }).slice(0, 8);
     const el = document.getElementById("recent-sites");
     if (!sites.length) {
-      el.innerHTML = '<div class="empty-state"><strong>Aucun site en cours</strong><p>Les sites récemment générés apparaîtront ici.</p></div>';
+      el.innerHTML = '<div class="empty-state"><strong>Aucun site en cours</strong><p>Les sites récemment suivis apparaîtront ici.</p></div>';
       return;
     }
     el.innerHTML = sites.map(function (item) {
@@ -277,7 +285,10 @@
   }
 
   function updateWorkflow(site) {
-    document.getElementById("ready-button").disabled = site.statut !== "genere";
+    // "pret" est atteignable depuis "brouillon" (site realise hors Suite
+    // Artisan) ou depuis "genere" (etat historique, avant le retrait du
+    // moteur) - jamais depuis "pret" ou "publie" eux-memes.
+    document.getElementById("ready-button").disabled = site.statut !== "brouillon" && site.statut !== "genere";
     document.getElementById("publish-button").disabled = site.statut !== "pret";
     const badge = document.getElementById("detail-site-status");
     badge.className = "status-pill " + site.statut;
@@ -289,16 +300,17 @@
     return !!(profile.has_logo || profile.artisan_photo_count > 0);
   }
 
-  // Le moteur de generation automatique a ete retire : la
-  // seule suite possible pour un site deja "genere" ou "pret" est de terminer
-  // sa livraison (ready/publish). Un site "brouillon" ou "non_cree" n'a plus
-  // de prochaine etape automatisee a proposer tant que le contenu n'est pas
-  // renseigne - jamais une action qui appellerait une route retiree.
+  // Le moteur de generation automatique a ete retire : aucune action ne doit
+  // jamais appeler generate/preview/candidate. Le site peut desormais avoir
+  // ete realise en dehors de Suite Artisan - l'Admin se contente d'enregistrer
+  // son existence. Un site "brouillon" (nouveau) ou "genere" (etat historique)
+  // peut donc etre marque pret des que son contenu est configure, sans etape
+  // de generation intermediaire.
   function computeNextAction(artisan) {
     const site = artisan.site;
-    if (site.statut === "genere") return { label: "Marquer prêt", run: function () { transition("ready", "Site marqué prêt à publier").catch(handleError); } };
     if (site.statut === "pret") return { label: "Publier le site", run: function () { transition("publish", "Publication enregistrée").catch(handleError); } };
     if (!(site.config.services || []).length) return { label: "Configurer le site", run: function () { showTab("site"); } };
+    if (site.statut === "brouillon" || site.statut === "genere") return { label: "Marquer prêt", run: function () { transition("ready", "Site marqué prêt à publier").catch(handleError); } };
     return null;
   }
 
@@ -384,7 +396,6 @@
       url_publique: artisan.site.url_publique,
     });
     document.getElementById("site-slug").textContent = artisan.slug;
-    document.getElementById("site-generated-at").textContent = formatDate(artisan.site.date_generation);
     document.getElementById("site-published-at").textContent = formatDate(artisan.site.date_publication);
     updateWorkflow(artisan.site);
     renderPublicationSummary(artisan.site);
