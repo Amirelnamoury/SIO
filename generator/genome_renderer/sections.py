@@ -9,7 +9,9 @@ from generator.design_genome.data.components import ALL_COMPONENTS
 from generator.design_genome.models import ComponentDefinition
 
 from .context import RenderContext, RenderMedia, safe_url
-from .primitives import component_attributes, layout_regions
+from .families import render_hero_family, render_services_family
+from .media_plan import HeroResolution
+from .primitives import actions_html, component_attributes, image, layout_regions
 
 
 SECTION_LABELS = {
@@ -24,17 +26,6 @@ SECTION_LABELS = {
 
 def _component(component_id: str | None) -> ComponentDefinition | None:
     return ALL_COMPONENTS.get(component_id or "")
-
-
-def image(asset: RenderMedia, fallback_alt: str, *, eager: bool = False, class_name: str = "") -> str:
-    dimensions = f' width="{asset.width}" height="{asset.height}"' if asset.width and asset.height else ""
-    loading = "eager" if eager else "lazy"
-    priority = ' fetchpriority="high"' if eager else ""
-    alt = html.escape(asset.alt or fallback_alt, quote=True)
-    return (
-        f'<img class="{html.escape(class_name, quote=True)}" src="{asset.url}" alt="{alt}"'
-        f'{dimensions} loading="{loading}" decoding="async"{priority}>'
-    )
 
 
 def _brand(ctx: RenderContext) -> str:
@@ -83,27 +74,33 @@ def render_header(ctx: RenderContext) -> str:
     return f'<header class="site-header header-{structure}" {component_attributes(component)}><div class="header-inner">{inner}{mobile}</div></header>'
 
 
-def _actions(ctx: RenderContext) -> str:
-    values = []
-    if ctx.plain("slug") and (ctx.dna.contact_component or ctx.dna.form_component):
-        values.append('<a class="button button-primary" href="#contact">Parler du projet</a>')
-    if ctx.phone_href:
-        values.append(f'<a class="button button-secondary" href="tel:{ctx.phone_href}">Appeler</a>')
-    elif ctx.plain("email"):
-        values.append(f'<a class="button button-secondary" href="mailto:{ctx.text("email")}">Écrire</a>')
-    return f'<div class="actions">{"".join(values)}</div>' if values else ""
-
-
 def render_hero(ctx: RenderContext) -> str:
-    component = _component(ctx.dna.hero_component)
-    media = ctx.media_for(component, limit=max(1, component.blueprint_spec.media_spec.get("media_count_max", 1)))
+    resolution = ctx.hero_resolution
+    if resolution is None:
+        # Defensive path for direct calls that skip resolved_for_rendering()
+        # (e.g. a unit test rendering a bare context). Production rendering
+        # always goes through render_site_genome, which resolves first.
+        component = _component(ctx.dna.hero_component)
+        declared_max = component.blueprint_spec.media_spec.get("media_count_max", 1)
+        media = ctx.media_for(component, limit=declared_max)
+        resolution = HeroResolution(
+            media, "media" if media else "abstract_fallback",
+            "direct render_hero call without a resolved plan", component,
+        )
+
+    family_rendered = render_hero_family(ctx, resolution)
+    if family_rendered is not None:
+        return family_rendered
+
+    component = resolution.component
+    media = resolution.media
     visuals = "".join(image(item, f"Ambiance {ctx.trade_label.lower()}", eager=index == 0, class_name="hero-image") for index, item in enumerate(media))
     location = f'<span class="hero-location">{ctx.location}</span>' if ctx.location else ""
     tagline = f'<p class="hero-lead">{ctx.text("tagline")}</p>' if ctx.plain("tagline") else ""
-    copy = f'<p class="eyebrow">{ctx.trade_label}{location}</p><h1>{ctx.business_name}</h1>{tagline}{_actions(ctx)}'
+    copy = f'<p class="eyebrow">{ctx.trade_label}{location}</p><h1>{ctx.business_name}</h1>{tagline}{actions_html(ctx)}'
     fallback = '<div class="graphic-fallback" aria-hidden="true"><span></span><span></span><i></i></div>'
     body = layout_regions(component, copy, visuals or fallback)
-    return f'<section id="accueil" class="section hero" {component_attributes(component)}>{body}</section>'
+    return f'<section id="accueil" class="section hero" {component_attributes(component)} data-hero-mode="{html.escape(resolution.mode, quote=True)}">{body}</section>'
 
 
 def render_services(ctx: RenderContext) -> str:
@@ -111,20 +108,14 @@ def render_services(ctx: RenderContext) -> str:
     services = ctx.list("services")
     if not component or not services:
         return ""
-    items = "".join(
-        f'<li class="service-item"><span class="service-index">{index:02d}</span><h3>{html.escape(str(value), quote=True)}</h3></li>'
-        for index, value in enumerate(services, 1)
-    )
-    copy = '<div class="section-heading"><p class="eyebrow">Savoir-faire</p><h2>Prestations</h2></div>'
-    body = layout_regions(component, copy, "", f'<ol class="service-list">{items}</ol>')
-    return f'<section id="services" class="section services" {component_attributes(component)}>{body}</section>'
+    return render_services_family(ctx, component, services)
 
 
 def render_gallery(ctx: RenderContext) -> str:
     component = _component(ctx.dna.gallery_component)
     if not component:
         return ""
-    values = ctx.media_for(component, limit=12)
+    values = ctx.media_for_section("gallery", component, limit=12)
     if not values:
         return ""
     project_media = all(item.source_class == "artisan" and item.role in {"artisan_project", "before_after"} for item in values)
@@ -150,9 +141,25 @@ def render_about(ctx: RenderContext) -> str:
         facts.append(f'<li><span>Assurance déclarée</span><strong>{ctx.text("assurance_decennale_nom")}</strong></li>')
     if not narrative and not facts:
         return ""
+
+    if narrative and ctx.is_duplicate_copy(narrative):
+        # The only "narrative" available is a verbatim repeat of copy the
+        # hero already showed (rule Z/AA): a second identical paragraph adds
+        # nothing, so this reduces to a compact identity strip -- real facts
+        # only, no invented replacement copy -- rather than a large, mostly
+        # empty section repeating the same sentence.
+        if not facts:
+            return ""
+        copy = (
+            f'<div class="section-heading section-heading--micro"><p class="eyebrow">L’entreprise</p>'
+            f'<h2>{ctx.business_name}</h2></div><ul class="fact-list fact-list--micro">{"".join(facts)}</ul>'
+        )
+        return f'<section id="about" class="section about about--micro" {component_attributes(component)}>{copy}</section>'
+
     text = f'<p>{html.escape(narrative, quote=True)}</p>' if narrative else ""
     copy = f'<div class="section-heading"><p class="eyebrow">L’entreprise</p><h2>{ctx.business_name}</h2></div>{text}<ul class="fact-list">{"".join(facts)}</ul>'
-    values = ctx.media_for(component, limit=2)
+    media_relationship = component.blueprint_spec.media_spec.get("relationship")
+    values = () if media_relationship == "none" else ctx.media_for_section("about", component, limit=2)
     visuals = "".join(image(item, "Ambiance de travail", class_name="about-image") for item in values)
     return f'<section id="about" class="section about" {component_attributes(component)}>{layout_regions(component, copy, visuals)}</section>'
 
@@ -189,16 +196,22 @@ def render_trust(ctx: RenderContext) -> str:
     items = _trust_items(ctx, component)
     if not items:
         return ""
-    copy = '<div class="section-heading"><p class="eyebrow">Éléments vérifiés</p><h2>Repères utiles</h2></div>'
-    body = layout_regions(component, copy, "", f'<ul class="trust-list">{"".join(items)}</ul>')
-    return f'<section id="trust" class="section trust" {component_attributes(component)}>{body}</section>'
+    if component.profile == "process":
+        # A process narrative ("Échange sur le besoin", "Préparation"...) is
+        # a workflow, not evidence -- rule AB explicitly forbids labeling it
+        # "verified" the way an insurance or certification fact genuinely is.
+        heading = '<div class="section-heading"><p class="eyebrow">Notre méthode</p><h2>Déroulé du projet</h2></div>'
+    else:
+        heading = '<div class="section-heading"><p class="eyebrow">Éléments vérifiés</p><h2>Repères utiles</h2></div>'
+    body = layout_regions(component, heading, "", f'<ul class="trust-list">{"".join(items)}</ul>')
+    return f'<section id="trust" class="section trust" {component_attributes(component)} data-trust-profile="{html.escape(component.profile, quote=True)}">{body}</section>'
 
 
 def render_cta(ctx: RenderContext) -> str:
     component = _component(ctx.dna.cta_component)
     if not component:
         return ""
-    actions = _actions(ctx)
+    actions = actions_html(ctx)
     if not actions:
         return ""
     copy = f'<p class="eyebrow">Votre projet</p><h2>Échangeons sur votre besoin.</h2>{actions}'
@@ -222,7 +235,24 @@ def _form(ctx: RenderContext) -> str:
 def render_contact(ctx: RenderContext) -> str:
     component = _component(ctx.dna.contact_component) or _component(ctx.dna.form_component)
     if not component:
-        return ""
+        # No contact/form component was assigned -- typically because the
+        # Design Genome never saw a verified phone or email to build a
+        # contact blueprint around. That is not the same as the real quote
+        # contract being unavailable: when a slug exists, the existing
+        # /pub/{slug}/demande-devis endpoint (rule AE) is real and working,
+        # and a page left with no conversion path anywhere is a worse,
+        # silent failure than one honest, minimal quote-only section.
+        if not ctx.plain("slug"):
+            return ""
+        form = _form(ctx)
+        if not form:
+            return ""
+        copy = '<div class="section-heading"><p class="eyebrow">Contact</p><h2>Commençons par en parler.</h2></div>'
+        return (
+            '<section id="contact" class="section contact contact--form-only" '
+            'data-component="generic_quote_form" data-family="contact.generic" data-fallback="no-contact-component-assigned">'
+            f'<div class="g-layout g-layout--stack g-layout--no-media"><div class="g-copy">{copy}{form}</div></div></section>'
+        )
     channels = []
     if ctx.phone_href:
         channels.append(f'<a href="tel:{ctx.phone_href}"><span>Téléphone</span><strong>{ctx.text("telephone")}</strong></a>')

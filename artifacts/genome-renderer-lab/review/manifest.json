@@ -1,8 +1,11 @@
 {
   "aesthetic_status": "NOT_REVIEWED",
   "figma_upload": false,
-  "desktop_screenshots": "CAPTURED",
-  "mobile_screenshots": "CAPTURED",
+  "renderer": "design-genome-renderer-0.2",
+  "v0_1_desktop_screenshots": "PRESERVED",
+  "v0_1_mobile_screenshots": "PRESERVED",
+  "v0_2_desktop_screenshots": "CAPTURED",
+  "v0_2_mobile_screenshots": "CAPTURED",
   "sites": [
     {
       "fixture_id": "site-01",

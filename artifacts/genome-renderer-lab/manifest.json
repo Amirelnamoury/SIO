@@ -1,7 +1,8 @@
 {
-  "renderer": "design-genome-renderer-0.1",
+  "renderer": "design-genome-renderer-0.2",
   "fixture_policy": "synthetic fixtures restricted to the visual lab",
   "aesthetic_status": "NOT_REVIEWED",
+  "baseline": "v0.1 preserved under sites-v0.1/ and review/v0.1/ -- never overwritten by this script",
   "fixtures": [
     {
       "fixture_id": "site-01",
@@ -25,6 +26,8 @@
       "contact": null,
       "footer": "service_links_footer",
       "form": null,
+      "initial_hero_component": "offset_residential_photo",
+      "resolved_hero_component": "offset_residential_photo",
       "palette": "steel_cyan_light",
       "typography": "industrial_condensed",
       "grid": "edge_to_edge",
@@ -41,6 +44,51 @@
         },
         "synthetic_fixture": true,
         "claim_policy": "stock media is rendered only as ambiance or material"
+      },
+      "visual_completeness": {
+        "fixture_id": "site-01",
+        "hero_readiness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "media_readiness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "content_density": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "commercial_completeness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "narrative_completeness": {
+          "score": 1.0,
+          "reasons": [
+            "no about section in this silhouette"
+          ]
+        },
+        "section_balance": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "empty_slot_risk": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "art_direction_fidelity": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "visual_rhythm": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "mobile_readiness": {
+          "score": 1.0,
+          "reasons": []
+        }
       },
       "aesthetic_status": "NOT_REVIEWED"
     },
@@ -66,6 +114,8 @@
       "contact": null,
       "footer": "ultra_minimal_footer",
       "form": null,
+      "initial_hero_component": "split_service_photo",
+      "resolved_hero_component": "split_service_photo",
       "palette": "technical_navy_light",
       "typography": "technical_mono_grotesk",
       "grid": "split_50_50",
@@ -82,6 +132,51 @@
         },
         "synthetic_fixture": true,
         "claim_policy": "stock media is rendered only as ambiance or material"
+      },
+      "visual_completeness": {
+        "fixture_id": "site-02",
+        "hero_readiness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "media_readiness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "content_density": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "commercial_completeness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "narrative_completeness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "section_balance": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "empty_slot_risk": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "art_direction_fidelity": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "visual_rhythm": {
+          "score": 0.85,
+          "reasons": [
+            "1 rendered section(s) reuse an already-used layout pattern"
+          ]
+        },
+        "mobile_readiness": {
+          "score": 1.0,
+          "reasons": []
+        }
       },
       "aesthetic_status": "NOT_REVIEWED"
     },
@@ -107,6 +202,8 @@
       "contact": null,
       "footer": "visual_image_footer",
       "form": null,
+      "initial_hero_component": "diagrammatic_process_map",
+      "resolved_hero_component": "diagrammatic_process_map",
       "palette": "electrical_blue_light",
       "typography": "swiss_information",
       "grid": "layered_depth",
@@ -123,6 +220,49 @@
         },
         "synthetic_fixture": true,
         "claim_policy": "stock media is rendered only as ambiance or material"
+      },
+      "visual_completeness": {
+        "fixture_id": "site-03",
+        "hero_readiness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "media_readiness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "content_density": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "commercial_completeness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "narrative_completeness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "section_balance": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "empty_slot_risk": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "art_direction_fidelity": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "visual_rhythm": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "mobile_readiness": {
+          "score": 1.0,
+          "reasons": []
+        }
       },
       "aesthetic_status": "NOT_REVIEWED"
     },
@@ -148,6 +288,8 @@
       "contact": null,
       "footer": "visual_image_footer",
       "form": null,
+      "initial_hero_component": "parallax_layered_material",
+      "resolved_hero_component": "parallax_layered_material",
       "palette": "wood_walnut_light",
       "typography": "humanist_workshop",
       "grid": "split_35_65",
@@ -164,6 +306,51 @@
         },
         "synthetic_fixture": true,
         "claim_policy": "stock media is rendered only as ambiance or material"
+      },
+      "visual_completeness": {
+        "fixture_id": "site-04",
+        "hero_readiness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "media_readiness": {
+          "score": 0.67,
+          "reasons": [
+            "gallery: no compatible media in the allocation pool"
+          ]
+        },
+        "content_density": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "commercial_completeness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "narrative_completeness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "section_balance": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "empty_slot_risk": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "art_direction_fidelity": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "visual_rhythm": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "mobile_readiness": {
+          "score": 1.0,
+          "reasons": []
+        }
       },
       "aesthetic_status": "NOT_REVIEWED"
     },
@@ -189,6 +376,8 @@
       "contact": null,
       "footer": "workshop_signature_footer",
       "form": null,
+      "initial_hero_component": "material_macro_title",
+      "resolved_hero_component": "material_macro_title",
       "palette": "wood_walnut_light",
       "typography": "warm_grotesk",
       "grid": "portfolio_matrix",
@@ -205,6 +394,53 @@
         },
         "synthetic_fixture": true,
         "claim_policy": "stock media is rendered only as ambiance or material"
+      },
+      "visual_completeness": {
+        "fixture_id": "site-05",
+        "hero_readiness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "media_readiness": {
+          "score": 0.67,
+          "reasons": [
+            "gallery: no compatible media in the allocation pool"
+          ]
+        },
+        "content_density": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "commercial_completeness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "narrative_completeness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "section_balance": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "empty_slot_risk": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "art_direction_fidelity": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "visual_rhythm": {
+          "score": 0.85,
+          "reasons": [
+            "1 rendered section(s) reuse an already-used layout pattern"
+          ]
+        },
+        "mobile_readiness": {
+          "score": 1.0,
+          "reasons": []
+        }
       },
       "aesthetic_status": "NOT_REVIEWED"
     },
@@ -230,6 +466,8 @@
       "contact": null,
       "footer": "legal_compact_footer",
       "form": null,
+      "initial_hero_component": "framed_blueprint_specification",
+      "resolved_hero_component": "framed_blueprint_specification",
       "palette": "technical_navy_light",
       "typography": "industrial_condensed",
       "grid": "wide_cinematic",
@@ -246,6 +484,51 @@
         },
         "synthetic_fixture": true,
         "claim_policy": "stock media is rendered only as ambiance or material"
+      },
+      "visual_completeness": {
+        "fixture_id": "site-06",
+        "hero_readiness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "media_readiness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "content_density": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "commercial_completeness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "narrative_completeness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "section_balance": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "empty_slot_risk": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "art_direction_fidelity": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "visual_rhythm": {
+          "score": 0.85,
+          "reasons": [
+            "1 rendered section(s) reuse an already-used layout pattern"
+          ]
+        },
+        "mobile_readiness": {
+          "score": 1.0,
+          "reasons": []
+        }
       },
       "aesthetic_status": "NOT_REVIEWED"
     },
@@ -271,6 +554,8 @@
       "contact": null,
       "footer": "dark_overlay_footer",
       "form": null,
+      "initial_hero_component": "technical_nodes_network",
+      "resolved_hero_component": "technical_nodes_network",
       "palette": "technical_navy_light",
       "typography": "swiss_information",
       "grid": "split_35_65",
@@ -287,6 +572,51 @@
         },
         "synthetic_fixture": true,
         "claim_policy": "stock media is rendered only as ambiance or material"
+      },
+      "visual_completeness": {
+        "fixture_id": "site-07",
+        "hero_readiness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "media_readiness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "content_density": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "commercial_completeness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "narrative_completeness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "section_balance": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "empty_slot_risk": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "art_direction_fidelity": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "visual_rhythm": {
+          "score": 0.85,
+          "reasons": [
+            "1 rendered section(s) reuse an already-used layout pattern"
+          ]
+        },
+        "mobile_readiness": {
+          "score": 1.0,
+          "reasons": []
+        }
       },
       "aesthetic_status": "NOT_REVIEWED"
     },
@@ -312,6 +642,8 @@
       "contact": null,
       "footer": "editorial_directory_footer",
       "form": null,
+      "initial_hero_component": "photo_right_residential_intro",
+      "resolved_hero_component": "photo_right_residential_intro",
       "palette": "construction_orange_light",
       "typography": "local_contemporary",
       "grid": "asymmetric_5_7",
@@ -328,6 +660,53 @@
         },
         "synthetic_fixture": true,
         "claim_policy": "stock media is rendered only as ambiance or material"
+      },
+      "visual_completeness": {
+        "fixture_id": "site-08",
+        "hero_readiness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "media_readiness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "content_density": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "commercial_completeness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "narrative_completeness": {
+          "score": 1.0,
+          "reasons": [
+            "no about section in this silhouette"
+          ]
+        },
+        "section_balance": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "empty_slot_risk": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "art_direction_fidelity": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "visual_rhythm": {
+          "score": 0.85,
+          "reasons": [
+            "1 rendered section(s) reuse an already-used layout pattern"
+          ]
+        },
+        "mobile_readiness": {
+          "score": 1.0,
+          "reasons": []
+        }
       },
       "aesthetic_status": "NOT_REVIEWED"
     },
@@ -353,6 +732,8 @@
       "contact": null,
       "footer": "workshop_signature_footer",
       "form": null,
+      "initial_hero_component": "editorial_columns_manifesto",
+      "resolved_hero_component": "editorial_columns_manifesto",
       "palette": "construction_orange_dark",
       "typography": "local_contemporary",
       "grid": "edge_to_edge",
@@ -369,6 +750,51 @@
         },
         "synthetic_fixture": true,
         "claim_policy": "stock media is rendered only as ambiance or material"
+      },
+      "visual_completeness": {
+        "fixture_id": "site-09",
+        "hero_readiness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "media_readiness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "content_density": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "commercial_completeness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "narrative_completeness": {
+          "score": 1.0,
+          "reasons": [
+            "no about section in this silhouette"
+          ]
+        },
+        "section_balance": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "empty_slot_risk": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "art_direction_fidelity": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "visual_rhythm": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "mobile_readiness": {
+          "score": 1.0,
+          "reasons": []
+        }
       },
       "aesthetic_status": "NOT_REVIEWED"
     },
@@ -394,6 +820,8 @@
       "contact": null,
       "footer": "visual_image_footer",
       "form": null,
+      "initial_hero_component": "material_macro_title",
+      "resolved_hero_component": "material_macro_title",
       "palette": "wood_walnut_dark",
       "typography": "humanist_workshop",
       "grid": "offset_sequence",
@@ -410,6 +838,53 @@
         },
         "synthetic_fixture": true,
         "claim_policy": "stock media is rendered only as ambiance or material"
+      },
+      "visual_completeness": {
+        "fixture_id": "site-10",
+        "hero_readiness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "media_readiness": {
+          "score": 0.67,
+          "reasons": [
+            "gallery: no compatible media in the allocation pool"
+          ]
+        },
+        "content_density": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "commercial_completeness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "narrative_completeness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "section_balance": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "empty_slot_risk": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "art_direction_fidelity": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "visual_rhythm": {
+          "score": 0.85,
+          "reasons": [
+            "1 rendered section(s) reuse an already-used layout pattern"
+          ]
+        },
+        "mobile_readiness": {
+          "score": 1.0,
+          "reasons": []
+        }
       },
       "aesthetic_status": "NOT_REVIEWED"
     },
@@ -435,6 +910,8 @@
       "contact": null,
       "footer": "ultra_minimal_footer",
       "form": null,
+      "initial_hero_component": "quiet_luxury_window",
+      "resolved_hero_component": "quiet_luxury_window",
       "palette": "luxury_ivory_light",
       "typography": "quiet_luxury_serif",
       "grid": "offset_sequence",
@@ -451,6 +928,49 @@
         },
         "synthetic_fixture": true,
         "claim_policy": "stock media is rendered only as ambiance or material"
+      },
+      "visual_completeness": {
+        "fixture_id": "site-11",
+        "hero_readiness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "media_readiness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "content_density": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "commercial_completeness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "narrative_completeness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "section_balance": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "empty_slot_risk": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "art_direction_fidelity": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "visual_rhythm": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "mobile_readiness": {
+          "score": 1.0,
+          "reasons": []
+        }
       },
       "aesthetic_status": "NOT_REVIEWED"
     },
@@ -476,6 +996,8 @@
       "contact": null,
       "footer": "centered_mark_footer",
       "form": null,
+      "initial_hero_component": "split_service_photo",
+      "resolved_hero_component": "split_service_photo",
       "palette": "luxury_ivory_dark",
       "typography": "high_contrast_editorial",
       "grid": "masonry_adaptive",
@@ -492,6 +1014,51 @@
         },
         "synthetic_fixture": true,
         "claim_policy": "stock media is rendered only as ambiance or material"
+      },
+      "visual_completeness": {
+        "fixture_id": "site-12",
+        "hero_readiness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "media_readiness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "content_density": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "commercial_completeness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "narrative_completeness": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "section_balance": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "empty_slot_risk": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "art_direction_fidelity": {
+          "score": 1.0,
+          "reasons": []
+        },
+        "visual_rhythm": {
+          "score": 0.85,
+          "reasons": [
+            "1 rendered section(s) reuse an already-used layout pattern"
+          ]
+        },
+        "mobile_readiness": {
+          "score": 1.0,
+          "reasons": []
+        }
       },
       "aesthetic_status": "NOT_REVIEWED"
     }

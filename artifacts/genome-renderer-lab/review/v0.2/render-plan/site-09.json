@@ -1,0 +1,78 @@
+{
+  "fixture_id": "site-09",
+  "site_archetype": "bold_local",
+  "art_direction": "architectural_brutalist",
+  "page_silhouette": "bold_local",
+  "initial_hero_component": "editorial_columns_manifesto",
+  "resolved_hero_component": "editorial_columns_manifesto",
+  "decisions": [],
+  "sections": [
+    {
+      "section": "hero",
+      "component_id": "editorial_columns_manifesto",
+      "family": "hero.typographic",
+      "variant_id": "editorial-columns-manifesto",
+      "resolved_content": {
+        "has_tagline": true,
+        "has_location": true
+      },
+      "resolved_media": [],
+      "media_role": "hero",
+      "media_provenance": "none",
+      "fallback_used": false,
+      "fallback_reason": "typographic heroes are an intentional no-image composition",
+      "renderability": "full",
+      "visual_weight": 4,
+      "layout_pattern": "typographic"
+    },
+    {
+      "section": "services",
+      "component_id": "large_typographic_service_index",
+      "family": "services.index",
+      "variant_id": "large-typographic-service-index",
+      "resolved_content": {
+        "has_services": true
+      },
+      "resolved_media": [],
+      "media_role": "services",
+      "media_provenance": "none",
+      "fallback_used": false,
+      "fallback_reason": "",
+      "renderability": "full",
+      "visual_weight": 3,
+      "layout_pattern": "rows"
+    },
+    {
+      "section": "trust",
+      "component_id": "verified_service_area_map",
+      "family": "trust.area",
+      "variant_id": "verified-service-area-map",
+      "resolved_content": {},
+      "resolved_media": [],
+      "media_role": "trust",
+      "media_provenance": "none",
+      "fallback_used": false,
+      "fallback_reason": "",
+      "renderability": "full",
+      "visual_weight": 2,
+      "layout_pattern": "split"
+    },
+    {
+      "section": "contact",
+      "component_id": "generic_quote_form",
+      "family": "contact.generic",
+      "variant_id": "form-only-fallback",
+      "resolved_content": {
+        "form_only": true
+      },
+      "resolved_media": [],
+      "media_role": "contact",
+      "media_provenance": "none",
+      "fallback_used": true,
+      "fallback_reason": "no contact/form component assigned; real quote-form fallback used",
+      "renderability": "full",
+      "visual_weight": 2,
+      "layout_pattern": "stack"
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "fixture_id": "site-05",
+  "site_archetype": "warm_artisan",
+  "art_direction": "warm_craft",
+  "page_silhouette": "warm_artisan",
+  "initial_hero_component": "material_macro_title",
+  "resolved_hero_component": "material_macro_title",
+  "decisions": [],
+  "sections": [
+    {
+      "section": "hero",
+      "component_id": "material_macro_title",
+      "family": "hero.material",
+      "variant_id": "material-macro-title",
+      "resolved_content": {
+        "has_tagline": true,
+        "has_location": true
+      },
+      "resolved_media": [
+        "pexels-19916724",
+        "pexels-19916732"
+      ],
+      "media_role": "hero",
+      "media_provenance": "stock",
+      "fallback_used": false,
+      "fallback_reason": "compatible media resolved from available inventory",
+      "renderability": "full",
+      "visual_weight": 4,
+      "layout_pattern": "split"
+    },
+    {
+      "section": "about",
+      "component_id": "craft_values_index",
+      "family": "about.material",
+      "variant_id": "craft-values-index",
+      "resolved_content": {},
+      "resolved_media": [],
+      "media_role": "about",
+      "media_provenance": "none",
+      "fallback_used": false,
+      "fallback_reason": "",
+      "renderability": "full",
+      "visual_weight": 3,
+      "layout_pattern": "split"
+    },
+    {
+      "section": "services",
+      "component_id": "workshop_service_samples",
+      "family": "services.material",
+      "variant_id": "workshop-service-samples",
+      "resolved_content": {
+        "has_services": true
+      },
+      "resolved_media": [],
+      "media_role": "services",
+      "media_provenance": "none",
+      "fallback_used": false,
+      "fallback_reason": "",
+      "renderability": "full",
+      "visual_weight": 4,
+      "layout_pattern": "grid"
+    },
+    {
+      "section": "gallery",
+      "component_id": "stock_ambient_collage",
+      "family": "gallery.ambient",
+      "variant_id": "stock-ambient-collage",
+      "resolved_content": {},
+      "resolved_media": [],
+      "media_role": "gallery",
+      "media_provenance": "none",
+      "fallback_used": false,
+      "fallback_reason": "",
+      "renderability": "omitted",
+      "visual_weight": 4,
+      "layout_pattern": "asymmetric"
+    },
+    {
+      "section": "contact",
+      "component_id": "generic_quote_form",
+      "family": "contact.generic",
+      "variant_id": "form-only-fallback",
+      "resolved_content": {
+        "form_only": true
+      },
+      "resolved_media": [],
+      "media_role": "contact",
+      "media_provenance": "none",
+      "fallback_used": true,
+      "fallback_reason": "no contact/form component assigned; real quote-form fallback used",
+      "renderability": "full",
+      "visual_weight": 2,
+      "layout_pattern": "stack"
+    }
+  ]
+}

@@ -1,0 +1,97 @@
+{
+  "fixture_id": "site-11",
+  "site_archetype": "premium_residential",
+  "art_direction": "cinematic_luxury",
+  "page_silhouette": "premium_residential",
+  "initial_hero_component": "quiet_luxury_window",
+  "resolved_hero_component": "quiet_luxury_window",
+  "decisions": [],
+  "sections": [
+    {
+      "section": "hero",
+      "component_id": "quiet_luxury_window",
+      "family": "hero.cinematic",
+      "variant_id": "quiet-luxury-window",
+      "resolved_content": {
+        "has_tagline": true,
+        "has_location": true
+      },
+      "resolved_media": [
+        "pexels-36077593"
+      ],
+      "media_role": "hero",
+      "media_provenance": "stock",
+      "fallback_used": false,
+      "fallback_reason": "compatible media resolved from available inventory",
+      "renderability": "full",
+      "visual_weight": 5,
+      "layout_pattern": "overlay"
+    },
+    {
+      "section": "about",
+      "component_id": "technical_expertise_about",
+      "family": "about.technical",
+      "variant_id": "technical-expertise-about",
+      "resolved_content": {},
+      "resolved_media": [],
+      "media_role": "about",
+      "media_provenance": "none",
+      "fallback_used": false,
+      "fallback_reason": "",
+      "renderability": "full",
+      "visual_weight": 3,
+      "layout_pattern": "matrix"
+    },
+    {
+      "section": "services",
+      "component_id": "minimal_service_links",
+      "family": "services.minimal",
+      "variant_id": "minimal-service-links",
+      "resolved_content": {
+        "has_services": true
+      },
+      "resolved_media": [],
+      "media_role": "services",
+      "media_provenance": "none",
+      "fallback_used": false,
+      "fallback_reason": "",
+      "renderability": "full",
+      "visual_weight": 2,
+      "layout_pattern": "rows"
+    },
+    {
+      "section": "gallery",
+      "component_id": "portrait_landscape_dialogue",
+      "family": "gallery.ambient",
+      "variant_id": "portrait-landscape-dialogue",
+      "resolved_content": {},
+      "resolved_media": [
+        "pexels-36077602"
+      ],
+      "media_role": "gallery",
+      "media_provenance": "stock",
+      "fallback_used": false,
+      "fallback_reason": "",
+      "renderability": "full",
+      "visual_weight": 4,
+      "layout_pattern": "asymmetric"
+    },
+    {
+      "section": "contact",
+      "component_id": "generic_quote_form",
+      "family": "contact.generic",
+      "variant_id": "form-only-fallback",
+      "resolved_content": {
+        "form_only": true
+      },
+      "resolved_media": [],
+      "media_role": "contact",
+      "media_provenance": "none",
+      "fallback_used": true,
+      "fallback_reason": "no contact/form component assigned; real quote-form fallback used",
+      "renderability": "full",
+      "visual_weight": 2,
+      "layout_pattern": "stack"
+    }
+  ]
+}

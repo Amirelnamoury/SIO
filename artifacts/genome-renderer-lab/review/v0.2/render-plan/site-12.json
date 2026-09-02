@@ -1,0 +1,97 @@
+{
+  "fixture_id": "site-12",
+  "site_archetype": "premium_residential",
+  "art_direction": "editorial_luxury",
+  "page_silhouette": "premium_residential",
+  "initial_hero_component": "split_service_photo",
+  "resolved_hero_component": "split_service_photo",
+  "decisions": [],
+  "sections": [
+    {
+      "section": "hero",
+      "component_id": "split_service_photo",
+      "family": "hero.split_photo",
+      "variant_id": "split-service-photo",
+      "resolved_content": {
+        "has_tagline": true,
+        "has_location": true
+      },
+      "resolved_media": [
+        "pexels-36121721"
+      ],
+      "media_role": "hero",
+      "media_provenance": "stock",
+      "fallback_used": false,
+      "fallback_reason": "compatible media resolved from available inventory",
+      "renderability": "full",
+      "visual_weight": 4,
+      "layout_pattern": "split"
+    },
+    {
+      "section": "about",
+      "component_id": "studio_statement_about",
+      "family": "about.identity",
+      "variant_id": "studio-statement-about",
+      "resolved_content": {},
+      "resolved_media": [],
+      "media_role": "about",
+      "media_provenance": "none",
+      "fallback_used": false,
+      "fallback_reason": "",
+      "renderability": "full",
+      "visual_weight": 2,
+      "layout_pattern": "split"
+    },
+    {
+      "section": "services",
+      "component_id": "editorial_service_folio",
+      "family": "services.rows",
+      "variant_id": "editorial-service-folio",
+      "resolved_content": {
+        "has_services": true
+      },
+      "resolved_media": [],
+      "media_role": "services",
+      "media_provenance": "none",
+      "fallback_used": false,
+      "fallback_reason": "",
+      "renderability": "full",
+      "visual_weight": 3,
+      "layout_pattern": "rows"
+    },
+    {
+      "section": "gallery",
+      "component_id": "asymmetric_gallery_mosaic",
+      "family": "gallery.masonry",
+      "variant_id": "asymmetric-gallery-mosaic",
+      "resolved_content": {},
+      "resolved_media": [
+        "pexels-36585045"
+      ],
+      "media_role": "gallery",
+      "media_provenance": "stock",
+      "fallback_used": false,
+      "fallback_reason": "",
+      "renderability": "full",
+      "visual_weight": 4,
+      "layout_pattern": "masonry"
+    },
+    {
+      "section": "contact",
+      "component_id": "generic_quote_form",
+      "family": "contact.generic",
+      "variant_id": "form-only-fallback",
+      "resolved_content": {
+        "form_only": true
+      },
+      "resolved_media": [],
+      "media_role": "contact",
+      "media_provenance": "none",
+      "fallback_used": true,
+      "fallback_reason": "no contact/form component assigned; real quote-form fallback used",
+      "renderability": "full",
+      "visual_weight": 2,
+      "layout_pattern": "stack"
+    }
+  ]
+}

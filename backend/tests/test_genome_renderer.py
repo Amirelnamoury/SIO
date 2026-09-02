@@ -280,7 +280,9 @@ def test_visual_lab_builds_twelve_portable_not_reviewed_sites(tmp_path: Path):
     assert all((tmp_path / "sites" / item["fixture_id"] / "index.html").is_file() for item in manifest)
     assert (tmp_path / "review" / "manifest.json").is_file()
     assert (tmp_path / "vercel.json").is_file()
-    assert (tmp_path / "VERCEL_PREVIEW_NOT_DEPLOYED_BY_CODEX").is_file()
+    # V0.2 marker carries the correct tool attribution (Claude Code, not the
+    # V0.1 session's Codex); see lab/build.py.
+    assert (tmp_path / "VERCEL_PREVIEW_NOT_DEPLOYED_BY_CLAUDE_CODE").is_file()
 
 
 def test_v3_entry_point_remains_default_and_genome_is_explicit(monkeypatch):
@@ -288,5 +290,5 @@ def test_v3_entry_point_remains_default_and_genome_is_explicit(monkeypatch):
     monkeypatch.setattr("generator.site_generator.render_site_v3", lambda value, api: "<p>V3 runtime</p>")
     assert generate_site({"design_profile": {}}, "") == "<p>V3 runtime</p>"
     experimental = generate_site_genome_experimental(payload(), "http://localhost:8000")
-    assert 'data-renderer="design-genome-renderer-0.1"' in experimental
+    assert 'data-renderer="design-genome-renderer-0.2"' in experimental
     assert "V3 runtime" not in experimental

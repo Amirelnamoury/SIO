@@ -1,0 +1,499 @@
+{
+  "renderer": "design-genome-renderer-0.1",
+  "fixture_policy": "synthetic fixtures restricted to the visual lab",
+  "aesthetic_status": "NOT_REVIEWED",
+  "fixtures": [
+    {
+      "fixture_id": "site-01",
+      "name": "Plomberie Rive Gauche",
+      "trade": "plombier",
+      "business_intent": "local_conversion",
+      "seed": "genome-lab-0.1:site-01:local_conversion",
+      "synthetic_fixture": true,
+      "design_signature": "a26aff1f7587fa7fed805e19",
+      "composition_signature": "3e9dc110b07621cb301693c3",
+      "site_archetype": "bold_local",
+      "art_direction": "conversion_premium",
+      "page_silhouette": "bold_local",
+      "header": "residential_project_header",
+      "hero": "offset_residential_photo",
+      "services": "conversion_service_selector",
+      "gallery": null,
+      "about": null,
+      "trust": "documented_process_proof",
+      "cta": null,
+      "contact": null,
+      "footer": "service_links_footer",
+      "form": null,
+      "palette": "steel_cyan_light",
+      "typography": "industrial_condensed",
+      "grid": "edge_to_edge",
+      "spacing": "balanced_operational",
+      "geometry": "soft_residential",
+      "media_provenance": {
+        "count": 2,
+        "sources": {
+          "pexels": 2
+        },
+        "roles": {
+          "hero": 1,
+          "gallery": 1
+        },
+        "synthetic_fixture": true,
+        "claim_policy": "stock media is rendered only as ambiance or material"
+      },
+      "aesthetic_status": "NOT_REVIEWED"
+    },
+    {
+      "fixture_id": "site-02",
+      "name": "Maison Eau",
+      "trade": "plombier",
+      "business_intent": "premium_residential_bathroom",
+      "seed": "genome-lab-0.1:site-02:premium_residential_bathroom",
+      "synthetic_fixture": true,
+      "design_signature": "4a5f01df3c5282b63c34c5cc",
+      "composition_signature": "37bbb6a9a1262b5e2d107585",
+      "site_archetype": "conversion_first_local",
+      "art_direction": "conversion_premium",
+      "page_silhouette": "quote_first_service",
+      "header": "two_row_local",
+      "hero": "split_service_photo",
+      "services": "conversion_service_selector",
+      "gallery": null,
+      "about": "technical_expertise_about",
+      "trust": "verified_service_area_map",
+      "cta": null,
+      "contact": null,
+      "footer": "ultra_minimal_footer",
+      "form": null,
+      "palette": "technical_navy_light",
+      "typography": "technical_mono_grotesk",
+      "grid": "split_50_50",
+      "spacing": "balanced_operational",
+      "geometry": "soft_residential",
+      "media_provenance": {
+        "count": 2,
+        "sources": {
+          "pexels": 2
+        },
+        "roles": {
+          "hero": 1,
+          "gallery": 1
+        },
+        "synthetic_fixture": true,
+        "claim_policy": "stock media is rendered only as ambiance or material"
+      },
+      "aesthetic_status": "NOT_REVIEWED"
+    },
+    {
+      "fixture_id": "site-03",
+      "name": "Flux Technique",
+      "trade": "plombier",
+      "business_intent": "technical_expertise",
+      "seed": "genome-lab-0.1:site-03:technical_expertise",
+      "synthetic_fixture": true,
+      "design_signature": "800a34cb4ea308f44b52aafe",
+      "composition_signature": "00c5281565e93f7e2b9bd135",
+      "site_archetype": "technical_expert",
+      "art_direction": "minimal_architecture",
+      "page_silhouette": "technical_capabilities",
+      "header": "blueprint_utility_header",
+      "hero": "diagrammatic_process_map",
+      "services": "local_service_directory",
+      "gallery": null,
+      "about": "brutalist_factless_about",
+      "trust": "documented_process_proof",
+      "cta": null,
+      "contact": null,
+      "footer": "visual_image_footer",
+      "form": null,
+      "palette": "electrical_blue_light",
+      "typography": "swiss_information",
+      "grid": "layered_depth",
+      "spacing": "compact_technical",
+      "geometry": "square_precise",
+      "media_provenance": {
+        "count": 2,
+        "sources": {
+          "pexels": 2
+        },
+        "roles": {
+          "hero": 1,
+          "gallery": 1
+        },
+        "synthetic_fixture": true,
+        "claim_policy": "stock media is rendered only as ambiance or material"
+      },
+      "aesthetic_status": "NOT_REVIEWED"
+    },
+    {
+      "fixture_id": "site-04",
+      "name": "Nuance Habitat",
+      "trade": "peintre",
+      "business_intent": "editorial_residential",
+      "seed": "genome-lab-0.1:site-04:editorial_residential",
+      "synthetic_fixture": true,
+      "design_signature": "aaecb9f4955478ed0c501a8c",
+      "composition_signature": "ad89278c56be7455da1bbf9b",
+      "site_archetype": "warm_artisan",
+      "art_direction": "warm_craft",
+      "page_silhouette": "warm_artisan",
+      "header": "split_navigation",
+      "hero": "parallax_layered_material",
+      "services": "icon_service_grid",
+      "gallery": "stock_ambient_collage",
+      "about": "service_area_story",
+      "trust": null,
+      "cta": null,
+      "contact": null,
+      "footer": "visual_image_footer",
+      "form": null,
+      "palette": "wood_walnut_light",
+      "typography": "humanist_workshop",
+      "grid": "split_35_65",
+      "spacing": "material_breathing",
+      "geometry": "soft_residential",
+      "media_provenance": {
+        "count": 2,
+        "sources": {
+          "pexels": 2
+        },
+        "roles": {
+          "hero": 1,
+          "gallery": 1
+        },
+        "synthetic_fixture": true,
+        "claim_policy": "stock media is rendered only as ambiance or material"
+      },
+      "aesthetic_status": "NOT_REVIEWED"
+    },
+    {
+      "fixture_id": "site-05",
+      "name": "Atelier des Teintes",
+      "trade": "peintre",
+      "business_intent": "warm_craft",
+      "seed": "genome-lab-0.1:site-05:warm_craft",
+      "synthetic_fixture": true,
+      "design_signature": "1fc4a336b3a54e3c7cde9de2",
+      "composition_signature": "8f5e8e525db43dca84fc48d1",
+      "site_archetype": "warm_artisan",
+      "art_direction": "warm_craft",
+      "page_silhouette": "warm_artisan",
+      "header": "compact_sticky_nav",
+      "hero": "material_macro_title",
+      "services": "workshop_service_samples",
+      "gallery": "stock_ambient_collage",
+      "about": "craft_values_index",
+      "trust": null,
+      "cta": null,
+      "contact": null,
+      "footer": "workshop_signature_footer",
+      "form": null,
+      "palette": "wood_walnut_light",
+      "typography": "warm_grotesk",
+      "grid": "portfolio_matrix",
+      "spacing": "material_breathing",
+      "geometry": "soft_residential",
+      "media_provenance": {
+        "count": 2,
+        "sources": {
+          "pexels": 2
+        },
+        "roles": {
+          "hero": 1,
+          "gallery": 1
+        },
+        "synthetic_fixture": true,
+        "claim_policy": "stock media is rendered only as ambiance or material"
+      },
+      "aesthetic_status": "NOT_REVIEWED"
+    },
+    {
+      "fixture_id": "site-06",
+      "name": "Trame Maçonnerie",
+      "trade": "macon",
+      "business_intent": "architectural_contracting",
+      "seed": "genome-lab-0.1:site-06:architectural_contracting",
+      "synthetic_fixture": true,
+      "design_signature": "52bc1a817940290af28f33f0",
+      "composition_signature": "c01681bde3a56744586d77f9",
+      "site_archetype": "technical_expert",
+      "art_direction": "minimal_architecture",
+      "page_silhouette": "technical_capabilities",
+      "header": "workshop_mark_header",
+      "hero": "framed_blueprint_specification",
+      "services": "minimal_service_links",
+      "gallery": null,
+      "about": "technical_expertise_about",
+      "trust": "verified_service_area_map",
+      "cta": null,
+      "contact": null,
+      "footer": "legal_compact_footer",
+      "form": null,
+      "palette": "technical_navy_light",
+      "typography": "industrial_condensed",
+      "grid": "wide_cinematic",
+      "spacing": "compact_technical",
+      "geometry": "square_precise",
+      "media_provenance": {
+        "count": 2,
+        "sources": {
+          "pexels": 2
+        },
+        "roles": {
+          "hero": 1,
+          "gallery": 1
+        },
+        "synthetic_fixture": true,
+        "claim_policy": "stock media is rendered only as ambiance or material"
+      },
+      "aesthetic_status": "NOT_REVIEWED"
+    },
+    {
+      "fixture_id": "site-07",
+      "name": "Ligne Porteuse",
+      "trade": "macon",
+      "business_intent": "project_led",
+      "seed": "genome-lab-0.1:site-07:project_led",
+      "synthetic_fixture": true,
+      "design_signature": "b5dd8a42aff46fda6bc14b9f",
+      "composition_signature": "8a395c5c259ca3bac62e9470",
+      "site_archetype": "industrial_specialist",
+      "art_direction": "technical_spatial",
+      "page_silhouette": "industrial_capabilities",
+      "header": "service_category_header",
+      "hero": "technical_nodes_network",
+      "services": "service_bento",
+      "gallery": null,
+      "about": "process_manifesto",
+      "trust": "documented_process_proof",
+      "cta": null,
+      "contact": null,
+      "footer": "dark_overlay_footer",
+      "form": null,
+      "palette": "technical_navy_light",
+      "typography": "swiss_information",
+      "grid": "split_35_65",
+      "spacing": "compact_technical",
+      "geometry": "square_precise",
+      "media_provenance": {
+        "count": 2,
+        "sources": {
+          "pexels": 2
+        },
+        "roles": {
+          "hero": 1,
+          "gallery": 1
+        },
+        "synthetic_fixture": true,
+        "claim_policy": "stock media is rendered only as ambiance or material"
+      },
+      "aesthetic_status": "NOT_REVIEWED"
+    },
+    {
+      "fixture_id": "site-08",
+      "name": "Circuit Atelier",
+      "trade": "electricien",
+      "business_intent": "technical_systems",
+      "seed": "genome-lab-0.1:site-08:technical_systems",
+      "synthetic_fixture": true,
+      "design_signature": "780813cf9da4ae05f10ebf39",
+      "composition_signature": "5bcbd6996467d4c72dc09d01",
+      "site_archetype": "conversion_first_local",
+      "art_direction": "conversion_premium",
+      "page_silhouette": "local_conversion",
+      "header": "local_info_strip",
+      "hero": "photo_right_residential_intro",
+      "services": "problem_solution_services",
+      "gallery": null,
+      "about": null,
+      "trust": "verified_service_area_map",
+      "cta": null,
+      "contact": null,
+      "footer": "editorial_directory_footer",
+      "form": null,
+      "palette": "construction_orange_light",
+      "typography": "local_contemporary",
+      "grid": "asymmetric_5_7",
+      "spacing": "balanced_operational",
+      "geometry": "soft_residential",
+      "media_provenance": {
+        "count": 2,
+        "sources": {
+          "pexels": 2
+        },
+        "roles": {
+          "hero": 1,
+          "gallery": 1
+        },
+        "synthetic_fixture": true,
+        "claim_policy": "stock media is rendered only as ambiance or material"
+      },
+      "aesthetic_status": "NOT_REVIEWED"
+    },
+    {
+      "fixture_id": "site-09",
+      "name": "Électricité des Dômes",
+      "trade": "electricien",
+      "business_intent": "local_trust",
+      "seed": "genome-lab-0.1:site-09:local_trust",
+      "synthetic_fixture": true,
+      "design_signature": "007af910ddaa961ad2fcf0f2",
+      "composition_signature": "22c6a311f4e50a07ea316720",
+      "site_archetype": "bold_local",
+      "art_direction": "architectural_brutalist",
+      "page_silhouette": "bold_local",
+      "header": "architectural_side_rail",
+      "hero": "editorial_columns_manifesto",
+      "services": "large_typographic_service_index",
+      "gallery": null,
+      "about": null,
+      "trust": "verified_service_area_map",
+      "cta": null,
+      "contact": null,
+      "footer": "workshop_signature_footer",
+      "form": null,
+      "palette": "construction_orange_dark",
+      "typography": "local_contemporary",
+      "grid": "edge_to_edge",
+      "spacing": "balanced_operational",
+      "geometry": "framed_architectural",
+      "media_provenance": {
+        "count": 2,
+        "sources": {
+          "pexels": 2
+        },
+        "roles": {
+          "hero": 1,
+          "gallery": 1
+        },
+        "synthetic_fixture": true,
+        "claim_policy": "stock media is rendered only as ambiance or material"
+      },
+      "aesthetic_status": "NOT_REVIEWED"
+    },
+    {
+      "fixture_id": "site-10",
+      "name": "Bois de Ligne",
+      "trade": "menuisier",
+      "business_intent": "material_craft",
+      "seed": "genome-lab-0.1:site-10:material_craft",
+      "synthetic_fixture": true,
+      "design_signature": "d78f89622d99d7f1a0de5c94",
+      "composition_signature": "6921621f9f1c76562b20a0ba",
+      "site_archetype": "documentary_craft",
+      "art_direction": "warm_craft",
+      "page_silhouette": "documentary_process",
+      "header": "framed_canvas_header",
+      "hero": "material_macro_title",
+      "services": "workshop_service_samples",
+      "gallery": "visual_atmosphere_sequence",
+      "about": "material_philosophy",
+      "trust": null,
+      "cta": null,
+      "contact": null,
+      "footer": "visual_image_footer",
+      "form": null,
+      "palette": "wood_walnut_dark",
+      "typography": "humanist_workshop",
+      "grid": "offset_sequence",
+      "spacing": "material_breathing",
+      "geometry": "material_organic",
+      "media_provenance": {
+        "count": 2,
+        "sources": {
+          "pexels": 2
+        },
+        "roles": {
+          "hero": 1,
+          "gallery": 1
+        },
+        "synthetic_fixture": true,
+        "claim_policy": "stock media is rendered only as ambiance or material"
+      },
+      "aesthetic_status": "NOT_REVIEWED"
+    },
+    {
+      "fixture_id": "site-11",
+      "name": "Volume Intérieur",
+      "trade": "renovateur",
+      "business_intent": "premium_residential",
+      "seed": "genome-lab-0.1:site-11:premium_residential",
+      "synthetic_fixture": true,
+      "design_signature": "833da5c3bea142cc6ab35bba",
+      "composition_signature": "473c120866f2e6b5c76481b3",
+      "site_archetype": "premium_residential",
+      "art_direction": "cinematic_luxury",
+      "page_silhouette": "premium_residential",
+      "header": "minimal_logo_only",
+      "hero": "quiet_luxury_window",
+      "services": "minimal_service_links",
+      "gallery": "portrait_landscape_dialogue",
+      "about": "technical_expertise_about",
+      "trust": null,
+      "cta": null,
+      "contact": null,
+      "footer": "ultra_minimal_footer",
+      "form": null,
+      "palette": "luxury_ivory_light",
+      "typography": "quiet_luxury_serif",
+      "grid": "offset_sequence",
+      "spacing": "cinematic_pause",
+      "geometry": "soft_residential",
+      "media_provenance": {
+        "count": 2,
+        "sources": {
+          "pexels": 2
+        },
+        "roles": {
+          "hero": 1,
+          "gallery": 1
+        },
+        "synthetic_fixture": true,
+        "claim_policy": "stock media is rendered only as ambiance or material"
+      },
+      "aesthetic_status": "NOT_REVIEWED"
+    },
+    {
+      "fixture_id": "site-12",
+      "name": "Séquence Rénovation",
+      "trade": "renovateur",
+      "business_intent": "cinematic_project_led",
+      "seed": "genome-lab-0.1:site-12:cinematic_project_led",
+      "synthetic_fixture": true,
+      "design_signature": "cc339d1d86b8cea435f115f8",
+      "composition_signature": "9e5e7e9cf101121f697bafc1",
+      "site_archetype": "premium_residential",
+      "art_direction": "editorial_luxury",
+      "page_silhouette": "premium_residential",
+      "header": "transparent_overlay_nav",
+      "hero": "split_service_photo",
+      "services": "editorial_service_folio",
+      "gallery": "asymmetric_gallery_mosaic",
+      "about": "studio_statement_about",
+      "trust": null,
+      "cta": null,
+      "contact": null,
+      "footer": "centered_mark_footer",
+      "form": null,
+      "palette": "luxury_ivory_dark",
+      "typography": "high_contrast_editorial",
+      "grid": "masonry_adaptive",
+      "spacing": "cinematic_pause",
+      "geometry": "offset_editorial",
+      "media_provenance": {
+        "count": 2,
+        "sources": {
+          "pexels": 2
+        },
+        "roles": {
+          "hero": 1,
+          "gallery": 1
+        },
+        "synthetic_fixture": true,
+        "claim_policy": "stock media is rendered only as ambiance or material"
+      },
+      "aesthetic_status": "NOT_REVIEWED"
+    }
+  ]
+}

@@ -12,7 +12,7 @@ from .sections import SECTION_RENDERERS, render_contact, render_footer, render_h
 from .styles import render_css
 
 
-RENDERER_SCHEMA_VERSION = "design-genome-renderer-0.1"
+RENDERER_SCHEMA_VERSION = "design-genome-renderer-0.2"
 
 
 def _json(value: object) -> str:
@@ -74,6 +74,11 @@ message:document.getElementById("description").value||null
 
 
 def render_site_genome(ctx: RenderContext) -> str:
+    # Resolve the hero (with recomposition authority) and allocate the
+    # remaining media pool across sections *before* any section renders, so
+    # every renderer downstream consumes one consistent plan instead of each
+    # one independently re-deriving media eligibility against the full pool.
+    ctx = ctx.resolved_for_rendering()
     rendered = []
     names = []
     for section in ctx.dna.section_order:
@@ -84,7 +89,17 @@ def render_site_genome(ctx: RenderContext) -> str:
         if value:
             names.append(section)
             rendered.append(value)
-    if ctx.dna.form_component and "contact" not in names:
+            if section == "hero" and ctx.plain("tagline"):
+                # Registers the hero's tagline so a later section (about,
+                # typically) can detect it would otherwise repeat the exact
+                # same sentence verbatim (rule Z) and reduce itself instead.
+                ctx = ctx.with_copy_used(ctx.plain("tagline"))
+    if "contact" not in names and (ctx.dna.form_component or ctx.plain("slug")):
+        # A real slug means a real /pub/{slug}/demande-devis contract exists
+        # even when the Design Genome never assigned a contact/form
+        # component (typically for lack of a verified phone/email to build
+        # one around -- see render_contact). Rule AD/AE: a page should not
+        # be left with zero conversion path when a genuine one is available.
         value = render_contact(ctx)
         if value:
             names.append("contact")
