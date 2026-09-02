@@ -557,6 +557,18 @@ function switchView(view) {
   }
 }
 
+// Reflete un compteur sur toutes les pastilles qui representent la meme
+// donnee (sidebar desktop + copie dans la barre basse/le tiroir mobile,
+// quand elle existe). Purement presentation : une seule valeur deja
+// calculee, juste affichee a plusieurs endroits du DOM.
+function setBadgeCount(id, count) {
+  document.querySelectorAll(`#${id}, #${id}-mobile`).forEach((el) => {
+    if (!el) return;
+    el.textContent = count;
+    el.hidden = count === 0;
+  });
+}
+
 async function refreshBadges() {
   // Les deux compteurs sont independants : la conformite est une fonction payante
   // (402 si l'abonnement n'est pas actif), on ne veut pas que ca empeche le badge
@@ -565,31 +577,25 @@ async function refreshBadges() {
     Api.devisARelancer(), Api.conformiteAlertes(), Api.listNotifications(),
   ]);
 
-  const badgeRelances = document.getElementById("badge-relances");
   if (relancerResult.status === "fulfilled") {
     devisDueIds = new Set(relancerResult.value.map((d) => d.id));
-    badgeRelances.textContent = relancerResult.value.length;
-    badgeRelances.hidden = relancerResult.value.length === 0;
+    setBadgeCount("badge-relances", relancerResult.value.length);
   } else {
-    badgeRelances.hidden = true;
+    setBadgeCount("badge-relances", 0);
     console.warn("Impossible de charger les relances a faire :", relancerResult.reason?.message);
   }
 
-  const badgeAlertes = document.getElementById("badge-alertes");
   if (alertesResult.status === "fulfilled") {
-    badgeAlertes.textContent = alertesResult.value.length;
-    badgeAlertes.hidden = alertesResult.value.length === 0;
+    setBadgeCount("badge-alertes", alertesResult.value.length);
   } else {
     // 402 si pas abonne : pas d'alerte affichee, c'est attendu.
-    badgeAlertes.hidden = true;
+    setBadgeCount("badge-alertes", 0);
   }
 
-  const badgeNotifications = document.getElementById("badge-notifications");
   if (notificationsResult.status === "fulfilled") {
-    badgeNotifications.textContent = notificationsResult.value.length;
-    badgeNotifications.hidden = notificationsResult.value.length === 0;
+    setBadgeCount("badge-notifications", notificationsResult.value.length);
   } else {
-    badgeNotifications.hidden = true;
+    setBadgeCount("badge-notifications", 0);
     console.warn("Impossible de charger les notifications :", notificationsResult.reason?.message);
   }
 }
@@ -1713,6 +1719,42 @@ function setupTabs() {
   });
 }
 
+// ===================== Navigation mobile (barre basse + tiroir "Plus") =====================
+// Purement presentation : les boutons de la barre basse et du tiroir portent
+// deja la classe .nav-link et un data-view, donc setupTabs()/switchView()
+// ci-dessus les cablent et les activent sans aucun code specifique. Ici on
+// ne gere que l'ouverture/fermeture du tiroir et le relais de deux boutons
+// (recherche, profil) vers leurs equivalents desktop deja fonctionnels.
+function setupMobileNav() {
+  const drawer = document.getElementById("more-drawer");
+  const openBtn = document.getElementById("btn-open-more");
+  if (!drawer || !openBtn) return;
+
+  function openDrawer() {
+    drawer.hidden = false;
+    openBtn.setAttribute("aria-expanded", "true");
+  }
+  function closeDrawer() {
+    drawer.hidden = true;
+    openBtn.setAttribute("aria-expanded", "false");
+  }
+
+  openBtn.addEventListener("click", openDrawer);
+  drawer.addEventListener("click", (e) => {
+    if (e.target.id === "more-drawer" || e.target.closest(".nav-link")) closeDrawer();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !drawer.hidden) closeDrawer();
+  });
+
+  const searchMobileBtn = document.getElementById("btn-open-search-mobile");
+  if (searchMobileBtn) searchMobileBtn.addEventListener("click", () => openSearch());
+
+  const profilMobileBtn = document.getElementById("btn-profil-mobile");
+  const profilBtn = document.getElementById("btn-profil");
+  if (profilMobileBtn && profilBtn) profilMobileBtn.addEventListener("click", () => profilBtn.click());
+}
+
 // ===================== Tableau de bord =====================
 const SITE_STATUT_META = {
   non_livre: { label: "Pas encore livré", badge: "badge-gray" },
@@ -1836,15 +1878,6 @@ async function loadDashboard() {
     const [d, recommandations, sante, activation] = await Promise.all([
       Api.dashboard(), Api.dashboardRecommandations(), Api.dashboardSante(), Api.dashboardActivation(),
     ]);
-    const stats = [
-      { label: "CA ce mois-ci", value: fmtEuro(d.finances.ca_mois) },
-      { label: "A encaisser", value: fmtEuro(d.finances.a_encaisser) },
-      { label: "Valeur du pipeline", value: fmtEuro(d.commercial.valeur_pipeline) },
-      { label: "Devis en attente", value: d.commercial.devis_en_attente },
-      { label: "Taux de transformation", value: d.commercial.taux_transformation + "%" },
-      { label: "Nouveaux prospects (7j)", value: d.commercial.nouveaux_prospects_7j },
-    ];
-
     const prioriteItems = [
       ...d.aujourdhui.factures_en_retard.map((f) => ({
         urgence: "haute", view: "factures",
@@ -1876,15 +1909,49 @@ async function loadDashboard() {
       })),
     ];
 
+    // Hierarchie de lecture (brief section 17) : 1) ce qui demande une
+    // action maintenant, 2) commercial, 3) financier, 4) indicateurs
+    // secondaires. Mêmes appels API, mêmes valeurs déjà calculées cote
+    // serveur - seule la presentation change (regroupement + une metrique
+    // "hero" par bloc plutot qu'une grille de cartes toutes identiques,
+    // brief section 18).
     container.innerHTML = `
-      <div class="dash-grid">
-        ${stats.map((s) => `<div class="dash-stat"><div class="value">${s.value}</div><div class="label">${s.label}</div></div>`).join("")}
-      </div>
-      ${activationChecklistHtml(activation)}
       <div class="dash-section">
         <h3>Priorités du jour</h3>
         ${prioriteItems.length ? prioriteItems.map(prioriteRowHtml).join("") : '<div class="dash-empty">Rien qui nécessite votre attention aujourd\'hui.</div>'}
       </div>
+      ${activationChecklistHtml(activation)}
+      <div class="dash-section">
+        <h3>Commercial</h3>
+        <div class="kpi-row">
+          <div class="kpi-primary">
+            <div class="kpi-label">Valeur du pipeline</div>
+            <div class="kpi-value">${fmtEuro(d.commercial.valeur_pipeline)}</div>
+          </div>
+          <div class="kpi-secondary-group">
+            <div class="kpi-secondary"><div class="kpi-label">Devis en attente</div><div class="kpi-value">${d.commercial.devis_en_attente}</div></div>
+            <div class="kpi-secondary"><div class="kpi-label">Taux de transformation</div><div class="kpi-value">${d.commercial.taux_transformation}%</div></div>
+            <div class="kpi-secondary"><div class="kpi-label">Nouveaux prospects (7j)</div><div class="kpi-value">${d.commercial.nouveaux_prospects_7j}</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="dash-section">
+        <h3>Financier</h3>
+        <div class="kpi-row">
+          <div class="kpi-primary">
+            <div class="kpi-label">CA ce mois-ci</div>
+            <div class="kpi-value">${fmtEuro(d.finances.ca_mois)}</div>
+          </div>
+          <div class="kpi-secondary-group">
+            <div class="kpi-secondary${d.finances.a_encaisser > 0 ? " is-alert" : ""}"><div class="kpi-label">À encaisser</div><div class="kpi-value">${fmtEuro(d.finances.a_encaisser)}</div></div>
+          </div>
+        </div>
+      </div>
+      ${d.finances.paiements_recents.length ? `
+      <div class="dash-section">
+        <h3>Paiements recents</h3>
+        ${d.finances.paiements_recents.map((p) => `<div class="dash-row"><span>${fmtDate(p.date_paiement)} · ${p.moyen}</span><strong>${fmtEuro(p.montant)}</strong></div>`).join("")}
+      </div>` : ""}
       <div class="dash-section">
         <h3>Recommandations</h3>
         ${recommandations.length ? recommandations.map(recommandationRowHtml).join("") : '<div class="dash-empty">Aucune recommandation pour le moment.</div>'}
@@ -1893,11 +1960,6 @@ async function loadDashboard() {
         <h3>Sante de votre entreprise</h3>
         ${santeWidgetHtml(sante)}
       </div>
-      ${d.finances.paiements_recents.length ? `
-      <div class="dash-section">
-        <h3>Paiements recents</h3>
-        ${d.finances.paiements_recents.map((p) => `<div class="dash-row"><span>${fmtDate(p.date_paiement)} · ${p.moyen}</span><strong>${fmtEuro(p.montant)}</strong></div>`).join("")}
-      </div>` : ""}
       <div class="dash-section">
         <h3>Presence en ligne</h3>
         ${renderPresenceSite(d.presence_site)}
@@ -2486,14 +2548,17 @@ function renderDevisCard(d) {
     actions += `<button type="button" class="btn-sm" data-action="facturer-devis" data-id="${d.id}">Convertir en facture</button>`;
   }
   if (d.lignes && d.lignes.length > 0) {
-    actions += `<button type="button" class="btn-sm" data-action="pdf-devis" data-id="${d.id}">Télécharger le PDF</button>`;
+    actions += `<button type="button" class="btn-sm btn-quiet" data-action="pdf-devis" data-id="${d.id}">Télécharger le PDF</button>`;
   }
   if (d.token && d.statut !== "nouveau") {
-    actions += `<button type="button" class="btn-sm" data-action="copier-lien-devis" data-token="${escapeHtml(d.token)}">Copier le lien client</button>`;
+    actions += `<button type="button" class="btn-sm btn-quiet" data-action="copier-lien-devis" data-token="${escapeHtml(d.token)}">Copier le lien client</button>`;
   }
-  actions += `<button type="button" class="btn-sm" data-action="dupliquer-devis" data-id="${d.id}">Dupliquer</button>`;
+  actions += `<button type="button" class="btn-sm btn-quiet" data-action="dupliquer-devis" data-id="${d.id}">Dupliquer</button>`;
   actions += `<button type="button" class="btn-sm btn-sm-danger" data-action="delete-devis" data-id="${d.id}">Archiver</button>`;
 
+  // Le montant est extrait de la phrase de meta vers un bloc dedie,
+  // scannable en un coup d'oeil (brief section 22) - meme valeur deja
+  // calculee, juste affichee a part plutot qu'au milieu d'une phrase.
   return `
   <div class="item-card ${isDue ? "is-due" : ""}">
     <div class="item-card-top">
@@ -2501,11 +2566,14 @@ function renderDevisCard(d) {
         <div class="item-title">${escapeHtml(d.client_nom)}</div>
         <div class="item-sub">${escapeHtml(d.titre || d.description || "Pas de description")}</div>
       </div>
-      <span class="badge ${meta.badge}">${meta.label}</span>
+      <div class="item-card-figures">
+        <span class="badge ${meta.badge}">${meta.label}</span>
+        <span class="item-amount">${montantTxt}</span>
+      </div>
     </div>
     ${d.statut === "signe" ? `<div class="moment-banner"><span class="moment-icon">🎉</span><span>Devis accepte ! ${fmtEuro(d.montant_ttc)}${d.nom_signataire ? " · signe par " + escapeHtml(d.nom_signataire) : ""} — prêt a demarrer le projet avec "Tout preparer".</span></div>` : ""}
     <div class="item-meta">
-      ${montantTxt}${d.numero ? " · " + escapeHtml(d.numero) : ""}
+      ${d.numero ? escapeHtml(d.numero) : ""}
       ${d.remise_montant ? ` · Remise ${d.remise_pourcentage}%` : ""}
       ${isDue ? " · <strong>Relance due aujourd'hui</strong>" : ""}
       ${d.nb_relances > 0 ? ` · ${d.nb_relances} relance${d.nb_relances > 1 ? "s" : ""}${d.date_derniere_relance ? " · dernière le " + fmtDate(d.date_derniere_relance) : ""}` : ""}
@@ -2869,12 +2937,16 @@ function renderFactureCard(f) {
     actions += `<button type="button" class="btn-sm btn-sm-primary" data-action="ajouter-paiement" data-id="${f.id}" data-restant="${f.montant_restant}">+ Enregistrer un paiement</button>`;
   }
   if (isDue) {
-    actions += `<button type="button" class="btn-sm btn-sm-primary" data-action="relancer-facture" data-id="${f.id}">Relancer</button>`;
+    // "Enregistrer un paiement" (ci-dessus) reste l'action dominante quand
+    // les deux sont proposees ensemble : une seule couleur d'appel par carte
+    // (brief section 39), relancer reste une action normale, pas secondaire.
+    const relancerClasse = f.montant_restant > 0 ? "btn-sm" : "btn-sm btn-sm-primary";
+    actions += `<button type="button" class="${relancerClasse}" data-action="relancer-facture" data-id="${f.id}">Relancer</button>`;
   }
   if (f.token && f.statut !== "brouillon") {
-    actions += `<button type="button" class="btn-sm" data-action="copier-lien-facture" data-token="${escapeHtml(f.token)}">Copier le lien client</button>`;
+    actions += `<button type="button" class="btn-sm btn-quiet" data-action="copier-lien-facture" data-token="${escapeHtml(f.token)}">Copier le lien client</button>`;
   }
-  actions += `<button type="button" class="btn-sm" data-action="pdf-facture" data-id="${f.id}">Télécharger le PDF</button>`;
+  actions += `<button type="button" class="btn-sm btn-quiet" data-action="pdf-facture" data-id="${f.id}">Télécharger le PDF</button>`;
   actions += `<button type="button" class="btn-sm btn-sm-danger" data-action="delete-facture" data-id="${f.id}">Archiver</button>`;
 
   const paiementsHtml = (f.paiements || [])
@@ -2885,6 +2957,12 @@ function renderFactureCard(f) {
     ? `<div class="item-sub">${f.nb_relances} relance${f.nb_relances > 1 ? "s" : ""}${f.date_derniere_relance ? " · dernière le " + fmtDate(f.date_derniere_relance) : ""}</div>`
     : "";
 
+  // Le montant qui compte vraiment d'un coup d'oeil : le reste du a
+  // encaisser (ou le total une fois soldee) - extrait du texte de meta vers
+  // un bloc dedie (brief section 23), meme valeur deja calculee.
+  const montantCle = f.montant_restant > 0 ? fmtEuro(f.montant_restant) : fmtEuro(f.montant_ttc);
+  const montantCleLabel = f.montant_restant > 0 ? "restant" : "TTC · soldée";
+
   return `
   <div class="item-card ${f.est_en_retard ? "is-due" : ""}">
     <div class="item-card-top">
@@ -2892,10 +2970,14 @@ function renderFactureCard(f) {
         <div class="item-title">${escapeHtml(f.client_nom)} &mdash; ${escapeHtml(f.numero)}</div>
         <div class="item-sub">${FACTURE_TYPE_LABELS[f.type] || f.type}</div>
       </div>
-      <span class="badge ${meta.badge}">${meta.label}</span>
+      <div class="item-card-figures">
+        <span class="badge ${meta.badge}">${meta.label}</span>
+        <span class="item-amount">${montantCle}</span>
+        <span class="item-amount-sub">${montantCleLabel}</span>
+      </div>
     </div>
     <div class="item-meta">
-      ${fmtEuro(f.montant_ttc)} TTC · Payé : ${fmtEuro(f.montant_paye)} · Restant : ${fmtEuro(f.montant_restant)}
+      ${fmtEuro(f.montant_ttc)} TTC · Payé : ${fmtEuro(f.montant_paye)}
       ${f.date_echeance ? " · Échéance : " + fmtDate(f.date_echeance) : ""}
       ${retard !== null ? ` · <span style="color:var(--danger);">${retard} j de retard</span>` : ""}
     </div>
@@ -4831,6 +4913,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   setupAuthScreen();
   setupTabs();
+  setupMobileNav();
   setupProfilPanel();
   setupGlobalSearch();
   setupDashboardView();
