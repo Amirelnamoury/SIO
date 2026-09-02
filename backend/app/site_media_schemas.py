@@ -68,32 +68,6 @@ class SiteMediaOrderIn(BaseModel):
         return self
 
 
-class SiteMediaLibraryOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int
-    media_id: str
-    metier: str
-    sous_categorie: str
-    mime_type: str
-    largeur: Optional[int] = None
-    hauteur: Optional[int] = None
-    orientation: str
-    usage_recommande: list[str]
-    licence: str
-    source_nom: str
-    credit: Optional[str] = None
-    provider: Optional[str] = None
-    provider_asset_id: Optional[str] = None
-    photographer: Optional[str] = None
-    source_url: Optional[str] = None
-    provider_url: Optional[str] = None
-    query: Optional[str] = None
-    times_used: int = 0
-    actif: bool
-    thumbnail_url: str
-
-
 class SiteMediaSelectionOut(BaseModel):
     id: int
     usage: str
@@ -127,22 +101,3 @@ class SiteMediaOverviewOut(BaseModel):
     photos: list[SiteMediaOut] = Field(default_factory=list)
     profile: SiteMediaProfileOut = Field(default_factory=SiteMediaProfileOut)
     max_photos: int
-
-
-class AdminMediaSelectionIn(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    source: str
-    site_media_id: Optional[int] = None
-    library_media_id: Optional[int] = None
-    position: int = Field(default=0, ge=0, le=10)
-
-    @model_validator(mode="after")
-    def source_coherente(self):
-        if self.source == "artisan" and self.site_media_id is not None and self.library_media_id is None:
-            return self
-        if self.source == "bibliotheque" and self.library_media_id is not None and self.site_media_id is None:
-            return self
-        if self.source == "fallback" and self.site_media_id is None and self.library_media_id is None:
-            return self
-        raise ValueError("La source et le media selectionne sont incoherents")

@@ -8,8 +8,6 @@ const frontendDir = path.resolve(testDir, "..");
 const index = fs.readFileSync(path.join(frontendDir, "index.html"), "utf8");
 const api = fs.readFileSync(path.join(frontendDir, "api.js"), "utf8");
 const app = fs.readFileSync(path.join(frontendDir, "app.js"), "utf8");
-const adminIndex = fs.readFileSync(path.join(frontendDir, "admin", "index.html"), "utf8");
-const adminScript = fs.readFileSync(path.join(frontendDir, "admin", "admin.js"), "utf8");
 
 for (const id of [
   "visual-identity-box", "site-logo-form", "site-logo-preview", "site-logo-delete",
@@ -27,12 +25,5 @@ assert.match(app, /button\.textContent = "Traitement\.\.\."/, "l'upload doit don
 assert.match(app, /Api\.updateSiteMedia[\s\S]*?categorie/, "la catégorie doit être modifiable");
 assert.match(app, /Api\.updateSiteMedia[\s\S]*?actif/, "une photo doit pouvoir être désactivée");
 assert.match(app, /Api\.deleteSiteMedia/, "une photo doit pouvoir être supprimée");
-
-for (const id of ["admin-media-section", "admin-logo-form", "admin-media-photos", "admin-media-selections"]) {
-  assert.match(adminIndex, new RegExp(`id="${id}"`), `le contrôle Admin ${id} doit exister`);
-}
-assert.match(adminScript, /async function protectedImageUrl[\s\S]*?Authorization: "Bearer " \+ token/, "les miniatures Admin doivent conserver le Bearer token");
-assert.match(adminScript, /site\/media\/selections\//, "l'Admin doit pouvoir retirer une sélection");
-assert.match(adminScript, /source artisan/, "la source réelle des photos doit être visible");
 
 console.log("OK - site-media.test.mjs");

@@ -7,31 +7,16 @@ cours de tache : un travail concurrent sur la meme branche (rebase sur
 backend/app/admin_service.py et le modele SiteVitrine. Ces tests verifient
 donc l'integration reelle plutot qu'un constat d'absence devenu obsolete.
 
-Verifie notamment que admin_service utilise bien l'abstraction Storage
-generique (app.storage.get_storage()) pour les previews - pas d'acces
-filesystem direct qui casserait avec STORAGE_BACKEND=s3 - avec exactement le
-pattern de cle "admin-site-previews/{artisan_id}/index.html" prevu par le
-brief initial de cette mission.
+Le moteur de generation automatique de site (et son mecanisme de preview HTML
+en cache, base sur ce meme Storage abstrait) a ete retire depuis : les tests
+qui ne verifiaient que ce mecanisme de preview ont ete retires avec lui. Ceux
+qui restent ici verifient des invariants Admin qui ne dependent pas du moteur
+retire.
 """
 import inspect
 
 from app.models import Artisan
 from app.routers.dashboard import obtenir_dashboard
-from app.storage import LocalFilesystemStorage
-
-
-def test_storage_supporte_le_pattern_de_cle_admin_site_previews_local(tmp_path):
-    s = LocalFilesystemStorage(str(tmp_path))
-    cle = "admin-site-previews/42/index.html"
-    contenu = b"<html><body>Preview site vitrine</body></html>"
-
-    assert s.exists(cle) is False
-    s.save(cle, contenu)
-    assert s.exists(cle) is True
-    assert s.read(cle) == contenu
-
-    s.delete(cle)
-    assert s.exists(cle) is False
 
 
 def test_artisan_a_bien_un_champ_site_statut_sans_plan_minimum():
@@ -53,27 +38,6 @@ def test_admin_router_existe_et_est_enregistre():
     assert admin.router is not None
     routes_admin = [r for r in app.routes if getattr(r, "path", "").startswith("/admin")]
     assert len(routes_admin) > 0
-
-
-def test_admin_service_preview_storage_key_suit_le_pattern_attendu():
-    from app.admin_service import preview_storage_key
-
-    assert preview_storage_key(42) == "admin-site-previews/42/index.html"
-
-
-def test_admin_service_generer_preview_utilise_get_storage_pas_le_filesystem_direct():
-    """Verifie par inspection du code source (pas d'hypothese) qu'aucune des
-    fonctions d'admin_service.py n'accede au filesystem directement (open(),
-    Path(...).write_*, etc.) en dehors de l'abstraction Storage - condition
-    necessaire pour fonctionner identiquement avec STORAGE_BACKEND=local et
-    =s3, sans changement de code lors du passage a R2."""
-    import app.admin_service as admin_service
-
-    source = inspect.getsource(admin_service)
-    assert "get_storage()" in source
-    # Pas d'ecriture disque directe en dehors du Storage abstrait.
-    assert ".write_bytes(" not in source
-    assert ".write_text(" not in source
 
 
 def test_admin_cookie_secure_est_bien_le_reglage_lu_par_le_router():

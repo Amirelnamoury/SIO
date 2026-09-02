@@ -122,18 +122,13 @@ class SiteVitrine(Base):
     url_publique = Column(String, nullable=True)
     storage_key = Column(String, nullable=True)
     config = Column(JSON, nullable=False, default=dict)
-    # Identite V3 persistante. Les anciens JSON V2 restent temporairement
-    # lisibles pour le workflow explicite candidate/preview/adoption, mais ne
-    # sont jamais executes par le runtime.
+    # Historique du moteur de generation automatique de site (V3, puis Design
+    # Genome), retire depuis : ces trois colonnes ne sont plus ecrites ni lues
+    # par aucun runtime actif. Conservees telles quelles
+    # (aucune migration destructive) pour ne pas perdre l'historique des
+    # sites deja generes/publies avant le retrait du moteur.
     design_profile = Column(JSON, nullable=True)
-    # Preferences Admin (Lot 4) : orientent la generation d'une alternative,
-    # ne remplacent jamais directement design_profile. Nullable : un site sans
-    # preference laisse le moteur choisir automatiquement (voir
-    # app/admin_service.py::generate_design_candidate).
     design_preferences = Column(JSON, nullable=True)
-    # Alternative de design proposee (Lot 4) : jamais adoptee automatiquement.
-    # Distincte de design_profile ("current") tant que l'Admin ne clique pas
-    # explicitement "Adopter cette version" (voir admin_service.adopt_design_candidate).
     candidate_design_profile = Column(JSON, nullable=True)
     date_generation = Column(DateTime(timezone=True), nullable=True)
     date_publication = Column(DateTime(timezone=True), nullable=True)
@@ -864,7 +859,7 @@ class Avis(Base):
     source = Column(String, default="manuel")  # manuel, lien_public
 
     # L'artisan choisit explicitement quels avis apparaissent sur son site
-    # vitrine (voir GET /pub/{slug}/avis, consomme par generator/site_generator.py).
+    # vitrine (voir GET /pub/{slug}/avis, consomme par le site livre a l'artisan).
     # Jamais publie par defaut : c'est une decision de l'artisan, pas la notre.
     publie_site = Column(Boolean, default=False)
 

@@ -9,8 +9,8 @@ export default async function run() {
   logEtape("artisan cree et abonnement actif");
 
   // Prospect reellement cree via le formulaire PUBLIC du site vitrine
-  // (le meme endpoint que celui appele par le site genere par
-  // generator/site_generator.py), pas une insertion directe.
+  // (le meme endpoint que celui appele par le site livre a l'artisan),
+  // pas une insertion directe.
   const moi = await api.get("/auth/me", token);
   const demandeSite = await api.post(`/pub/${moi.slug}/demande-devis`, {
     nom: "Prospect Scenario 1", email: "prospect1@e2e-test.fr", message: "Interesse par une renovation",

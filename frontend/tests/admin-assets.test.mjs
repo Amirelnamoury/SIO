@@ -8,7 +8,6 @@ const adminDir = path.resolve(testDir, "..", "admin");
 const login = fs.readFileSync(path.join(adminDir, "login.html"), "utf8");
 const index = fs.readFileSync(path.join(adminDir, "index.html"), "utf8");
 const script = fs.readFileSync(path.join(adminDir, "admin.js"), "utf8");
-const css = fs.readFileSync(path.join(adminDir, "admin.css"), "utf8");
 
 for (const [name, html] of [["login.html", login], ["index.html", index]]) {
   assert.match(html, /href="admin\.css"/, `${name} doit charger le CSS présent dans son propre dossier`);
@@ -23,16 +22,6 @@ assert.match(script, /opts\.headers\.Authorization = "Bearer " \+ token/, "les a
 assert.match(script, /location\.assign\("\/admin\/"\)/, "la connexion doit rediriger vers l'index Admin statique");
 assert.match(script, /location\.assign\("\/admin\/login\.html"\)/, "une session absente ou fermée doit rediriger vers le login statique");
 assert.doesNotMatch(script, /location\.assign\("\/admin\/login"\)/, "l'ancienne redirection backend-only ne doit plus subsister");
-assert.match(script, /preview-session/, "Voir la preview doit demander une session protégée au backend");
-assert.match(script, /previewWindow\.location\.replace\(apiUrl\(session\.url\)\)/, "la preview doit utiliser API_BASE après le handoff authentifié");
-assert.doesNotMatch(script, /window\.open\("\/admin\/api\/artisans\//, "la preview ne doit plus viser directement le serveur statique");
-assert.match(index, /id="design-configurator-section"/, "le configurateur de design V3 doit exister dans la fiche site");
-assert.match(index, /id="design-current"/, "le design actuel doit avoir une zone d'affichage lisible");
-assert.match(index, /id="design-comparison"/, "la comparaison version actuelle / alternative doit exister");
-for (const field of ["art_direction", "page_silhouette", "hero_system", "typography_system", "photo_strategy", "services_composition", "project_showcase", "content_density", "motion_level", "spatial_level", "mobile_personality", "ambience"]) {
-  assert.match(script, new RegExp(field), `l'Admin doit exposer la décision V3 ${field}`);
-}
-assert.doesNotMatch(script, /header_variant|hero_variant|services_variant|preferred_family|variante_couleur|variante_motif/, "les decisions V2 et legacy ne doivent plus etre exposees");
-assert.match(css, /\.design-current-grid/, "le profil V3 doit avoir une présentation lisible");
+assert.doesNotMatch(script, /preview-session|design\/candidate|site\/generate/, "le moteur de generation retire ne doit laisser aucun appel mort dans l'Admin");
 
 console.log("OK - admin-assets.test.mjs");

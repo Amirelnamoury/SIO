@@ -75,15 +75,12 @@ const idsRempliesUniquementParInnerHtmlOuCss = new Set([
   "detail-title", "detail-meta", "detail-stats",
   "progress-rows", "progress-hint",
   "site-slug", "site-generated-at", "site-published-at",
-  "step-contenu-badge", "step-medias-badge", "step-design-badge", "step-preview-badge", "step-publication-badge",
+  "step-contenu-badge", "step-medias-badge", "step-publication-badge",
   "media-summary-logo", "media-summary-photos",
   "pub-statut", "pub-domaine", "pub-url", "pub-date",
-  "design-current", "design-sections-availability", "design-family-cards",
-  "advanced-panel", "section-order-editor", "design-comparison",
-  "admin-media-count", "admin-media-photos", "admin-media-selections",
   "toast", "login-error", "drawer-scrim", "admin-name",
   "view-dashboard", "view-artisans", "view-sites", "view-detail",
-  "tab-panel-overview", "tab-panel-entreprise", "tab-panel-site", "tab-panel-medias",
+  "tab-panel-overview", "tab-panel-entreprise", "tab-panel-site",
   "artisan-filters", "site-filters",
 ]);
 const actionableIdsInHtml = [...indexIds].filter((id) => /button|form|select$/i.test(id) === false && !idsRempliesUniquementParInnerHtmlOuCss.has(id))

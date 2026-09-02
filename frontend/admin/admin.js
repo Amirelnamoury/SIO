@@ -33,7 +33,7 @@
   }
 
   const state = {
-    currentView: "dashboard", previousView: "artisans", artisan: null, mediaObjectUrls: [],
+    currentView: "dashboard", previousView: "artisans", artisan: null,
     artisanItems: [], siteItems: [], artisanFilter: "all", siteFilter: "all", currentTab: "overview",
   };
   const statusLabels = { non_cree: "Non créé", brouillon: "Brouillon", genere: "Généré", pret: "Prêt", publie: "Publié" };
@@ -53,43 +53,6 @@
     ["pret", "Prêts", "pret"],
     ["publie", "Publiés", "publie"],
   ];
-
-  // V3 is the only active design vocabulary in the Admin.
-  const DIRECTION_LABELS = { editorial_luxury: "Éditorial luxe", bold_conversion: "Conversion premium", technical_spatial: "Technique spatial", architectural_brutalist: "Architecture brutaliste", warm_craft: "Atelier chaleureux", cinematic_luxury: "Cinématique luxe", minimal_architecture: "Architecture minimale", material_editorial: "Matière éditoriale" };
-  const DIRECTION_DESCRIPTIONS = {
-    editorial_luxury: "Magazine d’intérieur, grandes respirations et compositions asymétriques.",
-    bold_conversion: "Message direct, preuve lisible et actions immédiatement accessibles.",
-    technical_spatial: "Plans, réseau, profondeur et mouvement utile.",
-    architectural_brutalist: "Grille monumentale, matière brute et projets dominants.",
-    warm_craft: "Bois, gestes, détails et narration d’atelier.",
-    cinematic_luxury: "Scènes immersives, rythme lent et transformation.",
-    minimal_architecture: "Silence visuel, proportions précises et projets nets.",
-    material_editorial: "Textures, typographie expressive et rythme de collection.",
-  };
-  const V3_DESIGN_AXES = [
-    ["art_direction", "Direction"], ["page_silhouette", "Silhouette"], ["header_system", "En-tête"],
-    ["hero_system", "Hero"], ["typography_system", "Typographie"], ["photo_strategy", "Images"],
-    ["services_composition", "Prestations"], ["project_showcase", "Projets"], ["content_density", "Densité"],
-    ["motion_level", "Mouvement"], ["spatial_level", "Spatial / 3D"], ["mobile_personality", "Mobile"],
-    ["ambience", "Ambiance"],
-  ];
-  const MEDIA_USAGE_LABELS = {
-    hero: "Bandeau d'accueil", gallery: "Galerie photo", about: "À propos",
-    featured_project: "Réalisation phare", before_after: "Avant / après",
-  };
-  const MEDIA_SOURCE_LABELS = { artisan: "Photo artisan", bibliotheque: "Bibliothèque", fallback: "Visuel de secours" };
-  const SECTION_LABELS = {
-    hero: "Introduction", trust: "Confiance", services: "Prestations", featured_project: "Réalisation phare",
-    about: "À propos", gallery: "Galerie photo", reviews: "Avis clients", service_area: "Zone d'intervention",
-    cta: "Appel à l'action", stats: "Chiffres clés", process: "Déroulé", before_after: "Avant / après",
-    reasons: "Pourquoi nous choisir", contact: "Formulaire de contact",
-  };
-
-  function axisValueLabel(axis, value) {
-    if (!value) return "-";
-    if (axis === "art_direction") return DIRECTION_LABELS[value] || value;
-    return value;
-  }
 
   function escapeHtml(value) {
     return String(value == null ? "" : value).replace(/[&<>'"]/g, function (char) {
@@ -130,60 +93,6 @@
     }
     if (!response.ok) throw new Error(data && data.detail ? data.detail : "Action impossible");
     return data;
-  }
-
-  async function apiUpload(path, formData) {
-    const token = window.sessionStorage.getItem(ADMIN_TOKEN_KEY);
-    const response = await fetch(apiUrl(path), {
-      method: "POST",
-      headers: token ? { Authorization: "Bearer " + token } : {},
-      body: formData,
-    });
-    let data = null;
-    try { data = await response.json(); } catch (err) { data = null; }
-    if (!response.ok) throw new Error(data && data.detail ? data.detail : "Import impossible");
-    return data;
-  }
-
-  async function protectedImageUrl(path) {
-    const token = window.sessionStorage.getItem(ADMIN_TOKEN_KEY);
-    const response = await fetch(apiUrl(path), { headers: token ? { Authorization: "Bearer " + token } : {} });
-    if (!response.ok) throw new Error("Image protégée indisponible");
-    return URL.createObjectURL(await response.blob());
-  }
-
-  function clearMediaObjectUrls() {
-    state.mediaObjectUrls.splice(0).forEach(function (url) { URL.revokeObjectURL(url); });
-  }
-
-  async function hydrateAdminMediaImages() {
-    const images = Array.from(document.querySelectorAll("#admin-media-section img[data-media-url]"));
-    await Promise.all(images.map(async function (image) {
-      const url = await protectedImageUrl(image.dataset.mediaUrl);
-      state.mediaObjectUrls.push(url);
-      image.src = url;
-    }));
-  }
-
-  async function renderAdminMedia(media) {
-    clearMediaObjectUrls();
-    document.getElementById("admin-media-count").textContent = media.photos.length + " / " + media.max_photos + " photos";
-    document.getElementById("admin-logo-preview").innerHTML = media.logo
-      ? `<img data-media-url="${escapeHtml(media.logo.thumbnail_url)}" alt="Logo artisan">`
-      : '<span class="muted">Aucun logo</span>';
-    document.getElementById("admin-logo-delete").hidden = !media.logo;
-    document.getElementById("admin-media-photos").innerHTML = media.photos.length ? media.photos.map(function (photo) {
-      return `<article class="admin-media-item"><img data-media-url="${escapeHtml(photo.thumbnail_url)}" alt="${escapeHtml(photo.alt_text || photo.nom_original)}"><div><strong>${escapeHtml(photo.nom_original)}</strong><span>${escapeHtml(photo.categorie || "autre")} · ${photo.actif ? "active" : "inactive"} · source artisan</span></div></article>`;
-    }).join("") : '<div class="empty-state"><strong>Aucune photo artisan</strong><p>Ajoutez des réalisations pour personnaliser le site.</p></div>';
-    const selections = media.profile.selections || [];
-    document.getElementById("admin-media-selections").innerHTML = selections.length ? selections.map(function (selection) {
-      const preview = selection.thumbnail_url ? `<img data-media-url="${escapeHtml(selection.thumbnail_url)}" alt="">` : '<span class="selection-fallback">Sans photo</span>';
-      const usageLabel = MEDIA_USAGE_LABELS[selection.usage] || selection.usage;
-      const sourceLabel = MEDIA_SOURCE_LABELS[selection.source] || selection.source;
-      const providerDetails = selection.provider ? `<small>Source : ${escapeHtml(selection.provider)}${selection.photographer ? " · Photographe : " + escapeHtml(selection.photographer) : ""}${selection.source_url ? ` · <a href="${escapeHtml(selection.source_url)}" target="_blank" rel="noopener noreferrer">Voir la source</a>` : ""}</small>` : "";
-      return `<article class="admin-selection-item" data-selection-id="${selection.id}">${preview}<div><strong>${escapeHtml(usageLabel)}${selection.position ? " " + (selection.position + 1) : ""}</strong><span>${escapeHtml(sourceLabel)}${selection.credit ? " · " + escapeHtml(selection.credit) : ""}</span>${providerDetails}</div><button class="button button-secondary" data-action="remove-selection" type="button">Retirer</button></article>`;
-    }).join("") : '<div class="empty-state"><strong>Sélection pas encore créée</strong><p>Elle sera créée à la première génération du site.</p></div>';
-    await hydrateAdminMediaImages();
   }
 
   function showView(name, title) {
@@ -264,7 +173,6 @@
       ["Générés à vérifier", "Rien à vérifier pour le moment.", items.filter(function (i) { return i.site_statut === "genere"; })],
       ["Prêts à publier", "Aucun site en attente de publication.", items.filter(function (i) { return i.site_statut === "pret"; })],
       ["Médias manquants", "Tous les sites générés ont au moins un média actif.", items.filter(function (i) { return i.media_manquant; })],
-      ["Alternatives en attente", "Aucune alternative de design en attente de décision.", items.filter(function (i) { return i.alternative_en_attente; })],
     ];
     const el = document.getElementById("attention-groups");
     el.innerHTML = groups.map(function (group) {
@@ -369,7 +277,6 @@
   }
 
   function updateWorkflow(site) {
-    document.getElementById("preview-button").disabled = !site.preview_disponible;
     document.getElementById("ready-button").disabled = site.statut !== "genere";
     document.getElementById("publish-button").disabled = site.statut !== "pret";
     const badge = document.getElementById("detail-site-status");
@@ -382,13 +289,16 @@
     return !!(profile.has_logo || profile.artisan_photo_count > 0);
   }
 
+  // Le moteur de generation automatique a ete retire : la
+  // seule suite possible pour un site deja "genere" ou "pret" est de terminer
+  // sa livraison (ready/publish). Un site "brouillon" ou "non_cree" n'a plus
+  // de prochaine etape automatisee a proposer tant que le contenu n'est pas
+  // renseigne - jamais une action qui appellerait une route retiree.
   function computeNextAction(artisan) {
     const site = artisan.site;
-    if (site.statut === "non_cree") return { label: "Configurer le site", run: function () { showTab("site"); } };
-    if (!site.design_profile || !site.preview_disponible) return { label: "Générer la preview", run: function () { generate().catch(handleError); } };
-    if (!hasMedia(site)) return { label: "Ajouter des médias", run: function () { showTab("medias"); } };
-    if (site.statut === "genere") return { label: "Vérifier la preview", run: function () { openPreview().catch(handleError); } };
+    if (site.statut === "genere") return { label: "Marquer prêt", run: function () { transition("ready", "Site marqué prêt à publier").catch(handleError); } };
     if (site.statut === "pret") return { label: "Publier le site", run: function () { transition("publish", "Publication enregistrée").catch(handleError); } };
+    if (!(site.config.services || []).length) return { label: "Configurer le site", run: function () { showTab("site"); } };
     return null;
   }
 
@@ -406,8 +316,6 @@
     const rows = [
       ["Identité", true, "Renseignée"],
       ["Médias", hasMedia(site), hasMedia(site) ? "Complétés" : "À compléter"],
-      ["Design", !!site.design_profile, site.design_profile ? "Généré" : "Non généré"],
-      ["Preview", site.preview_disponible, site.preview_disponible ? "Disponible" : "À générer"],
       ["Publication", site.statut === "publie", site.statut === "publie" ? "Publié" : "Non publiée"],
     ];
     document.getElementById("progress-rows").innerHTML = rows.map(function (row) {
@@ -433,8 +341,6 @@
     const contentOk = (site.config.services || []).length > 0;
     setStepBadge("step-contenu-badge", contentOk, contentOk ? "Configuré" : "À compléter");
     setStepBadge("step-medias-badge", hasMedia(site), hasMedia(site) ? "Complétés" : "À compléter");
-    setStepBadge("step-design-badge", !!site.design_profile, site.design_profile ? "Généré" : "Non généré");
-    setStepBadge("step-preview-badge", site.preview_disponible, site.preview_disponible ? "Disponible" : "À générer");
     setStepBadge("step-publication-badge", site.statut === "publie", site.statut === "publie" ? "Publié" : "Non publiée");
     document.getElementById("media-summary-logo").textContent = media.logo ? "Défini" : "Non défini";
     document.getElementById("media-summary-photos").textContent = media.photos.length + " / " + media.max_photos;
@@ -447,139 +353,8 @@
     document.getElementById("pub-date").textContent = formatDate(site.date_publication);
   }
 
-  function renderDesignCurrent(site) {
-    const el = document.getElementById("design-current");
-    const profile = site.design_profile;
-    if (!profile) {
-      el.innerHTML = '<div class="empty-state"><strong>Aucun design généré</strong><p>Générez la preview du site (étape « Preview ») pour que le moteur choisisse un premier design.</p></div>';
-      return;
-    }
-    const isV3 = String(profile.design_engine_version || "").startsWith("v3");
-    if (!isV3) {
-      el.innerHTML = '<div class="design-current-card"><div class="design-current-family">' +
-        '<span class="design-family-badge">Ancien design</span>' +
-        '<p>Une nouvelle génération utilisera le moteur V3. Prévisualisez puis adoptez l’alternative avant toute nouvelle publication.</p></div></div>';
-      return;
-    }
-    const rows = V3_DESIGN_AXES.map(function (entry) {
-      return '<div><dt>' + escapeHtml(entry[1]) + '</dt><dd>' + escapeHtml(axisValueLabel(entry[0], profile[entry[0]])) + '</dd></div>';
-    }).join("");
-    el.innerHTML = '<div class="design-current-card"><div class="design-current-family">' +
-      '<span class="design-family-badge">' + escapeHtml(DIRECTION_LABELS[profile.art_direction] || profile.art_direction) + '</span>' +
-      '<p>' + escapeHtml(DIRECTION_DESCRIPTIONS[profile.art_direction] || "") + '</p></div>' +
-      '<dl class="design-current-grid">' + rows + '</dl>' +
-      '<details class="design-technical"><summary>Détails techniques</summary><code>' + escapeHtml(profile.design_signature || "") + '</code></details></div>';
-  }
-
-  function renderSectionsAvailability(list) {
-    const el = document.getElementById("design-sections-availability");
-    if (!list || !list.length) { el.innerHTML = ""; return; }
-    el.innerHTML = '<h4>Sections qui pourront apparaître</h4><ul class="design-sections-list">' + list.map(function (item) {
-      const label = SECTION_LABELS[item.section] || item.section;
-      const reason = !item.disponible ? (item.raison || "Cette section n'apparaît pas car aucune donnée n'est disponible.") : "";
-      return '<li class="' + (item.disponible ? "available" : "unavailable") + '"><span>' + (item.disponible ? "✓ " : "– ") + escapeHtml(label) + '</span>' +
-        (reason ? '<small>' + escapeHtml(reason) + '</small>' : "") + '</li>';
-    }).join("") + '</ul>';
-  }
-
-  function renderDirectionCards(selected) {
-    document.getElementById("design-family-cards").innerHTML = Object.keys(DIRECTION_LABELS).map(function (direction) {
-      return '<button type="button" class="design-family-card' + (direction === selected ? " selected" : "") + '" data-direction="' + direction + '">' +
-        '<strong>' + escapeHtml(DIRECTION_LABELS[direction]) + '</strong><span>' + escapeHtml(DIRECTION_DESCRIPTIONS[direction]) + '</span></button>';
-    }).join("");
-  }
-
-  function configureDensityOptions() {
-    const select = document.getElementById("pref-density");
-    const options = [["", "Automatique"], ["compact", "Compacte"], ["balanced", "Équilibrée"], ["airy", "Aérée"]];
-    select.innerHTML = options.map(function (option) { return '<option value="' + option[0] + '">' + option[1] + '</option>'; }).join("");
-  }
-
-  function updateCandidateButtons(site) {
-    const hasCandidate = !!site.candidate_design_profile;
-    document.getElementById("candidate-generate-button").disabled = !site.design_profile;
-    document.getElementById("candidate-regenerate-button").disabled = !hasCandidate;
-    document.getElementById("candidate-adopt-button").disabled = !hasCandidate;
-    document.getElementById("candidate-abandon-button").disabled = !hasCandidate;
-    document.getElementById("candidate-preview-button").disabled = !site.candidate_preview_disponible;
-  }
-
-  function renderDesignComparison(site) {
-    const el = document.getElementById("design-comparison");
-    const current = site.design_profile;
-    const candidate = site.candidate_design_profile;
-    if (!candidate) { el.hidden = true; el.innerHTML = ""; return; }
-    el.hidden = false;
-    const currentIsV3 = current && String(current.design_engine_version || "").startsWith("v3");
-    const diffAxes = V3_DESIGN_AXES.filter(function (entry) { return !currentIsV3 || current[entry[0]] !== candidate[entry[0]]; });
-    const currentRows = diffAxes.map(function (entry) { return '<div><dt>' + escapeHtml(entry[1]) + '</dt><dd>' + escapeHtml(axisValueLabel(entry[0], current ? current[entry[0]] : null)) + '</dd></div>'; }).join("");
-    const candidateRows = diffAxes.map(function (entry) { return '<div><dt>' + escapeHtml(entry[1]) + '</dt><dd>' + escapeHtml(axisValueLabel(entry[0], candidate[entry[0]])) + '</dd></div>'; }).join("");
-    el.innerHTML = '<h4>Version actuelle vs alternative</h4>' +
-      '<p class="design-comparison-intro">Comparaison des axes qui diffèrent réellement. « Adopter » remplace le design de travail mais ne publie jamais le site.</p>' +
-      '<div class="design-comparison-grid">' +
-      '<div class="design-comparison-card current"><span class="design-comparison-tag">Version actuelle</span>' + currentRows + '</div>' +
-      '<div class="design-comparison-card candidate"><span class="design-comparison-tag">Alternative</span>' + candidateRows + '</div></div>' +
-      (diffAxes.length ? "" : '<p class="muted">Cette alternative est très proche du design actuel sur les axes affichés.</p>');
-  }
-
-  function candidatePayload() {
-    const keepDirection = document.getElementById("candidate-keep-direction").checked;
-    const directionSelect = document.getElementById("pref-direction").value;
-    const density = document.getElementById("pref-density").value;
-    return {
-      keep_current_direction: keepDirection,
-      preferred_direction: keepDirection ? null : (directionSelect || null),
-      ambience: document.getElementById("pref-ambience").value || null,
-      density: density || null,
-    };
-  }
-
-  async function generateCandidate(regenerate) {
-    const genBtn = document.getElementById("candidate-generate-button");
-    const regenBtn = document.getElementById("candidate-regenerate-button");
-    genBtn.disabled = true;
-    regenBtn.disabled = true;
-    try {
-      const path = "/admin/api/artisans/" + state.artisan.id + "/site/design/candidate" + (regenerate ? "/regenerate" : "");
-      const result = await api(path, { method: "POST", body: JSON.stringify(candidatePayload()) });
-      toast(result.distinct ? "Alternative générée : structure bien distincte du design actuel" : "Alternative générée (proche du design actuel malgré les réglages)");
-      await openArtisan(state.artisan.id);
-    } catch (error) {
-      genBtn.disabled = false;
-      regenBtn.disabled = state.artisan && state.artisan.site && !state.artisan.site.candidate_design_profile;
-      throw error;
-    }
-  }
-
-  async function abandonCandidate() {
-    if (!window.confirm("Abandonner cette alternative ? Elle sera définitivement supprimée. Le design actuel du site n'est pas concerné.")) return;
-    await api("/admin/api/artisans/" + state.artisan.id + "/site/design/candidate", { method: "DELETE" });
-    toast("Alternative abandonnée");
-    await openArtisan(state.artisan.id);
-  }
-
-  async function adoptCandidate() {
-    if (!window.confirm("Adopter cette alternative comme nouveau design du site ? Le site publié n'est jamais modifié automatiquement : vous devrez le republier explicitement si besoin.")) return;
-    await api("/admin/api/artisans/" + state.artisan.id + "/site/design/candidate/adopt", { method: "POST" });
-    toast("Nouveau design adopté — pensez à vérifier le statut du site avant de le republier");
-    await openArtisan(state.artisan.id);
-  }
-
-  async function previewCandidate() {
-    const previewWindow = window.open("about:blank", "_blank");
-    if (!previewWindow) throw new Error("Autorisez l'ouverture de fenêtres pour afficher la preview");
-    previewWindow.opener = null;
-    try {
-      const session = await api("/admin/api/artisans/" + state.artisan.id + "/site/preview-session/candidate", { method: "POST" });
-      previewWindow.location.replace(apiUrl(session.url));
-    } catch (error) {
-      previewWindow.close();
-      throw error;
-    }
-  }
-
   async function openArtisan(id) {
-    // Un rafraichissement apres une action (enregistrer, generer, adopter...)
+    // Un rafraichissement apres une action (enregistrer, marquer pret...)
     // rouvre le meme artisan : ne jamais reinitialiser l'onglet actif dans ce
     // cas, sinon chaque action ramene l'utilisateur a "Vue d'ensemble" et lui
     // fait perdre le contexte de l'onglet ou il travaillait.
@@ -618,24 +393,9 @@
     renderProgressCard(artisan);
     renderStepBadges(artisan);
 
-    const profileIsV3 = String((artisan.site.design_profile && artisan.site.design_profile.design_engine_version) || "").startsWith("v3");
-    const preferences = artisan.site.design_preferences || {};
-    configureDensityOptions();
-    const preferredDirection = preferences.preferred_direction || (profileIsV3 ? artisan.site.design_profile.art_direction : "");
-    renderDesignCurrent(artisan.site);
-    renderSectionsAvailability(artisan.site.sections_disponibles);
-    renderDirectionCards(preferredDirection);
-    document.getElementById("pref-direction").value = preferredDirection;
-    document.getElementById("pref-ambience").value = preferences.ambience || "";
-    document.getElementById("pref-density").value = preferences.density || "";
     const warningBox = document.getElementById("site-content-warnings");
     warningBox.hidden = !(artisan.site.content_warnings || []).length;
     warningBox.textContent = (artisan.site.content_warnings || []).join(" ");
-    document.getElementById("candidate-keep-direction").checked = false;
-    updateCandidateButtons(artisan.site);
-    renderDesignComparison(artisan.site);
-
-    await renderAdminMedia(artisan.media);
   }
 
   function artisanPayload() {
@@ -672,43 +432,11 @@
     await openArtisan(state.artisan.id);
   }
 
-  async function generate() {
-    const nextSite = sitePayload();
-    await api("/admin/api/artisans/" + state.artisan.id, { method: "PATCH", body: JSON.stringify(artisanPayload()) });
-    await api("/admin/api/artisans/" + state.artisan.id + "/site", { method: "PATCH", body: JSON.stringify(nextSite) });
-    const currentVersion = String((state.artisan.site.design_profile && state.artisan.site.design_profile.design_engine_version) || "");
-    if (currentVersion.startsWith("v2")) {
-      await api("/admin/api/artisans/" + state.artisan.id + "/site/design/candidate", {
-        method: "POST",
-        body: JSON.stringify(candidatePayload()),
-      });
-      toast("Alternative V3 générée. Prévisualisez-la puis adoptez-la avant publication.");
-      await openArtisan(state.artisan.id);
-      return;
-    }
-    await api("/admin/api/artisans/" + state.artisan.id + "/site/generate", { method: "POST" });
-    toast("Preview générée");
-    await openArtisan(state.artisan.id);
-  }
-
   async function transition(action, message) {
     if (action === "publish") await saveSite();
     await api("/admin/api/artisans/" + state.artisan.id + "/site/" + action, { method: "POST" });
     toast(message);
     await openArtisan(state.artisan.id);
-  }
-
-  async function openPreview() {
-    const previewWindow = window.open("about:blank", "_blank");
-    if (!previewWindow) throw new Error("Autorisez l'ouverture de fenêtres pour afficher la preview");
-    previewWindow.opener = null;
-    try {
-      const session = await api("/admin/api/artisans/" + state.artisan.id + "/site/preview-session", { method: "POST" });
-      previewWindow.location.replace(apiUrl(session.url));
-    } catch (error) {
-      previewWindow.close();
-      throw error;
-    }
   }
 
   document.querySelectorAll(".nav-item").forEach(function (item) {
@@ -721,57 +449,16 @@
   document.querySelectorAll(".tab-item").forEach(function (tab) {
     tab.addEventListener("click", function () { showTab(tab.dataset.tab); });
   });
-  document.getElementById("go-to-medias-button").addEventListener("click", function () { showTab("medias"); });
   document.getElementById("detail-back").addEventListener("click", function () { (state.previousView === "sites" ? loadSites() : loadArtisans()).catch(handleError); });
   document.getElementById("artisan-form").addEventListener("submit", function (event) { event.preventDefault(); saveArtisan().catch(handleError); });
   document.getElementById("site-form").addEventListener("submit", function (event) { event.preventDefault(); saveSite().catch(handleError); });
-  document.getElementById("generate-button").addEventListener("click", function () { generate().catch(handleError); });
-  document.getElementById("preview-button").addEventListener("click", function () { openPreview().catch(handleError); });
   document.getElementById("ready-button").addEventListener("click", function () { transition("ready", "Site marqué prêt à publier").catch(handleError); });
   document.getElementById("publish-button").addEventListener("click", function () { transition("publish", "Publication enregistrée").catch(handleError); });
-  document.getElementById("admin-logo-form").addEventListener("submit", async function (event) {
-    event.preventDefault();
-    try {
-      await apiUpload("/admin/api/artisans/" + state.artisan.id + "/site/media/logo", new FormData(event.target));
-      event.target.reset();
-      toast("Logo artisan enregistré");
-      await openArtisan(state.artisan.id);
-    } catch (error) { handleError(error); }
-  });
-  document.getElementById("admin-logo-delete").addEventListener("click", async function () {
-    try {
-      await api("/admin/api/artisans/" + state.artisan.id + "/site/media/logo", { method: "DELETE" });
-      toast("Logo artisan supprimé");
-      await openArtisan(state.artisan.id);
-    } catch (error) { handleError(error); }
-  });
-  document.getElementById("admin-media-selections").addEventListener("click", async function (event) {
-    const button = event.target.closest('[data-action="remove-selection"]');
-    const item = event.target.closest("[data-selection-id]");
-    if (!button || !item) return;
-    try {
-      await api("/admin/api/artisans/" + state.artisan.id + "/site/media/selections/" + item.dataset.selectionId, { method: "DELETE" });
-      toast("Image retirée de la sélection");
-      await openArtisan(state.artisan.id);
-    } catch (error) { handleError(error); }
-  });
   document.getElementById("logout-button").addEventListener("click", async function () {
     await api("/admin/auth/logout", { method: "POST" });
     window.sessionStorage.removeItem(ADMIN_TOKEN_KEY);
     window.location.assign("/admin/login.html");
   });
-
-  document.getElementById("design-family-cards").addEventListener("click", function (event) {
-    const card = event.target.closest(".design-family-card");
-    if (!card) return;
-    document.getElementById("pref-direction").value = card.dataset.direction;
-    renderDirectionCards(card.dataset.direction);
-  });
-  document.getElementById("candidate-generate-button").addEventListener("click", function () { generateCandidate(false).catch(handleError); });
-  document.getElementById("candidate-regenerate-button").addEventListener("click", function () { generateCandidate(true).catch(handleError); });
-  document.getElementById("candidate-abandon-button").addEventListener("click", function () { abandonCandidate().catch(handleError); });
-  document.getElementById("candidate-adopt-button").addEventListener("click", function () { adoptCandidate().catch(handleError); });
-  document.getElementById("candidate-preview-button").addEventListener("click", function () { previewCandidate().catch(handleError); });
 
   function debounceSearch(input, loader) {
     let timer;

@@ -3,113 +3,11 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, HttpUrl, field_validator
 
-from app.design_schemas import DesignGrammarOut
 from app.schemas import METIERS_VALIDES
 from app.site_media_schemas import SiteMediaOverviewOut, SiteMediaProfileOut
 
-import sys
-from pathlib import Path
-
-_REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_REPO_ROOT))
-
-from generator.v3.grammar import AMBIENCES, ART_DIRECTIONS, CONTENT_DENSITIES, PROFILE_VALUES as V3_PROFILE_VALUES  # noqa: E402
-
 
 SITE_STATUTS = {"brouillon", "genere", "pret", "publie"}
-CANDIDATE_OVERRIDE_FIELDS = set(V3_PROFILE_VALUES)
-
-
-class DesignPreferencesUpdate(BaseModel):
-    """Preferences Admin (Niveau 1 du configurateur, Lot 4) - orientent la
-    generation d'une alternative, ne remplacent jamais design_profile."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    density: Optional[str] = None
-    preferred_direction: Optional[str] = None
-    ambience: Optional[str] = None
-
-    @field_validator("density")
-    @classmethod
-    def _densite_valide(cls, v):
-        if v is not None and v not in CONTENT_DENSITIES:
-            raise ValueError(f"density doit etre l'une de : {sorted(CONTENT_DENSITIES)}")
-        return v
-
-    @field_validator("preferred_direction")
-    @classmethod
-    def _direction_valide(cls, v):
-        if v is not None and v not in ART_DIRECTIONS:
-            raise ValueError(f"preferred_direction doit etre l'une de : {sorted(ART_DIRECTIONS)}")
-        return v
-
-    @field_validator("ambience")
-    @classmethod
-    def _ambience_valide(cls, v):
-        if v is not None and v not in AMBIENCES:
-            raise ValueError(f"ambience doit etre l'une de : {sorted(AMBIENCES)}")
-        return v
-
-
-class DesignCandidateGenerateRequest(BaseModel):
-    """Payload de generation/regeneration d'une alternative (Lot 4). Tous les
-    champs sont optionnels : sans rien, le moteur choisit automatiquement."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    keep_current_direction: bool = False
-    density: Optional[str] = None
-    overrides: Optional[dict] = None
-    preferred_direction: Optional[str] = None
-    ambience: Optional[str] = None
-
-    @field_validator("density")
-    @classmethod
-    def _densite_valide(cls, v):
-        if v is not None and v not in CONTENT_DENSITIES:
-            raise ValueError(f"density doit etre l'une de : {sorted(CONTENT_DENSITIES)}")
-        return v
-
-    @field_validator("preferred_direction")
-    @classmethod
-    def _candidate_direction_valide(cls, v):
-        if v is not None and v not in ART_DIRECTIONS:
-            raise ValueError(f"preferred_direction doit etre l'une de : {sorted(ART_DIRECTIONS)}")
-        return v
-
-    @field_validator("ambience")
-    @classmethod
-    def _candidate_ambience_valide(cls, v):
-        if v is not None and v not in AMBIENCES:
-            raise ValueError(f"ambience doit etre l'une de : {sorted(AMBIENCES)}")
-        return v
-
-    @field_validator("overrides")
-    @classmethod
-    def _overrides_valides(cls, v):
-        if v is None:
-            return v
-        inconnues = set(v) - (CANDIDATE_OVERRIDE_FIELDS | set(V3_PROFILE_VALUES))
-        if inconnues:
-            raise ValueError(f"Reglages avances inconnus : {sorted(inconnues)}")
-        return v
-
-
-class SectionAvailabilityOut(BaseModel):
-    section: str
-    label: str
-    disponible: bool
-    raison: Optional[str] = None
-
-
-class DesignCandidateOut(BaseModel):
-    """Alternative proposee + indication honnete de sa distance au design
-    actuel (voir le brief, section 11 : jamais de fausse distinction)."""
-
-    profile: DesignGrammarOut
-    distinct: bool
 
 
 class AdminLogin(BaseModel):
@@ -131,10 +29,6 @@ class AdminTokenOut(BaseModel):
     access_token: str
     token_type: str = "bearer"
     admin: AdminIdentityOut
-
-
-class AdminPreviewSessionOut(BaseModel):
-    url: str
 
 
 class AdminDashboardOut(BaseModel):
@@ -251,21 +145,12 @@ class SiteVitrineOut(BaseModel):
     statut: str
     domaine: Optional[str] = None
     url_publique: Optional[str] = None
-    storage_key: Optional[str] = None
     config: dict
-    # Historical V2 JSON remains readable until an explicit V3 adoption. It
-    # is never accepted by generation schemas or runtime dispatchers.
-    design_profile: Optional[dict] = None
-    design_preferences: Optional[dict] = None
-    candidate_design_profile: Optional[DesignGrammarOut] = None
-    candidate_preview_disponible: bool = False
-    sections_disponibles: list[SectionAvailabilityOut] = Field(default_factory=list)
     media_profile: SiteMediaProfileOut = Field(default_factory=SiteMediaProfileOut)
     date_generation: Optional[datetime] = None
     date_publication: Optional[datetime] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-    preview_disponible: bool
     content_warnings: list[str] = Field(default_factory=list)
 
 
@@ -282,10 +167,9 @@ class AdminArtisanListItem(BaseModel):
     domaine: Optional[str] = None
     url_publique: Optional[str] = None
     created_at: datetime
-    # Signaux "a traiter" (refonte Admin) - calcules a partir de donnees reelles
+    # Signal "a traiter" (refonte Admin) - calcule a partir de donnees reelles
     # uniquement (aucun etat invente) : voir _query_artisans dans admin.py.
     media_manquant: bool = False
-    alternative_en_attente: bool = False
 
 
 class AdminArtisanDetail(BaseModel):

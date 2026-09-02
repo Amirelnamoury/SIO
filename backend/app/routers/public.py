@@ -194,9 +194,9 @@ def demande_devis(
 @router.get("/{slug}/avis", response_model=list[AvisPublicSiteOut], dependencies=[Depends(rate_limiter(30, 60))])
 def avis_publies_pour_site(slug: str, db: Session = Depends(get_db)):
     """Endpoint PUBLIC : avis que l'artisan a explicitement choisi de
-    publier sur son site vitrine (voir PATCH /avis/{id}). Consomme par
-    generator/site_generator.py au moment de fabriquer le site - jamais
-    d'avis invente, uniquement ceux reellement soumis et valides."""
+    publier sur son site vitrine (voir PATCH /avis/{id}). Consomme par le
+    site livre a l'artisan - jamais d'avis invente, uniquement ceux
+    reellement soumis et valides."""
     artisan = db.query(Artisan).filter(Artisan.slug == slug).first()
     if artisan is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Artisan introuvable")
