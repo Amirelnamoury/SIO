@@ -159,6 +159,7 @@ def allocate_media(
     ctx: "RenderContext",
     dna: SiteDNA,
     hero_resolution: HeroResolution,
+    hero_consumed_media_ids: frozenset[str] | None = None,
 ) -> MediaAllocationPlan:
     """Reserve media per section, hero first, so nothing under-serves it.
 
@@ -167,12 +168,20 @@ def allocate_media(
     whatever remains, in that priority order, so a page never ends up with a
     full gallery and an empty hero, and the same photograph is not silently
     reused as if it were three different pieces of evidence.
+
+    ``hero_consumed_media_ids`` overrides which of ``hero_resolution.media``
+    are actually reserved -- a bespoke hero realization can find compatible
+    media (``hero_resolution.media`` non-empty) and still not place it in the
+    DOM (e.g. ``technical_nodes_network`` draws a diagram, not a photo); that
+    media must stay available to gallery/about instead of being reserved for
+    nothing. Defaults to "all of it" when not given, matching V0.2 behaviour.
     """
     remaining = list(ctx.media)
     assignments: dict[str, tuple[str, ...]] = {}
     reasons: dict[str, str] = {}
 
-    used_ids = {item.id for item in hero_resolution.media}
+    all_ids = {item.id for item in hero_resolution.media}
+    used_ids = all_ids if hero_consumed_media_ids is None else (all_ids & hero_consumed_media_ids)
     remaining = [item for item in remaining if item.id not in used_ids]
     assignments["hero"] = tuple(used_ids)
     reasons["hero"] = hero_resolution.reason

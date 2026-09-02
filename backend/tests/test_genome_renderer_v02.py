@@ -410,9 +410,9 @@ def test_media_allocation_plan_reserves_hero_pick_before_other_sections():
     fixture = payload()
     dna = replace(dna_for(fixture), gallery_component="stock_ambient_collage", section_order=("header", "hero", "gallery", "footer"))
     ctx = RenderContext.from_payload(fixture, dna, "")
-    resolved = ctx.resolved_for_rendering()
-    hero_ids = set(resolved.hero_resolution.media[i].id for i in range(len(resolved.hero_resolution.media)))
-    gallery_ids = set(resolved.media_plan.assignments.get("gallery", ()))
+    plan = build_render_plan(ctx, "unit-test")
+    hero_ids = set(plan.section("hero").resolved_media)
+    gallery_ids = set(plan.section("gallery").resolved_media)
     assert not (hero_ids & gallery_ids), "the same media item must not be double-booked across sections"
 
 

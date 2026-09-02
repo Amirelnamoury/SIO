@@ -290,5 +290,5 @@ def test_v3_entry_point_remains_default_and_genome_is_explicit(monkeypatch):
     monkeypatch.setattr("generator.site_generator.render_site_v3", lambda value, api: "<p>V3 runtime</p>")
     assert generate_site({"design_profile": {}}, "") == "<p>V3 runtime</p>"
     experimental = generate_site_genome_experimental(payload(), "http://localhost:8000")
-    assert 'data-renderer="design-genome-renderer-0.2"' in experimental
+    assert 'data-renderer="design-genome-renderer-0.2.1"' in experimental
     assert "V3 runtime" not in experimental

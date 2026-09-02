@@ -1,0 +1,102 @@
+{
+  "fixture_id": "site-07",
+  "site_archetype": "industrial_specialist",
+  "art_direction": "technical_spatial",
+  "page_silhouette": "industrial_capabilities",
+  "sections": [
+    {
+      "section": "hero",
+      "component_id": "technical_nodes_network",
+      "family": "hero.technical",
+      "status": "compatible",
+      "reasons": [
+        "declares_compatible_direction:technical_spatial",
+        "declares_compatible_archetype:industrial_specialist"
+      ]
+    },
+    {
+      "section": "services",
+      "component_id": "service_bento",
+      "family": "services.matrix",
+      "status": "compatible",
+      "reasons": [
+        "declares_compatible_direction:technical_spatial",
+        "declares_compatible_archetype:industrial_specialist"
+      ]
+    },
+    {
+      "section": "about",
+      "component_id": "process_manifesto",
+      "family": "about.documentary",
+      "status": "neutral",
+      "reasons": [
+        "no_declared_direction_or_archetype_preference"
+      ]
+    },
+    {
+      "section": "trust",
+      "component_id": "documented_process_proof",
+      "family": "trust.process",
+      "status": "neutral",
+      "reasons": [
+        "no_declared_direction_or_archetype_preference"
+      ]
+    }
+  ],
+  "direction_component_alignment": {
+    "score": 0.925,
+    "reasons": []
+  },
+  "hero_anchor_consistency": {
+    "score": 0.69,
+    "reasons": []
+  },
+  "sequence_transition_consistency": {
+    "score": 0.8867,
+    "reasons": [
+      "shared_traits:information_dense,technical",
+      "repeated_layout_pattern:matrix",
+      "trait_pair:information_dense+technical:+0.14",
+      "adjacent_heavy_components",
+      "density_continuity",
+      "useful_media_intensity_transition",
+      "trait_pair:information_dense+technical:+0.14",
+      "useful_media_intensity_transition",
+      "type_scale_transition",
+      "density_continuity"
+    ]
+  },
+  "visual_weight_progression": {
+    "score": 1.0,
+    "reasons": []
+  },
+  "layout_pattern_variety": {
+    "score": 0.85,
+    "reasons": [
+      "1 section(s) reuse an already-used layout_pattern"
+    ]
+  },
+  "media_language_consistency": {
+    "score": 1.0,
+    "reasons": []
+  },
+  "commercial_flow_consistency": {
+    "score": 1.0,
+    "reasons": []
+  },
+  "overall_score": 0.868,
+  "overall_status": "coherent",
+  "overall_reasons": [
+    "shared_traits:information_dense,technical",
+    "repeated_layout_pattern:matrix",
+    "trait_pair:information_dense+technical:+0.14",
+    "adjacent_heavy_components",
+    "density_continuity",
+    "useful_media_intensity_transition",
+    "trait_pair:information_dense+technical:+0.14",
+    "useful_media_intensity_transition",
+    "type_scale_transition",
+    "density_continuity",
+    "1 section(s) reuse an already-used layout_pattern"
+  ]
+}

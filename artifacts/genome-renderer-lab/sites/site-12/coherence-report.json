@@ -1,0 +1,102 @@
+{
+  "fixture_id": "site-12",
+  "site_archetype": "premium_residential",
+  "art_direction": "editorial_luxury",
+  "page_silhouette": "premium_residential",
+  "sections": [
+    {
+      "section": "hero",
+      "component_id": "split_service_photo",
+      "family": "hero.split_photo",
+      "status": "compatible",
+      "reasons": [
+        "declares_compatible_direction:editorial_luxury"
+      ]
+    },
+    {
+      "section": "about",
+      "component_id": "studio_statement_about",
+      "family": "about.identity",
+      "status": "neutral",
+      "reasons": [
+        "no_declared_direction_or_archetype_preference"
+      ]
+    },
+    {
+      "section": "services",
+      "component_id": "editorial_service_folio",
+      "family": "services.rows",
+      "status": "compatible",
+      "reasons": [
+        "declares_compatible_direction:editorial_luxury"
+      ]
+    },
+    {
+      "section": "gallery",
+      "component_id": "asymmetric_gallery_mosaic",
+      "family": "gallery.masonry",
+      "status": "neutral",
+      "reasons": [
+        "no_declared_direction_or_archetype_preference"
+      ]
+    }
+  ],
+  "direction_component_alignment": {
+    "score": 0.925,
+    "reasons": []
+  },
+  "hero_anchor_consistency": {
+    "score": 0.31,
+    "reasons": [
+      "hero(split_service_photo) vs gallery(asymmetric_gallery_mosaic): score=0.31 reasons=shared_traits:visual_led,adjacent_media_led_sections,type_scale_transition,adjacent_heavy_components,competing_image_dominance,density_continuity"
+    ]
+  },
+  "sequence_transition_consistency": {
+    "score": 0.7367,
+    "reasons": [
+      "repeated_layout_pattern:split",
+      "useful_media_intensity_transition",
+      "type_scale_transition",
+      "density_continuity",
+      "useful_media_intensity_transition",
+      "density_continuity",
+      "type_scale_transition",
+      "density_continuity"
+    ]
+  },
+  "visual_weight_progression": {
+    "score": 1.0,
+    "reasons": []
+  },
+  "layout_pattern_variety": {
+    "score": 0.85,
+    "reasons": [
+      "1 section(s) reuse an already-used layout_pattern"
+    ]
+  },
+  "media_language_consistency": {
+    "score": 0.75,
+    "reasons": [
+      "multiple high-visual-weight, media-dependent sections compete for the same attention"
+    ]
+  },
+  "commercial_flow_consistency": {
+    "score": 1.0,
+    "reasons": []
+  },
+  "overall_score": 0.714,
+  "overall_status": "warning",
+  "overall_reasons": [
+    "hero(split_service_photo) vs gallery(asymmetric_gallery_mosaic): score=0.31 reasons=shared_traits:visual_led,adjacent_media_led_sections,type_scale_transition,adjacent_heavy_components,competing_image_dominance,density_continuity",
+    "repeated_layout_pattern:split",
+    "useful_media_intensity_transition",
+    "type_scale_transition",
+    "density_continuity",
+    "useful_media_intensity_transition",
+    "density_continuity",
+    "type_scale_transition",
+    "density_continuity",
+    "1 section(s) reuse an already-used layout_pattern",
+    "multiple high-visual-weight, media-dependent sections compete for the same attention"
+  ]
+}

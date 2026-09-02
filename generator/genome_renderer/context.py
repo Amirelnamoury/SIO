@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import html
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from typing import Any, Mapping
 from urllib.parse import urlsplit
 
@@ -101,9 +101,6 @@ class RenderContext:
     api_base_url: str
     lab_mode: bool = False
     synthetic_fixture: bool = False
-    hero_resolution: "object | None" = None
-    media_plan: "object | None" = None
-    used_copy: frozenset[str] = frozenset()
 
     @classmethod
     def from_payload(
@@ -290,59 +287,18 @@ class RenderContext:
         # values` (that silently ignored an explicit zero).
         return tuple(values) if limit is None else tuple(values[:limit])
 
-    def media_for_section(
-        self, section: str, component: ComponentDefinition, *, limit: int | None = None
-    ) -> tuple[RenderMedia, ...]:
-        """Like ``media_for``, but honoring the page-level allocation plan.
+    def media_by_ids(self, ids: tuple[str, ...]) -> tuple[RenderMedia, ...]:
+        """Hydrate already-decided media ids (from a resolved ``SectionPlan``)
+        back into ``RenderMedia`` objects, preserving order.
 
-        Once a ``MediaAllocationPlan`` has been attached (see
-        :func:`resolved_for_rendering`), a section only ever draws from the
-        slice of the pool actually reserved for it -- so a photo the hero
-        already claimed cannot also resurface, unlabeled, as "about" imagery.
-        Without a plan (e.g. a renderer unit test that builds a bare
-        context), this degrades to the plain, unreserved lookup.
+        This is a lookup, not a decision: *which* ids a section gets was
+        decided once, in ``render_plan.build_render_plan`` (rule 4 of the
+        V0.2.1 brief -- no second place re-derives that choice). Renderers
+        call this only to materialize markup from an id list they were
+        already handed.
         """
-        if self.media_plan is None:
-            return self.media_for(component, limit=limit)
-        pool = self.media_plan.pool_for(section, self.media)
-        return self.media_for(component, limit=limit, pool=pool)
-
-    def resolved_for_rendering(self) -> "RenderContext":
-        """Run hero resolution + media allocation once, before any section renders.
-
-        This is what makes the resolution a real page-level *plan* instead of
-        each section independently reaching into the same pool: the hero is
-        resolved first (with the full pool, and the authority to recompose
-        its own DNA field when its family cannot honestly render without
-        media -- rule K), then the remaining sections are allocated what is
-        left. Both ``render_site_genome`` and ``build_render_plan`` call this
-        so the HTML and the reported plan can never drift apart.
-        """
-        from .media_plan import HeroMediaResolver, allocate_media  # local import: avoids a module cycle
-
-        hero_resolution = HeroMediaResolver.resolve(self, self.dna)
-        dna = self.dna
-        if hero_resolution.decision is not None:
-            dna = replace(dna, hero_component=hero_resolution.decision.resolved)
-        plan = allocate_media(self, dna, hero_resolution)
-        return replace(self, dna=dna, hero_resolution=hero_resolution, media_plan=plan)
-
-    def is_duplicate_copy(self, text: str) -> bool:
-        """True when this exact literal string was already used in another section.
-
-        A tiny, honest ``ContentUsageRegistry``: it never invents alternate
-        copy (rule Z forbids that) -- it only lets a section know it is about
-        to repeat itself verbatim, so the caller can render a reduced
-        treatment instead of a second full paragraph saying the same thing.
-        """
-        text = text.strip()
-        return bool(text) and text in self.used_copy
-
-    def with_copy_used(self, *texts: str) -> "RenderContext":
-        additions = {text.strip() for text in texts if text and text.strip()}
-        if not additions:
-            return self
-        return replace(self, used_copy=self.used_copy | additions)
+        by_id = {item.id: item for item in self.media}
+        return tuple(by_id[id_] for id_ in ids if id_ in by_id)
 
     def logo(self) -> RenderMedia | None:
         return next((item for item in self.media if item.role == "logo"), None)

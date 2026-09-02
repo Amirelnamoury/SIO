@@ -67,3 +67,27 @@ NO_IMAGE_CAPABLE_FAMILIES: tuple[str, ...] = (
     "hero.conversion",
     "hero.spatial",
 )
+
+# Some bespoke hero realizations only ever place a bounded number of the
+# resolved media items in the DOM even when HeroMediaResolver found more
+# compatible ones (e.g. render_material_hero always shows exactly one macro
+# image -- media[:1] -- regardless of how many the "material" family's
+# media_count_max=3 allowed it to resolve). Keyed by family_id, since the
+# cap is a property of the shared bespoke renderer every variant in that
+# family routes through, not any one variant. Same rationale as
+# NO_MEDIA_CONSUMED_HERO_IDS just below: the plan must report what actually
+# renders, not what was merely available.
+HERO_MEDIA_DISPLAY_LIMIT_BY_FAMILY: dict[str, int] = {
+    "hero.material": 1,
+}
+
+# Component ids whose bespoke realization (families.py) materializes as a
+# diagram/composition built from real, non-photographic content (service
+# names, tokens) and never actually places any resolved photo in the DOM --
+# even when HeroMediaResolver found compatible media. The RenderPlan must
+# report this accurately (resolved_media=(), see render_plan._resolve_hero)
+# so "the plan says media X is used" cannot diverge from "the HTML shows no
+# such image" (the exact class of bug this module's V0.2.1 pass exists to
+# close). Single source of truth for both render_plan.py (reporting) and
+# families.py (dispatch), so the two cannot drift apart on this list.
+NO_MEDIA_CONSUMED_HERO_IDS: frozenset[str] = frozenset({"technical_nodes_network"})

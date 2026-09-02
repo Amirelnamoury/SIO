@@ -1,8 +1,8 @@
 {
-  "renderer": "design-genome-renderer-0.2",
+  "renderer": "design-genome-renderer-0.2.1",
   "fixture_policy": "synthetic fixtures restricted to the visual lab",
   "aesthetic_status": "NOT_REVIEWED",
-  "baseline": "v0.1 preserved under sites-v0.1/ and review/v0.1/ -- never overwritten by this script",
+  "baseline": "v0.1 preserved under sites-v0.1/ and review/v0.1/; v0.2 under sites-v0.2/ and review/v0.2/ -- never overwritten by this script",
   "fixtures": [
     {
       "fixture_id": "site-01",
@@ -75,10 +75,12 @@
         },
         "empty_slot_risk": {
           "score": 1.0,
-          "reasons": []
+          "reasons": [
+            "plan contains no section that is rendered with an implied-but-unresolved media region"
+          ]
         },
         "art_direction_fidelity": {
-          "score": 1.0,
+          "score": 0.875,
           "reasons": []
         },
         "visual_rhythm": {
@@ -87,9 +89,13 @@
         },
         "mobile_readiness": {
           "score": 1.0,
-          "reasons": []
+          "reasons": [
+            "every rendered section declares mobile collapse metadata; a conversion path is present"
+          ]
         }
       },
+      "coherence_overall_score": 0.916,
+      "coherence_overall_status": "coherent",
       "aesthetic_status": "NOT_REVIEWED"
     },
     {
@@ -152,8 +158,10 @@
           "reasons": []
         },
         "narrative_completeness": {
-          "score": 1.0,
-          "reasons": []
+          "score": 0.7,
+          "reasons": [
+            "about narrative duplicated the hero tagline; reduced to a fact strip"
+          ]
         },
         "section_balance": {
           "score": 1.0,
@@ -161,23 +169,27 @@
         },
         "empty_slot_risk": {
           "score": 1.0,
-          "reasons": []
+          "reasons": [
+            "plan contains no section that is rendered with an implied-but-unresolved media region"
+          ]
         },
         "art_direction_fidelity": {
-          "score": 1.0,
+          "score": 0.895,
           "reasons": []
         },
         "visual_rhythm": {
-          "score": 0.85,
-          "reasons": [
-            "1 rendered section(s) reuse an already-used layout pattern"
-          ]
+          "score": 1.0,
+          "reasons": []
         },
         "mobile_readiness": {
           "score": 1.0,
-          "reasons": []
+          "reasons": [
+            "every rendered section declares mobile collapse metadata; a conversion path is present"
+          ]
         }
       },
+      "coherence_overall_score": 0.915,
+      "coherence_overall_status": "coherent",
       "aesthetic_status": "NOT_REVIEWED"
     },
     {
@@ -240,8 +252,10 @@
           "reasons": []
         },
         "narrative_completeness": {
-          "score": 1.0,
-          "reasons": []
+          "score": 0.7,
+          "reasons": [
+            "about narrative duplicated the hero tagline; reduced to a fact strip"
+          ]
         },
         "section_balance": {
           "score": 1.0,
@@ -249,10 +263,12 @@
         },
         "empty_slot_risk": {
           "score": 1.0,
-          "reasons": []
+          "reasons": [
+            "plan contains no section that is rendered with an implied-but-unresolved media region"
+          ]
         },
         "art_direction_fidelity": {
-          "score": 1.0,
+          "score": 0.975,
           "reasons": []
         },
         "visual_rhythm": {
@@ -261,9 +277,13 @@
         },
         "mobile_readiness": {
           "score": 1.0,
-          "reasons": []
+          "reasons": [
+            "every rendered section declares mobile collapse metadata; a conversion path is present"
+          ]
         }
       },
+      "coherence_overall_score": 0.966,
+      "coherence_overall_status": "coherent",
       "aesthetic_status": "NOT_REVIEWED"
     },
     {
@@ -314,10 +334,8 @@
           "reasons": []
         },
         "media_readiness": {
-          "score": 0.67,
-          "reasons": [
-            "gallery: no compatible media in the allocation pool"
-          ]
+          "score": 1.0,
+          "reasons": []
         },
         "content_density": {
           "score": 1.0,
@@ -328,8 +346,10 @@
           "reasons": []
         },
         "narrative_completeness": {
-          "score": 1.0,
-          "reasons": []
+          "score": 0.7,
+          "reasons": [
+            "about narrative duplicated the hero tagline; reduced to a fact strip"
+          ]
         },
         "section_balance": {
           "score": 1.0,
@@ -337,11 +357,15 @@
         },
         "empty_slot_risk": {
           "score": 1.0,
-          "reasons": []
+          "reasons": [
+            "plan contains no section that is rendered with an implied-but-unresolved media region"
+          ]
         },
         "art_direction_fidelity": {
-          "score": 1.0,
-          "reasons": []
+          "score": 0.625,
+          "reasons": [
+            "hero(parallax_layered_material) vs gallery(stock_ambient_collage): score=0.25 reasons=adjacent_media_led_sections,type_scale_transition,adjacent_heavy_components,competing_image_dominance,density_continuity"
+          ]
         },
         "visual_rhythm": {
           "score": 1.0,
@@ -349,9 +373,13 @@
         },
         "mobile_readiness": {
           "score": 1.0,
-          "reasons": []
+          "reasons": [
+            "every rendered section declares mobile collapse metadata; a conversion path is present"
+          ]
         }
       },
+      "coherence_overall_score": 0.715,
+      "coherence_overall_status": "tension",
       "aesthetic_status": "NOT_REVIEWED"
     },
     {
@@ -402,10 +430,8 @@
           "reasons": []
         },
         "media_readiness": {
-          "score": 0.67,
-          "reasons": [
-            "gallery: no compatible media in the allocation pool"
-          ]
+          "score": 1.0,
+          "reasons": []
         },
         "content_density": {
           "score": 1.0,
@@ -416,8 +442,10 @@
           "reasons": []
         },
         "narrative_completeness": {
-          "score": 1.0,
-          "reasons": []
+          "score": 0.7,
+          "reasons": [
+            "about narrative duplicated the hero tagline; reduced to a fact strip"
+          ]
         },
         "section_balance": {
           "score": 1.0,
@@ -425,11 +453,15 @@
         },
         "empty_slot_risk": {
           "score": 1.0,
-          "reasons": []
+          "reasons": [
+            "plan contains no section that is rendered with an implied-but-unresolved media region"
+          ]
         },
         "art_direction_fidelity": {
-          "score": 1.0,
-          "reasons": []
+          "score": 0.625,
+          "reasons": [
+            "hero(material_macro_title) vs gallery(stock_ambient_collage): score=0.25 reasons=adjacent_media_led_sections,type_scale_transition,adjacent_heavy_components,competing_image_dominance,density_continuity"
+          ]
         },
         "visual_rhythm": {
           "score": 0.85,
@@ -439,9 +471,13 @@
         },
         "mobile_readiness": {
           "score": 1.0,
-          "reasons": []
+          "reasons": [
+            "every rendered section declares mobile collapse metadata; a conversion path is present"
+          ]
         }
       },
+      "coherence_overall_score": 0.698,
+      "coherence_overall_status": "tension",
       "aesthetic_status": "NOT_REVIEWED"
     },
     {
@@ -504,8 +540,10 @@
           "reasons": []
         },
         "narrative_completeness": {
-          "score": 1.0,
-          "reasons": []
+          "score": 0.7,
+          "reasons": [
+            "about narrative duplicated the hero tagline; reduced to a fact strip"
+          ]
         },
         "section_balance": {
           "score": 1.0,
@@ -513,10 +551,12 @@
         },
         "empty_slot_risk": {
           "score": 1.0,
-          "reasons": []
+          "reasons": [
+            "plan contains no section that is rendered with an implied-but-unresolved media region"
+          ]
         },
         "art_direction_fidelity": {
-          "score": 1.0,
+          "score": 0.925,
           "reasons": []
         },
         "visual_rhythm": {
@@ -527,9 +567,13 @@
         },
         "mobile_readiness": {
           "score": 1.0,
-          "reasons": []
+          "reasons": [
+            "every rendered section declares mobile collapse metadata; a conversion path is present"
+          ]
         }
       },
+      "coherence_overall_score": 0.927,
+      "coherence_overall_status": "coherent",
       "aesthetic_status": "NOT_REVIEWED"
     },
     {
@@ -592,8 +636,10 @@
           "reasons": []
         },
         "narrative_completeness": {
-          "score": 1.0,
-          "reasons": []
+          "score": 0.7,
+          "reasons": [
+            "about narrative duplicated the hero tagline; reduced to a fact strip"
+          ]
         },
         "section_balance": {
           "score": 1.0,
@@ -601,10 +647,12 @@
         },
         "empty_slot_risk": {
           "score": 1.0,
-          "reasons": []
+          "reasons": [
+            "plan contains no section that is rendered with an implied-but-unresolved media region"
+          ]
         },
         "art_direction_fidelity": {
-          "score": 1.0,
+          "score": 0.845,
           "reasons": []
         },
         "visual_rhythm": {
@@ -615,9 +663,13 @@
         },
         "mobile_readiness": {
           "score": 1.0,
-          "reasons": []
+          "reasons": [
+            "every rendered section declares mobile collapse metadata; a conversion path is present"
+          ]
         }
       },
+      "coherence_overall_score": 0.868,
+      "coherence_overall_status": "coherent",
       "aesthetic_status": "NOT_REVIEWED"
     },
     {
@@ -672,7 +724,7 @@
           "reasons": []
         },
         "content_density": {
-          "score": 1.0,
+          "score": 0.6666666666666666,
           "reasons": []
         },
         "commercial_completeness": {
@@ -691,23 +743,27 @@
         },
         "empty_slot_risk": {
           "score": 1.0,
-          "reasons": []
+          "reasons": [
+            "plan contains no section that is rendered with an implied-but-unresolved media region"
+          ]
         },
         "art_direction_fidelity": {
-          "score": 1.0,
+          "score": 0.965,
           "reasons": []
         },
         "visual_rhythm": {
-          "score": 0.85,
-          "reasons": [
-            "1 rendered section(s) reuse an already-used layout pattern"
-          ]
+          "score": 1.0,
+          "reasons": []
         },
         "mobile_readiness": {
           "score": 1.0,
-          "reasons": []
+          "reasons": [
+            "every rendered section declares mobile collapse metadata; a conversion path is present"
+          ]
         }
       },
+      "coherence_overall_score": 0.968,
+      "coherence_overall_status": "coherent",
       "aesthetic_status": "NOT_REVIEWED"
     },
     {
@@ -762,7 +818,7 @@
           "reasons": []
         },
         "content_density": {
-          "score": 1.0,
+          "score": 0.6666666666666666,
           "reasons": []
         },
         "commercial_completeness": {
@@ -781,10 +837,12 @@
         },
         "empty_slot_risk": {
           "score": 1.0,
-          "reasons": []
+          "reasons": [
+            "plan contains no section that is rendered with an implied-but-unresolved media region"
+          ]
         },
         "art_direction_fidelity": {
-          "score": 1.0,
+          "score": 0.97,
           "reasons": []
         },
         "visual_rhythm": {
@@ -793,9 +851,13 @@
         },
         "mobile_readiness": {
           "score": 1.0,
-          "reasons": []
+          "reasons": [
+            "every rendered section declares mobile collapse metadata; a conversion path is present"
+          ]
         }
       },
+      "coherence_overall_score": 0.932,
+      "coherence_overall_status": "coherent",
       "aesthetic_status": "NOT_REVIEWED"
     },
     {
@@ -846,10 +908,8 @@
           "reasons": []
         },
         "media_readiness": {
-          "score": 0.67,
-          "reasons": [
-            "gallery: no compatible media in the allocation pool"
-          ]
+          "score": 1.0,
+          "reasons": []
         },
         "content_density": {
           "score": 1.0,
@@ -860,8 +920,10 @@
           "reasons": []
         },
         "narrative_completeness": {
-          "score": 1.0,
-          "reasons": []
+          "score": 0.7,
+          "reasons": [
+            "about narrative duplicated the hero tagline; reduced to a fact strip"
+          ]
         },
         "section_balance": {
           "score": 1.0,
@@ -869,11 +931,15 @@
         },
         "empty_slot_risk": {
           "score": 1.0,
-          "reasons": []
+          "reasons": [
+            "plan contains no section that is rendered with an implied-but-unresolved media region"
+          ]
         },
         "art_direction_fidelity": {
-          "score": 1.0,
-          "reasons": []
+          "score": 0.625,
+          "reasons": [
+            "hero(material_macro_title) vs gallery(visual_atmosphere_sequence): score=0.25 reasons=adjacent_media_led_sections,type_scale_transition,adjacent_heavy_components,competing_image_dominance,density_continuity"
+          ]
         },
         "visual_rhythm": {
           "score": 0.85,
@@ -883,9 +949,13 @@
         },
         "mobile_readiness": {
           "score": 1.0,
-          "reasons": []
+          "reasons": [
+            "every rendered section declares mobile collapse metadata; a conversion path is present"
+          ]
         }
       },
+      "coherence_overall_score": 0.698,
+      "coherence_overall_status": "tension",
       "aesthetic_status": "NOT_REVIEWED"
     },
     {
@@ -948,8 +1018,10 @@
           "reasons": []
         },
         "narrative_completeness": {
-          "score": 1.0,
-          "reasons": []
+          "score": 0.7,
+          "reasons": [
+            "about narrative duplicated the hero tagline; reduced to a fact strip"
+          ]
         },
         "section_balance": {
           "score": 1.0,
@@ -957,11 +1029,16 @@
         },
         "empty_slot_risk": {
           "score": 1.0,
-          "reasons": []
+          "reasons": [
+            "plan contains no section that is rendered with an implied-but-unresolved media region"
+          ]
         },
         "art_direction_fidelity": {
-          "score": 1.0,
-          "reasons": []
+          "score": 0.625,
+          "reasons": [
+            "hero(quiet_luxury_window) vs about(technical_expertise_about): score=0.5 reasons=useful_media_intensity_transition,type_scale_transition,trait_pair:cinematic+information_dense:-0.24,trait_pair:information_dense+technical:+0.14,technical_language_break",
+            "hero(quiet_luxury_window) vs gallery(portrait_landscape_dialogue): score=0.25 reasons=adjacent_media_led_sections,type_scale_transition,adjacent_heavy_components,competing_image_dominance,density_continuity"
+          ]
         },
         "visual_rhythm": {
           "score": 1.0,
@@ -969,9 +1046,13 @@
         },
         "mobile_readiness": {
           "score": 1.0,
-          "reasons": []
+          "reasons": [
+            "every rendered section declares mobile collapse metadata; a conversion path is present"
+          ]
         }
       },
+      "coherence_overall_score": 0.744,
+      "coherence_overall_status": "tension",
       "aesthetic_status": "NOT_REVIEWED"
     },
     {
@@ -1034,8 +1115,10 @@
           "reasons": []
         },
         "narrative_completeness": {
-          "score": 1.0,
-          "reasons": []
+          "score": 0.7,
+          "reasons": [
+            "about narrative duplicated the hero tagline; reduced to a fact strip"
+          ]
         },
         "section_balance": {
           "score": 1.0,
@@ -1043,11 +1126,15 @@
         },
         "empty_slot_risk": {
           "score": 1.0,
-          "reasons": []
+          "reasons": [
+            "plan contains no section that is rendered with an implied-but-unresolved media region"
+          ]
         },
         "art_direction_fidelity": {
-          "score": 1.0,
-          "reasons": []
+          "score": 0.655,
+          "reasons": [
+            "hero(split_service_photo) vs gallery(asymmetric_gallery_mosaic): score=0.31 reasons=shared_traits:visual_led,adjacent_media_led_sections,type_scale_transition,adjacent_heavy_components,competing_image_dominance,density_continuity"
+          ]
         },
         "visual_rhythm": {
           "score": 0.85,
@@ -1057,9 +1144,13 @@
         },
         "mobile_readiness": {
           "score": 1.0,
-          "reasons": []
+          "reasons": [
+            "every rendered section declares mobile collapse metadata; a conversion path is present"
+          ]
         }
       },
+      "coherence_overall_score": 0.714,
+      "coherence_overall_status": "warning",
       "aesthetic_status": "NOT_REVIEWED"
     }
   ]

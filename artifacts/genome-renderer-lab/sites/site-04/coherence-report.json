@@ -1,0 +1,97 @@
+{
+  "fixture_id": "site-04",
+  "site_archetype": "warm_artisan",
+  "art_direction": "warm_craft",
+  "page_silhouette": "warm_artisan",
+  "sections": [
+    {
+      "section": "hero",
+      "component_id": "parallax_layered_material",
+      "family": "hero.material",
+      "status": "compatible",
+      "reasons": [
+        "declares_compatible_direction:warm_craft"
+      ]
+    },
+    {
+      "section": "about",
+      "component_id": "service_area_story",
+      "family": "about.local",
+      "status": "neutral",
+      "reasons": [
+        "no_declared_direction_or_archetype_preference"
+      ]
+    },
+    {
+      "section": "services",
+      "component_id": "icon_service_grid",
+      "family": "services.grid",
+      "status": "neutral",
+      "reasons": [
+        "no_declared_direction_or_archetype_preference"
+      ]
+    },
+    {
+      "section": "gallery",
+      "component_id": "stock_ambient_collage",
+      "family": "gallery.ambient",
+      "status": "neutral",
+      "reasons": [
+        "no_declared_direction_or_archetype_preference"
+      ]
+    }
+  ],
+  "direction_component_alignment": {
+    "score": 0.887,
+    "reasons": []
+  },
+  "hero_anchor_consistency": {
+    "score": 0.25,
+    "reasons": [
+      "hero(parallax_layered_material) vs gallery(stock_ambient_collage): score=0.25 reasons=adjacent_media_led_sections,type_scale_transition,adjacent_heavy_components,competing_image_dominance,density_continuity"
+    ]
+  },
+  "sequence_transition_consistency": {
+    "score": 0.7967,
+    "reasons": [
+      "useful_media_intensity_transition",
+      "type_scale_transition",
+      "density_continuity",
+      "useful_media_intensity_transition",
+      "density_continuity",
+      "type_scale_transition",
+      "density_continuity"
+    ]
+  },
+  "visual_weight_progression": {
+    "score": 1.0,
+    "reasons": []
+  },
+  "layout_pattern_variety": {
+    "score": 1.0,
+    "reasons": []
+  },
+  "media_language_consistency": {
+    "score": 0.75,
+    "reasons": [
+      "multiple high-visual-weight, media-dependent sections compete for the same attention"
+    ]
+  },
+  "commercial_flow_consistency": {
+    "score": 1.0,
+    "reasons": []
+  },
+  "overall_score": 0.715,
+  "overall_status": "tension",
+  "overall_reasons": [
+    "hero(parallax_layered_material) vs gallery(stock_ambient_collage): score=0.25 reasons=adjacent_media_led_sections,type_scale_transition,adjacent_heavy_components,competing_image_dominance,density_continuity",
+    "useful_media_intensity_transition",
+    "type_scale_transition",
+    "density_continuity",
+    "useful_media_intensity_transition",
+    "density_continuity",
+    "type_scale_transition",
+    "density_continuity",
+    "multiple high-visual-weight, media-dependent sections compete for the same attention"
+  ]
+}

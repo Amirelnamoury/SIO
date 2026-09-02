@@ -22,7 +22,6 @@ from __future__ import annotations
 import html
 
 from .context import RenderContext, RenderMedia
-from .media_plan import HeroResolution
 from .primitives import actions_html, component_attributes, image
 
 
@@ -195,14 +194,18 @@ def render_technical_network_hero(ctx: RenderContext, component) -> str:
     )
 
 
-def render_hero_family(ctx: RenderContext, resolution: HeroResolution) -> str:
-    component = resolution.component
-    if resolution.mode in {"no_image_intentional", "recomposed"}:
-        return render_typographic_hero(ctx, component, resolution.reason)
-    if resolution.mode == "media" and component.id == "technical_nodes_network":
+def render_hero_family(
+    ctx: RenderContext, component, resolved_mode: str, media: tuple[RenderMedia, ...], fallback_reason: str
+) -> str | None:
+    """``resolved_mode`` and ``media`` come from an already-resolved
+    ``SectionPlan`` (see render_plan.py) -- this function only decides which
+    bespoke markup to materialize, it does not re-derive the hero's mode."""
+    if resolved_mode in {"no_image_intentional", "recomposed"}:
+        return render_typographic_hero(ctx, component, fallback_reason)
+    if resolved_mode == "diagram" and component.id == "technical_nodes_network":
         return render_technical_network_hero(ctx, component)
-    if resolution.mode == "media" and component.family_id == "hero.material":
-        return render_material_hero(ctx, component, resolution.media)
+    if resolved_mode == "media" and component.family_id == "hero.material":
+        return render_material_hero(ctx, component, media)
     return None  # signals the caller to use the generic hero renderer
 
 

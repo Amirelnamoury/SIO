@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import html
 import json
-from dataclasses import replace
 from urllib.parse import urlsplit
 
 from .context import RenderContext
-from .sections import SECTION_RENDERERS, render_contact, render_footer, render_header
+from .render_plan import RenderPlan, build_render_plan
+from .sections import SECTION_RENDERERS, render_footer, render_header
 from .styles import render_css
 
 
-RENDERER_SCHEMA_VERSION = "design-genome-renderer-0.2"
+RENDERER_SCHEMA_VERSION = "design-genome-renderer-0.2.1"
 
 
 def _json(value: object) -> str:
@@ -73,39 +73,31 @@ message:document.getElementById("description").value||null
     )
 
 
-def render_site_genome(ctx: RenderContext) -> str:
-    # Resolve the hero (with recomposition authority) and allocate the
-    # remaining media pool across sections *before* any section renders, so
-    # every renderer downstream consumes one consistent plan instead of each
-    # one independently re-deriving media eligibility against the full pool.
-    ctx = ctx.resolved_for_rendering()
+def render_site_genome(ctx: RenderContext, plan: RenderPlan | None = None) -> str:
+    """Render from a resolved ``RenderPlan``.
+
+    V0.2.1: the plan is now the single source of truth for what renders and
+    how (media, hero recomposition, about's narrative/fact-strip/omitted
+    choice, the contact fallback -- see ``render_plan.build_render_plan``).
+    This function no longer makes any of those decisions itself; it walks
+    ``plan.rendered_sections`` in order and asks each section's renderer to
+    materialize the decision already recorded there. Passing an explicit
+    ``plan`` (e.g. one already built for the lab's JSON export) guarantees
+    "the plan rendered" and "the plan reported" are the same object, not two
+    independently-resolved ones (rule 7/36 of the V0.2.1 brief).
+    """
+    plan = plan if plan is not None else build_render_plan(ctx)
     rendered = []
     names = []
-    for section in ctx.dna.section_order:
-        if section in {"header", "footer"} or section in names:
+    for section_plan in plan.rendered_sections:
+        renderer = SECTION_RENDERERS.get(section_plan.section)
+        if renderer is None:
             continue
-        renderer = SECTION_RENDERERS.get(section)
-        value = renderer(ctx) if renderer else ""
+        value = renderer(ctx, section_plan)
         if value:
-            names.append(section)
-            rendered.append(value)
-            if section == "hero" and ctx.plain("tagline"):
-                # Registers the hero's tagline so a later section (about,
-                # typically) can detect it would otherwise repeat the exact
-                # same sentence verbatim (rule Z) and reduce itself instead.
-                ctx = ctx.with_copy_used(ctx.plain("tagline"))
-    if "contact" not in names and (ctx.dna.form_component or ctx.plain("slug")):
-        # A real slug means a real /pub/{slug}/demande-devis contract exists
-        # even when the Design Genome never assigned a contact/form
-        # component (typically for lack of a verified phone/email to build
-        # one around -- see render_contact). Rule AD/AE: a page should not
-        # be left with zero conversion path when a genuine one is available.
-        value = render_contact(ctx)
-        if value:
-            names.append("contact")
+            names.append(section_plan.section)
             rendered.append(value)
     rendered_order = tuple(("header", *names, "footer"))
-    chrome_context = replace(ctx, dna=replace(ctx.dna, section_order=rendered_order))
     classes = " ".join((
         f"direction-{ctx.dna.art_direction}",
         f"grid-{ctx.dna.grid_system}",
@@ -117,4 +109,4 @@ def render_site_genome(ctx: RenderContext) -> str:
     ))
     lab_banner = '<div class="lab-banner">Fixture synthétique — revue visuelle uniquement</div>' if ctx.synthetic_fixture else ""
     spatial_rendering = "none" if ctx.dna.spatial_system == "none" else "static-fallback"
-    return f'''<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">{_seo(ctx)}<style>{render_css(ctx)}</style></head><body class="{classes}" data-renderer="{RENDERER_SCHEMA_VERSION}" data-spatial-rendering="{spatial_rendering}" data-design-signature="{html.escape(ctx.dna.design_signature, quote=True)}" data-composition-signature="{html.escape(ctx.dna.composition_signature, quote=True)}" data-rendered-sections="{','.join(names)}">{lab_banner}<a class="skip-link" href="#contenu">Aller au contenu</a>{render_header(chrome_context)}<main id="contenu">{"".join(rendered)}</main>{render_footer(chrome_context)}{_form_script(ctx)}</body></html>'''
+    return f'''<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">{_seo(ctx)}<style>{render_css(ctx)}</style></head><body class="{classes}" data-renderer="{RENDERER_SCHEMA_VERSION}" data-spatial-rendering="{spatial_rendering}" data-design-signature="{html.escape(ctx.dna.design_signature, quote=True)}" data-composition-signature="{html.escape(ctx.dna.composition_signature, quote=True)}" data-rendered-sections="{','.join(names)}">{lab_banner}<a class="skip-link" href="#contenu">Aller au contenu</a>{render_header(ctx, rendered_order)}<main id="contenu">{"".join(rendered)}</main>{render_footer(ctx, rendered_order)}{_form_script(ctx)}</body></html>'''

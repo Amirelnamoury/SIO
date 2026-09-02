@@ -1,0 +1,68 @@
+{
+  "fixture_id": "site-09",
+  "site_archetype": "bold_local",
+  "art_direction": "architectural_brutalist",
+  "page_silhouette": "bold_local",
+  "sections": [
+    {
+      "section": "hero",
+      "component_id": "editorial_columns_manifesto",
+      "family": "hero.typographic",
+      "status": "compatible",
+      "reasons": [
+        "declares_compatible_direction:architectural_brutalist"
+      ]
+    },
+    {
+      "section": "services",
+      "component_id": "large_typographic_service_index",
+      "family": "services.index",
+      "status": "neutral",
+      "reasons": [
+        "no_declared_direction_or_archetype_preference"
+      ]
+    }
+  ],
+  "direction_component_alignment": {
+    "score": 0.925,
+    "reasons": []
+  },
+  "hero_anchor_consistency": {
+    "score": 0.94,
+    "reasons": []
+  },
+  "sequence_transition_consistency": {
+    "score": 0.94,
+    "reasons": [
+      "shared_traits:editorial",
+      "useful_media_intensity_transition",
+      "type_scale_transition"
+    ]
+  },
+  "visual_weight_progression": {
+    "score": 1.0,
+    "reasons": []
+  },
+  "layout_pattern_variety": {
+    "score": 1.0,
+    "reasons": []
+  },
+  "media_language_consistency": {
+    "score": 1.0,
+    "reasons": []
+  },
+  "commercial_flow_consistency": {
+    "score": 0.7,
+    "reasons": [
+      "archetype conversion_intensity=0.84 but the page does not close on a conversion-led section"
+    ]
+  },
+  "overall_score": 0.932,
+  "overall_status": "coherent",
+  "overall_reasons": [
+    "shared_traits:editorial",
+    "useful_media_intensity_transition",
+    "type_scale_transition",
+    "archetype conversion_intensity=0.84 but the page does not close on a conversion-led section"
+  ]
+}
