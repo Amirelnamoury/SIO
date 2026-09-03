@@ -1909,10 +1909,21 @@ function taskRowHtml(item) {
     ? `<button type="button" class="btn-sm btn-sm-primary" data-action="${item.action}" data-id="${item.actionId}">${item.actionLabel}</button>`
     : "";
   const voirBtn = item.view ? `<button type="button" class="btn-sm" data-action="voir-notification" data-view="${item.view}">Voir</button>` : "";
+  // Composition en champs distincts (type / titre / contexte / montant)
+  // plutot qu'une seule chaine concatenee : memes donnees deja calculees
+  // par prioriteItems, juste reparties pour rester scannable d'un coup
+  // d'oeil (voir aussi item.label, conserve tel quel pour compat).
   return `
   <div class="task-row ${classe}">
     <span class="task-dot"></span>
-    <span class="task-row-text">${item.label}</span>
+    <div class="task-row-body">
+      <div class="task-row-top">
+        ${item.type ? `<span class="task-row-type">${item.type}</span>` : ""}
+        <span class="task-row-titre">${item.titre || item.label}</span>
+      </div>
+      ${item.meta ? `<span class="task-row-meta">${item.meta}</span>` : ""}
+    </div>
+    ${item.montant ? `<span class="task-row-montant">${item.montant}</span>` : ""}
     <span class="task-row-actions">${actionBtn}${voirBtn}</span>
   </div>`;
 }
@@ -2017,15 +2028,19 @@ async function loadDashboard() {
     const prioriteItems = [
       ...d.aujourdhui.factures_en_retard.map((f) => ({
         urgence: "haute", view: "factures",
+        type: "Facture", titre: escapeHtml(f.client_nom), meta: `${escapeHtml(f.numero)} · en retard`,
+        montant: fmtEuro(f.montant_restant),
         label: `${escapeHtml(f.numero)} · ${escapeHtml(f.client_nom)} · ${fmtEuro(f.montant_restant)} en retard`,
         ...(hasPlan("essentiel") ? { action: "relancer-facture", actionId: f.id, actionLabel: "Relancer" } : {}),
       })),
       ...d.alertes_conformite.map((c) => ({
         urgence: c.jours_restants < 7 ? "haute" : "moyenne", view: "entreprise",
+        type: "Conformité", titre: escapeHtml(c.libelle), meta: `Expire dans ${c.jours_restants} j`,
         label: `${escapeHtml(c.libelle)} · expire dans ${c.jours_restants} j`,
       })),
       ...d.aujourdhui.devis_a_relancer.map((dv) => ({
         urgence: "moyenne", view: "devis",
+        type: "Devis", titre: escapeHtml(dv.client_nom), meta: escapeHtml(dv.numero || "Devis #" + dv.id),
         label: `Relancer ${escapeHtml(dv.client_nom)} (${escapeHtml(dv.numero || "devis #" + dv.id)})`,
         ...(hasPlan("essentiel") && dv.relance_manuelle_possible !== false
           ? { action: "relancer-devis", actionId: dv.id, actionLabel: "Relancer" }
@@ -2033,10 +2048,12 @@ async function loadDashboard() {
       })),
       ...d.aujourdhui.taches.map((t) => ({
         urgence: "moyenne", view: "taches",
+        type: "Tâche", titre: escapeHtml(t.titre),
         label: `Tache du jour : ${escapeHtml(t.titre)}`,
       })),
       ...d.aujourdhui.chantiers_a_venir.map((c) => ({
         urgence: "basse", view: "chantiers",
+        type: "Chantier", titre: escapeHtml(c.titre), meta: `Commence le ${fmtDate(c.date_debut)}`,
         label: `Chantier '${escapeHtml(c.titre)}' commence le ${fmtDate(c.date_debut)}`,
       })),
     ];
@@ -2045,6 +2062,7 @@ async function loadDashboard() {
       ? d.aujourdhui.evenements.map((e) => `
         <div class="dash-agenda-row" data-action="voir-notification" data-view="planning" role="button" tabindex="0">
           <span class="dash-agenda-heure">${new Date(e.date_debut).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</span>
+          <span class="dash-agenda-dot" aria-hidden="true"></span>
           <span class="dash-agenda-titre">${escapeHtml(e.titre)}</span>
         </div>`).join("")
       : '<div class="dash-empty">Rien de prévu aujourd\'hui.</div>';
@@ -2070,15 +2088,20 @@ async function loadDashboard() {
       </div>
 
       <div class="dash-section">
-        <div class="kpi-row">
-          <div class="kpi-inline is-primary"><span class="kpi-label">CA ce mois-ci</span><span class="kpi-value">${fmtEuro(d.finances.ca_mois)}</span></div>
-          <div class="kpi-inline${d.finances.a_encaisser > 0 ? " is-alert" : ""}"><span class="kpi-label">À encaisser</span><span class="kpi-value">${fmtEuro(d.finances.a_encaisser)}</span></div>
-          <div class="kpi-inline"><span class="kpi-label">Valeur du pipeline</span><span class="kpi-value">${fmtEuro(d.commercial.valeur_pipeline)}</span></div>
-          <div class="kpi-inline"><span class="kpi-label">Devis en attente</span><span class="kpi-value">${d.commercial.devis_en_attente}</span></div>
-        </div>
-        <div class="kpi-row kpi-row-secondary">
-          <div class="kpi-inline"><span class="kpi-label">Taux de transformation</span><span class="kpi-value">${d.commercial.taux_transformation}%</span></div>
-          <div class="kpi-inline"><span class="kpi-label">Nouveaux prospects (7j)</span><span class="kpi-value">${d.commercial.nouveaux_prospects_7j}</span></div>
+        <div class="dash-kpi-hero">
+          <div class="dash-kpi-hero-main">
+            <span class="dash-kpi-hero-label">Chiffre d'affaires ce mois-ci</span>
+            <span class="dash-kpi-hero-value">${fmtEuro(d.finances.ca_mois)}</span>
+          </div>
+          <div class="dash-kpi-mini-row">
+            <div class="dash-kpi-mini${d.finances.a_encaisser > 0 ? " is-alert" : ""}"><span class="dash-kpi-mini-label">À encaisser</span><span class="dash-kpi-mini-value">${fmtEuro(d.finances.a_encaisser)}</span></div>
+            <div class="dash-kpi-mini"><span class="dash-kpi-mini-label">Valeur du pipeline</span><span class="dash-kpi-mini-value">${fmtEuro(d.commercial.valeur_pipeline)}</span></div>
+            <div class="dash-kpi-mini"><span class="dash-kpi-mini-label">Devis en attente</span><span class="dash-kpi-mini-value">${d.commercial.devis_en_attente}</span></div>
+          </div>
+          <div class="dash-kpi-mini-row dash-kpi-row-tertiary">
+            <div class="dash-kpi-mini"><span class="dash-kpi-mini-label">Taux de transformation</span><span class="dash-kpi-mini-value">${d.commercial.taux_transformation}%</span></div>
+            <div class="dash-kpi-mini"><span class="dash-kpi-mini-label">Nouveaux prospects (7j)</span><span class="dash-kpi-mini-value">${d.commercial.nouveaux_prospects_7j}</span></div>
+          </div>
         </div>
       </div>
 
