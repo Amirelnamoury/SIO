@@ -110,7 +110,7 @@
 </div>
 
 <!-- ---------- Onboarding (premiere connexion) ---------- -->
-<div id="onboarding-modal" class="search-modal" hidden role="dialog" aria-modal="true">
+<div id="onboarding-modal" class="search-modal" hidden role="dialog" aria-modal="true" aria-labelledby="onboarding-step-title">
   <div class="onboarding-box">
     <div id="onboarding-steps"></div>
     <div class="onboarding-nav">
@@ -269,10 +269,10 @@
     <main class="content">
 
     <!-- ---------- Profil (panneau discret) ---------- -->
-    <div id="panel-profil" class="side-panel" hidden role="dialog" aria-modal="true">
+    <div id="panel-profil" class="side-panel" hidden role="dialog" aria-modal="true" aria-labelledby="profil-titre">
       <div class="side-panel-box">
         <button type="button" class="side-panel-close" data-action="close-profil" aria-label="Fermer">&times;</button>
-        <h3>Mon profil</h3>
+        <p class="side-panel-eyebrow" id="profil-titre">Mon profil</p>
         <div id="profil-content"></div>
       </div>
     </div>

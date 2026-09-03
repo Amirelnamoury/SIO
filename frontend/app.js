@@ -465,7 +465,7 @@ function renderOnboardingStep() {
   const step = ONBOARDING_STEPS[onboardingStepIndex];
   document.getElementById("onboarding-steps").innerHTML = `
     <div class="onboarding-step">
-      <h3>${escapeHtml(step.title)}</h3>
+      <h3 id="onboarding-step-title">${escapeHtml(step.title)}</h3>
       ${step.body ? `<p>${escapeHtml(step.body)}</p>` : ""}
       ${step.list ? `<ul>${step.list.map((l, i) => `<li data-num="${i + 1}">${escapeHtml(l)}</li>`).join("")}</ul>` : ""}
     </div>`;
@@ -603,24 +603,31 @@ function setupProfilPanel() {
     // son navigateur (GET) recoit une 405 Method Not Allowed. Ce n'est pas
     // une page publique partageable.
     content.innerHTML = `
-      <div class="profil-row"><div class="label">Entreprise</div><div class="value">${escapeHtml(currentArtisan.nom_entreprise)}</div></div>
-      <div class="profil-row"><div class="label">Métier</div><div class="value">${escapeHtml(METIER_LABELS[currentArtisan.metier] || currentArtisan.metier)}</div></div>
-      <div class="profil-row"><div class="label">Email</div><div class="value">${escapeHtml(currentArtisan.email)}</div></div>
-      <div class="profil-row"><div class="label">Ville</div><div class="value">${escapeHtml(currentArtisan.ville || "-")}</div></div>
-      <div class="profil-row"><div class="label">SIRET</div><div class="value">${escapeHtml(currentArtisan.siret || "-")}</div></div>
-      <div class="profil-row">
-        <div class="label">Abonnement Suite Artisan</div>
-        <div class="value">
-          <span class="badge ${isBillingSubscriptionActive() ? "badge-green" : "badge-gray"}">${isBillingSubscriptionActive() ? "Actif" : "Inactif"}</span>
+      <div class="profil-identity">
+        <div class="crm-avatar profil-identity-avatar">${escapeHtml(monogram(currentArtisan.nom_entreprise))}</div>
+        <div>
+          <div class="profil-identity-name">${escapeHtml(currentArtisan.nom_entreprise)}</div>
+          <div class="profil-identity-sub">${escapeHtml(METIER_LABELS[currentArtisan.metier] || currentArtisan.metier)}</div>
         </div>
-        ${!isBillingSubscriptionActive() ? '<button type="button" class="btn-primary" data-action="upgrade-subscription" style="margin-top:10px;width:100%;">Voir les tarifs</button>' : ""}
       </div>
-      <div class="dash-section" style="margin-top:20px;">
-        <h3 style="font-size:0.95rem;">Changer le mot de passe</h3>
-        <form id="password-change-form" class="form-box" style="padding:0;border:none;">
+      <div class="profil-row-group">
+        <div class="profil-row"><div class="label">Email</div><div class="value">${escapeHtml(currentArtisan.email)}</div></div>
+        <div class="profil-row"><div class="label">Ville</div><div class="value">${escapeHtml(currentArtisan.ville || "-")}</div></div>
+        <div class="profil-row"><div class="label">SIRET</div><div class="value">${escapeHtml(currentArtisan.siret || "-")}</div></div>
+        <div class="profil-row">
+          <div class="label">Abonnement Suite Artisan</div>
+          <div class="value">
+            <span class="badge ${isBillingSubscriptionActive() ? "badge-green" : "badge-gray"}">${isBillingSubscriptionActive() ? "Actif" : "Inactif"}</span>
+          </div>
+        </div>
+      </div>
+      ${!isBillingSubscriptionActive() ? '<button type="button" class="btn-primary profil-upgrade-btn" data-action="upgrade-subscription">Voir les tarifs</button>' : ""}
+      <div class="form-section">
+        <p class="form-section-title">Changer le mot de passe</p>
+        <form id="password-change-form" class="form-box">
           <label for="pwd-actuel">Mot de passe actuel</label>
           <input type="password" id="pwd-actuel" required autocomplete="current-password">
-          <label for="pwd-nouveau" style="margin-top:10px;">Nouveau mot de passe</label>
+          <label for="pwd-nouveau">Nouveau mot de passe</label>
           <input type="password" id="pwd-nouveau" required autocomplete="new-password" minlength="8">
           <p class="field-error" id="password-change-error" hidden></p>
           <div class="form-actions"><button type="submit" class="btn-sm btn-sm-primary">Mettre à jour</button></div>
