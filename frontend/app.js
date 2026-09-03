@@ -43,8 +43,7 @@ function skeletonCards(n = 3) {
 let toastTimer = null;
 function showToast(message, isError = false) {
   const toast = document.getElementById("toast");
-  const icon = isError ? "&#9888;" : "&#10003;";
-  toast.innerHTML = `<span class="toast-icon">${icon}</span><span>${escapeHtml(message)}</span>`;
+  toast.innerHTML = `<span class="toast-icon"></span><span>${escapeHtml(message)}</span>`;
   toast.classList.toggle("toast-error", isError);
   toast.classList.add("show");
   clearTimeout(toastTimer);
@@ -319,7 +318,6 @@ function renderUpgradeCard(title, description, minPlan = "essentiel") {
   const plan = PRICING[minPlan];
   return `
   <div class="upgrade-card">
-    <div class="upgrade-icon">&#128274;</div>
     <h3>${escapeHtml(title)}</h3>
     <p>${escapeHtml(description)} A partir du plan ${escapeHtml(plan.nom)}, ${plan.prix}&nbsp;&euro; ${plan.mention}.</p>
     <button type="button" class="btn-primary" data-action="upgrade-subscription">Voir les tarifs</button>
@@ -441,12 +439,10 @@ function enterDashboard() {
 // ===================== Onboarding (premiere connexion) =====================
 const ONBOARDING_STEPS = [
   {
-    icon: "&#128075;",
     title: "Bienvenue sur Suite Artisan",
     body: "Un seul outil pour ne plus perdre de prospects, suivre vos devis et garder une vue claire sur votre activité. Tout ce dont vous avez besoin pour démarrer est déjà gratuit.",
   },
   {
-    icon: "&#128203;",
     title: "Comment ça marche",
     list: [
       "Ajoutez un client ou un prospect",
@@ -455,12 +451,10 @@ const ONBOARDING_STEPS = [
     ],
   },
   {
-    icon: "&#127970;",
     title: "Votre site vitrine",
     body: "Si vous avez commandé un site vitrine, il apparaîtra dans votre tableau de bord dès qu'il sera livré, avec les demandes reçues automatiquement dans vos prospects.",
   },
   {
-    icon: "&#128274;",
     title: "Pour aller plus loin",
     body: `Le plan ${PRICING.essentiel.nom} (${PRICING.essentiel.prix}€ ${PRICING.essentiel.mention}) ajoute le suivi de chantiers, la conformité et les statistiques. Vous pourrez vous abonner à tout moment depuis votre profil.`,
   },
@@ -471,7 +465,6 @@ function renderOnboardingStep() {
   const step = ONBOARDING_STEPS[onboardingStepIndex];
   document.getElementById("onboarding-steps").innerHTML = `
     <div class="onboarding-step">
-      <div class="onboarding-step-icon">${step.icon}</div>
       <h3>${escapeHtml(step.title)}</h3>
       ${step.body ? `<p>${escapeHtml(step.body)}</p>` : ""}
       ${step.list ? `<ul>${step.list.map((l, i) => `<li data-num="${i + 1}">${escapeHtml(l)}</li>`).join("")}</ul>` : ""}
@@ -1258,7 +1251,7 @@ function renderAvisCard(a) {
     ${a.commentaire ? `<div class="item-meta">${escapeHtml(a.commentaire)}</div>` : ""}
     <div class="item-actions">
       <button type="button" class="btn-sm ${a.publie_site ? "btn-sm-primary" : ""}" data-action="toggle-publie-site" data-id="${a.id}" data-publie="${a.publie_site ? "1" : "0"}">
-        ${a.publie_site ? "Publié sur le site ✓" : "Publier sur le site"}
+        ${a.publie_site ? "Publié sur le site" : "Publier sur le site"}
       </button>
       <button type="button" class="btn-sm btn-sm-danger" data-action="delete-avis" data-id="${a.id}">Supprimer</button>
     </div>
@@ -1755,6 +1748,49 @@ function setupMobileNav() {
   if (profilMobileBtn && profilBtn) profilMobileBtn.addEventListener("click", () => profilBtn.click());
 }
 
+// ===================== Menu d'actions generique ("•••") =====================
+// Reutilise par toutes les listes premium (Devis, Factures...) : le bouton
+// declencheur et les actions a l'interieur du panneau portent deja leurs
+// propres data-action/data-id/data-token, geres par la delegation existante
+// de chaque liste (#devis-list, #factures-list...) - ce controleur ne fait
+// qu'ouvrir/fermer le panneau, jamais de logique metier.
+function closeAllActionMenus(except) {
+  document.querySelectorAll(".action-menu.is-open").forEach((menu) => {
+    if (menu === except) return;
+    menu.classList.remove("is-open");
+    const trigger = menu.querySelector(".action-menu-trigger");
+    if (trigger) trigger.setAttribute("aria-expanded", "false");
+  });
+}
+
+function setupActionMenus() {
+  document.addEventListener("click", (e) => {
+    const trigger = e.target.closest('[data-action="toggle-action-menu"]');
+    if (trigger) {
+      const menu = trigger.closest(".action-menu");
+      const wasOpen = menu.classList.contains("is-open");
+      closeAllActionMenus();
+      if (!wasOpen) {
+        menu.classList.add("is-open");
+        trigger.setAttribute("aria-expanded", "true");
+      }
+      return;
+    }
+    if (e.target.closest(".action-menu-panel")) {
+      // Une action du menu vient d'etre declenchee (geree par la delegation
+      // de la liste parente, ci-dessus/ci-dessous) : on referme le panneau
+      // dans tous les cas, que l'action recharge la liste ou non.
+      closeAllActionMenus();
+      return;
+    }
+    closeAllActionMenus();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeAllActionMenus();
+  });
+}
+
 // ===================== Tableau de bord =====================
 const SITE_STATUT_META = {
   non_livre: { label: "Pas encore livré", badge: "badge-gray" },
@@ -1780,26 +1816,23 @@ function renderPresenceSite(p) {
   return rows;
 }
 
-const URGENCE_META = {
-  haute: { label: "Important", icone: "\u{1F534}", classe: "urgence-haute" },
-  moyenne: { label: "À faire", icone: "\u{1F7E0}", classe: "urgence-moyenne" },
-  basse: { label: "Préparation", icone: "\u{1F535}", classe: "urgence-basse" },
-  info: { label: "Information", icone: "\u{1F7E2}", classe: "urgence-info" },
-};
+const URGENCE_CLASSES = { haute: "urgence-haute", moyenne: "urgence-moyenne", basse: "urgence-basse", info: "urgence-info" };
 
-function prioriteRowHtml(item) {
-  const meta = URGENCE_META[item.urgence] || URGENCE_META.info;
+function taskRowHtml(item) {
+  const classe = URGENCE_CLASSES[item.urgence] || URGENCE_CLASSES.info;
   // Action en un clic quand elle est sans ambiguite (relancer directement) :
   // pas besoin de traverser un autre ecran pour un geste deja evident
-  // (section "UX one click" du cahier des charges).
+  // (section "UX one click" du cahier des charges). L'urgence se lit
+  // desormais a un point de couleur discret (CSS), plus a une icone emoji.
   const actionBtn = item.action
     ? `<button type="button" class="btn-sm btn-sm-primary" data-action="${item.action}" data-id="${item.actionId}">${item.actionLabel}</button>`
     : "";
   const voirBtn = item.view ? `<button type="button" class="btn-sm" data-action="voir-notification" data-view="${item.view}">Voir</button>` : "";
   return `
-  <div class="priorite-row ${meta.classe}">
-    <div class="priorite-texte"><span class="priorite-icone">${meta.icone}</span><span>${item.label}</span></div>
-    <span style="display:flex;gap:6px;flex-shrink:0;">${actionBtn}${voirBtn}</span>
+  <div class="task-row ${classe}">
+    <span class="task-dot"></span>
+    <span class="task-row-text">${item.label}</span>
+    <span class="task-row-actions">${actionBtn}${voirBtn}</span>
   </div>`;
 }
 
@@ -1810,7 +1843,7 @@ function recommandationRowHtml(r) {
   return `
   <div class="recommandation-row">
     <span>${escapeHtml(r.message)}</span>
-    <span style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+    <span class="recommandation-row-actions">
       <span class="badge ${badgeClasse}">${RECOMMANDATION_URGENCE_LABELS[r.urgence] || r.urgence}</span>
       <button type="button" class="btn-sm" data-action="voir-notification" data-view="${r.view}">Voir</button>
     </span>
@@ -1858,15 +1891,12 @@ function activationChecklistHtml(activation) {
   ];
   const nbFaites = etapes.filter((e) => e.fait).length;
   return `
-  <div class="dash-section">
-    <h3>Votre compte (${nbFaites}/${etapes.length})</h3>
-    <div class="sante-barre" style="margin-bottom:12px;"><div class="remplissage" style="width:${Math.round(nbFaites / etapes.length * 100)}%;background:var(--accent);"></div></div>
-    <div class="list" style="gap:6px;">
+  <div class="activation-card">
+    <div class="activation-head"><h3>Mise en route</h3><span>${nbFaites}/${etapes.length}</span></div>
+    <div class="activation-bar"><span style="width:${Math.round(nbFaites / etapes.length * 100)}%;"></span></div>
+    <div class="activation-list">
       ${etapes.map((e) => `
-        <div class="checklist-item" style="cursor:${e.fait ? "default" : "pointer"};" ${e.fait ? "" : `data-action="voir-notification" data-view="${e.view}"`}>
-          <span class="checklist-check" style="${e.fait ? "background:var(--success);border-color:var(--success);" : ""}">${e.fait ? "&#10003;" : ""}</span>
-          <span style="${e.fait ? "text-decoration:line-through;color:var(--text-muted);" : ""}">${escapeHtml(e.label)}</span>
-        </div>`).join("")}
+        <div class="activation-item ${e.fait ? "is-done" : ""}"${e.fait ? "" : ` data-action="voir-notification" data-view="${e.view}" role="button" tabindex="0"`}>${escapeHtml(e.label)}</div>`).join("")}
     </div>
   </div>`;
 }
@@ -1910,41 +1940,31 @@ async function loadDashboard() {
     ];
 
     // Hierarchie de lecture (brief section 17) : 1) ce qui demande une
-    // action maintenant, 2) commercial, 3) financier, 4) indicateurs
-    // secondaires. Mêmes appels API, mêmes valeurs déjà calculées cote
-    // serveur - seule la presentation change (regroupement + une metrique
-    // "hero" par bloc plutot qu'une grille de cartes toutes identiques,
-    // brief section 18).
+    // action maintenant (une liste dense, plus des cartes), 2) commercial,
+    // 3) financier, 4) indicateurs secondaires. Mêmes appels API, mêmes
+    // valeurs déjà calculées cote serveur - seule la presentation change.
     container.innerHTML = `
       <div class="dash-section">
-        <h3>Priorités du jour</h3>
-        ${prioriteItems.length ? prioriteItems.map(prioriteRowHtml).join("") : '<div class="dash-empty">Rien qui nécessite votre attention aujourd\'hui.</div>'}
+        <h3>À faire aujourd'hui</h3>
+        ${prioriteItems.length
+          ? `<div class="task-feed">${prioriteItems.map(taskRowHtml).join("")}</div>`
+          : '<div class="dash-empty">Rien qui nécessite votre attention aujourd\'hui.</div>'}
       </div>
       ${activationChecklistHtml(activation)}
       <div class="dash-section">
         <h3>Commercial</h3>
         <div class="kpi-row">
-          <div class="kpi-primary">
-            <div class="kpi-label">Valeur du pipeline</div>
-            <div class="kpi-value">${fmtEuro(d.commercial.valeur_pipeline)}</div>
-          </div>
-          <div class="kpi-secondary-group">
-            <div class="kpi-secondary"><div class="kpi-label">Devis en attente</div><div class="kpi-value">${d.commercial.devis_en_attente}</div></div>
-            <div class="kpi-secondary"><div class="kpi-label">Taux de transformation</div><div class="kpi-value">${d.commercial.taux_transformation}%</div></div>
-            <div class="kpi-secondary"><div class="kpi-label">Nouveaux prospects (7j)</div><div class="kpi-value">${d.commercial.nouveaux_prospects_7j}</div></div>
-          </div>
+          <div class="kpi-inline is-primary"><span class="kpi-label">Valeur du pipeline</span><span class="kpi-value">${fmtEuro(d.commercial.valeur_pipeline)}</span></div>
+          <div class="kpi-inline"><span class="kpi-label">Devis en attente</span><span class="kpi-value">${d.commercial.devis_en_attente}</span></div>
+          <div class="kpi-inline"><span class="kpi-label">Taux de transformation</span><span class="kpi-value">${d.commercial.taux_transformation}%</span></div>
+          <div class="kpi-inline"><span class="kpi-label">Nouveaux prospects (7j)</span><span class="kpi-value">${d.commercial.nouveaux_prospects_7j}</span></div>
         </div>
       </div>
       <div class="dash-section">
         <h3>Financier</h3>
         <div class="kpi-row">
-          <div class="kpi-primary">
-            <div class="kpi-label">CA ce mois-ci</div>
-            <div class="kpi-value">${fmtEuro(d.finances.ca_mois)}</div>
-          </div>
-          <div class="kpi-secondary-group">
-            <div class="kpi-secondary${d.finances.a_encaisser > 0 ? " is-alert" : ""}"><div class="kpi-label">À encaisser</div><div class="kpi-value">${fmtEuro(d.finances.a_encaisser)}</div></div>
-          </div>
+          <div class="kpi-inline is-primary"><span class="kpi-label">CA ce mois-ci</span><span class="kpi-value">${fmtEuro(d.finances.ca_mois)}</span></div>
+          <div class="kpi-inline${d.finances.a_encaisser > 0 ? " is-alert" : ""}"><span class="kpi-label">À encaisser</span><span class="kpi-value">${fmtEuro(d.finances.a_encaisser)}</span></div>
         </div>
       </div>
       ${d.finances.paiements_recents.length ? `
@@ -1957,11 +1977,11 @@ async function loadDashboard() {
         ${recommandations.length ? recommandations.map(recommandationRowHtml).join("") : '<div class="dash-empty">Aucune recommandation pour le moment.</div>'}
       </div>
       <div class="dash-section">
-        <h3>Sante de votre entreprise</h3>
+        <h3>Santé de votre entreprise</h3>
         ${santeWidgetHtml(sante)}
       </div>
       <div class="dash-section">
-        <h3>Presence en ligne</h3>
+        <h3>Présence en ligne</h3>
         ${renderPresenceSite(d.presence_site)}
       </div>
     `;
@@ -2100,13 +2120,6 @@ function showClientForm() {
   });
 }
 
-const TIMELINE_ICONS = {
-  prospect_cree: "✨", devis_cree: "\u{1F4C4}", devis_envoye: "\u{1F4E4}",
-  devis_consulte: "\u{1F441}️", devis_relance: "\u{1F514}", devis_signe: "✅",
-  facture_creee: "\u{1F9FE}", facture_envoyee: "\u{1F4E4}", paiement_recu: "\u{1F4B0}",
-  chantier_cree: "\u{1F477}",
-};
-
 function clientQuickActionsHtml(client) {
   const actions = [];
   if (client.telephone) actions.push(`<a class="btn-sm" href="tel:${escapeHtml(client.telephone)}">Appeler</a>`);
@@ -2121,8 +2134,8 @@ function messagesPanelHtml(messages) {
   const listHtml = messages.length
     ? messages.map((m) => `
       <div class="timeline-entry">
-        <span class="timeline-icon">${m.expediteur === "client" ? "\u{1F4E9}" : "\u{1F4E4}"}</span>
-        <div><div class="timeline-label">${escapeHtml(m.texte)}</div><div class="timeline-date">${fmtDateTime(m.created_at)}</div></div>
+        <span class="timeline-icon"></span>
+        <div><div class="timeline-label"><strong>${m.expediteur === "client" ? "Client" : "Vous"} :</strong> ${escapeHtml(m.texte)}</div><div class="timeline-date">${fmtDateTime(m.created_at)}</div></div>
       </div>`).join("")
     : '<div class="empty-state">Aucun message pour le moment. Le client peut vous écrire depuis son espace client.</div>';
   return `
@@ -2165,7 +2178,7 @@ async function showTimeline(clientId) {
     const entriesHtml = entries.length === 0
       ? '<div class="empty-state">Aucun evenement pour le moment.</div>'
       : entries.map((e) => `<div class="timeline-entry">
-          <span class="timeline-icon">${TIMELINE_ICONS[e.type] || "•"}</span>
+          <span class="timeline-icon"></span>
           <div><div class="timeline-label">${escapeHtml(e.label)}</div><div class="timeline-date">${fmtDateTime(e.date)}</div></div>
         </div>`).join("");
 
@@ -2378,6 +2391,17 @@ function setupArchivesPanel() {
 window.openArchivesPanel = openArchivesPanel;
 
 // ===================== Clients (annuaire des affaires gagnees) =====================
+// Monogramme derive du vrai nom du client (premiere lettre des deux premiers
+// mots, ou les deux premieres lettres s'il n'y a qu'un seul mot) - jamais de
+// donnee inventee, juste une initiale visuelle pour scanner la liste plus
+// vite qu'une colonne de texte seule.
+function monogram(nom) {
+  const mots = String(nom || "").trim().split(/\s+/).filter(Boolean);
+  if (mots.length === 0) return "?";
+  if (mots.length === 1) return mots[0].slice(0, 2).toUpperCase();
+  return (mots[0][0] + mots[1][0]).toUpperCase();
+}
+
 async function loadClientsDirectory() {
   const container = document.getElementById("clients-directory");
   container.innerHTML = skeletonCards();
@@ -2390,26 +2414,27 @@ async function loadClientsDirectory() {
       </div>`;
       return;
     }
-    container.innerHTML = clients
-      .map((c) => {
-        const contact = [c.telephone, c.email].filter(Boolean).map(escapeHtml).join(" · ");
-        return `
-        <div class="item-card">
-          <div class="item-card-top">
-            <div>
-              <div class="item-title">${escapeHtml(c.nom)}${c.societe ? " · " + escapeHtml(c.societe) : ""}</div>
-              <div class="item-sub">${contact || "Pas de coordonnees"}${c.ville ? " · " + escapeHtml(c.ville) : ""}</div>
-            </div>
-          </div>
-          <div class="item-actions">
-            <button type="button" class="btn-sm" data-action="voir-timeline" data-id="${c.id}">Voir l'historique</button>
-          </div>
-        </div>`;
-      })
-      .join("");
+    container.innerHTML = clients.map(renderClientDirectoryRow).join("");
   } catch (err) {
     container.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
   }
+}
+
+function renderClientDirectoryRow(c) {
+  const contact = [c.telephone, c.email].filter(Boolean).join(" · ");
+  const secondaire = [c.societe, c.ville].filter(Boolean).join(" · ");
+  return `
+  <div class="crm-row">
+    <div class="crm-avatar">${escapeHtml(monogram(c.nom))}</div>
+    <div class="crm-main">
+      <div class="crm-name">${escapeHtml(c.nom)}</div>
+      <div class="crm-contact">${escapeHtml(contact || "Pas de coordonnées")}</div>
+    </div>
+    <div class="crm-secondary"><div class="crm-secondary-line">${secondaire ? escapeHtml(secondaire) : "—"}</div></div>
+    <div class="crm-action">
+      <button type="button" class="btn-sm" data-action="voir-timeline" data-id="${c.id}">Voir l'historique</button>
+    </div>
+  </div>`;
 }
 
 // ===================== Devis & relances =====================
@@ -2527,61 +2552,77 @@ function showPreparerChantierForm(devisId) {
 function renderDevisCard(d) {
   const meta = DEVIS_STATUT_META[d.statut] || { label: d.statut, badge: "badge-gray" };
   const isDue = devisDueIds.has(d.id);
-  const montantTxt = fmtEuro(d.montant_ttc) ? fmtEuro(d.montant_ttc) + " TTC" : "Montant non défini";
+  const montantTxt = d.montant_ttc !== null && d.montant_ttc !== undefined ? fmtEuro(d.montant_ttc) : "Non défini";
 
-  let actions = "";
-  if (d.statut === "nouveau") {
-    actions += `<button type="button" class="btn-sm" data-action="edit-devis" data-id="${d.id}">Éditer / chiffrer</button>`;
-    if (d.montant_ht !== null) {
-      actions += `<button type="button" class="btn-sm btn-sm-primary" data-action="envoyer-devis" data-id="${d.id}">Envoyer le devis</button>`;
-    }
-  } else if (["envoye", "consulte", "relance_j3", "relance_j7"].includes(d.statut)
-      && hasPlan("essentiel") && d.relance_manuelle_possible !== false) {
-    actions += `<button type="button" class="btn-sm btn-sm-primary" data-action="relancer-devis" data-id="${d.id}">Relancer</button>`;
+  // Actions possibles, evaluees dans les memes conditions qu'avant (memes
+  // data-action/data-id/data-token) : seule leur repartition entre le
+  // bouton primaire visible sur la ligne et le menu "•••" change - voir
+  // setupActionMenus() pour le controleur generique du menu.
+  const items = [];
+  if (d.statut === "nouveau" && d.montant_ht !== null) {
+    items.push({ primaire: true, attrs: `data-action="envoyer-devis" data-id="${d.id}"`, label: "Envoyer le devis" });
   }
-  if (["envoye", "consulte", "relance_j3", "relance_j7", "relance_j15"].includes(d.statut)) {
-    actions += `<button type="button" class="btn-sm" data-action="marquer-devis" data-id="${d.id}" data-statut="signe">Marquer signé</button>`;
-    actions += `<button type="button" class="btn-sm" data-action="marquer-devis" data-id="${d.id}" data-statut="perdu">Marquer perdu</button>`;
+  if (d.statut === "nouveau") {
+    // Un devis pas encore chiffre n'a rien d'autre a faire en priorite que
+    // d'etre chiffre : "Editer" devient alors l'action primaire visible.
+    items.push({ primaire: d.montant_ht === null, attrs: `data-action="edit-devis" data-id="${d.id}"`, label: "Éditer / chiffrer" });
+  }
+  if (["envoye", "consulte", "relance_j3", "relance_j7"].includes(d.statut)
+      && hasPlan("essentiel") && d.relance_manuelle_possible !== false) {
+    items.push({ primaire: true, attrs: `data-action="relancer-devis" data-id="${d.id}"`, label: "Relancer" });
   }
   if (d.statut === "signe") {
-    actions += `<button type="button" class="btn-sm btn-sm-primary" data-action="preparer-chantier" data-id="${d.id}">Tout préparer</button>`;
-    actions += `<button type="button" class="btn-sm" data-action="facturer-devis" data-id="${d.id}">Convertir en facture</button>`;
+    items.push({ primaire: true, attrs: `data-action="preparer-chantier" data-id="${d.id}"`, label: "Tout préparer" });
+    items.push({ attrs: `data-action="facturer-devis" data-id="${d.id}"`, label: "Convertir en facture" });
+  }
+  if (["envoye", "consulte", "relance_j3", "relance_j7", "relance_j15"].includes(d.statut)) {
+    items.push({ attrs: `data-action="marquer-devis" data-id="${d.id}" data-statut="signe"`, label: "Marquer signé" });
+    items.push({ attrs: `data-action="marquer-devis" data-id="${d.id}" data-statut="perdu"`, label: "Marquer perdu" });
   }
   if (d.lignes && d.lignes.length > 0) {
-    actions += `<button type="button" class="btn-sm btn-quiet" data-action="pdf-devis" data-id="${d.id}">Télécharger le PDF</button>`;
+    items.push({ attrs: `data-action="pdf-devis" data-id="${d.id}"`, label: "Télécharger le PDF" });
   }
   if (d.token && d.statut !== "nouveau") {
-    actions += `<button type="button" class="btn-sm btn-quiet" data-action="copier-lien-devis" data-token="${escapeHtml(d.token)}">Copier le lien client</button>`;
+    items.push({ attrs: `data-action="copier-lien-devis" data-token="${escapeHtml(d.token)}"`, label: "Copier le lien client" });
   }
-  actions += `<button type="button" class="btn-sm btn-quiet" data-action="dupliquer-devis" data-id="${d.id}">Dupliquer</button>`;
-  actions += `<button type="button" class="btn-sm btn-sm-danger" data-action="delete-devis" data-id="${d.id}">Archiver</button>`;
+  items.push({ attrs: `data-action="dupliquer-devis" data-id="${d.id}"`, label: "Dupliquer" });
+  items.push({ divider: true });
+  items.push({ attrs: `data-action="delete-devis" data-id="${d.id}"`, label: "Archiver", danger: true });
 
-  // Le montant est extrait de la phrase de meta vers un bloc dedie,
-  // scannable en un coup d'oeil (brief section 22) - meme valeur deja
-  // calculee, juste affichee a part plutot qu'au milieu d'une phrase.
+  const primaireIdx = items.findIndex((it) => it.primaire);
+  const primaireHtml = primaireIdx !== -1
+    ? `<button type="button" class="btn-sm btn-sm-primary" ${items[primaireIdx].attrs}>${items[primaireIdx].label}</button>`
+    : "";
+  const menuHtml = items
+    .filter((it, i) => i !== primaireIdx)
+    .map((it) => it.divider
+      ? '<div class="action-menu-divider"></div>'
+      : `<button type="button"${it.danger ? ' class="is-danger"' : ""} ${it.attrs}>${it.label}</button>`)
+    .join("");
+
+  const contextTxt = [d.numero, d.nb_relances > 0 ? `${d.nb_relances} relance${d.nb_relances > 1 ? "s" : ""}` : null]
+    .filter(Boolean).join(" · ");
+
   return `
-  <div class="item-card ${isDue ? "is-due" : ""}">
-    <div class="item-card-top">
-      <div>
-        <div class="item-title">${escapeHtml(d.client_nom)}</div>
-        <div class="item-sub">${escapeHtml(d.titre || d.description || "Pas de description")}</div>
-      </div>
-      <div class="item-card-figures">
-        <span class="badge ${meta.badge}">${meta.label}</span>
-        <span class="item-amount">${montantTxt}</span>
+  <div class="list-row ${isDue ? "is-due" : ""}">
+    <div class="list-row-primary">
+      <div class="list-row-title">${escapeHtml(d.client_nom)}</div>
+      <div class="list-row-sub">${escapeHtml(d.titre || d.description || "Sans titre")}</div>
+    </div>
+    <div class="list-row-status"><span class="badge ${meta.badge}">${meta.label}</span></div>
+    <div class="list-row-amount">${montantTxt}${d.montant_ttc !== null && d.montant_ttc !== undefined ? '<span class="list-row-amount-sub">TTC</span>' : ""}</div>
+    <div class="list-row-context" title="${isDue ? "Relance due aujourd'hui" : escapeHtml(contextTxt)}">${isDue ? "Relance due aujourd'hui" : escapeHtml(contextTxt)}</div>
+    <div class="list-row-primary-action">${primaireHtml}</div>
+    <div class="list-row-menu">
+      <div class="action-menu">
+        <button type="button" class="action-menu-trigger" data-action="toggle-action-menu" aria-haspopup="true" aria-expanded="false" aria-label="Plus d'actions sur ce devis">
+          <svg viewBox="0 0 24 24" class="nav-icon"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg>
+        </button>
+        <div class="action-menu-panel" role="menu">${menuHtml}</div>
       </div>
     </div>
-    ${d.statut === "signe" ? `<div class="moment-banner"><span class="moment-icon">🎉</span><span>Devis accepte ! ${fmtEuro(d.montant_ttc)}${d.nom_signataire ? " · signe par " + escapeHtml(d.nom_signataire) : ""} — prêt a demarrer le projet avec "Tout preparer".</span></div>` : ""}
-    <div class="item-meta">
-      ${d.numero ? escapeHtml(d.numero) : ""}
-      ${d.remise_montant ? ` · Remise ${d.remise_pourcentage}%` : ""}
-      ${isDue ? " · <strong>Relance due aujourd'hui</strong>" : ""}
-      ${d.nb_relances > 0 ? ` · ${d.nb_relances} relance${d.nb_relances > 1 ? "s" : ""}${d.date_derniere_relance ? " · dernière le " + fmtDate(d.date_derniere_relance) : ""}` : ""}
-      · Source : ${d.source === "site_vitrine" ? "Site vitrine" : "Manuel"}
-      ${d.statut === "signe" && d.nom_signataire ? ` · Accepte par ${escapeHtml(d.nom_signataire)}` : ""}
-    </div>
-    <div class="item-actions">${actions}</div>
-    <div id="preparer-form-${d.id}"></div>
+    ${d.statut === "signe" ? `<div class="list-row-banner moment-banner"><span>Devis accepté ! ${fmtEuro(d.montant_ttc)}${d.nom_signataire ? " · signé par " + escapeHtml(d.nom_signataire) : ""} — prêt à démarrer le projet avec « Tout préparer ».</span></div>` : ""}
+    <div id="preparer-form-${d.id}" class="list-row-expand"></div>
   </div>`;
 }
 
@@ -2929,62 +2970,88 @@ function renderFactureCard(f) {
   const meta = FACTURE_STATUT_META[f.statut] || { label: f.statut, badge: "badge-gray" };
   const isDue = facturesDueIds.has(f.id);
   const retard = joursRetard(f.date_echeance);
-  let actions = "";
+
+  // Memes actions, memes conditions et memes data-action/data-id/data-token
+  // qu'avant : seule leur repartition entre le bouton primaire visible sur
+  // la ligne et le menu "•••" change (voir setupActionMenus()).
+  const items = [];
   if (f.statut === "brouillon") {
-    actions += `<button type="button" class="btn-sm btn-sm-primary" data-action="envoyer-facture" data-id="${f.id}">Marquer envoyée</button>`;
+    items.push({ primaire: true, attrs: `data-action="envoyer-facture" data-id="${f.id}"`, label: "Marquer envoyée" });
   }
   if (f.montant_restant > 0 && f.statut !== "brouillon" && f.statut !== "annulee") {
-    actions += `<button type="button" class="btn-sm btn-sm-primary" data-action="ajouter-paiement" data-id="${f.id}" data-restant="${f.montant_restant}">+ Enregistrer un paiement</button>`;
+    items.push({ primaire: true, attrs: `data-action="ajouter-paiement" data-id="${f.id}" data-restant="${f.montant_restant}"`, label: "+ Enregistrer un paiement" });
   }
   if (isDue) {
     // "Enregistrer un paiement" (ci-dessus) reste l'action dominante quand
-    // les deux sont proposees ensemble : une seule couleur d'appel par carte
-    // (brief section 39), relancer reste une action normale, pas secondaire.
-    const relancerClasse = f.montant_restant > 0 ? "btn-sm" : "btn-sm btn-sm-primary";
-    actions += `<button type="button" class="${relancerClasse}" data-action="relancer-facture" data-id="${f.id}">Relancer</button>`;
+    // les deux sont proposees ensemble (une seule couleur d'appel par
+    // ligne) : Relancer ne devient primaire que si aucun paiement n'est
+    // attendu.
+    items.push({ primaire: f.montant_restant <= 0, attrs: `data-action="relancer-facture" data-id="${f.id}"`, label: "Relancer" });
   }
   if (f.token && f.statut !== "brouillon") {
-    actions += `<button type="button" class="btn-sm btn-quiet" data-action="copier-lien-facture" data-token="${escapeHtml(f.token)}">Copier le lien client</button>`;
+    items.push({ attrs: `data-action="copier-lien-facture" data-token="${escapeHtml(f.token)}"`, label: "Copier le lien client" });
   }
-  actions += `<button type="button" class="btn-sm btn-quiet" data-action="pdf-facture" data-id="${f.id}">Télécharger le PDF</button>`;
-  actions += `<button type="button" class="btn-sm btn-sm-danger" data-action="delete-facture" data-id="${f.id}">Archiver</button>`;
+  items.push({ attrs: `data-action="pdf-facture" data-id="${f.id}"`, label: "Télécharger le PDF" });
+  items.push({ divider: true });
+  items.push({ attrs: `data-action="delete-facture" data-id="${f.id}"`, label: "Archiver", danger: true });
 
-  const paiementsHtml = (f.paiements || [])
-    .map((p) => `<div class="item-sub">${fmtDate(p.date_paiement)} · ${fmtEuro(p.montant)} · ${p.moyen}${p.reference ? " · Ref : " + escapeHtml(p.reference) : ""}</div>`)
+  const primaireIdx = items.findIndex((it) => it.primaire);
+  const primaireHtml = primaireIdx !== -1
+    ? `<button type="button" class="btn-sm btn-sm-primary" ${items[primaireIdx].attrs}>${items[primaireIdx].label}</button>`
+    : "";
+  const menuHtml = items
+    .filter((it, i) => i !== primaireIdx)
+    .map((it) => it.divider
+      ? '<div class="action-menu-divider"></div>'
+      : `<button type="button"${it.danger ? ' class="is-danger"' : ""} ${it.attrs}>${it.label}</button>`)
     .join("");
 
-  const relanceTxt = f.nb_relances > 0
-    ? `<div class="item-sub">${f.nb_relances} relance${f.nb_relances > 1 ? "s" : ""}${f.date_derniere_relance ? " · dernière le " + fmtDate(f.date_derniere_relance) : ""}</div>`
-    : "";
-
   // Le montant qui compte vraiment d'un coup d'oeil : le reste du a
-  // encaisser (ou le total une fois soldee) - extrait du texte de meta vers
-  // un bloc dedie (brief section 23), meme valeur deja calculee.
+  // encaisser (ou le total une fois soldee) - meme valeur deja calculee.
   const montantCle = f.montant_restant > 0 ? fmtEuro(f.montant_restant) : fmtEuro(f.montant_ttc);
-  const montantCleLabel = f.montant_restant > 0 ? "restant" : "TTC · soldée";
+  const montantCleLabel = f.montant_restant > 0 ? "restant" : "soldée";
+
+  // Le retard prime sur l'echeance quand les deux sont vraies : c'est
+  // l'info la plus actionnable, et la ligne est deja signalee par l'accent
+  // rouge sur le bord gauche - pas besoin des deux dates dans une colonne
+  // etroite.
+  const contextTxt = retard !== null
+    ? `${retard} j de retard`
+    : (f.date_echeance ? "Éch. " + fmtDate(f.date_echeance) : "");
+
+  // Historique (paiements, relances) : releve seulement quand il y a
+  // effectivement quelque chose a dire, sous la ligne plutot que dans une
+  // colonne dense - meme donnee, juste repliee par defaut.
+  const historique = [];
+  if ((f.paiements || []).length > 0) {
+    historique.push((f.paiements)
+      .map((p) => `${fmtDate(p.date_paiement)} · ${fmtEuro(p.montant)} · ${p.moyen}${p.reference ? " · réf. " + escapeHtml(p.reference) : ""}`)
+      .join(" — "));
+  }
+  if (f.nb_relances > 0) {
+    historique.push(`${f.nb_relances} relance${f.nb_relances > 1 ? "s" : ""}${f.date_derniere_relance ? " · dernière le " + fmtDate(f.date_derniere_relance) : ""}`);
+  }
 
   return `
-  <div class="item-card ${f.est_en_retard ? "is-due" : ""}">
-    <div class="item-card-top">
-      <div>
-        <div class="item-title">${escapeHtml(f.client_nom)} &mdash; ${escapeHtml(f.numero)}</div>
-        <div class="item-sub">${FACTURE_TYPE_LABELS[f.type] || f.type}</div>
-      </div>
-      <div class="item-card-figures">
-        <span class="badge ${meta.badge}">${meta.label}</span>
-        <span class="item-amount">${montantCle}</span>
-        <span class="item-amount-sub">${montantCleLabel}</span>
+  <div class="list-row ${f.est_en_retard ? "is-due" : ""}">
+    <div class="list-row-primary">
+      <div class="list-row-title">${escapeHtml(f.client_nom)} &mdash; ${escapeHtml(f.numero)}</div>
+      <div class="list-row-sub">${FACTURE_TYPE_LABELS[f.type] || f.type} · Payé ${fmtEuro(f.montant_paye)}</div>
+    </div>
+    <div class="list-row-status"><span class="badge ${meta.badge}">${meta.label}</span></div>
+    <div class="list-row-amount">${montantCle}<span class="list-row-amount-sub">${montantCleLabel}</span></div>
+    <div class="list-row-context" title="${escapeHtml(contextTxt)}">${escapeHtml(contextTxt)}</div>
+    <div class="list-row-primary-action">${primaireHtml}</div>
+    <div class="list-row-menu">
+      <div class="action-menu">
+        <button type="button" class="action-menu-trigger" data-action="toggle-action-menu" aria-haspopup="true" aria-expanded="false" aria-label="Plus d'actions sur cette facture">
+          <svg viewBox="0 0 24 24" class="nav-icon"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg>
+        </button>
+        <div class="action-menu-panel" role="menu">${menuHtml}</div>
       </div>
     </div>
-    <div class="item-meta">
-      ${fmtEuro(f.montant_ttc)} TTC · Payé : ${fmtEuro(f.montant_paye)}
-      ${f.date_echeance ? " · Échéance : " + fmtDate(f.date_echeance) : ""}
-      ${retard !== null ? ` · <span style="color:var(--danger);">${retard} j de retard</span>` : ""}
-    </div>
-    ${paiementsHtml ? `<div class="item-meta">${paiementsHtml}</div>` : ""}
-    ${relanceTxt}
-    <div class="item-actions" id="facture-actions-${f.id}">${actions}</div>
-    <div id="paiement-form-${f.id}"></div>
+    ${historique.length ? `<div class="list-row-banner item-meta">${historique.join(" · ")}</div>` : ""}
+    <div id="paiement-form-${f.id}" class="list-row-expand"></div>
   </div>`;
 }
 
@@ -3529,7 +3596,7 @@ function aujourdhuiChantierHtml(c) {
   const items = heuresAujourdhui
     .map((h) => `<strong>${escapeHtml(h.nom_intervenant)}</strong>${h.note ? " — " + escapeHtml(h.note) : ""}`)
     .join(" · ");
-  return `<div class="item-meta" style="margin-top:2px;">🔧 Aujourd'hui : ${items}</div>`;
+  return `<div class="item-meta">Aujourd'hui : ${items}</div>`;
 }
 
 function checklistHtml(c) {
@@ -3651,7 +3718,7 @@ function renderChantierCard(c) {
       </div>
       <span class="badge ${(CHANTIER_STATUT_META[c.statut] || {}).badge || "badge-gray"}">${(CHANTIER_STATUT_META[c.statut] || {}).label || c.statut}</span>
     </div>
-    ${c.statut === "termine" ? `<div class="moment-banner"><span class="moment-icon">✅</span><span>Chantier terminé ! Clôturez-le pour générer la facture finale, demander un avis client et archiver le dossier.</span></div>` : ""}
+    ${c.statut === "termine" ? `<div class="moment-banner"><span>Chantier terminé ! Clôturez-le pour générer la facture finale, demander un avis client et archiver le dossier.</span></div>` : ""}
     ${aujourdhuiChantierHtml(c)}
     <div class="item-meta">
       Début : ${fmtDate(c.date_debut)}
@@ -4914,6 +4981,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupAuthScreen();
   setupTabs();
   setupMobileNav();
+  setupActionMenus();
   setupProfilPanel();
   setupGlobalSearch();
   setupDashboardView();

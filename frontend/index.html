@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Suite Artisan - Tableau de bord</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260902-premium-ui">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=20260902-quiet-premium">
 </head>
 <body>
 
@@ -117,7 +117,7 @@
     <p id="confirm-dialog-message"></p>
     <div class="confirm-dialog-actions">
       <button type="button" class="btn-secondary" id="confirm-dialog-cancel">Annuler</button>
-      <button type="button" class="btn-primary" id="confirm-dialog-ok" style="margin-top:0;">Confirmer</button>
+      <button type="button" class="btn-primary" id="confirm-dialog-ok">Confirmer</button>
     </div>
   </div>
 </div>
@@ -138,8 +138,8 @@
     <div id="evenement-detail-body" class="profil-content"></div>
     <div class="confirm-dialog-actions">
       <button type="button" class="btn-secondary" data-action="close-evenement-detail">Fermer</button>
-      <button type="button" class="btn-secondary" data-action="supprimer-evenement" style="color:var(--danger);">Supprimer</button>
-      <button type="button" class="btn-primary" data-action="modifier-evenement" style="margin-top:0;">Modifier</button>
+      <button type="button" class="btn-secondary btn-secondary-danger" data-action="supprimer-evenement">Supprimer</button>
+      <button type="button" class="btn-primary" data-action="modifier-evenement">Modifier</button>
     </div>
   </div>
 </div>
@@ -265,14 +265,23 @@
 
     <!-- ---------- Section Tableau de bord ---------- -->
     <section id="view-dashboard" class="view">
-      <div class="view-header"><h2>Bonjour 👋</h2></div>
+      <div class="view-header">
+        <div class="view-header-text">
+          <p class="view-header-eyebrow">Aujourd'hui</p>
+          <h2>Bonjour</h2>
+        </div>
+      </div>
       <div id="dashboard-content"></div>
     </section>
 
     <!-- ---------- Section Prospects (pipeline commercial) ---------- -->
     <section id="view-prospects" class="view" hidden>
       <div class="view-header">
-        <h2>Prospects</h2>
+        <div class="view-header-text">
+          <p class="view-header-eyebrow">Commercial</p>
+          <h2>Prospects</h2>
+          <p class="view-header-desc">Votre pipeline, du premier contact au devis envoyé.</p>
+        </div>
         <button type="button" class="btn-primary" data-action="show-client-form">+ Nouveau contact</button>
       </div>
 
@@ -284,7 +293,11 @@
     <!-- ---------- Section Clients (annuaire des affaires gagnees) ---------- -->
     <section id="view-clients" class="view" hidden>
       <div class="view-header">
-        <h2>Clients</h2>
+        <div class="view-header-text">
+          <p class="view-header-eyebrow">Commercial</p>
+          <h2>Clients</h2>
+          <p class="view-header-desc">L'annuaire de vos affaires gagnées et leur historique.</p>
+        </div>
         <button type="button" class="btn-archives" data-action="voir-archives" data-entite="client">Archives</button>
       </div>
       <div id="clients-directory" class="list"></div>
@@ -293,8 +306,12 @@
     <!-- ---------- Section Devis & relances ---------- -->
     <section id="view-devis" class="view" hidden>
       <div class="view-header">
-        <h2>Devis &amp; relances</h2>
-        <div style="display:flex;gap:10px;align-items:center;">
+        <div class="view-header-text">
+          <p class="view-header-eyebrow">Commercial</p>
+          <h2>Devis &amp; relances</h2>
+          <p class="view-header-desc">Suivez vos devis envoyés et relancez-les au bon moment.</p>
+        </div>
+        <div class="view-header-actions">
           <button type="button" class="btn-archives" data-action="voir-archives" data-entite="devis">Archives</button>
           <button type="button" class="btn-primary" data-action="show-devis-form">+ Nouveau devis</button>
         </div>
@@ -310,14 +327,26 @@
         <button type="button" class="filter-chip" data-statut="perdu">Perdus</button>
       </div>
 
+      <div class="list-header-row">
+        <span>Client</span>
+        <span>Statut</span>
+        <span>Montant</span>
+        <span>Détails</span>
+        <span></span>
+        <span></span>
+      </div>
       <div id="devis-list" class="list"></div>
     </section>
 
     <!-- ---------- Section Factures ---------- -->
     <section id="view-factures" class="view" hidden>
       <div class="view-header">
-        <h2>Factures</h2>
-        <div style="display:flex;gap:10px;align-items:center;">
+        <div class="view-header-text">
+          <p class="view-header-eyebrow">Gestion</p>
+          <h2>Factures</h2>
+          <p class="view-header-desc">Émettez vos factures et suivez les encaissements.</p>
+        </div>
+        <div class="view-header-actions">
           <button type="button" class="btn-archives" data-action="voir-archives" data-entite="facture">Archives</button>
           <button type="button" class="btn-primary" data-action="show-facture-form">+ Nouvelle facture</button>
         </div>
@@ -337,14 +366,26 @@
         <button type="button" class="filter-chip" data-statut="en_retard">En retard</button>
       </div>
 
+      <div class="list-header-row">
+        <span>Client</span>
+        <span>Statut</span>
+        <span>Montant</span>
+        <span>Détails</span>
+        <span></span>
+        <span></span>
+      </div>
       <div id="factures-list" class="list"></div>
     </section>
 
     <!-- ---------- Section Chantiers ---------- -->
     <section id="view-chantiers" class="view" hidden>
       <div class="view-header">
-        <h2>Chantiers</h2>
-        <div style="display:flex;gap:10px;align-items:center;">
+        <div class="view-header-text">
+          <p class="view-header-eyebrow">Gestion</p>
+          <h2>Chantiers</h2>
+          <p class="view-header-desc">Le suivi de vos chantiers en cours et à venir.</p>
+        </div>
+        <div class="view-header-actions">
           <button type="button" class="btn-archives" data-action="voir-archives" data-entite="chantier">Archives</button>
           <button type="button" class="btn-primary" data-action="show-chantier-form">+ Nouveau chantier</button>
         </div>
@@ -358,7 +399,11 @@
     <!-- ---------- Section Planning ---------- -->
     <section id="view-planning" class="view" hidden>
       <div class="view-header">
-        <h2>Planning</h2>
+        <div class="view-header-text">
+          <p class="view-header-eyebrow">Gestion</p>
+          <h2>Planning</h2>
+          <p class="view-header-desc">Vos rendez-vous et interventions, par jour, semaine ou mois.</p>
+        </div>
         <button type="button" class="btn-primary" data-action="show-evenement-form">+ Nouveau rendez-vous</button>
       </div>
 
@@ -388,7 +433,7 @@
     <section id="view-documents" class="view" hidden>
       <div class="view-header">
         <h2>Documents</h2>
-        <div style="display:flex;gap:10px;align-items:center;">
+        <div class="view-header-actions">
           <button type="button" class="btn-archives" data-action="voir-archives" data-entite="document">Archives</button>
           <button type="button" class="btn-primary" data-action="show-document-form">+ Ajouter un document</button>
         </div>
@@ -433,7 +478,13 @@
 
     <!-- ---------- Section Entreprise (infos + conformite) ---------- -->
     <section id="view-entreprise" class="view" hidden>
-      <div class="view-header"><h2>Entreprise</h2></div>
+      <div class="view-header">
+        <div class="view-header-text">
+          <p class="view-header-eyebrow">Réglages</p>
+          <h2>Entreprise</h2>
+          <p class="view-header-desc">Informations légales, identité visuelle, équipe et conformité.</p>
+        </div>
+      </div>
 
       <div class="form-box" id="entreprise-form-box">
         <h3>Mes informations</h3>
@@ -492,7 +543,7 @@
         <div id="site-photos-list" class="site-photos-list"></div>
       </div>
 
-      <div class="form-box" id="automatisation-form-box" style="margin-top:24px;">
+      <div class="form-box" id="automatisation-form-box">
         <h3>Automatisation des relances</h3>
         <p class="section-hint">Délais avant qu'une relance ne devienne "à faire" dans vos notifications.</p>
         <form id="automatisation-form">
@@ -507,12 +558,12 @@
             <button type="submit" class="btn-sm btn-sm-primary">Enregistrer</button>
           </div>
         </form>
-        <div id="automation-status" style="margin-top:18px;"></div>
+        <div id="automation-status"></div>
       </div>
       <div id="automatisation-paywall" hidden></div>
 
-      <div class="view-header" style="margin-top:36px;">
-        <h2 style="font-size:1.15rem;">Contrats récurrents</h2>
+      <div class="view-header subsection-header">
+        <h2>Contrats récurrents</h2>
         <button type="button" class="btn-primary" data-action="show-contrat-form">+ Nouveau contrat</button>
       </div>
       <p class="section-hint">Planifiez la facturation de vos contrats d'entretien et de maintenance.</p>
@@ -521,8 +572,8 @@
 
       <div id="contrats-list" class="list"></div>
 
-      <div class="view-header" style="margin-top:36px;">
-        <h2 style="font-size:1.15rem;">Équipe</h2>
+      <div class="view-header subsection-header">
+        <h2>Équipe</h2>
         <button type="button" class="btn-primary" data-action="show-membre-form" id="btn-show-membre-form">+ Ajouter un membre</button>
       </div>
       <p class="section-hint">Donnez accès à Suite Artisan à vos salariés. Un "administrateur" peut gérer l'équipe, un "salarié" non.</p>
@@ -531,8 +582,8 @@
 
       <div id="equipe-list" class="list"></div>
 
-      <div class="view-header" style="margin-top:36px;">
-        <h2 style="font-size:1.15rem;">Catalogue de prestations</h2>
+      <div class="view-header subsection-header">
+        <h2>Catalogue de prestations</h2>
         <button type="button" class="btn-primary" data-action="show-prestation-form">+ Nouvelle prestation</button>
       </div>
       <p class="section-hint">Vos prestations types, pour les retrouver en tapant leur nom lors de la création d'un devis.</p>
@@ -541,8 +592,8 @@
 
       <div id="prestations-list" class="list"></div>
 
-      <div class="view-header" style="margin-top:36px;">
-        <h2 style="font-size:1.15rem;">Fournisseurs</h2>
+      <div class="view-header subsection-header">
+        <h2>Fournisseurs</h2>
         <button type="button" class="btn-primary" data-action="show-fournisseur-form">+ Nouveau fournisseur</button>
       </div>
       <p class="section-hint">Vos fournisseurs de matériaux, sous-traitants et loueurs d'outillage, pour les lier à vos dépenses de chantier.</p>
@@ -551,8 +602,8 @@
 
       <div id="fournisseurs-list" class="list"></div>
 
-      <div class="view-header" style="margin-top:36px;">
-        <h2 style="font-size:1.15rem;">Conformité</h2>
+      <div class="view-header subsection-header">
+        <h2>Conformité</h2>
         <button type="button" class="btn-primary" data-action="show-conformite-form">+ Nouvel element</button>
       </div>
 
@@ -644,7 +695,7 @@
 <script src="env.js"></script>
 <script src="config.js"></script>
 <script src="pricing.js"></script>
-<script src="api.js?v=20260902-premium-ui"></script>
-<script src="app.js?v=20260902-premium-ui"></script>
+<script src="api.js?v=20260902-quiet-premium"></script>
+<script src="app.js?v=20260902-quiet-premium"></script>
 </body>
 </html>
