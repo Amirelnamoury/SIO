@@ -8,50 +8,60 @@
    ===================================================================== */
 
 :root {
-  /* ---------- Couleur : fond & surfaces (neutre froid) ---------- */
-  --sa-bg: #f7f8fa;
-  --sa-surface: #ffffff;
-  --sa-surface-raised: #ffffff;
-  --sa-surface-sunken: #f1f2f5;
-  --sa-surface-hover: #f4f5f7;
+  /* ---------- Couleur : fond & surfaces ---------- */
+  --sa-bg: var(--v4-paper);
+  --sa-surface: var(--v4-surface);
+  --sa-surface-raised: var(--v4-surface);
+  --sa-surface-sunken: var(--v4-sunken);
+  --sa-surface-hover: var(--v4-sunken);
 
   /* ---------- Couleur : texte ---------- */
-  --sa-text: #14161c;
-  --sa-text-muted: #6b7180;
-  --sa-text-faint: #9599a6;
+  --sa-text: var(--v4-ink);
+  --sa-text-muted: var(--v4-ink-soft);
+  --sa-text-faint: var(--v4-ink-faint);
   --sa-text-on-accent: #ffffff;
-  --sa-text-on-dark: #e7e8ec;
-  --sa-text-on-dark-muted: #9b9eab;
+  --sa-text-on-dark: var(--v4-sidebar-text);
+  --sa-text-on-dark-muted: var(--v4-sidebar-text-dim);
 
   /* ---------- Couleur : bordures ---------- */
-  --sa-border: #e7e8ed;
-  --sa-border-strong: #d6d8e0;
+  --sa-border: var(--v4-line);
+  --sa-border-strong: var(--v4-border);
   --sa-border-on-dark: rgba(231, 232, 236, 0.1);
 
-  /* ---------- Couleur : structure (sidebar claire) ---------- */
-  --sa-ink: #14161c;
-  --sa-ink-deep: #0d0e12;
-  --sa-ink-raised: #1c1e26;
+  /* ---------- Couleur : structure (plan sombre - sidebar) ---------- */
+  --sa-ink: var(--v4-sidebar-bg);
+  --sa-ink-deep: #12160f;
+  --sa-ink-raised: #232b21;
 
   /* ---------- Couleur : accent (une seule, rare) ---------- */
-  --sa-accent: #4f46e5;
-  --sa-accent-strong: #4338ca;
-  --sa-accent-soft: #eef0fd;
-  --sa-accent-on-dark: #8b85ef;
+  --sa-accent: var(--v4-pine);
+  --sa-accent-strong: var(--v4-pine-strong);
+  --sa-accent-soft: var(--v4-pine-soft);
+  --sa-accent-on-dark: #7fa48e;
 
   /* ---------- Couleur : semantique (desaturee, quiete) ---------- */
-  --sa-success: #12805c;
-  --sa-success-soft: #e6f5ef;
-  --sa-warning: #9a5b0a;
-  --sa-warning-soft: #faf1df;
-  --sa-danger: #b93a2f;
-  --sa-danger-soft: #fbeae8;
-  --sa-info: #45536b;
-  --sa-info-soft: #eceef3;
-  --sa-neutral-soft: #eef0f3;
+  --sa-success: #3d7a4f;
+  --sa-success-soft: #e6efe4;
+  --sa-warning: var(--v4-warning);
+  --sa-warning-soft: #f3ead9;
+  --sa-danger: var(--v4-danger);
+  --sa-danger-strong: #7c2e23;
+  --sa-danger-border: #c99287;
+  --sa-danger-soft: var(--v4-danger-soft);
+  --sa-info: #52667a;
+  --sa-info-soft: #e9edf0;
+  --sa-neutral-soft: var(--v4-sunken);
+
+  /* ---------- Couleur : bronze/laiton — accent premium, tres rare
+     (badges "Pro"/plan superieur, detail de marque ponctuel). Jamais une
+     couleur dominante : voir regle "pas d'interface doree". ---------- */
+  --sa-bronze: #9c7a45;
+  --sa-bronze-strong: #7d6136;
+  --sa-bronze-soft: #efe6d2;
 
   /* ---------- Typographie ---------- */
-  --sa-font: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --sa-font: var(--v4-font-ui);
+  --sa-font-display: var(--v4-font-display);
   --sa-text-2xs: 0.6875rem;   /* 11px : micro-labels, majuscules */
   --sa-text-xs: 0.78rem;      /* 12.5px : meta, hints */
   --sa-text-sm: 0.855rem;     /* 13.7px : corps secondaire, boutons */
@@ -76,18 +86,18 @@
   --sa-space-10: 40px;
   --sa-space-12: 48px;
 
-  /* ---------- Rayons (contenus, jamais 20px partout) ---------- */
-  --sa-radius-sm: 6px;
-  --sa-radius-md: 8px;
-  --sa-radius-lg: 10px;
-  --sa-radius-xl: 14px;
+  /* ---------- Rayons : langage architectural, pas 8-10px partout ---------- */
+  --sa-radius-sm: var(--v4-radius);
+  --sa-radius-md: 5px;
+  --sa-radius-lg: var(--v4-radius-lg);
+  --sa-radius-xl: 10px;
   --sa-radius-full: 999px;
 
-  /* ---------- Ombres : presque aucune, reservees aux elements flottants ---------- */
-  --sa-shadow-xs: 0 1px 2px rgba(20, 22, 28, 0.04);
-  --sa-shadow-sm: 0 2px 8px rgba(20, 22, 28, 0.06);
-  --sa-shadow-md: 0 8px 24px rgba(20, 22, 28, 0.10);
-  --sa-shadow-lg: 0 16px 40px rgba(15, 16, 20, 0.14);
+  /* ---------- Ombres : teinte chaude (ink), presque aucune ---------- */
+  --sa-shadow-xs: 0 1px 2px rgba(28, 36, 32, 0.05);
+  --sa-shadow-sm: 0 2px 8px rgba(28, 36, 32, 0.07);
+  --sa-shadow-md: 0 8px 24px rgba(28, 36, 32, 0.11);
+  --sa-shadow-lg: 0 16px 40px rgba(20, 26, 22, 0.16);
   --sa-shadow-focus: 0 0 0 3px var(--sa-accent-soft);
 
   /* ---------- Mouvement ---------- */
@@ -148,8 +158,10 @@
      ===================================================================== */
   --v4-ink: #1c2420;              /* texte principal (papier/surface) */
   --v4-ink-soft: #4b5550;         /* texte secondaire, 6.66:1 sur papier */
+  --v4-ink-faint: #8b9089;        /* texte tertiaire/desactive, ~3.3:1 (usage large, pas texte) */
   --v4-paper: #f1eee4;            /* fond workspace (pas #f4f1ea-cream) */
   --v4-surface: #ffffff;          /* cartes/plans eleves sur le papier */
+  --v4-sunken: #e8e4d6;           /* surfaces creuses neutres (inputs, hover) - pas teinte accent */
   --v4-sidebar-bg: #1a211d;       /* spine sombre - signal immediat */
   --v4-sidebar-text: #c9cec7;     /* 10.3:1 sur sidebar-bg */
   --v4-sidebar-text-dim: #7d8a81; /* labels de groupe, discrets */
@@ -186,8 +198,8 @@ input, select, textarea { font-family: inherit; color: inherit; transition: bord
 a { color: var(--sa-accent); transition: opacity var(--sa-duration-base) ease; }
 :focus-visible { outline: 2px solid var(--sa-accent); outline-offset: 2px; border-radius: 4px; }
 .sidebar :focus-visible, .topbar :focus-visible, #view-dashboard :focus-visible { outline-color: var(--v4-pine); }
-h1, h2, h3 { margin: 0; font-weight: var(--sa-weight-bold); letter-spacing: -0.015em; }
-h3 { font-weight: var(--sa-weight-semibold); margin-bottom: var(--sa-space-3); }
+h1, h2, h3 { margin: 0; font-family: var(--sa-font-display); font-weight: var(--sa-weight-bold); letter-spacing: -0.015em; }
+h3 { font-weight: 700; margin-bottom: var(--sa-space-3); }
 p { margin: 0 0 var(--sa-space-3); }
 
 /* Nombres (montants, dates, quantites) : chiffres alignes sur une largeur
@@ -228,7 +240,7 @@ p { margin: 0 0 var(--sa-space-3); }
 .btn-sm-primary { background: var(--sa-text); color: #fff; border-color: var(--sa-text); }
 .btn-sm-primary:hover { background: var(--sa-accent); border-color: var(--sa-accent); }
 .btn-sm-danger { color: var(--sa-danger); border-color: var(--sa-border); background: transparent; }
-.btn-sm-danger:hover { background: var(--sa-danger-soft); border-color: #e3b7b1; }
+.btn-sm-danger:hover { background: var(--sa-danger-soft); border-color: var(--sa-danger-border); }
 
 /* Action "silencieuse" : la majorite des actions d'une liste vivent ici -
    aucune bordure/fond tant qu'elle n'est pas survolee. */
@@ -236,7 +248,7 @@ p { margin: 0 0 var(--sa-space-3); }
 .btn-quiet:hover { background: var(--sa-surface-sunken); color: var(--sa-text); }
 
 .btn-secondary-danger { color: var(--sa-danger); border-color: var(--sa-border); }
-.btn-secondary-danger:hover { background: var(--sa-danger-soft); border-color: #e3b7b1; color: var(--sa-danger); }
+.btn-secondary-danger:hover { background: var(--sa-danger-soft); border-color: var(--sa-danger-border); color: var(--sa-danger); }
 
 .btn-archives {
   background: none; border: none; color: var(--sa-text-muted); font-size: var(--sa-text-sm); font-weight: var(--sa-weight-semibold);
@@ -291,7 +303,11 @@ input[readonly] { background: var(--sa-surface-sunken); }
   display: flex; align-items: center; padding: 64px;
 }
 .auth-brand-content { max-width: 340px; }
-.auth-logo-on-brand { font-size: 1.15rem; font-weight: var(--sa-weight-bold); letter-spacing: -0.01em; color: var(--sa-text-on-dark); margin-bottom: var(--sa-space-8); }
+/* Descendant selector (pas juste .auth-logo-on-brand) : l'element porte
+   aussi la classe .auth-logo (ligne ~316, meme specificite) qui fixe une
+   couleur claire par defaut - sans ce scope plus specifique, .auth-logo
+   gagnait la cascade et rendait ce texte quasi invisible sur fond sombre. */
+.auth-brand-panel .auth-logo-on-brand { font-size: 1.15rem; font-weight: var(--sa-weight-bold); letter-spacing: -0.01em; color: var(--sa-text-on-dark); margin-bottom: var(--sa-space-8); }
 .auth-brand-tagline { font-size: 1.35rem; font-weight: var(--sa-weight-medium); letter-spacing: -0.01em; line-height: 1.4; color: var(--sa-text-on-dark); margin-bottom: var(--sa-space-8); }
 .auth-brand-points { display: flex; flex-direction: column; gap: var(--sa-space-4); list-style: none; padding: 0; margin: 0; }
 .auth-brand-points li { position: relative; padding-left: 18px; font-size: var(--sa-text-sm); color: var(--sa-text-on-dark-muted); line-height: 1.5; }
@@ -631,10 +647,22 @@ input[readonly] { background: var(--sa-surface-sunken); }
 .dash-hero-actions { display: flex; gap: 10px; }
 .dash-hero-actions .btn-primary, .dash-hero-actions .btn-secondary { margin-top: 0; }
 
+/* .kpi-row/.kpi-inline : bande de chiffres en ligne, utilisee par la
+   tresorerie des Factures (voir tresorerieHeaderHtml). Corrige le 03/09 :
+   regle par erreur supprimee lors de l'introduction du KPI hero du
+   dashboard (qui utilise ses propres classes .dash-kpi-* ci-dessous et
+   ne depend plus de celles-ci). */
+.kpi-row { display: flex; gap: var(--sa-space-8); align-items: baseline; margin-bottom: var(--sa-space-8); flex-wrap: wrap; }
+.kpi-inline { display: flex; flex-direction: column; gap: 3px; }
+.kpi-inline .kpi-label { font-size: var(--sa-text-xs); color: var(--sa-text-muted); font-weight: var(--sa-weight-medium); }
+.kpi-inline .kpi-value { font-size: 1.5rem; font-weight: var(--sa-weight-bold); color: var(--sa-text); letter-spacing: -0.015em; }
+.kpi-inline.is-alert .kpi-value { color: var(--sa-danger); }
+.kpi-inline.is-primary .kpi-value { font-size: var(--sa-text-2xl); }
+
 /* ---------- KPI hero : UN chiffre de premier plan (CA), un vrai rythme
-   visuel, puis deux rangees de stats plus discretes. Remplace l'ancienne
-   bande .kpi-row a plat ; .kpi-row/.kpi-inline restent inchangees pour
-   la tresorerie des Factures qui les utilise encore. ---------- */
+   visuel, puis deux rangees de stats plus discretes. Utilise par le
+   dashboard uniquement (voir loadDashboard) - classes distinctes de
+   .kpi-row/.kpi-inline ci-dessus. ---------- */
 .dash-kpi-hero { margin-bottom: var(--sa-space-8); }
 .dash-kpi-hero-main { display: flex; flex-direction: column; gap: 5px; margin-bottom: var(--sa-space-5); }
 .dash-kpi-hero-label { font-size: var(--sa-text-sm); color: var(--v4-ink-soft); font-weight: 500; }
@@ -799,7 +827,7 @@ input[readonly] { background: var(--sa-surface-sunken); }
 
 /* ---------- Skeleton loaders ---------- */
 .skeleton {
-  background: linear-gradient(90deg, var(--sa-surface-sunken) 25%, #e6e7ec 37%, var(--sa-surface-sunken) 63%);
+  background: linear-gradient(90deg, var(--sa-surface-sunken) 25%, var(--v4-line) 37%, var(--sa-surface-sunken) 63%);
   background-size: 400% 100%; animation: skeleton-loading 1.4s ease infinite; border-radius: var(--sa-radius-md);
 }
 .skeleton-card { height: 44px; margin-bottom: var(--sa-space-2); }
@@ -833,6 +861,9 @@ input[readonly] { background: var(--sa-surface-sunken); }
 
 .item-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sa-space-3); flex-wrap: wrap; }
 .item-title { font-weight: var(--sa-weight-semibold); font-size: var(--sa-text-md); color: var(--sa-text); }
+/* Etoiles d'avis : seul endroit ou l'accent bronze/laiton apparait -
+   detail premium ponctuel, jamais une couleur dominante. */
+.avis-stars { color: var(--sa-bronze); letter-spacing: 2px; }
 .item-sub { font-size: var(--sa-text-xs); color: var(--sa-text-muted); margin-top: 1px; }
 .item-meta { font-size: var(--sa-text-xs); color: var(--sa-text-muted); margin-top: 8px; line-height: 1.7; }
 .item-actions { display: flex; align-items: center; gap: 2px; margin-top: var(--sa-space-3); flex-wrap: wrap; }
@@ -1126,7 +1157,7 @@ input[readonly] { background: var(--sa-surface-sunken); }
 .plan-card.plan-highlight { border-color: var(--sa-text); position: relative; }
 .plan-card.plan-current { border-color: var(--sa-success); }
 .plan-badge {
-  position: absolute; top: -10px; left: 20px; background: var(--sa-text); color: #fff;
+  position: absolute; top: -10px; left: 20px; background: var(--sa-bronze); color: #fff;
   font-size: 0.66rem; font-weight: var(--sa-weight-bold); text-transform: uppercase; letter-spacing: 0.03em;
   padding: 2px 9px; border-radius: var(--sa-radius-full);
 }
@@ -1275,7 +1306,7 @@ input[readonly] { background: var(--sa-surface-sunken); }
 .confirm-dialog-box h3 { font-size: var(--sa-text-lg); margin-bottom: var(--sa-space-2); }
 .confirm-dialog-box p { color: var(--sa-text-muted); font-size: var(--sa-text-sm); line-height: 1.55; margin: 0; }
 .confirm-dialog-box.is-danger #confirm-dialog-ok { background: var(--sa-danger); border-color: var(--sa-danger); }
-.confirm-dialog-box.is-danger #confirm-dialog-ok:hover { background: #9c2f26; border-color: #9c2f26; }
+.confirm-dialog-box.is-danger #confirm-dialog-ok:hover { background: var(--sa-danger-strong); border-color: var(--sa-danger-strong); }
 .confirm-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: var(--sa-space-6); }
 .confirm-dialog-actions .btn-primary, .confirm-dialog-actions .btn-secondary { margin-top: 0; }
 #confirm-dialog { z-index: var(--sa-z-modal-top); }

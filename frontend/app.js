@@ -1250,7 +1250,7 @@ function renderAvisCard(a) {
   <div class="item-card">
     <div class="item-card-top">
       <div>
-        <div class="item-title" style="color:#f5a623;letter-spacing:2px;">${starsText(a.note)}</div>
+        <div class="item-title avis-stars">${starsText(a.note)}</div>
         <div class="item-sub">${escapeHtml(a.client_nom || "Anonyme")} · ${fmtDate(a.created_at)}</div>
       </div>
       <span class="badge badge-gray">${AVIS_SOURCE_LABELS[a.source] || a.source}</span>
