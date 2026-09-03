@@ -518,6 +518,15 @@ document.addEventListener("keydown", (e) => {
 });
 
 function switchView(view) {
+  // Presentation uniquement : bascule une classe sur <body> pour que la
+  // navigation partagee (sidebar/topbar desktop, mobile-topbar/bottom-nav/
+  // tiroir "Plus" mobile) adopte le traitement sombre V5 seulement pendant
+  // que le dashboard est actif - aucune autre vue n'est affectee (voir
+  // style.css, bloc "ATELIER SOMBRE"). body est le seul ancetre commun a
+  // #dashboard-screen ET a .bottom-nav/#more-drawer, qui vivent en dehors
+  // de #dashboard-screen dans le DOM. Meme mecanisme que .active sur les
+  // liens de nav ci-dessous.
+  document.body.classList.toggle("is-view-dashboard", view === "dashboard");
   document.querySelectorAll(".nav-link").forEach((btn) => btn.classList.toggle("active", btn.dataset.view === view));
   // Sur mobile, la nav devient une rangee horizontale scrollable : sans ca,
   // l'onglet actif peut rester hors champ apres un changement de vue
@@ -1949,7 +1958,10 @@ function sousScoreHtml(s) {
       <div class="raison">${escapeHtml(s.raison_absence || "Pas encore assez de données.")}</div>
     </div>`;
   }
-  const couleur = s.valeur >= 70 ? "var(--success)" : s.valeur >= 40 ? "var(--warning)" : "var(--danger)";
+  // Tons dedies a la scene sombre du dashboard (seul appelant de cette
+  // fonction) : --success/--warning/--danger sont calibres pour le papier
+  // clair et seraient peu lisibles sur les surfaces --v5-*.
+  const couleur = s.valeur >= 70 ? "var(--v5-green-bright)" : s.valeur >= 40 ? "var(--v5-warning)" : "var(--v5-danger)";
   return `<div class="sante-sous-score">
     <div class="ligne"><span>${s.label}</span><span class="valeur">${s.valeur}/100</span></div>
     <div class="sante-barre"><div class="remplissage" style="width:${s.valeur}%;background:${couleur};"></div></div>

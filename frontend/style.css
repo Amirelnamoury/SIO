@@ -177,6 +177,46 @@
   --v4-font-ui: 'Public Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --v4-radius: 3px;               /* langage architectural, pas 8px partout */
   --v4-radius-lg: 6px;
+
+  /* =====================================================================
+     IDENTITE VISUELLE V5 — "ATELIER SOMBRE"
+     Variante sombre haut de gamme, en rupture avec le papier clair V4.
+     Portee : DASHBOARD UNIQUEMENT (vide + peuple), plus sidebar/topbar/
+     nav mobile pendant que le dashboard est la vue active seulement - voir
+     la classe .is-view-dashboard posee par switchView() (app.js) sur
+     <body> (seul ancetre commun a #dashboard-screen et .bottom-nav/
+     #more-drawer, qui vivent hors de #dashboard-screen dans le DOM).
+     Aucune autre vue ne lit ces tokens ; le reste du produit continue de
+     lire --v4-* / --sa-* (papier) sans aucun changement.
+     Hierarchie de profondeur : bg (le plus sombre hors sidebar) -> sidebar
+     (encore plus sombre) -> surface (legerement plus claire que bg) ->
+     surface-2/3 (variations discretes, hover/rail) -> bordures tres fines
+     et chaudes -> accents (vert profond pour l'action, bronze/champagne
+     tres rares pour le detail premium). Zero gris neutre : toutes les
+     teintes restent ancrees vert foret (~150°) ou chaudes (bronze ~40°).
+     Contrastes verifies WCAG (script maison, luminance relative) :
+     texte >= 4.8:1 sur toute surface, limites fonctionnelles >= 3:1. Les
+     hairlines internes restent volontairement sous 3:1 (texture discrete,
+     jamais un decoupage en blocs). ===================================== */
+  --v5-bg: #0f1412;               /* scene plein cadre du dashboard */
+  --v5-sidebar: #0b0f0d;          /* sidebar : encore plus sombre que la scene */
+  --v5-surface: #161d1a;          /* surfaces principales (rail, ticker...) */
+  --v5-surface-2: #1d2521;        /* variation secondaire discrete (hover, alternance) */
+  --v5-surface-3: #242d28;        /* etat releve (hover actif, menu) */
+  --v5-border: #423d2e;           /* hairline decoratif, chaud - sous le seuil 3:1 (texture) */
+  --v5-border-strong: #7b6d4c;    /* bordure fonctionnelle (boutons/inputs), 3:1+ */
+  --v5-text: #f0ede5;             /* texte principal, ivoire chaud - 15.9:1 sur bg */
+  --v5-text-soft: #a8afa1;        /* texte secondaire desature - 8.2:1 sur bg */
+  --v5-text-faint: #808c78;       /* texte tertiaire - 5.3:1 sur bg */
+  --v5-champagne: #ede1c5;        /* teinte tres claire reservee aux chiffres importants */
+  --v5-green: #1b372a;            /* vert bouteille profond - identite, fonds tres discrets */
+  --v5-green-strong: #11271d;
+  --v5-green-bright: #37815c;     /* seul vert assez clair pour porter un bouton primaire lisible */
+  --v5-bronze: #c19d67;           /* accent premium : icones/indicateurs/statuts, jamais dominant */
+  --v5-bronze-soft: #635136;
+  --v5-danger: #d16c61;           /* rouge sombre elegant, jamais alarme pure */
+  --v5-danger-soft: #422724;
+  --v5-warning: #c09059;
 }
 
 /* ---------- Reset / base ---------- */
@@ -624,39 +664,140 @@ input[readonly] { background: var(--sa-surface-sunken); }
 }
 
 /* =====================================================================
-   DASHBOARD — V4 : plan papier, densite editoriale. Portee de cette
-   phase : dashboard vide + peuple uniquement. Classes exclusives au
-   dashboard sauf mention contraire ; .dash-grid/.dash-stat restent
-   partagees avec Statistiques/Avis/Chantiers et sont inchangees.
+   NAVIGATION — traitement sombre "atelier" pendant que le dashboard est
+   la vue active. Sidebar/topbar (desktop) et mobile-topbar/bottom-nav/
+   tiroir "Plus" (mobile) sont des elements de chrome partages par toutes
+   les vues : body.is-view-dashboard (posee par switchView(), app.js -
+   presentation uniquement, aucune logique) les fait basculer sur la
+   scene V5 seulement pendant que le dashboard est affiche. Sur toute
+   autre vue ils gardent leur traitement V4 actuel, sans changement.
    ===================================================================== */
-.dash-hello { margin-bottom: var(--sa-space-8); }
-.dash-hello h2 { font-size: var(--sa-text-xl); }
-.dash-hello p { color: var(--sa-text-muted); font-size: var(--sa-text-sm); margin: 4px 0 0; }
+body.is-view-dashboard .sidebar { background: var(--v5-sidebar); }
+body.is-view-dashboard .sidebar-footer { border-top-color: rgba(240, 237, 229, 0.08); }
+/* Le mark "SA" est un micro-element de marque : un des rares emplacements
+   ou le bronze est legitime (voir regle "jamais une couleur dominante"). */
+body.is-view-dashboard .sidebar-brand-mark { background: var(--v5-bronze); color: var(--v5-bg); }
+body.is-view-dashboard .sidebar-brand-name { color: var(--v5-text); }
+body.is-view-dashboard .nav-link:hover { background: var(--v5-surface); color: var(--v5-text); }
+body.is-view-dashboard .nav-link.active { background: var(--v5-surface); color: var(--v5-text); }
+body.is-view-dashboard .sidebar .nav-link.active::before { background: var(--v5-bronze); box-shadow: none; }
+body.is-view-dashboard .sidebar .nav-icon { opacity: 0.7; }
+body.is-view-dashboard .nav-link.active .nav-icon,
+body.is-view-dashboard .nav-link:hover .nav-icon { opacity: 1; }
+body.is-view-dashboard .badge-count { background: rgba(240, 237, 229, 0.1); color: var(--v5-text-soft); }
+body.is-view-dashboard .nav-link.active .badge-count { background: rgba(240, 237, 229, 0.16); color: var(--v5-text); }
+body.is-view-dashboard .kbd-hint { border-color: var(--v5-border); color: var(--v5-text-faint); }
 
-/* Bandeau editorial : remplace l'ancien "Aujourd'hui / Bonjour" fixe par
-   une phrase qui resume la journee (memes compteurs que "A faire" et le
-   planning, juste lus une fois plus tot). #view-dashboard n'a plus de
-   .view-header (retire de index.html) - c'est desormais loadDashboard()
-   qui possede tout l'en-tete. */
-#view-dashboard { font-family: var(--v4-font-ui); }
+body.is-view-dashboard .topbar { background: var(--v5-bg); }
+body.is-view-dashboard .topbar-search-btn { background: var(--v5-surface); border-color: var(--v5-border); color: var(--v5-text-soft); }
+body.is-view-dashboard .topbar-search-btn:hover { border-color: var(--v5-border-strong); color: var(--v5-text); }
+body.is-view-dashboard .topbar-create-btn { background: var(--v5-green-bright); border-color: var(--v5-green-bright); color: var(--v5-text); }
+body.is-view-dashboard .topbar-create-btn:hover { background: #40966b; border-color: #40966b; }
+body.is-view-dashboard .topbar-icon-btn { color: var(--v5-text-soft); }
+body.is-view-dashboard .topbar-icon-btn:hover { background: var(--v5-surface); color: var(--v5-text); }
+body.is-view-dashboard .topbar-avatar { background: var(--v5-surface); border-color: var(--v5-border); color: var(--v5-text-soft); }
+body.is-view-dashboard .topbar-avatar:hover { color: var(--v5-text); border-color: var(--v5-border-strong); }
+body.is-view-dashboard .topbar-create-menu { background: var(--v5-surface-2); border-color: var(--v5-border); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4); }
+body.is-view-dashboard .topbar-create-menu button { color: var(--v5-text); }
+body.is-view-dashboard .topbar-create-menu button:hover,
+body.is-view-dashboard .topbar-create-menu button:focus-visible { background: var(--v5-surface-3); }
+
+body.is-view-dashboard .mobile-topbar { background: var(--v5-bg); color: var(--v5-text); border-bottom-color: var(--v5-border); }
+body.is-view-dashboard .mobile-icon-btn { color: var(--v5-text-soft); }
+body.is-view-dashboard .bottom-nav { background: var(--v5-sidebar); border-top-color: var(--v5-border); }
+body.is-view-dashboard .bottom-nav .nav-link { color: var(--v5-text-faint); }
+body.is-view-dashboard .bottom-nav .nav-link.active { color: var(--v5-text); }
+body.is-view-dashboard .bottom-nav .nav-link.active .nav-icon { color: var(--v5-bronze); }
+/* #btn-open-more ("Plus") n'a jamais eu .nav-link (bug preexistant, invisible
+   sur fond clair) : sans regle dediee il garde le bouton natif du navigateur
+   (fond clair, bordure 3D) - flagrant sur la scene sombre. Reproduit ici le
+   look de ses 4 voisins .nav-link sans toucher le HTML partage. */
+body.is-view-dashboard .bottom-nav #btn-open-more {
+  background: none; border: none; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; padding: 6px 2px; border-radius: var(--v4-radius); color: var(--v5-text-faint);
+  font-family: var(--v4-font-ui); font-size: 0.64rem; font-weight: 600; min-height: 50px;
+}
+body.is-view-dashboard .bottom-nav #btn-open-more .nav-icon { width: 20px; height: 20px; opacity: 1; }
+body.is-view-dashboard .more-drawer-box { background: var(--v5-surface-2); border-color: var(--v5-border); box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.4); }
+body.is-view-dashboard .more-drawer-handle { background: var(--v5-border-strong); }
+body.is-view-dashboard .more-drawer .nav-link { color: var(--v5-text); }
+body.is-view-dashboard .more-drawer .nav-link .nav-icon { color: var(--v5-text-soft); }
+body.is-view-dashboard .more-drawer .nav-link:hover,
+body.is-view-dashboard .more-drawer .nav-link:active { background: var(--v5-surface-3); }
+body.is-view-dashboard .more-drawer .nav-link.active,
+body.is-view-dashboard .more-drawer .nav-link.active .nav-icon { color: var(--v5-bronze); }
+
+/* Focus visible : les deux anneaux V4 (pine) restent lisibles sur le
+   sidebar deja sombre, mais pas assez sur la scene V5, plus profonde -
+   bronze/vert clair choisis et verifies (>=3:1) specifiquement pour ca. */
+body.is-view-dashboard .sidebar :focus-visible,
+body.is-view-dashboard .topbar :focus-visible { outline-color: var(--v5-bronze); }
+#view-dashboard :focus-visible { outline-color: var(--v5-green-bright); }
+
+/* =====================================================================
+   DASHBOARD — V5 "ATELIER SOMBRE" : rupture volontaire avec le papier
+   clair du reste du produit (voir tokens --v5-*, racine du fichier).
+   Portee strictement gardee par #view-dashboard : aucune classe partagee
+   avec d'autres vues n'est redefinie ici (.dash-grid/.dash-stat restent
+   telles quelles, cf. Statistiques/Avis/Chantiers ; .kpi-row/.kpi-inline
+   restent telles quelles, cf. tresorerie Factures). Composition heritee
+   de la recomposition precedente (masthead -> zone "aujourd'hui" -> bande
+   argent -> niveau secondaire) : ce qui change ici est la matiere -
+   profondeur de surface, typographie, boutons, separateurs, badges,
+   etats actifs - pas une simple recoloration des tokens.
+   ===================================================================== */
+
+/* Scene plein cadre : bleed exact de la boite de .content (memes valeurs,
+   en negatif) pour que le fond sombre remplisse toute la zone deja
+   allouee au dashboard, sans toucher .content lui-meme (partage par
+   toutes les vues). .content devient un conteneur flex colonne a une
+   seule vue visible (les autres sont [hidden], hors flux) UNIQUEMENT
+   pendant que le dashboard est actif : #view-dashboard (flex:1) remplit
+   alors toute la hauteur disponible meme quand son propre contenu est
+   court (etat vide) - sans ca le fond sombre s'arretait a la hauteur du
+   contenu et laissait apparaitre le papier clair de .workspace en
+   dessous. Sans effet sur les autres vues (display:block reste la valeur
+   par defaut de .content hors de ce scope). */
+/* .workspace est deja >= 100vh sur desktop (sidebar 100vh + ligne flex
+   qui l'etire), mais pas sur mobile : #dashboard-screen.app-shell devient
+   display:block sous 900px (plus de sidebar/ligne flex pour l'etirer), donc
+   .workspace (deja display:flex;flex-direction:column, inconditionnel) n'a
+   alors que sa hauteur de contenu naturelle - #view-dashboard n'a donc rien
+   dans quoi grandir. min-height force le meme comportement sur les deux. */
+body.is-view-dashboard .workspace { min-height: 100vh; }
+body.is-view-dashboard .content { display: flex; flex-direction: column; }
+#view-dashboard {
+  font-family: var(--v4-font-ui);
+  background: var(--v5-bg);
+  color: var(--v5-text);
+  flex: 1 0 auto;
+  margin: calc(-1 * var(--sa-space-8)) calc(-1 * var(--sa-space-8)) -72px;
+  padding: var(--sa-space-8) var(--sa-space-8) 88px;
+}
+@media (max-width: 900px) {
+  #view-dashboard {
+    margin: calc(-1 * var(--sa-space-4)) calc(-1 * var(--sa-space-4)) calc(-1 * (var(--sa-bottom-nav-h) + 24px));
+    padding: var(--sa-space-4) var(--sa-space-4) calc(var(--sa-bottom-nav-h) + 40px);
+  }
+}
+
 .dash-masthead { padding: var(--sa-space-8) 0 var(--sa-space-6); }
-.dash-masthead-eyebrow { font-size: var(--sa-text-2xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--v4-ink-soft); margin-bottom: 10px; }
-.dash-masthead-lede { font-family: var(--v4-font-display); font-size: 2.1rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; color: var(--v4-ink); max-width: 20ch; }
+.dash-masthead-eyebrow { font-size: var(--sa-text-2xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--v5-bronze); margin-bottom: 12px; }
+.dash-masthead-lede { font-family: var(--v4-font-display); font-size: 2.2rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; color: var(--v5-text); max-width: 22ch; }
 
 /* ---------- Dashboard, compte neuf : la phrase-cle vit dans le masthead
    (.dash-hero-empty-lede), ce bloc ne porte plus que le texte d'accroche
    et les CTA - presence typographique forte plutot que des KPI a 0. ---------- */
 .dash-hero-empty-lede { max-width: 16ch; }
 .dash-hero-empty { max-width: 50ch; }
-.dash-hero-empty p { color: var(--v4-ink-soft); font-size: 1.05rem; line-height: 1.6; margin-bottom: var(--sa-space-6); }
+.dash-hero-empty p { color: var(--v5-text-soft); font-size: 1.05rem; line-height: 1.6; margin-bottom: var(--sa-space-6); }
 .dash-hero-actions { display: flex; gap: 10px; }
 .dash-hero-actions .btn-primary, .dash-hero-actions .btn-secondary { margin-top: 0; }
 
 /* .kpi-row/.kpi-inline : bande de chiffres en ligne, utilisee par la
-   tresorerie des Factures (voir tresorerieHeaderHtml). Corrige le 03/09 :
-   regle par erreur supprimee lors de l'introduction du KPI hero du
-   dashboard (qui utilise ses propres classes .dash-kpi-* ci-dessous et
-   ne depend plus de celles-ci). */
+   tresorerie des Factures (voir tresorerieHeaderHtml). Volontairement
+   INTACTE ici (Factures reste sur le papier V4) - voir avertissement de
+   portee ci-dessus. */
 .kpi-row { display: flex; gap: var(--sa-space-8); align-items: baseline; margin-bottom: var(--sa-space-8); flex-wrap: wrap; }
 .kpi-inline { display: flex; flex-direction: column; gap: 3px; }
 .kpi-inline .kpi-label { font-size: var(--sa-text-xs); color: var(--sa-text-muted); font-weight: var(--sa-weight-medium); }
@@ -666,31 +807,31 @@ input[readonly] { background: var(--sa-surface-sunken); }
 
 /* ---------- Bande argent : deux chiffres forts (CA, a encaisser) puis le
    reste du commercial en petit a droite, separe par un trait - un "ticker"
-   plutot qu'une carte de plus. Utilise par le dashboard uniquement (voir
-   loadDashboard) - classes distinctes de .kpi-row/.kpi-inline ci-dessus
-   (Factures). ---------- */
+   plutot qu'une carte de plus. Le CA (donnee la plus importante de l'ecran)
+   est le seul chiffre en teinte champagne - reserve aux donnees cle, pas
+   une couleur de texte generale. ---------- */
 .dash-money {
   display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--sa-space-8) var(--sa-space-10);
   padding: var(--sa-space-8) 0; margin-bottom: var(--sa-space-10);
-  border-top: 1px solid var(--v4-line); border-bottom: 1px solid var(--v4-line);
+  border-top: 1px solid var(--v5-border); border-bottom: 1px solid var(--v5-border);
 }
 .dash-money-hero { display: flex; flex-direction: column; gap: 6px; }
-.dash-money-label { font-size: var(--sa-text-sm); color: var(--v4-ink-soft); font-weight: 500; }
-.dash-money-value { font-family: var(--v4-font-display); font-size: 2.6rem; font-weight: 800; letter-spacing: -0.02em; color: var(--v4-ink); line-height: 1; font-variant-numeric: tabular-nums; }
-.dash-money-hero-secondary .dash-money-value { font-size: 1.9rem; color: var(--v4-ink-soft); }
-.dash-money-hero-secondary.is-alert .dash-money-value { color: var(--v4-danger); }
+.dash-money-label { font-size: var(--sa-text-sm); color: var(--v5-text-soft); font-weight: 500; }
+.dash-money-value { font-family: var(--v4-font-display); font-size: 2.7rem; font-weight: 800; letter-spacing: -0.02em; color: var(--v5-champagne); line-height: 1; font-variant-numeric: tabular-nums; }
+.dash-money-hero-secondary .dash-money-value { font-size: 1.9rem; font-weight: 700; color: var(--v5-text-soft); }
+.dash-money-hero-secondary.is-alert .dash-money-value { color: var(--v5-danger); }
 .dash-money-stats {
   display: flex; flex-wrap: wrap; gap: var(--sa-space-6); align-items: center;
-  margin-left: auto; padding-left: var(--sa-space-8); border-left: 1px solid var(--v4-border); align-self: stretch;
+  margin-left: auto; padding-left: var(--sa-space-8); border-left: 1px solid var(--v5-border); align-self: stretch;
 }
 .dash-money-stat { display: flex; flex-direction: column; gap: 3px; justify-content: center; }
-.dash-money-stat-label { font-size: var(--sa-text-2xs); color: var(--v4-ink-soft); white-space: nowrap; }
-.dash-money-stat-value { font-family: var(--v4-font-display); font-weight: 700; font-size: 1.05rem; color: var(--v4-ink); font-variant-numeric: tabular-nums; }
+.dash-money-stat-label { font-size: var(--sa-text-2xs); color: var(--v5-text-faint); white-space: nowrap; text-transform: uppercase; letter-spacing: 0.04em; }
+.dash-money-stat-value { font-family: var(--v4-font-display); font-weight: 700; font-size: 1.05rem; color: var(--v5-text); font-variant-numeric: tabular-nums; }
 .dash-money-payments { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: var(--sa-space-2) var(--sa-space-6); margin-top: 2px; }
-.dash-money-payment { display: flex; gap: 6px; font-size: var(--sa-text-xs); color: var(--v4-ink-soft); }
-.dash-money-payment strong { color: var(--v4-ink); font-weight: 600; }
+.dash-money-payment { display: flex; gap: 6px; font-size: var(--sa-text-xs); color: var(--v5-text-faint); }
+.dash-money-payment strong { color: var(--v5-text-soft); font-weight: 600; }
 @media (max-width: 900px) {
-  .dash-money-stats { margin-left: 0; padding-left: 0; border-left: none; flex-basis: 100%; padding-top: var(--sa-space-5); border-top: 1px solid var(--v4-line); }
+  .dash-money-stats { margin-left: 0; padding-left: 0; border-left: none; flex-basis: 100%; padding-top: var(--sa-space-5); border-top: 1px solid var(--v5-border); }
 }
 
 .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--sa-space-3); margin-bottom: var(--sa-space-6); }
@@ -699,46 +840,50 @@ input[readonly] { background: var(--sa-surface-sunken); }
 .dash-stat .label { font-size: var(--sa-text-xs); color: var(--sa-text-muted); margin-top: 2px; }
 
 /* ---------- Zone "aujourd'hui" : coeur du dashboard, deliberement
-   asymetrique (jamais 50/50) - "A faire" domine, le planning vit dans un
-   rail plus etroit et plus calme a sa droite. ---------- */
+   asymetrique (jamais 50/50) - "A faire" domine, le planning devient un
+   veritable panneau (surface + bordure fine + rayon) a sa droite : un
+   traitement elegant meme a vide, pas juste une colonne separee par un
+   filet. ---------- */
 .dash-today { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: var(--sa-space-10); align-items: start; margin-bottom: var(--sa-space-8); }
 .dash-today-main { min-width: 0; }
 .dash-today-head { display: flex; align-items: baseline; gap: 9px; margin-bottom: var(--sa-space-3); }
-.dash-today-head h3 { font-family: var(--v4-font-display); font-size: 1.25rem; font-weight: 800; color: var(--v4-ink); margin: 0; }
+.dash-today-head h3 { font-family: var(--v4-font-display); font-size: 1.3rem; font-weight: 800; color: var(--v5-text); margin: 0; }
 .dash-today-count {
   display: inline-flex; align-items: center; justify-content: center; min-width: 21px; height: 21px; padding: 0 6px;
-  background: var(--v4-ink); color: #fff; border-radius: var(--sa-radius-full); font-size: 0.7rem; font-weight: 700;
+  background: var(--v5-bronze); color: var(--v5-bg); border-radius: var(--sa-radius-full); font-size: 0.7rem; font-weight: 700;
 }
-.dash-today-clear { font-size: var(--sa-text-sm); color: var(--v4-ink-soft); padding: var(--sa-space-4) 0; }
-.dash-today-rail { min-width: 0; border-left: 1px solid var(--v4-line); padding-left: var(--sa-space-6); }
-.dash-today-rail h3 { font-family: var(--v4-font-ui); font-size: 0.68rem; font-weight: 700; color: var(--v4-ink-soft); margin: 0 0 var(--sa-space-3); text-transform: uppercase; letter-spacing: 0.06em; }
+.dash-today-clear { font-size: var(--sa-text-sm); color: var(--v5-text-soft); padding: var(--sa-space-4) 0; }
+.dash-today-rail {
+  min-width: 0; background: var(--v5-surface); border: 1px solid var(--v5-border);
+  border-radius: var(--v4-radius-lg); padding: var(--sa-space-5) var(--sa-space-6);
+}
+.dash-today-rail h3 { font-family: var(--v4-font-ui); font-size: 0.68rem; font-weight: 700; color: var(--v5-text-faint); margin: 0 0 var(--sa-space-3); text-transform: uppercase; letter-spacing: 0.08em; }
 .dash-agenda { display: flex; flex-direction: column; }
 .dash-agenda-row {
   display: grid; grid-template-columns: 40px 12px 1fr; align-items: baseline; column-gap: 9px;
-  padding: 9px 0; border-bottom: 1px solid var(--v4-line); width: 100%; text-align: left;
-  background: none; border-left: none; border-right: none; border-top: none; color: var(--v4-ink); cursor: pointer;
+  padding: 9px 0; border-bottom: 1px solid var(--v5-border); width: 100%; text-align: left;
+  background: none; border-left: none; border-right: none; border-top: none; color: var(--v5-text); cursor: pointer;
 }
 .dash-agenda-row:last-child { border-bottom: none; }
-.dash-agenda-row:hover .dash-agenda-titre { color: var(--v4-pine); }
-.dash-agenda-heure { font-size: var(--sa-text-xs); font-weight: 700; color: var(--v4-ink-soft); flex-shrink: 0; font-variant-numeric: tabular-nums; }
-.dash-agenda-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--v4-pine); align-self: center; }
+.dash-agenda-row:hover .dash-agenda-titre { color: var(--v5-bronze); }
+.dash-agenda-heure { font-size: var(--sa-text-xs); font-weight: 700; color: var(--v5-text-faint); flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.dash-agenda-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--v5-green-bright); align-self: center; }
 .dash-agenda-titre { font-size: var(--sa-text-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dash-agenda-empty { display: flex; flex-direction: column; gap: 5px; padding: var(--sa-space-2) 0; }
-.dash-agenda-empty-title { font-family: var(--v4-font-display); font-size: 1.15rem; font-weight: 700; color: var(--v4-ink); }
-.dash-agenda-empty-sub { font-size: var(--sa-text-xs); color: var(--v4-ink-soft); }
+.dash-agenda-empty-title { font-family: var(--v4-font-display); font-size: 1.15rem; font-weight: 700; color: var(--v5-text); }
+.dash-agenda-empty-sub { font-size: var(--sa-text-xs); color: var(--v5-text-soft); }
 
 /* ---------- Niveau secondaire : recommandations/sante cote a cote,
-   presence en ligne en pied - en retrait visuel (titres plus petits,
-   moins d'air que le reste de la page). ---------- */
+   presence en ligne en pied - en retrait visuel assume (titres discrets
+   en petites capitales, moins d'air que le reste de la page). ---------- */
 .dash-glance { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sa-space-10); margin-bottom: var(--sa-space-8); }
 .dash-glance-col h4, .dash-glance-footer h4 {
   font-family: var(--v4-font-ui); font-size: var(--sa-text-2xs); font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.06em; color: var(--v4-ink-soft); margin: 0 0 var(--sa-space-3);
+  letter-spacing: 0.08em; color: var(--v5-text-faint); margin: 0 0 var(--sa-space-3);
 }
-.dash-glance-footer { padding-top: var(--sa-space-6); border-top: 1px solid var(--v4-line); }
+.dash-glance-footer { padding-top: var(--sa-space-6); border-top: 1px solid var(--v5-border); }
 @media (max-width: 1100px) {
   .dash-today { grid-template-columns: 1fr; gap: var(--sa-space-6); }
-  .dash-today-rail { border-left: none; padding-left: 0; border-top: 1px solid var(--v4-line); padding-top: var(--sa-space-6); }
 }
 @media (max-width: 760px) {
   .dash-glance { grid-template-columns: 1fr; gap: var(--sa-space-8); }
@@ -755,36 +900,52 @@ input[readonly] { background: var(--sa-surface-sunken); }
 /* Dashboard uniquement : hairlines chauds pour .dash-row (utilise encore
    par renderPresenceSite). Scope #view-dashboard pour ne pas toucher
    .dash-row des autres vues (Statistiques, Avis, Chantiers). */
-#view-dashboard .dash-row { border-bottom-color: var(--v4-line); color: var(--v4-ink); }
-#view-dashboard .dash-empty { color: var(--v4-ink-soft); }
+#view-dashboard .dash-row { border-bottom-color: var(--v5-border); color: var(--v5-text); }
+#view-dashboard .dash-empty { color: var(--v5-text-soft); }
 
-/* Boutons du dashboard : un seul accent (pine) pour l'action de premier
-   plan (CTA d'ecran vide, "+Creer"), ink neutre pour les actions en ligne
-   repetees (Relancer...) - pine reste rare et signifiant. Scope explicite,
-   .btn-primary/.btn-secondary/.btn-sm* restent inchanges partout ailleurs. */
-#view-dashboard .btn-primary { background: var(--v4-pine); border-color: var(--v4-pine); font-family: var(--v4-font-ui); border-radius: var(--v4-radius); }
-#view-dashboard .btn-primary:hover { background: var(--v4-pine-strong); border-color: var(--v4-pine-strong); }
-#view-dashboard .btn-secondary { background: var(--v4-surface); border-color: var(--v4-border); color: var(--v4-ink); font-family: var(--v4-font-ui); border-radius: var(--v4-radius); }
-#view-dashboard .btn-secondary:hover { background: var(--v4-pine-soft); border-color: var(--v4-pine); color: var(--v4-ink); }
-#view-dashboard .btn-sm { font-family: var(--v4-font-ui); border-radius: var(--v4-radius); border-color: var(--v4-border); }
-#view-dashboard .btn-sm:not(.btn-sm-primary) { color: var(--v4-ink); }
-#view-dashboard .btn-sm:not(.btn-sm-primary):hover { background: var(--v4-surface); }
-#view-dashboard .btn-sm-primary { background: var(--v4-ink); border-color: var(--v4-ink); }
-#view-dashboard .btn-sm-primary:hover { background: var(--v4-pine-strong); border-color: var(--v4-pine-strong); }
+/* .badge-* (recommandations, presence en ligne) : les tons --sa-* / --v4-*
+   sont calibres pour le papier clair et deviendraient illisibles sur les
+   surfaces sombres - variante dediee, meme logique semantique (gris
+   neutre/info/attention/urgent/positif). */
+#view-dashboard .badge-gray { color: var(--v5-text-faint); }
+#view-dashboard .badge-blue { color: var(--v5-text-soft); }
+#view-dashboard .badge-orange { color: var(--v5-warning); }
+#view-dashboard .badge-red { color: var(--v5-danger); }
+#view-dashboard .badge-green { color: var(--v5-green-bright); }
+
+/* Etat d'erreur (API en echec) : .empty-state est partage par tout le
+   produit, tons dedies ici pour rester lisible sur la scene sombre. */
+#view-dashboard .empty-state { color: var(--v5-text-soft); }
+#view-dashboard .empty-state strong { color: var(--v5-text); }
+
+/* Boutons du dashboard : vert clair (seul vert assez lisible sur fond
+   sombre) pour l'action de premier plan (CTA d'ecran vide, "+Creer"),
+   surface relevee neutre pour les actions en ligne repetees (Relancer...)
+   - le vert reste rare et signifiant, jamais la couleur de repos d'un
+   bouton secondaire. Scope explicite, .btn-primary/.btn-secondary/.btn-sm*
+   restent inchanges partout ailleurs. */
+#view-dashboard .btn-primary { background: var(--v5-green-bright); border-color: var(--v5-green-bright); color: var(--v5-text); font-family: var(--v4-font-ui); border-radius: var(--v4-radius); }
+#view-dashboard .btn-primary:hover { background: #40966b; border-color: #40966b; }
+#view-dashboard .btn-secondary { background: var(--v5-surface); border-color: var(--v5-border-strong); color: var(--v5-text); font-family: var(--v4-font-ui); border-radius: var(--v4-radius); }
+#view-dashboard .btn-secondary:hover { background: var(--v5-surface-2); border-color: var(--v5-bronze); color: var(--v5-text); }
+#view-dashboard .btn-sm { font-family: var(--v4-font-ui); border-radius: var(--v4-radius); border-color: var(--v5-border-strong); background: var(--v5-surface); color: var(--v5-text-soft); }
+#view-dashboard .btn-sm:not(.btn-sm-primary):hover { background: var(--v5-surface-2); color: var(--v5-text); }
+#view-dashboard .btn-sm-primary { background: var(--v5-surface-3); border-color: var(--v5-border-strong); color: var(--v5-text); }
+#view-dashboard .btn-sm-primary:hover { background: var(--v5-green-bright); border-color: var(--v5-green-bright); color: var(--v5-text); }
 
 /* ---------- Activation checklist ---------- */
-.activation-card { margin-bottom: var(--sa-space-8); padding-top: var(--sa-space-6); border-top: 1px solid var(--v4-line); }
+.activation-card { margin-bottom: var(--sa-space-8); padding-top: var(--sa-space-6); border-top: 1px solid var(--v5-border); }
 .activation-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--sa-space-4); gap: var(--sa-space-3); }
-.activation-head h3 { margin: 0; font-family: var(--v4-font-display); font-size: 1.05rem; font-weight: 700; color: var(--v4-ink); }
-.activation-head span { font-size: var(--sa-text-xs); color: var(--v4-ink-soft); font-weight: 600; font-variant-numeric: tabular-nums; }
-.activation-bar { height: 3px; border-radius: var(--sa-radius-full); background: var(--v4-line); overflow: hidden; margin-bottom: var(--sa-space-5); }
-.activation-bar > span { display: block; height: 100%; background: var(--v4-pine); }
+.activation-head h3 { margin: 0; font-family: var(--v4-font-display); font-size: 1.05rem; font-weight: 700; color: var(--v5-text); }
+.activation-head span { font-size: var(--sa-text-xs); color: var(--v5-text-soft); font-weight: 600; font-variant-numeric: tabular-nums; }
+.activation-bar { height: 3px; border-radius: var(--sa-radius-full); background: var(--v5-surface-3); overflow: hidden; margin-bottom: var(--sa-space-5); }
+.activation-bar > span { display: block; height: 100%; background: var(--v5-green-bright); }
 .activation-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px 18px; }
-.activation-item { display: flex; align-items: center; gap: 9px; font-size: var(--sa-text-sm); color: var(--v4-ink); }
+.activation-item { display: flex; align-items: center; gap: 9px; font-size: var(--sa-text-sm); color: var(--v5-text); }
 .activation-item[data-action] { cursor: pointer; }
-.activation-item::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--v4-border); flex-shrink: 0; }
-.activation-item.is-done { color: var(--v4-ink-soft); text-decoration: line-through; text-decoration-color: var(--v4-line); }
-.activation-item.is-done::before { background: var(--v4-pine); }
+.activation-item::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--v5-border-strong); flex-shrink: 0; }
+.activation-item.is-done { color: var(--v5-text-faint); text-decoration: line-through; text-decoration-color: var(--v5-border); }
+.activation-item.is-done::before { background: var(--v5-green-bright); }
 
 /* =====================================================================
    TASK FEED — "A faire aujourd'hui", le coeur du dashboard.
@@ -794,28 +955,32 @@ input[readonly] { background: var(--sa-surface-sunken); }
 .task-feed { display: flex; flex-direction: column; }
 .task-row {
   display: flex; align-items: flex-start; gap: 11px; padding: 12px 4px;
-  border-bottom: 1px solid var(--v4-line); font-family: var(--v4-font-ui);
+  border-bottom: 1px solid var(--v5-border); font-family: var(--v4-font-ui);
 }
 .task-row:last-child { border-bottom: none; }
-.task-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; background: var(--v4-border); margin-top: 6px; }
-.task-row.urgence-haute .task-dot { background: var(--v4-danger); }
-.task-row.urgence-moyenne .task-dot { background: var(--v4-warning); }
-.task-row.urgence-basse .task-dot { background: var(--v4-ink-soft); }
-.task-row.urgence-info .task-dot { background: var(--v4-pine); }
+/* Urgence haute : un vrai poids visuel (filet plein a gauche), pas
+   seulement un point de 6px - meme langage que .item-card.is-due
+   ailleurs dans le produit. */
+.task-row.urgence-haute { padding-left: 12px; box-shadow: inset 2px 0 0 var(--v5-danger); }
+.task-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; background: var(--v5-border-strong); margin-top: 6px; }
+.task-row.urgence-haute .task-dot { background: var(--v5-danger); }
+.task-row.urgence-moyenne .task-dot { background: var(--v5-warning); }
+.task-row.urgence-basse .task-dot { background: var(--v5-text-faint); }
+.task-row.urgence-info .task-dot { background: var(--v5-green-bright); }
 .task-row-body { flex: 1; min-width: 0; }
 .task-row-top { display: flex; align-items: baseline; gap: 7px; flex-wrap: wrap; }
 .task-row-type {
   font-size: 0.64rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
-  color: var(--v4-ink-soft); flex-shrink: 0;
+  color: var(--v5-text-faint); flex-shrink: 0;
 }
-.task-row-titre { font-size: var(--sa-text-sm); color: var(--v4-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.task-row-titre { font-size: var(--sa-text-sm); color: var(--v5-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .task-row.urgence-haute .task-row-titre { font-weight: 600; }
-.task-row-meta { display: block; font-size: var(--sa-text-xs); color: var(--v4-ink-soft); margin-top: 2px; }
+.task-row-meta { display: block; font-size: var(--sa-text-xs); color: var(--v5-text-soft); margin-top: 2px; }
 .task-row-montant {
   flex-shrink: 0; font-family: var(--v4-font-display); font-weight: 700; font-size: var(--sa-text-sm);
-  color: var(--v4-ink); font-variant-numeric: tabular-nums; padding-top: 1px;
+  color: var(--v5-champagne); font-variant-numeric: tabular-nums; padding-top: 1px;
 }
-.task-row.urgence-haute .task-row-montant { color: var(--v4-danger); }
+.task-row.urgence-haute .task-row-montant { color: var(--v5-danger); }
 .task-row-actions { flex-shrink: 0; display: flex; gap: 4px; }
 
 /* Retro-compat : ancien nom de classe des lignes de priorite. */
@@ -837,7 +1002,7 @@ input[readonly] { background: var(--sa-surface-sunken); }
 }
 .recommandation-row:last-child { border-bottom: none; }
 .recommandation-row-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-#view-dashboard .recommandation-row { border-bottom-color: var(--v4-line); font-family: var(--v4-font-ui); color: var(--v4-ink); }
+#view-dashboard .recommandation-row { border-bottom-color: var(--v5-border); font-family: var(--v4-font-ui); color: var(--v5-text); }
 
 /* ---------- Sante de l'entreprise ---------- */
 .sante-widget { display: flex; align-items: center; gap: var(--sa-space-8); flex-wrap: wrap; }
@@ -855,18 +1020,23 @@ input[readonly] { background: var(--sa-surface-sunken); }
    tel quel ailleurs si besoin, seule sa presentation dans #view-dashboard
    change - .sante-barre/.sante-sous-score restent partages sans ce scope. */
 #view-dashboard .sante-widget { font-family: var(--v4-font-ui); }
-#view-dashboard .sante-score-global .chiffre { font-family: var(--v4-font-display); color: var(--v4-ink); }
+#view-dashboard .sante-score-global .chiffre { font-family: var(--v4-font-display); color: var(--v5-champagne); }
 #view-dashboard .sante-score-global .sur-cent,
-#view-dashboard .sante-score-global .libelle { color: var(--v4-ink-soft); }
-#view-dashboard .sante-barre { background: var(--v4-line); }
+#view-dashboard .sante-score-global .libelle { color: var(--v5-text-soft); }
+#view-dashboard .sante-barre { background: var(--v5-surface-3); }
 /* .remplissage garde sa couleur semantique (bon/moyen/faible), posee en
-   style inline par sousScoreHtml - intentionnellement pas de pine ici. */
+   style inline par sousScoreHtml (tons --v5-* depuis ce changement, seul
+   appelant de la fonction) - intentionnellement pas de pine ici. */
 
 /* ---------- Skeleton loaders ---------- */
 .skeleton {
   background: linear-gradient(90deg, var(--sa-surface-sunken) 25%, var(--v4-line) 37%, var(--sa-surface-sunken) 63%);
   background-size: 400% 100%; animation: skeleton-loading 1.4s ease infinite; border-radius: var(--sa-radius-md);
 }
+/* Le dashboard affiche son skeleton sur la scene sombre V5 des le premier
+   rendu (avant meme la reponse API) - variante dediee pour ne pas montrer
+   un shimmer clair sur fond sombre. */
+#view-dashboard .skeleton { background: linear-gradient(90deg, var(--v5-surface) 25%, var(--v5-surface-3) 37%, var(--v5-surface) 63%); }
 .skeleton-card { height: 44px; margin-bottom: var(--sa-space-2); }
 @keyframes skeleton-loading { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
 @media (prefers-reduced-motion: reduce) { .skeleton { animation: none; background: var(--sa-surface-sunken); } }
