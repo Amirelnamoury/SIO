@@ -555,7 +555,7 @@ function switchView(view) {
 // quand elle existe). Purement presentation : une seule valeur deja
 // calculee, juste affichee a plusieurs endroits du DOM.
 function setBadgeCount(id, count) {
-  document.querySelectorAll(`#${id}, #${id}-mobile`).forEach((el) => {
+  document.querySelectorAll(`#${id}, #${id}-mobile, #${id}-topbar`).forEach((el) => {
     if (!el) return;
     el.textContent = count;
     el.hidden = count === 0;
@@ -1746,6 +1746,57 @@ function setupMobileNav() {
   const profilMobileBtn = document.getElementById("btn-profil-mobile");
   const profilBtn = document.getElementById("btn-profil");
   if (profilMobileBtn && profilBtn) profilMobileBtn.addEventListener("click", () => profilBtn.click());
+}
+
+// ===================== Topbar desktop (recherche, creation rapide, notifications, profil) =====================
+// Purement presentation : relaie vers des controles/handlers deja existants
+// (openSearch, QUICK_ACTIONS + switchView, panneau #btn-profil, vue notifications).
+// Aucune nouvelle logique metier - seulement de nouveaux points d'entree vers
+// des actions qui existaient deja (menu Ctrl+K, formulaires de creation).
+function setupTopbar() {
+  const createBtn = document.getElementById("btn-topbar-create");
+  const createMenu = document.getElementById("topbar-create-menu");
+  if (createBtn && createMenu) {
+    createMenu.innerHTML = QUICK_ACTIONS.map(
+      (a) => `<button type="button" role="menuitem" data-action-id="${a.id}">+ ${escapeHtml(a.label)}</button>`
+    ).join("");
+    const closeCreateMenu = () => {
+      createMenu.hidden = true;
+      createBtn.setAttribute("aria-expanded", "false");
+    };
+    createBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const willOpen = createMenu.hidden;
+      closeCreateMenu();
+      if (willOpen) {
+        createMenu.hidden = false;
+        createBtn.setAttribute("aria-expanded", "true");
+      }
+    });
+    createMenu.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-action-id]");
+      if (!btn) return;
+      const action = QUICK_ACTIONS.find((a) => a.id === btn.dataset.actionId);
+      closeCreateMenu();
+      if (action) {
+        switchView(action.view);
+        setTimeout(action.run, 200);
+      }
+    });
+    document.addEventListener("click", (e) => {
+      if (!createMenu.hidden && !e.target.closest(".topbar-create")) closeCreateMenu();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !createMenu.hidden) closeCreateMenu();
+    });
+  }
+
+  const notifTopbarBtn = document.getElementById("btn-topbar-notifications");
+  if (notifTopbarBtn) notifTopbarBtn.addEventListener("click", () => switchView("notifications"));
+
+  const profilTopbarBtn = document.getElementById("btn-profil-topbar");
+  const profilBtn = document.getElementById("btn-profil");
+  if (profilTopbarBtn && profilBtn) profilTopbarBtn.addEventListener("click", () => profilBtn.click());
 }
 
 // ===================== Menu d'actions generique ("•••") =====================
@@ -3685,6 +3736,55 @@ async function showChantierEditForm(c) {
     </div>`;
 }
 
+// Une action principale visible + le reste dans le menu "•••" (meme systeme
+// que renderDevisCard) : memes data-action/data-id qu'avant, seule leur
+// repartition entre bouton primaire et menu change.
+function chantierActionsHtml(c) {
+  const items = [];
+  items.push({ attrs: `data-action="edit-chantier" data-id="${c.id}"`, label: "Modifier le chantier" });
+  items.push({ primaire: c.statut !== "termine", attrs: `data-action="toggle-note-form" data-id="${c.id}"`, label: "+ Ajouter une note" });
+  if (!c.finances_verrouillees) {
+    items.push({ attrs: `data-action="toggle-depense-form" data-id="${c.id}"`, label: "+ Ajouter une dépense" });
+    items.push({ attrs: `data-action="toggle-heures-form" data-id="${c.id}"`, label: "+ Ajouter des heures" });
+  }
+  items.push({ attrs: `data-action="chantier-document" data-id="${c.id}"`, label: "+ Ajouter un document" });
+  items.push({ attrs: `data-action="planifier-intervention" data-id="${c.id}"`, label: "Planifier une intervention" });
+  if (!["termine", "facture", "paye"].includes(c.statut)) {
+    items.push({ attrs: `data-action="terminer-chantier" data-id="${c.id}"`, label: "Marquer terminé" });
+  }
+  if (["termine", "facture", "paye"].includes(c.statut)) {
+    items.push({ attrs: `data-action="toggle-reception-form" data-id="${c.id}"`, label: c.date_reception ? "Modifier la réception" : "Enregistrer la réception" });
+  }
+  if (c.statut === "termine") {
+    items.push({ primaire: true, attrs: `data-action="toggle-cloturer-form" data-id="${c.id}"`, label: "Clôturer le chantier" });
+  }
+  items.push({ attrs: `data-action="rapport-chantier" data-id="${c.id}"`, label: "Télécharger le rapport" });
+  items.push({ divider: true });
+  items.push({ attrs: `data-action="delete-chantier" data-id="${c.id}"`, label: "Archiver", danger: true });
+
+  const primaireIdx = items.findIndex((it) => it.primaire);
+  const primaireHtml = primaireIdx !== -1
+    ? `<button type="button" class="btn-sm btn-sm-primary" ${items[primaireIdx].attrs}>${items[primaireIdx].label}</button>`
+    : "";
+  const menuHtml = items
+    .filter((it, i) => i !== primaireIdx)
+    .map((it) => it.divider
+      ? '<div class="action-menu-divider"></div>'
+      : `<button type="button"${it.danger ? ' class="is-danger"' : ""} ${it.attrs}>${it.label}</button>`)
+    .join("");
+
+  return `
+    <div class="item-actions">
+      ${primaireHtml}
+      <div class="action-menu">
+        <button type="button" class="action-menu-trigger" data-action="toggle-action-menu" aria-haspopup="true" aria-expanded="false" aria-label="Plus d'actions sur ce chantier">
+          <svg viewBox="0 0 24 24" class="nav-icon"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg>
+        </button>
+        <div class="action-menu-panel" role="menu">${menuHtml}</div>
+      </div>
+    </div>`;
+}
+
 function renderChantierCard(c) {
   const notesHtml = (c.notes || [])
     .slice()
@@ -3733,19 +3833,7 @@ function renderChantierCard(c) {
     ${heuresHtml(c)}
     <div class="notes-list">${notesHtml || '<div class="item-sub">Aucune note pour le moment.</div>'}</div>
     ${receptionHtml(c)}
-    <div class="item-actions">
-      <button type="button" class="btn-sm" data-action="edit-chantier" data-id="${c.id}">Modifier le chantier</button>
-      <button type="button" class="btn-sm btn-sm-primary" data-action="toggle-note-form" data-id="${c.id}">+ Ajouter une note</button>
-      ${c.finances_verrouillees ? "" : `<button type="button" class="btn-sm" data-action="toggle-depense-form" data-id="${c.id}">+ Ajouter une dépense</button>
-      <button type="button" class="btn-sm" data-action="toggle-heures-form" data-id="${c.id}">+ Ajouter des heures</button>`}
-      <button type="button" class="btn-sm" data-action="chantier-document" data-id="${c.id}">+ Ajouter un document</button>
-      <button type="button" class="btn-sm" data-action="planifier-intervention" data-id="${c.id}">Planifier une intervention</button>
-      ${!["termine", "facture", "paye"].includes(c.statut) ? `<button type="button" class="btn-sm" data-action="terminer-chantier" data-id="${c.id}">Marquer terminé</button>` : ""}
-      ${["termine", "facture", "paye"].includes(c.statut) ? `<button type="button" class="btn-sm" data-action="toggle-reception-form" data-id="${c.id}">${c.date_reception ? "Modifier la réception" : "Enregistrer la réception"}</button>` : ""}
-      ${c.statut === "termine" ? `<button type="button" class="btn-sm btn-sm-primary" data-action="toggle-cloturer-form" data-id="${c.id}">Clôturer le chantier</button>` : ""}
-      <button type="button" class="btn-sm" data-action="rapport-chantier" data-id="${c.id}">Télécharger le rapport</button>
-      <button type="button" class="btn-sm btn-sm-danger" data-action="delete-chantier" data-id="${c.id}">Archiver</button>
-    </div>
+    ${chantierActionsHtml(c)}
     <div id="chantier-edit-form-${c.id}"></div>
     <div id="note-form-${c.id}"></div>
     <div id="depense-form-${c.id}"></div>
@@ -4529,7 +4617,74 @@ function planningItemChip(item, compact) {
   </div>`;
 }
 
-function planningDayCellHtml(dateObj, items, { compact = false, showWeekday = true, extraClass = "" } = {}) {
+// Grille horaire (vues jour/semaine) : la vue "brief" precedente empilait les
+// evenements du haut vers le bas sans notion d'heure, ce qui laissait la
+// quasi-totalite de la colonne vide des qu'un jour avait 0-2 rendez-vous.
+// Ici chaque evenement est positionne a sa vraie heure sur un axe 7h-20h -
+// mêmes donnees (PlanningItem.date), seule la disposition change. Duree
+// d'affichage fixe (1h) : l'API de planning ne renvoie pas de duree de fin
+// pour les items agreges (evenements + taches + debut de chantier).
+const PLANNING_HOUR_START = 7;
+const PLANNING_HOUR_END = 20; // 13h affichees ; les items hors plage restent visibles, ancres au bord.
+const PLANNING_ROW_H = 44; // px par heure - garder synchronise avec --sa-plan-row-h en CSS.
+
+function planningTimeMinutes(dateVal) {
+  const { heure } = planningDateHeureLocale(dateVal);
+  const [h, m] = heure.split(":").map(Number);
+  return h * 60 + m;
+}
+
+function planningHourRowsHtml() {
+  let html = "";
+  for (let h = PLANNING_HOUR_START; h < PLANNING_HOUR_END; h++) html += '<div class="planning-hour-row"></div>';
+  return html;
+}
+
+function planningHourGutterHtml() {
+  let html = '<div class="planning-hour-gutter"><div class="planning-hour-gutter-spacer"></div>';
+  for (let h = PLANNING_HOUR_START; h < PLANNING_HOUR_END; h++) html += `<div class="planning-hour-label">${h}h</div>`;
+  return html + "</div>";
+}
+
+function planningNowLineHtml() {
+  const minutes = planningTimeMinutes(new Date());
+  if (minutes < PLANNING_HOUR_START * 60 || minutes > PLANNING_HOUR_END * 60) return "";
+  const top = ((minutes - PLANNING_HOUR_START * 60) / 60) * PLANNING_ROW_H;
+  return `<div class="planning-now-line" style="top:${top}px;"><span class="planning-now-dot"></span></div>`;
+}
+
+// Attribue une colonne a chaque item par ordre chronologique (chevauchements
+// rares pour un artisan seul sur son planning) : algorithme glouton simple,
+// pas de vrai decoupage par cluster - un item tardif isole peut partager une
+// largeur reduite avec un chevauchement plus tot dans la meme journee, cas
+// limite juge acceptable au vu de la frequence.
+function planningLayoutDay(dayItems) {
+  const DUREE = 60;
+  const columns = [];
+  const placed = dayItems.map((item) => {
+    const start = planningTimeMinutes(item.date);
+    let col = columns.findIndex((endTime) => endTime <= start);
+    if (col === -1) { col = columns.length; columns.push(start + DUREE); }
+    else columns[col] = start + DUREE;
+    return { item, start, col };
+  });
+  const totalCols = Math.max(1, columns.length);
+  return placed.map((p) => ({ ...p, totalCols }));
+}
+
+function planningPositionedItemHtml({ item, start, col, totalCols }) {
+  const maxTop = (PLANNING_HOUR_END - PLANNING_HOUR_START) * PLANNING_ROW_H - PLANNING_ROW_H + 4;
+  const top = Math.min(Math.max(0, ((start - PLANNING_HOUR_START * 60) / 60) * PLANNING_ROW_H), maxTop);
+  const widthPct = 100 / totalCols;
+  const ouvreFiche = item.type === "chantier_debut" || PLANNING_TYPES_EVENEMENT.has(item.type);
+  const heure = item.type === "chantier_debut" ? "" : `<span class="planning-item-heure">${planningHeureLocale(item.date)}</span> `;
+  return `<div class="planning-item planning-item-positioned ${PLANNING_TYPE_CLASS[item.type] || ""} ${ouvreFiche ? "planning-item-clickable" : ""}"
+    style="top:${top}px; height:${PLANNING_ROW_H - 4}px; left:calc(${col * widthPct}% + 2px); width:calc(${widthPct}% - 4px);"
+    draggable="${item.type === "chantier_debut" ? "false" : "true"}" data-type="${item.type}" data-ref-id="${item.reference_id}" data-current-date="${item.date}"
+    ${ouvreFiche ? 'role="button" tabindex="0"' : ""} title="${escapeHtml(item.titre)}">${heure}<span class="planning-item-titre">${escapeHtml(item.titre)}</span></div>`;
+}
+
+function planningDayCellHtml(dateObj, items, { compact = false, showWeekday = true, extraClass = "", hourGrid = false } = {}) {
   const iso = planningToIso(dateObj);
   // Comparaison sur la cle "jour" calculee en Europe/Paris des deux cotes
   // (jamais un slice(0,10) direct de la chaine UTC renvoyee par l'API) :
@@ -4539,12 +4694,13 @@ function planningDayCellHtml(dateObj, items, { compact = false, showWeekday = tr
   const headerLabel = showWeekday
     ? dateObj.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" })
     : String(dateObj.getDate());
+  const body = hourGrid
+    ? `<div class="planning-day-track">${planningHourRowsHtml()}${planningLayoutDay(dayItems).map(planningPositionedItemHtml).join("")}${isToday ? planningNowLineHtml() : ""}</div>`
+    : `<div class="planning-day-items">${dayItems.map((i) => planningItemChip(i, compact)).join("") || (compact ? "" : '<div class="planning-day-empty">Rien de prévu</div>')}</div>`;
   return `
-    <div class="planning-day-cell ${isToday ? "is-today" : ""} ${extraClass}" data-date="${iso}">
+    <div class="planning-day-cell ${isToday ? "is-today" : ""} ${hourGrid ? "has-hour-grid" : ""} ${extraClass}" data-date="${iso}">
       <div class="planning-day-header">${headerLabel}</div>
-      <div class="planning-day-items">
-        ${dayItems.map((i) => planningItemChip(i, compact)).join("") || (compact ? "" : '<div class="planning-day-empty">Rien de prévu</div>')}
-      </div>
+      ${body}
     </div>`;
 }
 
@@ -4555,9 +4711,9 @@ function renderPlanning(debut, fin, items) {
 
   let gridHtml;
   if (planningViewMode === "jour") {
-    gridHtml = `<div class="planning-day-view">${planningDayCellHtml(debut, items, { compact: false, showWeekday: true })}</div>`;
+    gridHtml = `<div class="planning-day-view">${planningHourGutterHtml()}${planningDayCellHtml(debut, items, { compact: false, showWeekday: true, hourGrid: true })}</div>`;
   } else if (planningViewMode === "semaine") {
-    gridHtml = `<div class="planning-week-grid">${jours.map((j) => planningDayCellHtml(j, items, { compact: false, showWeekday: true })).join("")}</div>`;
+    gridHtml = `<div class="planning-week-grid">${planningHourGutterHtml()}${jours.map((j) => planningDayCellHtml(j, items, { compact: false, showWeekday: true, hourGrid: true })).join("")}</div>`;
   } else {
     const moisAnchor = planningAnchorDate.getMonth();
     gridHtml = `<div class="planning-month-grid">
@@ -4981,6 +5137,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupAuthScreen();
   setupTabs();
   setupMobileNav();
+  setupTopbar();
   setupActionMenus();
   setupProfilPanel();
   setupGlobalSearch();

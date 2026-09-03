@@ -295,16 +295,10 @@ input[readonly] { background: var(--sa-surface-sunken); }
 }
 .sidebar-logo { font-weight: var(--sa-weight-bold); font-size: 0.94rem; letter-spacing: -0.01em; padding: 20px var(--sa-space-4) var(--sa-space-4); color: var(--sa-text); }
 
-.sidebar-search-btn {
-  display: flex; align-items: center; gap: 9px; margin: 0 var(--sa-space-3) var(--sa-space-4); padding: 7px 9px;
-  background: var(--sa-surface); border: 1px solid var(--sa-border); border-radius: var(--sa-radius-sm);
-  color: var(--sa-text-muted); font-size: var(--sa-text-xs); font-weight: var(--sa-weight-medium);
-}
-.sidebar-search-btn:hover { border-color: var(--sa-border-strong); color: var(--sa-text-muted); }
-.sidebar-search-btn .nav-icon { width: 14px; height: 14px; }
 .kbd-hint { margin-left: auto; font-size: 0.65rem; color: var(--sa-text-muted); border: 1px solid var(--sa-border); border-radius: 4px; padding: 1px 5px; font-weight: var(--sa-weight-semibold); }
 
-.sidebar-nav { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 1px; padding: 0 var(--sa-space-2); overflow-y: auto; }
+.sidebar-nav { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 1px; padding: var(--sa-space-1) var(--sa-space-2) 0; overflow-y: auto; }
+.nav-link-primary { margin-bottom: var(--sa-space-3); }
 .nav-group-label {
   font-size: 0.64rem; font-weight: var(--sa-weight-bold); text-transform: uppercase; letter-spacing: 0.06em;
   color: var(--sa-text-muted); padding: var(--sa-space-4) var(--sa-space-2) 6px;
@@ -330,8 +324,55 @@ input[readonly] { background: var(--sa-surface-sunken); }
 .badge-count.badge-alert { background: var(--sa-danger-soft); color: var(--sa-danger); }
 .nav-link.active .badge-count { background: var(--sa-surface-sunken); }
 
+/* ---------- Workspace (topbar + contenu), a droite de la sidebar ---------- */
+.workspace { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+/* ---------- Topbar : recherche, creation rapide, notifications, profil.
+   Sticky au-dessus du contenu qui defile ; la sidebar garde sa propre
+   hauteur/scroll, inchanges. ---------- */
+.topbar {
+  height: var(--sa-header-h); flex-shrink: 0; position: sticky; top: 0; z-index: var(--sa-z-sidebar);
+  display: flex; align-items: center; gap: var(--sa-space-4); padding: 0 var(--sa-space-6);
+  background: var(--sa-surface); border-bottom: 1px solid var(--sa-border);
+}
+.topbar-search-btn {
+  display: flex; align-items: center; gap: 9px; padding: 8px 12px; max-width: 380px; width: 100%;
+  background: var(--sa-surface-sunken); border: 1px solid transparent; border-radius: var(--sa-radius-sm);
+  color: var(--sa-text-muted); font-size: var(--sa-text-sm);
+}
+.topbar-search-btn:hover { border-color: var(--sa-border); color: var(--sa-text-muted); }
+.topbar-search-btn .nav-icon { width: 15px; height: 15px; flex-shrink: 0; }
+.topbar-search-btn span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+.topbar-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0; }
+.topbar-create { position: relative; }
+.topbar-create-btn { margin-top: 0; padding: 8px 14px 8px 11px; display: inline-flex; align-items: center; gap: 6px; }
+.topbar-create-btn .nav-icon { width: 15px; height: 15px; }
+.topbar-icon-btn { position: relative; width: 34px; height: 34px; }
+.topbar-badge { position: absolute; top: 2px; right: 2px; }
+.topbar-avatar {
+  display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%;
+  background: var(--sa-surface-sunken); border: 1px solid var(--sa-border); color: var(--sa-text-muted); flex-shrink: 0;
+}
+.topbar-avatar:hover { color: var(--sa-text); border-color: var(--sa-border-strong); }
+.topbar-avatar .nav-icon { width: 16px; height: 16px; }
+
+.topbar-create-menu[hidden] { display: none; }
+.topbar-create-menu {
+  position: absolute; top: calc(100% + 6px); right: 0; min-width: 200px; z-index: var(--sa-z-menu);
+  background: var(--sa-surface); border: 1px solid var(--sa-border); border-radius: var(--sa-radius-md);
+  box-shadow: var(--sa-shadow-md); padding: 4px;
+}
+.topbar-create-menu button {
+  display: flex; width: 100%; align-items: center; gap: 8px; text-align: left; padding: 8px 10px;
+  border: none; background: none; border-radius: 5px; font-size: var(--sa-text-sm); color: var(--sa-text);
+}
+.topbar-create-menu button:hover, .topbar-create-menu button:focus-visible { background: var(--sa-surface-sunken); }
+
+@media (max-width: 900px) { .topbar { display: none; } }
+
 /* ---------- Contenu ---------- */
 .content { flex: 1; min-width: 0; max-width: var(--sa-content-w); margin: 0 auto; padding: var(--sa-space-8) var(--sa-space-8) 72px; width: 100%; }
+@media (min-width: 1520px) { .content { max-width: 1320px; } }
 
 /* ---------- Page header : eyebrow / titre / description / actions ---------- */
 .view-header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sa-space-4); margin-bottom: var(--sa-space-6); flex-wrap: wrap; }
@@ -345,7 +386,7 @@ input[readonly] { background: var(--sa-surface-sunken); }
 
 .subsection-header { display: flex; align-items: center; justify-content: space-between; gap: var(--sa-space-4); margin: var(--sa-space-10) 0 var(--sa-space-1); padding-top: var(--sa-space-8); border-top: 1px solid var(--sa-border); flex-wrap: wrap; }
 .subsection-header h2 { font-size: var(--sa-text-lg) !important; }
-.view-header.subsection-header:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+.entreprise-section-first .subsection-header { border-top: none; padding-top: 0; margin-top: 0; }
 
 /* ---------- Identite visuelle du site ---------- */
 .visual-identity-box { margin-top: var(--sa-space-6); }
@@ -477,9 +518,15 @@ input[readonly] { background: var(--sa-surface-sunken); }
 .kanban-card select { font-size: var(--sa-text-2xs); padding: 4px 5px; border-radius: 5px; border: 1px solid var(--sa-border); flex: 1; }
 .kanban-empty { font-size: var(--sa-text-xs); color: var(--sa-text-muted); padding: 8px 2px; }
 
-@media (max-width: 640px) {
-  .kanban { gap: var(--sa-space-3); margin: 0 calc(var(--sa-space-4) * -1); padding-left: var(--sa-space-4); padding-right: var(--sa-space-4); }
-  .kanban-column { width: 210px; }
+@media (max-width: 900px) {
+  /* Un kanban horizontal a 9 colonnes est illisible au doigt : sur mobile,
+     chaque etape du pipeline devient une section pleine largeur, empilee.
+     Memes donnees, memes actions (changer statut / archiver) - uniquement
+     la disposition change. */
+  .kanban { display: flex; flex-direction: column; overflow-x: visible; gap: var(--sa-space-5); }
+  .kanban-column { width: 100%; }
+  .kanban-column-header { padding: 0 2px; border-bottom: 1px solid var(--sa-border); padding-bottom: 8px; }
+  .kanban-empty { padding: 4px 2px 2px; }
 }
 
 /* =====================================================================
@@ -796,25 +843,54 @@ input[readonly] { background: var(--sa-surface-sunken); }
 .planning-modes { display: flex; gap: 2px; background: var(--sa-surface-sunken); padding: 2px; border-radius: var(--sa-radius-sm); }
 .planning-modes .btn-sm { border: none; background: transparent; }
 .planning-modes .btn-sm.active, .planning-modes .btn-sm[aria-pressed="true"] { background: var(--sa-surface); box-shadow: var(--sa-shadow-xs); }
-.planning-day-view { display: flex; }
-.planning-week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: var(--sa-border); border: 1px solid var(--sa-border); border-radius: var(--sa-radius-md); overflow: hidden; }
-.planning-month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: var(--sa-border); border: 1px solid var(--sa-border); border-radius: var(--sa-radius-md); overflow: hidden; }
+.planning-day-view { display: flex; border: 1px solid var(--sa-border); border-radius: var(--sa-radius-md); overflow: hidden; }
+.planning-day-view .planning-hour-gutter { width: 40px; flex-shrink: 0; border-right: 1px solid var(--sa-border); }
+.planning-day-view .planning-day-cell { flex: 1; min-width: 0; }
+/* En vue Jour il n'y a qu'une seule colonne : la teinte "aujourd'hui" (utile
+   pour reperer une colonne parmi 7) teindrait toute la page pour rien - le
+   libelle du jour en accent suffit a confirmer qu'on est bien sur "Aujourd'hui". */
+.planning-day-view .planning-day-cell.is-today { background: var(--sa-surface); }
+@media (max-width: 760px) { .planning-day-view { border: none; } }
+.planning-week-grid { display: grid; grid-template-columns: 40px repeat(7, minmax(0, 1fr)); gap: 1px; background: var(--sa-border); border: 1px solid var(--sa-border); border-radius: var(--sa-radius-md); overflow: hidden; }
+.planning-month-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 1px; background: var(--sa-border); border: 1px solid var(--sa-border); border-radius: var(--sa-radius-md); overflow: hidden; }
 .planning-month-weekday { font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-bold); color: var(--sa-text-muted); text-transform: uppercase; text-align: center; padding-bottom: 6px; background: var(--sa-bg); }
 @media (max-width: 760px) {
   .planning-week-grid, .planning-month-grid { grid-template-columns: 1fr; background: none; border: none; gap: var(--sa-space-2); }
   .planning-month-weekday { display: none; }
 }
 .planning-day-cell {
-  background: var(--sa-surface); padding: 8px; min-height: 88px; display: flex; flex-direction: column; gap: 5px; transition: background var(--sa-duration-base);
+  background: var(--sa-surface); padding: 8px; min-width: 0; min-height: 88px; display: flex; flex-direction: column; gap: 5px; transition: background var(--sa-duration-base);
 }
 @media (max-width: 760px) { .planning-day-cell { border: 1px solid var(--sa-border); border-radius: var(--sa-radius-md); } }
 .planning-day-cell.is-today { background: var(--sa-accent-soft); }
 .planning-day-cell.is-outside-month { opacity: 0.4; }
 .planning-day-cell.drag-over { background: var(--sa-surface-sunken); }
-.planning-day-header { font-size: var(--sa-text-xs); font-weight: var(--sa-weight-bold); text-transform: capitalize; color: var(--sa-text-muted); }
+.planning-day-header { font-size: var(--sa-text-xs); font-weight: var(--sa-weight-bold); text-transform: capitalize; color: var(--sa-text-muted); white-space: nowrap; }
 .planning-day-cell.is-today .planning-day-header { color: var(--sa-accent-strong); }
 .planning-day-items { display: flex; flex-direction: column; gap: 3px; }
 .planning-day-empty { font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
+
+/* ---------- Grille horaire (jour/semaine) ---------- */
+:root { --sa-plan-row-h: 44px; }
+.planning-hour-gutter { display: flex; flex-direction: column; background: var(--sa-surface); }
+.planning-hour-gutter-spacer { height: 21px; flex-shrink: 0; }
+.planning-hour-label {
+  height: var(--sa-plan-row-h); flex-shrink: 0; font-size: var(--sa-text-2xs); color: var(--sa-text-faint);
+  text-align: right; padding-right: 8px; transform: translateY(-6px);
+}
+.planning-day-track { position: relative; height: calc(13 * var(--sa-plan-row-h)); }
+.planning-hour-row { height: var(--sa-plan-row-h); border-bottom: 1px solid var(--sa-border); }
+.planning-hour-row:last-child { border-bottom: none; }
+.planning-item-positioned { position: absolute; margin: 0; z-index: 1; box-shadow: var(--sa-shadow-xs); }
+.planning-now-line { position: absolute; left: 0; right: 0; border-top: 1.5px solid var(--sa-danger); z-index: 2; pointer-events: none; }
+.planning-now-dot { position: absolute; left: -3px; top: -3.5px; width: 7px; height: 7px; border-radius: 50%; background: var(--sa-danger); }
+@media (max-width: 760px) {
+  .planning-hour-gutter { display: none; }
+  .planning-day-track { height: auto; display: flex; flex-direction: column; gap: 3px; }
+  .planning-hour-row, .planning-now-line { display: none; }
+  .planning-item-positioned { position: static !important; width: 100% !important; left: 0 !important; height: auto !important; }
+}
+
 .planning-item {
   border-radius: 5px; padding: 3px 6px; font-size: var(--sa-text-xs); cursor: grab; font-weight: var(--sa-weight-medium);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--sa-surface-sunken); color: var(--sa-text);
@@ -990,6 +1066,25 @@ input[readonly] { background: var(--sa-surface-sunken); }
 /* ---------- Detail d'un rendez-vous (Planning) ---------- */
 #evenement-detail-modal .confirm-dialog-box { position: relative; max-width: 420px; }
 #evenement-detail-modal .profil-row { margin-bottom: var(--sa-space-3); }
+
+/* ---------- Entreprise : navigation secondaire + rythme entre sous-sections.
+   Page volontairement longue (reglages varies) : une nav d'ancrage evite le
+   grand defilement aveugle, et les sections vides (Contrats/Equipe/...) sont
+   compactees pour ne pas gonfler la page de vide. ---------- */
+.entreprise-subnav {
+  display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: var(--sa-space-8);
+  padding-bottom: var(--sa-space-4); border-bottom: 1px solid var(--sa-border);
+}
+.entreprise-subnav a {
+  padding: 6px 11px; border-radius: var(--sa-radius-full); font-size: var(--sa-text-xs); font-weight: var(--sa-weight-semibold);
+  color: var(--sa-text-muted); text-decoration: none; background: var(--sa-surface-sunken);
+}
+.entreprise-subnav a:hover { color: var(--sa-text); background: var(--sa-border); }
+#entreprise-form-box, #visual-identity-box, #automatisation-form-box, .entreprise-section {
+  scroll-margin-top: calc(var(--sa-header-h) + var(--sa-space-4));
+}
+.entreprise-section .empty-state { padding: var(--sa-space-5) 4px; text-align: left; }
+.entreprise-section .empty-state .btn-primary, .entreprise-section .empty-state .btn-secondary { margin-top: var(--sa-space-3); }
 
 /* ---------- Entreprise : rythme entre sous-sections ---------- */
 #automation-status { margin-top: var(--sa-space-4); }
