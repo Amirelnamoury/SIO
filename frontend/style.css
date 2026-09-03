@@ -633,17 +633,22 @@ input[readonly] { background: var(--sa-surface-sunken); }
 .dash-hello h2 { font-size: var(--sa-text-xl); }
 .dash-hello p { color: var(--sa-text-muted); font-size: var(--sa-text-sm); margin: 4px 0 0; }
 
-/* En-tete de la vue (eyebrow + "Bonjour") : scope explicite a
-   #view-dashboard pour ne pas changer .view-header des autres ecrans. */
+/* Bandeau editorial : remplace l'ancien "Aujourd'hui / Bonjour" fixe par
+   une phrase qui resume la journee (memes compteurs que "A faire" et le
+   planning, juste lus une fois plus tot). #view-dashboard n'a plus de
+   .view-header (retire de index.html) - c'est desormais loadDashboard()
+   qui possede tout l'en-tete. */
 #view-dashboard { font-family: var(--v4-font-ui); }
-#view-dashboard .view-header-eyebrow { color: var(--v4-ink-soft); }
-#view-dashboard .view-header h2 { font-family: var(--v4-font-display); font-size: 1.9rem; font-weight: 800; letter-spacing: -0.02em; color: var(--v4-ink); }
+.dash-masthead { padding: var(--sa-space-8) 0 var(--sa-space-6); }
+.dash-masthead-eyebrow { font-size: var(--sa-text-2xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--v4-ink-soft); margin-bottom: 10px; }
+.dash-masthead-lede { font-family: var(--v4-font-display); font-size: 2.1rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; color: var(--v4-ink); max-width: 20ch; }
 
-/* ---------- Dashboard, compte neuf : un vrai point de depart, une
-   presence typographique forte plutot que des KPI a 0. ---------- */
-.dash-hero-empty { padding: var(--sa-space-8) 0 var(--sa-space-8); max-width: 46ch; }
-.dash-hero-empty h3 { font-family: var(--v4-font-display); font-size: 2.5rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.08; margin-bottom: var(--sa-space-4); color: var(--v4-ink); }
-.dash-hero-empty p { color: var(--v4-ink-soft); font-size: 1rem; line-height: 1.6; margin-bottom: var(--sa-space-6); }
+/* ---------- Dashboard, compte neuf : la phrase-cle vit dans le masthead
+   (.dash-hero-empty-lede), ce bloc ne porte plus que le texte d'accroche
+   et les CTA - presence typographique forte plutot que des KPI a 0. ---------- */
+.dash-hero-empty-lede { max-width: 16ch; }
+.dash-hero-empty { max-width: 50ch; }
+.dash-hero-empty p { color: var(--v4-ink-soft); font-size: 1.05rem; line-height: 1.6; margin-bottom: var(--sa-space-6); }
 .dash-hero-actions { display: flex; gap: 10px; }
 .dash-hero-actions .btn-primary, .dash-hero-actions .btn-secondary { margin-top: 0; }
 
@@ -659,32 +664,54 @@ input[readonly] { background: var(--sa-surface-sunken); }
 .kpi-inline.is-alert .kpi-value { color: var(--sa-danger); }
 .kpi-inline.is-primary .kpi-value { font-size: var(--sa-text-2xl); }
 
-/* ---------- KPI hero : UN chiffre de premier plan (CA), un vrai rythme
-   visuel, puis deux rangees de stats plus discretes. Utilise par le
-   dashboard uniquement (voir loadDashboard) - classes distinctes de
-   .kpi-row/.kpi-inline ci-dessus. ---------- */
-.dash-kpi-hero { margin-bottom: var(--sa-space-8); }
-.dash-kpi-hero-main { display: flex; flex-direction: column; gap: 5px; margin-bottom: var(--sa-space-5); }
-.dash-kpi-hero-label { font-size: var(--sa-text-sm); color: var(--v4-ink-soft); font-weight: 500; }
-.dash-kpi-hero-value { font-family: var(--v4-font-display); font-size: 3rem; font-weight: 800; letter-spacing: -0.02em; color: var(--v4-ink); line-height: 1; font-variant-numeric: tabular-nums; }
-.dash-kpi-mini-row { display: flex; gap: var(--sa-space-8); flex-wrap: wrap; padding-top: var(--sa-space-4); border-top: 1px solid var(--v4-line); }
-.dash-kpi-mini { display: flex; flex-direction: column; gap: 3px; }
-.dash-kpi-mini-label { font-size: var(--sa-text-xs); color: var(--v4-ink-soft); font-weight: 500; }
-.dash-kpi-mini-value { font-family: var(--v4-font-display); font-size: 1.3rem; font-weight: 700; color: var(--v4-ink); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
-.dash-kpi-mini.is-alert .dash-kpi-mini-value { color: var(--v4-danger); }
-.dash-kpi-row-tertiary { margin-top: var(--sa-space-4); padding-top: var(--sa-space-4); border-top: 1px solid var(--v4-line); }
-.dash-kpi-row-tertiary .dash-kpi-mini-value { font-size: 1.05rem; }
+/* ---------- Bande argent : deux chiffres forts (CA, a encaisser) puis le
+   reste du commercial en petit a droite, separe par un trait - un "ticker"
+   plutot qu'une carte de plus. Utilise par le dashboard uniquement (voir
+   loadDashboard) - classes distinctes de .kpi-row/.kpi-inline ci-dessus
+   (Factures). ---------- */
+.dash-money {
+  display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--sa-space-8) var(--sa-space-10);
+  padding: var(--sa-space-8) 0; margin-bottom: var(--sa-space-10);
+  border-top: 1px solid var(--v4-line); border-bottom: 1px solid var(--v4-line);
+}
+.dash-money-hero { display: flex; flex-direction: column; gap: 6px; }
+.dash-money-label { font-size: var(--sa-text-sm); color: var(--v4-ink-soft); font-weight: 500; }
+.dash-money-value { font-family: var(--v4-font-display); font-size: 2.6rem; font-weight: 800; letter-spacing: -0.02em; color: var(--v4-ink); line-height: 1; font-variant-numeric: tabular-nums; }
+.dash-money-hero-secondary .dash-money-value { font-size: 1.9rem; color: var(--v4-ink-soft); }
+.dash-money-hero-secondary.is-alert .dash-money-value { color: var(--v4-danger); }
+.dash-money-stats {
+  display: flex; flex-wrap: wrap; gap: var(--sa-space-6); align-items: center;
+  margin-left: auto; padding-left: var(--sa-space-8); border-left: 1px solid var(--v4-border); align-self: stretch;
+}
+.dash-money-stat { display: flex; flex-direction: column; gap: 3px; justify-content: center; }
+.dash-money-stat-label { font-size: var(--sa-text-2xs); color: var(--v4-ink-soft); white-space: nowrap; }
+.dash-money-stat-value { font-family: var(--v4-font-display); font-weight: 700; font-size: 1.05rem; color: var(--v4-ink); font-variant-numeric: tabular-nums; }
+.dash-money-payments { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: var(--sa-space-2) var(--sa-space-6); margin-top: 2px; }
+.dash-money-payment { display: flex; gap: 6px; font-size: var(--sa-text-xs); color: var(--v4-ink-soft); }
+.dash-money-payment strong { color: var(--v4-ink); font-weight: 600; }
+@media (max-width: 900px) {
+  .dash-money-stats { margin-left: 0; padding-left: 0; border-left: none; flex-basis: 100%; padding-top: var(--sa-space-5); border-top: 1px solid var(--v4-line); }
+}
 
 .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--sa-space-3); margin-bottom: var(--sa-space-6); }
 .dash-stat { padding: var(--sa-space-4) var(--sa-space-5); background: var(--sa-surface); border: 1px solid var(--sa-border); border-radius: var(--sa-radius-lg); }
 .dash-stat .value { font-size: 1.4rem; font-weight: var(--sa-weight-bold); color: var(--sa-text); }
 .dash-stat .label { font-size: var(--sa-text-xs); color: var(--sa-text-muted); margin-top: 2px; }
 
-/* ---------- Composition : "A faire" + planning du jour cote a cote,
-   puis KPI hero, puis contenu secondaire en grille 2 colonnes. ---------- */
-.dash-top-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 300px); gap: var(--sa-space-10); align-items: start; margin-bottom: var(--sa-space-10); }
-.dash-top-grid .dash-section { margin-bottom: 0; }
-.dash-side-col { border-left: 1px solid var(--v4-line); padding-left: var(--sa-space-6); min-width: 0; }
+/* ---------- Zone "aujourd'hui" : coeur du dashboard, deliberement
+   asymetrique (jamais 50/50) - "A faire" domine, le planning vit dans un
+   rail plus etroit et plus calme a sa droite. ---------- */
+.dash-today { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: var(--sa-space-10); align-items: start; margin-bottom: var(--sa-space-8); }
+.dash-today-main { min-width: 0; }
+.dash-today-head { display: flex; align-items: baseline; gap: 9px; margin-bottom: var(--sa-space-3); }
+.dash-today-head h3 { font-family: var(--v4-font-display); font-size: 1.25rem; font-weight: 800; color: var(--v4-ink); margin: 0; }
+.dash-today-count {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 21px; height: 21px; padding: 0 6px;
+  background: var(--v4-ink); color: #fff; border-radius: var(--sa-radius-full); font-size: 0.7rem; font-weight: 700;
+}
+.dash-today-clear { font-size: var(--sa-text-sm); color: var(--v4-ink-soft); padding: var(--sa-space-4) 0; }
+.dash-today-rail { min-width: 0; border-left: 1px solid var(--v4-line); padding-left: var(--sa-space-6); }
+.dash-today-rail h3 { font-family: var(--v4-font-ui); font-size: 0.68rem; font-weight: 700; color: var(--v4-ink-soft); margin: 0 0 var(--sa-space-3); text-transform: uppercase; letter-spacing: 0.06em; }
 .dash-agenda { display: flex; flex-direction: column; }
 .dash-agenda-row {
   display: grid; grid-template-columns: 40px 12px 1fr; align-items: baseline; column-gap: 9px;
@@ -696,14 +723,25 @@ input[readonly] { background: var(--sa-surface-sunken); }
 .dash-agenda-heure { font-size: var(--sa-text-xs); font-weight: 700; color: var(--v4-ink-soft); flex-shrink: 0; font-variant-numeric: tabular-nums; }
 .dash-agenda-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--v4-pine); align-self: center; }
 .dash-agenda-titre { font-size: var(--sa-text-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dash-secondary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sa-space-10); margin-bottom: var(--sa-space-10); }
-.dash-secondary-grid .dash-section { margin-bottom: 0; }
+.dash-agenda-empty { display: flex; flex-direction: column; gap: 5px; padding: var(--sa-space-2) 0; }
+.dash-agenda-empty-title { font-family: var(--v4-font-display); font-size: 1.15rem; font-weight: 700; color: var(--v4-ink); }
+.dash-agenda-empty-sub { font-size: var(--sa-text-xs); color: var(--v4-ink-soft); }
+
+/* ---------- Niveau secondaire : recommandations/sante cote a cote,
+   presence en ligne en pied - en retrait visuel (titres plus petits,
+   moins d'air que le reste de la page). ---------- */
+.dash-glance { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sa-space-10); margin-bottom: var(--sa-space-8); }
+.dash-glance-col h4, .dash-glance-footer h4 {
+  font-family: var(--v4-font-ui); font-size: var(--sa-text-2xs); font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--v4-ink-soft); margin: 0 0 var(--sa-space-3);
+}
+.dash-glance-footer { padding-top: var(--sa-space-6); border-top: 1px solid var(--v4-line); }
 @media (max-width: 1100px) {
-  .dash-top-grid { grid-template-columns: 1fr; gap: var(--sa-space-6); }
-  .dash-side-col { border-left: none; padding-left: 0; border-top: 1px solid var(--v4-line); padding-top: var(--sa-space-6); }
+  .dash-today { grid-template-columns: 1fr; gap: var(--sa-space-6); }
+  .dash-today-rail { border-left: none; padding-left: 0; border-top: 1px solid var(--v4-line); padding-top: var(--sa-space-6); }
 }
 @media (max-width: 760px) {
-  .dash-secondary-grid { grid-template-columns: 1fr; gap: var(--sa-space-8); }
+  .dash-glance { grid-template-columns: 1fr; gap: var(--sa-space-8); }
 }
 
 .dash-section { margin-bottom: var(--sa-space-10); }
@@ -714,10 +752,9 @@ input[readonly] { background: var(--sa-surface-sunken); }
 .dash-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--sa-border); font-size: var(--sa-text-sm); gap: var(--sa-space-3); }
 .dash-row:last-child { border-bottom: none; }
 
-/* Dashboard uniquement : titres de section en Archivo, hairlines chauds.
-   Scope #view-dashboard pour ne pas toucher .dash-section/.dash-row des
-   autres vues (Statistiques, Avis, Chantiers). */
-#view-dashboard .dash-section h3 { font-family: var(--v4-font-display); font-weight: 700; color: var(--v4-ink); }
+/* Dashboard uniquement : hairlines chauds pour .dash-row (utilise encore
+   par renderPresenceSite). Scope #view-dashboard pour ne pas toucher
+   .dash-row des autres vues (Statistiques, Avis, Chantiers). */
 #view-dashboard .dash-row { border-bottom-color: var(--v4-line); color: var(--v4-ink); }
 #view-dashboard .dash-empty { color: var(--v4-ink-soft); }
 

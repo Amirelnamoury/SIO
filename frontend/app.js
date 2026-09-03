@@ -2006,11 +2006,17 @@ async function loadDashboard() {
     // place, construit uniquement a partir de l'activation deja recue (les
     // memes drapeaux qui alimentent la checklist plus bas). Des qu'une seule
     // de ces trois choses existe, le dashboard standard reprend la main.
+    const dateLabelBrut = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+    const dateLabel = dateLabelBrut.charAt(0).toUpperCase() + dateLabelBrut.slice(1);
+
     const estCompteNeuf = !!activation && !activation.premier_client && !activation.premier_devis && !activation.premiere_facture;
     if (estCompteNeuf) {
       container.innerHTML = `
+        <div class="dash-masthead">
+          <p class="dash-masthead-eyebrow">${dateLabel}</p>
+          <h2 class="dash-masthead-lede dash-hero-empty-lede">Votre espace est prêt</h2>
+        </div>
         <div class="dash-hero-empty">
-          <h3>Votre espace est prêt</h3>
           <p>Ajoutez votre premier client, puis créez votre premier devis : le tableau de bord se remplit avec votre activité au fur et à mesure.</p>
           <div class="dash-hero-actions">
             <button type="button" class="btn-primary" data-action="dash-empty-client">Ajouter un client</button>
@@ -2065,67 +2071,90 @@ async function loadDashboard() {
           <span class="dash-agenda-dot" aria-hidden="true"></span>
           <span class="dash-agenda-titre">${escapeHtml(e.titre)}</span>
         </div>`).join("")
-      : '<div class="dash-empty">Rien de prévu aujourd\'hui.</div>';
+      : `<div class="dash-agenda-empty">
+          <span class="dash-agenda-empty-title">Journée dégagée</span>
+          <span class="dash-agenda-empty-sub">Aucun rendez-vous prévu aujourd'hui.</span>
+        </div>`;
 
-    // Hierarchie de lecture : 1) ce qui demande une action maintenant, en
-    // face du planning du jour (meme zone de lecture) ; 2) la bande KPI
-    // financiere/commerciale, groupee ; 3) mise en route puis contenu
-    // secondaire (recommandations/sante/presence), en retrait visuel.
+    // Nouvelle composition (refonte dashboard) : 1) un bandeau editorial qui
+    // resume la journee en une phrase (memes compteurs que le reste, juste
+    // lus une fois de plus tot) ; 2) une zone "aujourd'hui" dominante et
+    // asymetrique (a faire / planning, jamais 50-50) ; 3) une bande argent
+    // avec deux chiffres forts (CA, a encaisser) et le reste en petit ;
+    // 4) un niveau secondaire resserre (recommandations/sante/presence).
     // Memes appels API, memes valeurs deja calculees cote serveur - seule
     // la composition change.
+    const nbUrgent = prioriteItems.length;
+    const nbRdv = d.aujourdhui.evenements.length;
+    let lede;
+    if (nbUrgent > 0 && nbRdv > 0) {
+      lede = `${nbUrgent} chose${nbUrgent > 1 ? "s" : ""} à traiter, ${nbRdv} rendez-vous aujourd'hui.`;
+    } else if (nbUrgent > 0) {
+      lede = `${nbUrgent} chose${nbUrgent > 1 ? "s" : ""} à traiter aujourd'hui.`;
+    } else if (nbRdv > 0) {
+      lede = `${nbRdv} rendez-vous aujourd'hui, rien d'urgent à traiter.`;
+    } else {
+      lede = "Rien d'urgent aujourd'hui.";
+    }
+
     container.innerHTML = `
-      <div class="dash-top-grid">
-        <div class="dash-section dash-main-col">
-          <h3>À faire aujourd'hui</h3>
+      <div class="dash-masthead">
+        <p class="dash-masthead-eyebrow">${dateLabel}</p>
+        <h2 class="dash-masthead-lede">${lede}</h2>
+      </div>
+
+      <div class="dash-today">
+        <div class="dash-today-main">
+          <div class="dash-today-head">
+            <h3>À faire</h3>
+            ${nbUrgent ? `<span class="dash-today-count">${nbUrgent}</span>` : ""}
+          </div>
           ${prioriteItems.length
             ? `<div class="task-feed">${prioriteItems.map(taskRowHtml).join("")}</div>`
-            : '<div class="dash-empty">Rien qui nécessite votre attention aujourd\'hui.</div>'}
+            : '<div class="dash-today-clear">Rien qui nécessite votre attention aujourd\'hui.</div>'}
         </div>
-        <div class="dash-section dash-side-col">
-          <h3>Aujourd'hui au planning</h3>
+        <div class="dash-today-rail">
+          <h3>Planning</h3>
           <div class="dash-agenda">${planningDuJourHtml}</div>
         </div>
       </div>
 
-      <div class="dash-section">
-        <div class="dash-kpi-hero">
-          <div class="dash-kpi-hero-main">
-            <span class="dash-kpi-hero-label">Chiffre d'affaires ce mois-ci</span>
-            <span class="dash-kpi-hero-value">${fmtEuro(d.finances.ca_mois)}</span>
-          </div>
-          <div class="dash-kpi-mini-row">
-            <div class="dash-kpi-mini${d.finances.a_encaisser > 0 ? " is-alert" : ""}"><span class="dash-kpi-mini-label">À encaisser</span><span class="dash-kpi-mini-value">${fmtEuro(d.finances.a_encaisser)}</span></div>
-            <div class="dash-kpi-mini"><span class="dash-kpi-mini-label">Valeur du pipeline</span><span class="dash-kpi-mini-value">${fmtEuro(d.commercial.valeur_pipeline)}</span></div>
-            <div class="dash-kpi-mini"><span class="dash-kpi-mini-label">Devis en attente</span><span class="dash-kpi-mini-value">${d.commercial.devis_en_attente}</span></div>
-          </div>
-          <div class="dash-kpi-mini-row dash-kpi-row-tertiary">
-            <div class="dash-kpi-mini"><span class="dash-kpi-mini-label">Taux de transformation</span><span class="dash-kpi-mini-value">${d.commercial.taux_transformation}%</span></div>
-            <div class="dash-kpi-mini"><span class="dash-kpi-mini-label">Nouveaux prospects (7j)</span><span class="dash-kpi-mini-value">${d.commercial.nouveaux_prospects_7j}</span></div>
-          </div>
+      <div class="dash-money">
+        <div class="dash-money-hero">
+          <span class="dash-money-label">Chiffre d'affaires ce mois-ci</span>
+          <span class="dash-money-value">${fmtEuro(d.finances.ca_mois)}</span>
         </div>
+        <div class="dash-money-hero dash-money-hero-secondary${d.finances.a_encaisser > 0 ? " is-alert" : ""}">
+          <span class="dash-money-label">À encaisser</span>
+          <span class="dash-money-value">${fmtEuro(d.finances.a_encaisser)}</span>
+        </div>
+        <div class="dash-money-stats">
+          <div class="dash-money-stat"><span class="dash-money-stat-value">${fmtEuro(d.commercial.valeur_pipeline)}</span><span class="dash-money-stat-label">Pipeline</span></div>
+          <div class="dash-money-stat"><span class="dash-money-stat-value">${d.commercial.devis_en_attente}</span><span class="dash-money-stat-label">Devis en attente</span></div>
+          <div class="dash-money-stat"><span class="dash-money-stat-value">${d.commercial.taux_transformation}%</span><span class="dash-money-stat-label">Transformation</span></div>
+          <div class="dash-money-stat"><span class="dash-money-stat-value">${d.commercial.nouveaux_prospects_7j}</span><span class="dash-money-stat-label">Nouveaux prospects</span></div>
+        </div>
+        ${d.finances.paiements_recents.length ? `
+        <div class="dash-money-payments">
+          ${d.finances.paiements_recents.map((p) => `<span class="dash-money-payment"><span>${fmtDate(p.date_paiement)} · ${p.moyen}</span><strong>${fmtEuro(p.montant)}</strong></span>`).join("")}
+        </div>` : ""}
       </div>
 
       ${activationChecklistHtml(activation)}
 
-      ${d.finances.paiements_recents.length ? `
-      <div class="dash-section">
-        <h3>Paiements recents</h3>
-        ${d.finances.paiements_recents.map((p) => `<div class="dash-row"><span>${fmtDate(p.date_paiement)} · ${p.moyen}</span><strong>${fmtEuro(p.montant)}</strong></div>`).join("")}
-      </div>` : ""}
-
-      <div class="dash-secondary-grid">
-        <div class="dash-section">
-          <h3>Recommandations</h3>
+      <div class="dash-glance">
+        <div class="dash-glance-col">
+          <h4>Recommandations</h4>
           ${recommandations.length ? recommandations.map(recommandationRowHtml).join("") : '<div class="dash-empty">Aucune recommandation pour le moment.</div>'}
         </div>
-        <div class="dash-section">
-          <h3>Santé de votre entreprise</h3>
+        <div class="dash-glance-col">
+          <h4>Santé de votre entreprise</h4>
           ${santeWidgetHtml(sante)}
         </div>
       </div>
 
-      <div class="dash-section">
-        <h3>Présence en ligne</h3>
+      <div class="dash-glance-footer">
+        <h4>Présence en ligne</h4>
         ${renderPresenceSite(d.presence_site)}
       </div>
     `;
