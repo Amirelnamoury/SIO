@@ -1351,6 +1351,10 @@ const NOTIFICATION_TYPE_LABELS = {
   nouvelle_demande_devis: "Prospect",
 };
 
+// Vraie inbox : les notifications urgentes (n.urgent, deja calcule cote
+// serveur) forment un groupe "Important" separe du reste - meme donnee que
+// l'ancienne pastille rouge, seul le regroupement change. Ligne dense
+// plutot qu'un item-card par notification.
 async function loadNotifications() {
   const list = document.getElementById("notifications-list");
   list.innerHTML = skeletonCards();
@@ -1360,26 +1364,28 @@ async function loadNotifications() {
       list.innerHTML = '<div class="empty-state">Rien à signaler. Tout est à jour.</div>';
       return;
     }
-    list.innerHTML = notifications.map(renderNotificationCard).join("");
+    const importantes = notifications.filter((n) => n.urgent);
+    const normales = notifications.filter((n) => !n.urgent);
+    list.innerHTML = `
+      ${importantes.length ? `<div class="notif-group"><p class="notif-group-title">Important</p>${importantes.map(notificationRowHtml).join("")}</div>` : ""}
+      ${normales.length ? `<div class="notif-group"><p class="notif-group-title">À faire</p>${normales.map(notificationRowHtml).join("")}</div>` : ""}
+    `;
   } catch (err) {
     list.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
   }
 }
 
-function renderNotificationCard(n) {
+function notificationRowHtml(n) {
   return `
-  <div class="item-card ${n.urgent ? "is-due" : ""}">
-    <div class="item-card-top">
-      <div>
-        <div class="item-title">${escapeHtml(n.titre)}</div>
-        ${n.sous_titre ? `<div class="item-sub">${escapeHtml(n.sous_titre)}</div>` : ""}
-      </div>
-      <span class="badge ${n.urgent ? "badge-red" : "badge-gray"}">${NOTIFICATION_TYPE_LABELS[n.type] || n.type}</span>
+  <div class="notif-row ${n.urgent ? "is-urgent" : ""}">
+    <span class="notif-dot"></span>
+    <div class="notif-main">
+      <span class="notif-title">${escapeHtml(n.titre)}</span>
+      ${n.sous_titre ? `<span class="notif-sub">${escapeHtml(n.sous_titre)}</span>` : ""}
     </div>
-    <div class="item-actions">
-      <button type="button" class="btn-sm btn-sm-primary" data-action="voir-notification" data-view="${n.view}"
-        data-notification-id="${n.notification_id || ""}" data-client-id="${n.client_id || ""}">Voir</button>
-    </div>
+    <span class="badge ${n.urgent ? "badge-red" : "badge-gray"}">${NOTIFICATION_TYPE_LABELS[n.type] || n.type}</span>
+    <button type="button" class="btn-sm" data-action="voir-notification" data-view="${n.view}"
+      data-notification-id="${n.notification_id || ""}" data-client-id="${n.client_id || ""}">Voir</button>
   </div>`;
 }
 
@@ -1578,6 +1584,23 @@ function setupDashboardView() {
         showToast("Relance envoyée.");
         loadDashboard();
       });
+      return;
+    }
+    // Etat vide du dashboard (compte neuf) : relaie vers les memes
+    // formulaires que QUICK_ACTIONS, aucune nouvelle action.
+    const emptyClientBtn = e.target.closest('[data-action="dash-empty-client"]');
+    if (emptyClientBtn) {
+      const action = QUICK_ACTIONS.find((a) => a.id === "qa-client");
+      switchView(action.view);
+      setTimeout(action.run, 200);
+      return;
+    }
+    const emptyDevisBtn = e.target.closest('[data-action="dash-empty-devis"]');
+    if (emptyDevisBtn) {
+      const action = QUICK_ACTIONS.find((a) => a.id === "qa-devis");
+      switchView(action.view);
+      setTimeout(action.run, 200);
+      return;
     }
   });
 }
@@ -1959,6 +1982,31 @@ async function loadDashboard() {
     const [d, recommandations, sante, activation] = await Promise.all([
       Api.dashboard(), Api.dashboardRecommandations(), Api.dashboardSante(), Api.dashboardActivation(),
     ]);
+
+    // Compte neuf : aucun client, devis ou facture pose encore. Un ecran de
+    // KPI a 0 ne sert a rien ici - on montre un vrai point de depart a la
+    // place, construit uniquement a partir de l'activation deja recue (les
+    // memes drapeaux qui alimentent la checklist plus bas). Des qu'une seule
+    // de ces trois choses existe, le dashboard standard reprend la main.
+    const estCompteNeuf = !!activation && !activation.premier_client && !activation.premier_devis && !activation.premiere_facture;
+    if (estCompteNeuf) {
+      container.innerHTML = `
+        <div class="dash-hero-empty">
+          <h3>Votre espace est prêt</h3>
+          <p>Ajoutez votre premier client, puis créez votre premier devis : le tableau de bord se remplit avec votre activité au fur et à mesure.</p>
+          <div class="dash-hero-actions">
+            <button type="button" class="btn-primary" data-action="dash-empty-client">Ajouter un client</button>
+            <button type="button" class="btn-secondary" data-action="dash-empty-devis">Créer un devis</button>
+          </div>
+        </div>
+        ${activationChecklistHtml(activation)}
+      `;
+      return;
+    }
+
+    // "A faire" = ce qui demande une action ; les rendez-vous du jour vivent
+    // a part, dans le panneau "Aujourd'hui au planning" (meme donnee
+    // d.aujourdhui.evenements, seule la place dans la page change).
     const prioriteItems = [
       ...d.aujourdhui.factures_en_retard.map((f) => ({
         urgence: "haute", view: "factures",
@@ -1984,53 +2032,68 @@ async function loadDashboard() {
         urgence: "basse", view: "chantiers",
         label: `Chantier '${escapeHtml(c.titre)}' commence le ${fmtDate(c.date_debut)}`,
       })),
-      ...d.aujourdhui.evenements.map((e) => ({
-        urgence: "info", view: "planning",
-        label: `${new Date(e.date_debut).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })} · ${escapeHtml(e.titre)}`,
-      })),
     ];
 
-    // Hierarchie de lecture (brief section 17) : 1) ce qui demande une
-    // action maintenant (une liste dense, plus des cartes), 2) commercial,
-    // 3) financier, 4) indicateurs secondaires. Mêmes appels API, mêmes
-    // valeurs déjà calculées cote serveur - seule la presentation change.
+    const planningDuJourHtml = d.aujourdhui.evenements.length
+      ? d.aujourdhui.evenements.map((e) => `
+        <div class="dash-agenda-row" data-action="voir-notification" data-view="planning" role="button" tabindex="0">
+          <span class="dash-agenda-heure">${new Date(e.date_debut).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</span>
+          <span class="dash-agenda-titre">${escapeHtml(e.titre)}</span>
+        </div>`).join("")
+      : '<div class="dash-empty">Rien de prévu aujourd\'hui.</div>';
+
+    // Hierarchie de lecture : 1) ce qui demande une action maintenant, en
+    // face du planning du jour (meme zone de lecture) ; 2) la bande KPI
+    // financiere/commerciale, groupee ; 3) mise en route puis contenu
+    // secondaire (recommandations/sante/presence), en retrait visuel.
+    // Memes appels API, memes valeurs deja calculees cote serveur - seule
+    // la composition change.
     container.innerHTML = `
-      <div class="dash-section">
-        <h3>À faire aujourd'hui</h3>
-        ${prioriteItems.length
-          ? `<div class="task-feed">${prioriteItems.map(taskRowHtml).join("")}</div>`
-          : '<div class="dash-empty">Rien qui nécessite votre attention aujourd\'hui.</div>'}
+      <div class="dash-top-grid">
+        <div class="dash-section dash-main-col">
+          <h3>À faire aujourd'hui</h3>
+          ${prioriteItems.length
+            ? `<div class="task-feed">${prioriteItems.map(taskRowHtml).join("")}</div>`
+            : '<div class="dash-empty">Rien qui nécessite votre attention aujourd\'hui.</div>'}
+        </div>
+        <div class="dash-section dash-side-col">
+          <h3>Aujourd'hui au planning</h3>
+          <div class="dash-agenda">${planningDuJourHtml}</div>
+        </div>
       </div>
-      ${activationChecklistHtml(activation)}
+
       <div class="dash-section">
-        <h3>Commercial</h3>
         <div class="kpi-row">
-          <div class="kpi-inline is-primary"><span class="kpi-label">Valeur du pipeline</span><span class="kpi-value">${fmtEuro(d.commercial.valeur_pipeline)}</span></div>
+          <div class="kpi-inline is-primary"><span class="kpi-label">CA ce mois-ci</span><span class="kpi-value">${fmtEuro(d.finances.ca_mois)}</span></div>
+          <div class="kpi-inline${d.finances.a_encaisser > 0 ? " is-alert" : ""}"><span class="kpi-label">À encaisser</span><span class="kpi-value">${fmtEuro(d.finances.a_encaisser)}</span></div>
+          <div class="kpi-inline"><span class="kpi-label">Valeur du pipeline</span><span class="kpi-value">${fmtEuro(d.commercial.valeur_pipeline)}</span></div>
           <div class="kpi-inline"><span class="kpi-label">Devis en attente</span><span class="kpi-value">${d.commercial.devis_en_attente}</span></div>
+        </div>
+        <div class="kpi-row kpi-row-secondary">
           <div class="kpi-inline"><span class="kpi-label">Taux de transformation</span><span class="kpi-value">${d.commercial.taux_transformation}%</span></div>
           <div class="kpi-inline"><span class="kpi-label">Nouveaux prospects (7j)</span><span class="kpi-value">${d.commercial.nouveaux_prospects_7j}</span></div>
         </div>
       </div>
-      <div class="dash-section">
-        <h3>Financier</h3>
-        <div class="kpi-row">
-          <div class="kpi-inline is-primary"><span class="kpi-label">CA ce mois-ci</span><span class="kpi-value">${fmtEuro(d.finances.ca_mois)}</span></div>
-          <div class="kpi-inline${d.finances.a_encaisser > 0 ? " is-alert" : ""}"><span class="kpi-label">À encaisser</span><span class="kpi-value">${fmtEuro(d.finances.a_encaisser)}</span></div>
-        </div>
-      </div>
+
+      ${activationChecklistHtml(activation)}
+
       ${d.finances.paiements_recents.length ? `
       <div class="dash-section">
         <h3>Paiements recents</h3>
         ${d.finances.paiements_recents.map((p) => `<div class="dash-row"><span>${fmtDate(p.date_paiement)} · ${p.moyen}</span><strong>${fmtEuro(p.montant)}</strong></div>`).join("")}
       </div>` : ""}
-      <div class="dash-section">
-        <h3>Recommandations</h3>
-        ${recommandations.length ? recommandations.map(recommandationRowHtml).join("") : '<div class="dash-empty">Aucune recommandation pour le moment.</div>'}
+
+      <div class="dash-secondary-grid">
+        <div class="dash-section">
+          <h3>Recommandations</h3>
+          ${recommandations.length ? recommandations.map(recommandationRowHtml).join("") : '<div class="dash-empty">Aucune recommandation pour le moment.</div>'}
+        </div>
+        <div class="dash-section">
+          <h3>Santé de votre entreprise</h3>
+          ${santeWidgetHtml(sante)}
+        </div>
       </div>
-      <div class="dash-section">
-        <h3>Santé de votre entreprise</h3>
-        ${santeWidgetHtml(sante)}
-      </div>
+
       <div class="dash-section">
         <h3>Présence en ligne</h3>
         ${renderPresenceSite(d.presence_site)}
@@ -2175,10 +2238,35 @@ function clientQuickActionsHtml(client) {
   const actions = [];
   if (client.telephone) actions.push(`<a class="btn-sm" href="tel:${escapeHtml(client.telephone)}">Appeler</a>`);
   if (client.email) actions.push(`<a class="btn-sm" href="mailto:${escapeHtml(client.email)}">Email</a>`);
-  actions.push(`<button type="button" class="btn-sm btn-sm-primary" data-action="quick-devis" data-client-id="${client.id}">+ Nouveau devis</button>`);
   actions.push(`<button type="button" class="btn-sm" data-action="demander-avis" data-client-id="${client.id}">Demander un avis</button>`);
   actions.push(`<button type="button" class="btn-sm" data-action="copier-lien-portail" data-client-id="${client.id}">Copier le lien de l'espace client</button>`);
-  return `<div class="item-actions" style="margin-bottom:18px;">${actions.join("")}</div>`;
+  return `<div class="item-actions client-detail-actions">${actions.join("")}</div>`;
+}
+
+// En-tete d'identite du panneau client : monogramme, nom/societe, statut,
+// coordonnees lisibles directement (plus seulement caches derriere les
+// boutons Appeler/Email) et l'action principale (+ Nouveau devis) mise en
+// avant separement des actions secondaires. Memes donnees que l'ancien
+// clientQuickActionsHtml, seule la composition change.
+function clientDetailHeaderHtml(client) {
+  const initiales = (client.nom || "?").trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+  const statutMeta = CLIENT_STATUT_META[client.statut] || { label: client.statut };
+  const coords = [
+    client.telephone ? `<a href="tel:${escapeHtml(client.telephone)}">${escapeHtml(client.telephone)}</a>` : null,
+    client.email ? `<a href="mailto:${escapeHtml(client.email)}">${escapeHtml(client.email)}</a>` : null,
+    client.ville || null,
+  ].filter(Boolean);
+  return `
+  <div class="client-detail-header">
+    <div class="crm-avatar client-detail-avatar">${escapeHtml(initiales)}</div>
+    <div class="client-detail-identity">
+      <div class="client-detail-name">${escapeHtml(client.nom)}</div>
+      ${client.societe ? `<div class="client-detail-societe">${escapeHtml(client.societe)}</div>` : ""}
+      <span class="badge badge-gray">${escapeHtml(statutMeta.label)}</span>
+    </div>
+  </div>
+  ${coords.length ? `<div class="client-detail-coords">${coords.join('<span class="client-detail-coords-sep">·</span>')}</div>` : ""}
+  <button type="button" class="btn-primary client-detail-cta" data-action="quick-devis" data-client-id="${client.id}">+ Nouveau devis</button>`;
 }
 
 function messagesPanelHtml(messages) {
@@ -2204,19 +2292,19 @@ function messagesPanelHtml(messages) {
 function clientResumeHtml(r) {
   const rows = [
     { label: "Valeur totale facturée", value: fmtEuro(r.valeur_totale) },
-    { label: "Impayés", value: fmtEuro(r.impayes) },
+    { label: "Impayés", value: fmtEuro(r.impayes), alerte: r.impayes > 0 },
     { label: "Chantiers", value: r.nb_chantiers },
     { label: "Dernier contact", value: r.dernier_contact ? fmtDate(r.dernier_contact) : "-" },
     { label: "Dernier devis", value: r.date_dernier_devis ? fmtDate(r.date_dernier_devis) : "-" },
   ];
-  return `<div class="profil-row-group" style="margin-bottom:18px;">
-    ${rows.map((row) => `<div class="profil-row"><div class="label">${row.label}</div><div class="value">${row.value}</div></div>`).join("")}
+  return `<div class="client-detail-resume">
+    ${rows.map((row) => `<div class="profil-row${row.alerte ? " is-alert" : ""}"><div class="label">${row.label}</div><div class="value">${row.value}</div></div>`).join("")}
   </div>`;
 }
 
 async function showTimeline(clientId) {
   const client = clientsCache.find((c) => c.id === clientId) || (await Api.listClients()).find((c) => c.id === clientId);
-  document.getElementById("timeline-titre").textContent = client ? `Historique - ${client.nom}` : "Historique";
+  document.getElementById("timeline-titre").textContent = "Fiche client";
   const content = document.getElementById("timeline-content");
   content.innerHTML = skeletonCards();
   document.getElementById("panel-timeline").hidden = false;
@@ -2233,7 +2321,16 @@ async function showTimeline(clientId) {
           <div><div class="timeline-label">${escapeHtml(e.label)}</div><div class="timeline-date">${fmtDateTime(e.date)}</div></div>
         </div>`).join("");
 
-    content.innerHTML = (client ? clientQuickActionsHtml(client) : "") + clientResumeHtml(resume) + entriesHtml + messagesPanelHtml(messages);
+    content.innerHTML = `
+      ${client ? clientDetailHeaderHtml(client) : ""}
+      ${client ? clientQuickActionsHtml(client) : ""}
+      ${clientResumeHtml(resume)}
+      <div class="dash-section">
+        <h3>Historique</h3>
+        ${entriesHtml}
+      </div>
+      ${messagesPanelHtml(messages)}
+    `;
     refreshBadges();
 
     document.getElementById("client-message-form").addEventListener("submit", async (e) => {
@@ -2475,13 +2572,16 @@ function renderClientDirectoryRow(c) {
   const contact = [c.telephone, c.email].filter(Boolean).join(" · ");
   const secondaire = [c.societe, c.ville].filter(Boolean).join(" · ");
   return `
-  <div class="crm-row">
+  <div class="crm-row" data-action="voir-timeline" data-id="${c.id}" role="button" tabindex="0">
     <div class="crm-avatar">${escapeHtml(monogram(c.nom))}</div>
     <div class="crm-main">
       <div class="crm-name">${escapeHtml(c.nom)}</div>
       <div class="crm-contact">${escapeHtml(contact || "Pas de coordonnées")}</div>
     </div>
-    <div class="crm-secondary"><div class="crm-secondary-line">${secondaire ? escapeHtml(secondaire) : "—"}</div></div>
+    <div class="crm-secondary">
+      <div class="crm-secondary-line">${secondaire ? escapeHtml(secondaire) : "—"}</div>
+      ${c.prochaine_action ? `<div class="crm-secondary-line crm-next-action">→ ${escapeHtml(c.prochaine_action)}</div>` : ""}
+    </div>
     <div class="crm-action">
       <button type="button" class="btn-sm" data-action="voir-timeline" data-id="${c.id}">Voir l'historique</button>
     </div>
@@ -2511,10 +2611,12 @@ function ligneRowHtml(ligne) {
   return `
   <div class="ligne-row">
     <input type="text" class="ligne-description" list="prestations-datalist" placeholder="Description de la prestation (recherchez votre catalogue)" aria-label="Description de la prestation" value="${escapeHtml(l.description || "")}">
-    <input type="number" step="0.01" min="0" class="ligne-quantite" placeholder="Qte" aria-label="Quantité" value="${l.quantite ?? 1}">
+    <input type="number" step="0.01" min="0" class="ligne-quantite" placeholder="Qté" aria-label="Quantité" value="${l.quantite ?? 1}">
     <input type="text" class="ligne-unite" placeholder="Unité" aria-label="Unité" value="${escapeHtml(l.unite || "forfait")}">
-    <input type="number" step="0.01" min="0" class="ligne-prix" placeholder="PU HT" aria-label="Prix unitaire HT" value="${l.prix_unitaire_ht !== undefined && l.prix_unitaire_ht !== null ? l.prix_unitaire_ht : ""}">
-    <button type="button" class="btn-sm btn-sm-danger" data-action="remove-ligne" title="Retirer" aria-label="Retirer cette ligne">&times;</button>
+    <input type="number" step="0.01" min="0" class="ligne-prix" placeholder="Prix HT" aria-label="Prix unitaire HT" value="${l.prix_unitaire_ht !== undefined && l.prix_unitaire_ht !== null ? l.prix_unitaire_ht : ""}">
+    <button type="button" class="icon-btn ligne-remove" data-action="remove-ligne" title="Retirer" aria-label="Retirer cette ligne">
+      <svg viewBox="0 0 24 24" class="nav-icon"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>
+    </button>
   </div>`;
 }
 
@@ -2522,7 +2624,9 @@ function lignesEditorHtml(containerId, lignes) {
   const rows = (lignes && lignes.length ? lignes : [null]).map(ligneRowHtml).join("");
   return `
   <div class="lignes-editor">
-    <label>Prestations</label>
+    <div class="ligne-row ligne-row-header" aria-hidden="true">
+      <span>Désignation</span><span>Qté</span><span>Unité</span><span>Prix HT</span><span></span>
+    </div>
     <div id="${containerId}">${rows}</div>
     <button type="button" class="btn-sm" data-action="add-ligne" data-target="${containerId}">+ Ajouter une ligne</button>
     ${prestationsDatalistHtml()}
@@ -2693,7 +2797,8 @@ async function showDevisForm(devis, preselectClientId) {
     <div class="form-box">
       <h3>${isEdit ? "Modifier le devis" : "Nouveau devis"}</h3>
       <form id="devis-form">
-        <div class="form-grid">
+        <div class="form-section">
+          <div class="form-section-title">Client</div>
           <div>
             <label for="df-client">Client *</label>
             ${isEdit
@@ -2712,29 +2817,50 @@ async function showDevisForm(devis, preselectClientId) {
               `
             }
           </div>
-          <div>
-            <label for="df-titre">Titre</label>
-            <input type="text" id="df-titre" placeholder="Ex: Rénovation salle de bain" value="${isEdit ? escapeHtml(devis.titre || "") : ""}">
-          </div>
-          <div>
-            <label for="df-taux-tva">TVA</label>
-            <select id="df-taux-tva">
-              <option value="10" ${!isEdit || devis.taux_tva === 10 ? "selected" : ""}>10% (rénovation)</option>
-              <option value="20" ${isEdit && devis.taux_tva === 20 ? "selected" : ""}>20% (neuf)</option>
-            </select>
-          </div>
-          <div>
-            <label for="df-acompte">Acompte à la signature (%)</label>
-            <input type="number" step="1" min="0" max="100" id="df-acompte" value="${isEdit ? devis.acompte_pourcentage : 30}">
-          </div>
-          <div>
-            <label for="df-remise">Remise (%, optionnel)</label>
-            <input type="number" step="1" min="0" max="100" id="df-remise" placeholder="0" value="${isEdit && devis.remise_pourcentage ? devis.remise_pourcentage : ""}">
+        </div>
+
+        <div class="form-section">
+          <div class="form-section-title">Informations du devis</div>
+          <div class="form-grid">
+            <div>
+              <label for="df-titre">Titre</label>
+              <input type="text" id="df-titre" placeholder="Ex: Rénovation salle de bain" value="${isEdit ? escapeHtml(devis.titre || "") : ""}">
+            </div>
+            <div>
+              <label for="df-taux-tva">TVA</label>
+              <select id="df-taux-tva">
+                <option value="10" ${!isEdit || devis.taux_tva === 10 ? "selected" : ""}>10% (rénovation)</option>
+                <option value="20" ${isEdit && devis.taux_tva === 20 ? "selected" : ""}>20% (neuf)</option>
+              </select>
+            </div>
           </div>
         </div>
-        ${lignesEditorHtml("df-lignes", isEdit ? devis.lignes : null)}
-        <label for="df-description" style="margin-top:14px;">Description / notes</label>
-        <textarea id="df-description">${isEdit ? escapeHtml(devis.description || "") : ""}</textarea>
+
+        <div class="form-section">
+          <div class="form-section-title">Prestations</div>
+          ${lignesEditorHtml("df-lignes", isEdit ? devis.lignes : null)}
+        </div>
+
+        <div class="form-section">
+          <div class="form-section-title">Conditions financières</div>
+          <div class="form-grid">
+            <div>
+              <label for="df-acompte">Acompte à la signature (%)</label>
+              <input type="number" step="1" min="0" max="100" id="df-acompte" value="${isEdit ? devis.acompte_pourcentage : 30}">
+            </div>
+            <div>
+              <label for="df-remise">Remise (%, optionnel)</label>
+              <input type="number" step="1" min="0" max="100" id="df-remise" placeholder="0" value="${isEdit && devis.remise_pourcentage ? devis.remise_pourcentage : ""}">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="form-section-title">Notes</div>
+          <label for="df-description">Description / notes</label>
+          <textarea id="df-description">${isEdit ? escapeHtml(devis.description || "") : ""}</textarea>
+        </div>
+
         <p class="field-error" id="devis-form-error" hidden></p>
         <div class="form-actions">
           <button type="submit" class="btn-sm btn-sm-primary">${isEdit ? "Enregistrer" : "Créer le devis"}</button>
@@ -2943,11 +3069,13 @@ function tresorerieHeaderHtml(factures) {
   const enCours = factures.filter((f) => !["brouillon", "annulee", "payee"].includes(f.statut));
   if (enCours.length === 0) return "";
   const aEncaisser = enCours.reduce((s, f) => s + f.montant_restant, 0);
-  const enRetard = enCours.filter((f) => f.est_en_retard).reduce((s, f) => s + f.montant_restant, 0);
+  const facturesEnRetard = enCours.filter((f) => f.est_en_retard);
+  const enRetard = facturesEnRetard.reduce((s, f) => s + f.montant_restant, 0);
   return `
-  <div class="dash-grid" style="margin-bottom:20px;">
-    <div class="dash-stat"><div class="value">${fmtEuro(aEncaisser)}</div><div class="label">A encaisser</div></div>
-    <div class="dash-stat"><div class="value" style="${enRetard > 0 ? "color:var(--danger);" : ""}">${fmtEuro(enRetard)}</div><div class="label">Dont en retard</div></div>
+  <div class="kpi-row">
+    <div class="kpi-inline is-primary"><span class="kpi-label">À encaisser</span><span class="kpi-value">${fmtEuro(aEncaisser)}</span></div>
+    <div class="kpi-inline${enRetard > 0 ? " is-alert" : ""}"><span class="kpi-label">Dont en retard</span><span class="kpi-value">${fmtEuro(enRetard)}</span></div>
+    <div class="kpi-inline"><span class="kpi-label">Factures en cours</span><span class="kpi-value">${enCours.length}</span></div>
   </div>`;
 }
 
@@ -3150,25 +3278,45 @@ function showFactureForm() {
       <div class="form-box">
         <h3>Nouvelle facture</h3>
         <form id="facture-form">
-          <div class="form-grid">
-            <div><label for="fa-client">Client *</label><select id="fa-client" required><option value="">Choisir...</option>${clientOptionsHtml()}</select></div>
-            <div>
-              <label for="fa-type">Type</label>
-              <select id="fa-type">
-                <option value="standard">Standard</option>
-                <option value="acompte">Acompte</option>
-                <option value="situation">Situation</option>
-                <option value="finale">Finale</option>
-                <option value="avoir">Avoir</option>
-              </select>
+          <div class="form-section">
+            <div class="form-section-title">Client</div>
+            <div class="form-grid">
+              <div><label for="fa-client">Client *</label><select id="fa-client" required><option value="">Choisir...</option>${clientOptionsHtml()}</select></div>
             </div>
-            <div>
-              <label for="fa-tva">TVA</label>
-              <select id="fa-tva"><option value="10">10% (rénovation)</option><option value="20">20% (neuf)</option></select>
-            </div>
-            <div><label for="fa-echeance">Date d'échéance</label><input type="date" id="fa-echeance"></div>
           </div>
-          ${lignesEditorHtml("fa-lignes", null)}
+
+          <div class="form-section">
+            <div class="form-section-title">Détails</div>
+            <div class="form-grid">
+              <div>
+                <label for="fa-type">Type</label>
+                <select id="fa-type">
+                  <option value="standard">Standard</option>
+                  <option value="acompte">Acompte</option>
+                  <option value="situation">Situation</option>
+                  <option value="finale">Finale</option>
+                  <option value="avoir">Avoir</option>
+                </select>
+              </div>
+              <div>
+                <label for="fa-tva">TVA</label>
+                <select id="fa-tva"><option value="10">10% (rénovation)</option><option value="20">20% (neuf)</option></select>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="form-section-title">Prestations</div>
+            ${lignesEditorHtml("fa-lignes", null)}
+          </div>
+
+          <div class="form-section">
+            <div class="form-section-title">Échéance</div>
+            <div class="form-grid">
+              <div><label for="fa-echeance">Date d'échéance</label><input type="date" id="fa-echeance"></div>
+            </div>
+          </div>
+
           <p class="field-error" id="facture-form-error" hidden></p>
           <div class="form-actions">
             <button type="submit" class="btn-sm btn-sm-primary">Créer</button>
@@ -3908,12 +4056,20 @@ function setupChantiersView() {
       <div class="form-box">
         <h3>Nouveau chantier</h3>
         <form id="chantier-form">
-          <div class="form-grid">
-            <div><label for="cf-titre">Titre *</label><input type="text" id="cf-titre" required></div>
-            <div><label for="cf-client">Client *</label><select id="cf-client" required><option value="">Choisir...</option>${clientOptionsHtml()}</select></div>
-            <div><label for="cf-adresse">Adresse</label><input type="text" id="cf-adresse"></div>
-            <div><label for="cf-date">Date de début</label><input type="date" id="cf-date"></div>
-            <div><label for="cf-budget">Budget prévu (euros)</label><input type="number" step="0.01" min="0" id="cf-budget"></div>
+          <div class="form-section">
+            <div class="form-section-title">Chantier</div>
+            <div class="form-grid">
+              <div><label for="cf-titre">Titre *</label><input type="text" id="cf-titre" required></div>
+              <div><label for="cf-client">Client *</label><select id="cf-client" required><option value="">Choisir...</option>${clientOptionsHtml()}</select></div>
+              <div><label for="cf-adresse">Adresse</label><input type="text" id="cf-adresse"></div>
+            </div>
+          </div>
+          <div class="form-section">
+            <div class="form-section-title">Planification</div>
+            <div class="form-grid">
+              <div><label for="cf-date">Date de début</label><input type="date" id="cf-date"></div>
+              <div><label for="cf-budget">Budget prévu (euros)</label><input type="number" step="0.01" min="0" id="cf-budget"></div>
+            </div>
           </div>
           <p class="field-error" id="chantier-form-error" hidden></p>
           <div class="form-actions">

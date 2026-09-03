@@ -248,18 +248,33 @@ input[readonly] { background: var(--sa-surface-sunken); }
    ECRAN AUTH — simple, clair, pas de gradient sombre.
    ===================================================================== */
 .auth-screen[hidden] { display: none; }
-.auth-screen {
-  min-height: 100vh; display: flex; align-items: center; justify-content: center;
-  background: var(--sa-bg);
-  padding: 24px;
+.auth-screen { min-height: 100vh; display: flex; background: var(--sa-surface); }
+
+/* ---------- Panneau de marque : premiere impression, pas un simple
+   formulaire flottant sur fond gris. Un seul accent (le fond ink), calme,
+   sans gradient ni illustration. ---------- */
+.auth-brand-panel {
+  flex: 0 0 40%; max-width: 460px; min-width: 320px; background: var(--sa-ink);
+  display: flex; align-items: center; padding: 64px;
 }
-.auth-box {
-  background: var(--sa-surface); border-radius: var(--sa-radius-xl); padding: 36px;
-  width: 100%; max-width: 400px; border: 1px solid var(--sa-border);
-}
+.auth-brand-content { max-width: 340px; }
+.auth-logo-on-brand { font-size: 1.15rem; font-weight: var(--sa-weight-bold); letter-spacing: -0.01em; color: var(--sa-text-on-dark); margin-bottom: var(--sa-space-8); }
+.auth-brand-tagline { font-size: 1.35rem; font-weight: var(--sa-weight-medium); letter-spacing: -0.01em; line-height: 1.4; color: var(--sa-text-on-dark); margin-bottom: var(--sa-space-8); }
+.auth-brand-points { display: flex; flex-direction: column; gap: var(--sa-space-4); list-style: none; padding: 0; margin: 0; }
+.auth-brand-points li { position: relative; padding-left: 18px; font-size: var(--sa-text-sm); color: var(--sa-text-on-dark-muted); line-height: 1.5; }
+.auth-brand-points li::before { content: ""; position: absolute; left: 0; top: 7px; width: 6px; height: 6px; border-radius: 50%; background: var(--sa-accent-on-dark); }
+
+.auth-form-panel { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 24px; min-width: 0; }
+.auth-box { width: 100%; max-width: 380px; }
 .auth-back { display: inline-flex; align-items: center; gap: 6px; font-size: var(--sa-text-xs); font-weight: var(--sa-weight-semibold); color: var(--sa-text-muted); text-decoration: none; margin-bottom: var(--sa-space-5); }
 .auth-back:hover { color: var(--sa-text); }
-.auth-logo { font-size: 1.05rem; font-weight: var(--sa-weight-bold); letter-spacing: -0.01em; color: var(--sa-text); text-align: center; margin-bottom: var(--sa-space-6); }
+.auth-logo { font-size: 1.05rem; font-weight: var(--sa-weight-bold); letter-spacing: -0.01em; color: var(--sa-text); margin-bottom: var(--sa-space-6); }
+.auth-logo-on-form { display: none; }
+@media (max-width: 900px) {
+  .auth-brand-panel { display: none; }
+  .auth-form-panel { padding: 32px 20px; }
+  .auth-logo-on-form { display: block; text-align: center; }
+}
 .auth-tabs { display: flex; gap: 2px; margin-bottom: var(--sa-space-6); background: var(--sa-surface-sunken); border-radius: var(--sa-radius-sm); padding: 3px; }
 .auth-tab {
   flex: 1; padding: 8px; border: none; background: transparent; border-radius: 5px;
@@ -500,23 +515,29 @@ input[readonly] { background: var(--sa-surface-sunken); }
 .filter-chip.active { color: var(--sa-text); border-bottom-color: var(--sa-text); font-weight: var(--sa-weight-semibold); }
 
 /* ---------- Kanban (pipeline prospects) : leger, peu de fond ---------- */
-.kanban { display: flex; gap: var(--sa-space-5); overflow-x: auto; padding-bottom: var(--sa-space-3); align-items: flex-start; scroll-snap-type: x proximity; }
-.kanban-column { width: 250px; flex-shrink: 0; scroll-snap-align: start; }
-.kanban-column-header { display: flex; align-items: center; gap: 7px; margin-bottom: var(--sa-space-3); padding: 0 2px; }
-.kanban-column-title { font-weight: var(--sa-weight-semibold); font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
-.kanban-column-count { color: var(--sa-text-muted); font-size: var(--sa-text-xs); font-weight: var(--sa-weight-medium); }
-.kanban-cards { display: flex; flex-direction: column; gap: 6px; min-height: 20px; }
-.kanban-card {
-  background: var(--sa-surface); border-radius: var(--sa-radius-md); padding: 11px 12px; border: 1px solid var(--sa-border);
-  cursor: pointer;
+.kanban { display: flex; gap: var(--sa-space-6); overflow-x: auto; padding-bottom: var(--sa-space-3); align-items: flex-start; scroll-snap-type: x proximity; }
+.kanban-column { width: 258px; flex-shrink: 0; scroll-snap-align: start; }
+.kanban-column-header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: var(--sa-space-3); padding: 0 2px 10px;
+  border-bottom: 2px solid var(--sa-border);
 }
-.kanban-card:hover { border-color: var(--sa-border-strong); }
-.kanban-card-title { font-weight: var(--sa-weight-semibold); font-size: var(--sa-text-sm); margin-bottom: 2px; color: var(--sa-text); }
-.kanban-card-sub { font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
-.kanban-card-next { font-size: var(--sa-text-xs); color: var(--sa-accent); font-weight: var(--sa-weight-medium); margin-top: 5px; }
-.kanban-card-actions { display: flex; gap: 6px; margin-top: 9px; }
-.kanban-card select { font-size: var(--sa-text-2xs); padding: 4px 5px; border-radius: 5px; border: 1px solid var(--sa-border); flex: 1; }
-.kanban-empty { font-size: var(--sa-text-xs); color: var(--sa-text-muted); padding: 8px 2px; }
+.kanban-column-title { font-weight: var(--sa-weight-bold); font-size: var(--sa-text-xs); color: var(--sa-text); }
+.kanban-column-count {
+  color: var(--sa-text-muted); font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-bold);
+  background: var(--sa-surface-sunken); border-radius: var(--sa-radius-full); min-width: 18px; text-align: center; padding: 1px 6px; margin-left: auto;
+}
+.kanban-cards { display: flex; flex-direction: column; gap: 8px; min-height: 20px; }
+.kanban-card {
+  background: var(--sa-surface); border-radius: var(--sa-radius-md); padding: 12px 13px; border: 1px solid var(--sa-border);
+  cursor: pointer; box-shadow: var(--sa-shadow-xs);
+}
+.kanban-card:hover { border-color: var(--sa-border-strong); box-shadow: var(--sa-shadow-sm); }
+.kanban-card-title { font-weight: var(--sa-weight-semibold); font-size: var(--sa-text-sm); margin-bottom: 3px; color: var(--sa-text); }
+.kanban-card-sub { font-size: var(--sa-text-xs); color: var(--sa-text-muted); line-height: 1.5; }
+.kanban-card-next { font-size: var(--sa-text-xs); color: var(--sa-accent); font-weight: var(--sa-weight-medium); margin-top: 6px; }
+.kanban-card-actions { display: flex; gap: 6px; margin-top: var(--sa-space-3); padding-top: var(--sa-space-3); border-top: 1px solid var(--sa-border); }
+.kanban-card select { font-size: var(--sa-text-2xs); padding: 5px 6px; border-radius: 5px; border: 1px solid var(--sa-border); flex: 1; background: var(--sa-surface-sunken); }
+.kanban-empty { font-size: var(--sa-text-xs); color: var(--sa-text-faint); padding: 10px 2px; font-style: italic; }
 
 @media (max-width: 900px) {
   /* Un kanban horizontal a 9 colonnes est illisible au doigt : sur mobile,
@@ -534,6 +555,14 @@ input[readonly] { background: var(--sa-surface-sunken); }
    ===================================================================== */
 .dash-hello { margin-bottom: var(--sa-space-8); }
 .dash-hello h2 { font-size: var(--sa-text-xl); }
+
+/* ---------- Dashboard, compte neuf : un vrai point de depart, pas des
+   KPI a 0. Un seul accent (le bouton primaire), le reste tres calme. ---------- */
+.dash-hero-empty { padding: var(--sa-space-10) 0 var(--sa-space-8); max-width: 46ch; }
+.dash-hero-empty h3 { font-size: 1.7rem; letter-spacing: -0.02em; margin-bottom: var(--sa-space-3); }
+.dash-hero-empty p { color: var(--sa-text-muted); font-size: var(--sa-text-base); line-height: 1.6; margin-bottom: var(--sa-space-6); }
+.dash-hero-actions { display: flex; gap: 10px; }
+.dash-hero-actions .btn-primary, .dash-hero-actions .btn-secondary { margin-top: 0; }
 .dash-hello p { color: var(--sa-text-muted); font-size: var(--sa-text-sm); margin: 4px 0 0; }
 
 /* Chiffres cles : en ligne, sans grosse carte - le premium n'a pas besoin
@@ -545,19 +574,33 @@ input[readonly] { background: var(--sa-surface-sunken); }
 .kpi-inline.is-alert .kpi-value { color: var(--sa-danger); }
 .kpi-inline.is-primary .kpi-value { font-size: var(--sa-text-2xl); }
 
-/* Retro-compat : anciennes classes (KPI en carte), gardees pour les vues
-   qui n'utilisent pas .kpi-row. */
-.kpi-primary { background: var(--sa-surface); border: 1px solid var(--sa-border); border-radius: var(--sa-radius-lg); padding: var(--sa-space-4) var(--sa-space-5); }
-.kpi-primary .kpi-label { font-size: var(--sa-text-xs); font-weight: var(--sa-weight-medium); color: var(--sa-text-muted); }
-.kpi-primary .kpi-value { font-size: var(--sa-text-2xl); font-weight: var(--sa-weight-bold); margin-top: 4px; color: var(--sa-text); }
-.kpi-secondary-group { display: flex; gap: var(--sa-space-6); flex-wrap: wrap; }
-.kpi-secondary .kpi-label { font-size: var(--sa-text-xs); color: var(--sa-text-muted); font-weight: var(--sa-weight-medium); }
-.kpi-secondary .kpi-value { font-size: 1.2rem; font-weight: var(--sa-weight-bold); color: var(--sa-text); margin-top: 2px; }
-.kpi-secondary.is-alert .kpi-value { color: var(--sa-danger); }
 .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--sa-space-3); margin-bottom: var(--sa-space-6); }
-.dash-stat { padding: 0; }
+.dash-stat { padding: var(--sa-space-4) var(--sa-space-5); background: var(--sa-surface); border: 1px solid var(--sa-border); border-radius: var(--sa-radius-lg); }
 .dash-stat .value { font-size: 1.4rem; font-weight: var(--sa-weight-bold); color: var(--sa-text); }
 .dash-stat .label { font-size: var(--sa-text-xs); color: var(--sa-text-muted); margin-top: 2px; }
+
+/* ---------- Composition : "A faire" + planning du jour cote a cote,
+   puis bande KPI, puis contenu secondaire en grille 2 colonnes. ---------- */
+.dash-top-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 300px); gap: var(--sa-space-10); align-items: start; margin-bottom: var(--sa-space-10); }
+.dash-top-grid .dash-section { margin-bottom: 0; }
+.dash-side-col { border-left: 1px solid var(--sa-border); padding-left: var(--sa-space-6); min-width: 0; }
+.dash-agenda { display: flex; flex-direction: column; }
+.dash-agenda-row { display: flex; align-items: baseline; gap: 9px; padding: 9px 0; border-bottom: 1px solid var(--sa-border); font-size: var(--sa-text-sm); width: 100%; text-align: left; background: none; border-left: none; border-right: none; border-top: none; color: var(--sa-text); cursor: pointer; }
+.dash-agenda-row:last-child { border-bottom: none; }
+.dash-agenda-row:hover .dash-agenda-titre { color: var(--sa-accent); }
+.dash-agenda-heure { font-weight: var(--sa-weight-bold); color: var(--sa-text-muted); flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.dash-agenda-titre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kpi-row-secondary { margin-top: var(--sa-space-5); padding-top: var(--sa-space-5); border-top: 1px solid var(--sa-border); margin-bottom: 0; }
+.kpi-row-secondary .kpi-value { font-size: 1.15rem; }
+.dash-secondary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sa-space-10); margin-bottom: var(--sa-space-10); }
+.dash-secondary-grid .dash-section { margin-bottom: 0; }
+@media (max-width: 1100px) {
+  .dash-top-grid { grid-template-columns: 1fr; gap: var(--sa-space-6); }
+  .dash-side-col { border-left: none; padding-left: 0; border-top: 1px solid var(--sa-border); padding-top: var(--sa-space-6); }
+}
+@media (max-width: 760px) {
+  .dash-secondary-grid { grid-template-columns: 1fr; gap: var(--sa-space-8); }
+}
 
 .dash-section { margin-bottom: var(--sa-space-10); }
 .dash-section-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--sa-space-3); gap: var(--sa-space-3); }
@@ -775,7 +818,11 @@ input[readonly] { background: var(--sa-surface-sunken); }
    ===================================================================== */
 .crm-row {
   display: flex; align-items: center; gap: var(--sa-space-3); padding: 11px 4px; border-bottom: 1px solid var(--sa-border);
+  cursor: pointer;
 }
+.crm-row:hover { background: var(--sa-surface-hover); }
+.crm-row:hover .crm-name { color: var(--sa-accent); }
+.crm-next-action { color: var(--sa-accent); font-weight: var(--sa-weight-medium); }
 .list .crm-row:first-child { border-top: 1px solid var(--sa-border); }
 .crm-avatar {
   width: 32px; height: 32px; border-radius: 50%; background: var(--sa-surface-sunken); color: var(--sa-text-muted);
@@ -804,6 +851,13 @@ input[readonly] { background: var(--sa-surface-sunken); }
 .form-box textarea { min-height: 72px; resize: vertical; }
 .form-actions { display: flex; gap: 10px; margin-top: var(--sa-space-5); }
 
+/* ---------- Grammaire commune des formulaires longs (Devis, Facture,
+   Chantier, Entreprise...) : sections nommees, meme rythme partout. ---------- */
+.form-section { padding-top: var(--sa-space-5); margin-top: var(--sa-space-5); border-top: 1px solid var(--sa-border); }
+.form-section:first-child { padding-top: 0; margin-top: 0; border-top: none; }
+.form-section-title { font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-bold); text-transform: uppercase; letter-spacing: 0.06em; color: var(--sa-text-muted); margin-bottom: var(--sa-space-3); }
+.form-section-hint { font-size: var(--sa-text-xs); color: var(--sa-text-muted); margin: -6px 0 var(--sa-space-3); }
+
 .form-box label.checkbox-option {
   display: flex; align-items: center; gap: 9px; font-weight: var(--sa-weight-normal); color: var(--sa-text);
   margin-top: var(--sa-space-3); margin-bottom: 0; cursor: pointer;
@@ -813,15 +867,31 @@ input[readonly] { background: var(--sa-surface-sunken); }
 .form-grid-labels-aligned label { display: flex; align-items: flex-end; min-height: 3em; }
 
 /* ---------- Editeur de lignes (devis / factures) ---------- */
-.lignes-editor { margin-top: var(--sa-space-4); }
-.lignes-editor label { display: block; font-size: var(--sa-text-xs); font-weight: var(--sa-weight-semibold); margin-bottom: var(--sa-space-2); color: var(--sa-text-muted); }
-.ligne-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; align-items: center; }
-.ligne-row .ligne-description { flex: 3 1 200px; }
-.ligne-row .ligne-quantite { flex: 1 1 60px; min-width: 60px; }
-.ligne-row .ligne-unite { flex: 1 1 70px; min-width: 70px; }
-.ligne-row .ligne-prix { flex: 1 1 80px; min-width: 80px; }
+.lignes-editor { margin-top: 0; }
+.ligne-row {
+  display: grid; grid-template-columns: minmax(0, 3fr) 64px 84px 104px 30px;
+  gap: 8px; margin-bottom: 6px; align-items: center;
+}
+.ligne-row-header { margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--sa-border-strong); }
+.ligne-row-header span { font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-bold); text-transform: uppercase; letter-spacing: 0.05em; color: var(--sa-text-muted); }
+.ligne-row-header span:nth-child(2), .ligne-row-header span:nth-child(4) { text-align: right; }
 .ligne-row input { padding: 7px 9px; font-size: var(--sa-text-sm); }
-.ligne-row .btn-sm { padding: 6px 10px; flex-shrink: 0; }
+.ligne-row .ligne-quantite, .ligne-row .ligne-prix { text-align: right; }
+.ligne-row .ligne-remove { width: 30px; height: 30px; flex-shrink: 0; color: var(--sa-text-faint); }
+.ligne-row .ligne-remove:hover { color: var(--sa-danger); background: var(--sa-danger-soft); }
+@media (max-width: 640px) {
+  .ligne-row-header { display: none; }
+  .ligne-row {
+    grid-template-columns: repeat(3, 1fr) 30px;
+    grid-template-areas: "desc desc desc remove" "qte unite prix prix";
+    row-gap: 6px;
+  }
+  .ligne-row .ligne-description { grid-area: desc; }
+  .ligne-row .ligne-remove { grid-area: remove; }
+  .ligne-row .ligne-quantite { grid-area: qte; text-align: left; }
+  .ligne-row .ligne-unite { grid-area: unite; }
+  .ligne-row .ligne-prix { grid-area: prix; text-align: left; }
+}
 .lignes-total { text-align: right; font-weight: var(--sa-weight-bold); margin-top: var(--sa-space-2); color: var(--sa-text); font-size: var(--sa-text-md); }
 .field-error { color: var(--sa-danger); font-size: var(--sa-text-sm); margin-top: var(--sa-space-3); font-weight: var(--sa-weight-medium); }
 
@@ -1010,6 +1080,23 @@ input[readonly] { background: var(--sa-surface-sunken); }
   padding: var(--sa-space-6); position: relative; overflow-y: auto; box-shadow: var(--sa-shadow-lg); border-left: 1px solid var(--sa-border);
 }
 .side-panel-close { position: absolute; top: 16px; right: 16px; border: none; background: transparent; width: 30px; height: 30px; border-radius: var(--sa-radius-sm); font-size: 1.1rem; line-height: 1; color: var(--sa-text-muted); }
+.side-panel-box-wide { max-width: 460px; }
+.side-panel-eyebrow { font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-bold); text-transform: uppercase; letter-spacing: 0.06em; color: var(--sa-text-muted); margin: 0 0 var(--sa-space-4); }
+
+/* ---------- Fiche client : identite, coordonnees, resume, historique. ---------- */
+.client-detail-header { display: flex; align-items: center; gap: 12px; margin-bottom: var(--sa-space-3); }
+.client-detail-avatar { width: 44px; height: 44px; font-size: var(--sa-text-md); flex-shrink: 0; }
+.client-detail-identity { min-width: 0; }
+.client-detail-name { font-size: 1.15rem; font-weight: var(--sa-weight-bold); letter-spacing: -0.01em; }
+.client-detail-societe { font-size: var(--sa-text-sm); color: var(--sa-text-muted); margin-bottom: 4px; }
+.client-detail-coords { font-size: var(--sa-text-sm); color: var(--sa-text-muted); margin-bottom: var(--sa-space-4); }
+.client-detail-coords a { color: var(--sa-text-muted); }
+.client-detail-coords a:hover { color: var(--sa-accent); }
+.client-detail-coords-sep { margin: 0 7px; }
+.client-detail-cta { width: 100%; margin: 0 0 var(--sa-space-4); }
+.client-detail-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--sa-space-5); padding-bottom: var(--sa-space-5); border-bottom: 1px solid var(--sa-border); }
+.client-detail-resume { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sa-space-3) var(--sa-space-4); margin-bottom: var(--sa-space-6); }
+.client-detail-resume .profil-row.is-alert .value { color: var(--sa-danger); }
 .side-panel-close:hover { background: var(--sa-surface-sunken); color: var(--sa-text); }
 .profil-row-group { display: flex; flex-direction: column; }
 .profil-row-group .profil-row:last-child { margin-bottom: 0; }
@@ -1088,6 +1175,18 @@ input[readonly] { background: var(--sa-surface-sunken); }
 
 /* ---------- Entreprise : rythme entre sous-sections ---------- */
 #automation-status { margin-top: var(--sa-space-4); }
+
+/* ---------- Notifications : vraie inbox, groupee, ligne dense. ---------- */
+.notif-group { margin-bottom: var(--sa-space-6); }
+.notif-group-title { font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-bold); text-transform: uppercase; letter-spacing: 0.06em; color: var(--sa-text-muted); margin: 0 0 var(--sa-space-2); }
+.notif-row { display: flex; align-items: center; gap: 10px; padding: 11px 4px; border-bottom: 1px solid var(--sa-border); }
+.notif-row:last-child { border-bottom: none; }
+.notif-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--sa-text-faint); flex-shrink: 0; }
+.notif-row.is-urgent .notif-dot { background: var(--sa-danger); }
+.notif-main { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.notif-title { font-size: var(--sa-text-sm); font-weight: var(--sa-weight-medium); color: var(--sa-text); }
+.notif-row.is-urgent .notif-title { font-weight: var(--sa-weight-semibold); }
+.notif-sub { font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
 
 /* ---------- Toast ---------- */
 #toast {

@@ -12,9 +12,21 @@
 
 <!-- ===================== ECRAN CONNEXION / INSCRIPTION ===================== -->
 <div id="auth-screen" class="auth-screen">
+  <div class="auth-brand-panel">
+    <div class="auth-brand-content">
+      <div class="auth-logo auth-logo-on-brand">Suite Artisan</div>
+      <p class="auth-brand-tagline">Vos devis, vos factures et vos chantiers, au même endroit.</p>
+      <ul class="auth-brand-points">
+        <li>Devis envoyés et signés en ligne</li>
+        <li>Factures suivies et relances automatiques</li>
+        <li>Planning et chantiers à jour, sur le terrain</li>
+      </ul>
+    </div>
+  </div>
+  <div class="auth-form-panel">
   <div class="auth-box">
     <a href="landing.html" class="auth-back">&larr; Retour à l'accueil</a>
-    <div class="auth-logo">Suite Artisan</div>
+    <div class="auth-logo auth-logo-on-form">Suite Artisan</div>
 
     <div class="auth-tabs">
       <button type="button" class="auth-tab active" data-tab="login">Connexion</button>
@@ -81,6 +93,7 @@
 
       <button type="submit" class="btn-primary">Créer mon compte</button>
     </form>
+  </div>
   </div>
 </div>
 
@@ -265,10 +278,10 @@
     </div>
 
     <!-- ---------- Panneau timeline client ---------- -->
-    <div id="panel-timeline" class="side-panel" hidden role="dialog" aria-modal="true">
-      <div class="side-panel-box">
+    <div id="panel-timeline" class="side-panel" hidden role="dialog" aria-modal="true" aria-labelledby="timeline-titre">
+      <div class="side-panel-box side-panel-box-wide">
         <button type="button" class="side-panel-close" data-action="close-timeline" aria-label="Fermer">&times;</button>
-        <h3 id="timeline-titre">Historique</h3>
+        <p class="side-panel-eyebrow" id="timeline-titre">Historique</p>
         <div id="timeline-content"></div>
       </div>
     </div>
@@ -520,23 +533,36 @@
       <div class="form-box" id="entreprise-form-box">
         <h3>Mes informations</h3>
         <form id="entreprise-form">
-          <div class="form-grid">
-            <div><label for="ent-nom-entreprise">Nom de l'entreprise</label><input type="text" id="ent-nom-entreprise" required></div>
-            <div><label for="ent-metier">Métier</label>
-              <select id="ent-metier" required>
-                <option value="plombier">Plombier</option>
-                <option value="electricien">Électricien</option>
-                <option value="macon">Maçon</option>
-                <option value="peintre">Peintre</option>
-                <option value="general">Autre (artisan du BTP)</option>
-              </select>
+          <div class="form-section">
+            <div class="form-section-title">Identité</div>
+            <div class="form-grid">
+              <div><label for="ent-nom-entreprise">Nom de l'entreprise</label><input type="text" id="ent-nom-entreprise" required></div>
+              <div><label for="ent-metier">Métier</label>
+                <select id="ent-metier" required>
+                  <option value="plombier">Plombier</option>
+                  <option value="electricien">Électricien</option>
+                  <option value="macon">Maçon</option>
+                  <option value="peintre">Peintre</option>
+                  <option value="general">Autre (artisan du BTP)</option>
+                </select>
+              </div>
             </div>
-            <div><label for="ent-telephone">Téléphone</label><input type="tel" id="ent-telephone"></div>
-            <div><label for="ent-ville">Ville</label><input type="text" id="ent-ville"></div>
-            <div><label for="ent-code-postal">Code postal</label><input type="text" id="ent-code-postal"></div>
-            <div><label for="ent-adresse">Adresse</label><input type="text" id="ent-adresse"></div>
-            <div><label for="ent-siret">SIRET</label><input type="text" id="ent-siret"></div>
-            <div><label for="ent-assurance">Assureur décennale</label><input type="text" id="ent-assurance"></div>
+          </div>
+          <div class="form-section">
+            <div class="form-section-title">Coordonnées</div>
+            <div class="form-grid">
+              <div><label for="ent-telephone">Téléphone</label><input type="tel" id="ent-telephone"></div>
+              <div><label for="ent-ville">Ville</label><input type="text" id="ent-ville"></div>
+              <div><label for="ent-code-postal">Code postal</label><input type="text" id="ent-code-postal"></div>
+              <div><label for="ent-adresse">Adresse</label><input type="text" id="ent-adresse"></div>
+            </div>
+          </div>
+          <div class="form-section">
+            <div class="form-section-title">Mentions légales</div>
+            <div class="form-grid">
+              <div><label for="ent-siret">SIRET</label><input type="text" id="ent-siret"></div>
+              <div><label for="ent-assurance">Assureur décennale</label><input type="text" id="ent-assurance"></div>
+            </div>
           </div>
           <p class="field-error" id="entreprise-form-error" hidden></p>
           <div class="form-actions">
