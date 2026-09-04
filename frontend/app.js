@@ -5125,8 +5125,23 @@ async function loadDocuments() {
   const compteur = document.getElementById("documents-compteur");
   list.innerHTML = skeletonCards();
   try {
-    const [documents] = await Promise.all([Api.listDocuments(), ensureClientsCache()]);
-    if (compteur) compteur.innerHTML = documents.length ? `<span class="doc-compteur-label">Documents</span><span class="pill pill-gray">${documents.length}</span>` : "";
+    // Conformite : seule entite reelle qui porte une date d'expiration
+    // (ConformiteOut.alerte/.jours_restants, voir backend/app/schemas.py) -
+    // Document lui-meme n'en a aucune. Recuperee ici uniquement pour ce
+    // deuxieme compteur, pas pour en faire une echeance "par document".
+    const [documents, , conformite] = await Promise.all([
+      Api.listDocuments(),
+      ensureClientsCache(),
+      Api.listConformite().catch(() => []),
+    ]);
+    const echeances = conformite.filter((c) => c.alerte).length;
+    if (compteur) {
+      compteur.innerHTML = documents.length
+        ? `<span class="doc-compteur-label">Documents</span><span class="pill pill-gray">${documents.length}</span>${
+            echeances ? `<span class="doc-compteur-label">Échéances à surveiller</span><span class="pill pill-orange">${echeances}</span>` : ""
+          }`
+        : "";
+    }
     const affichees = currentDocumentFilter ? documents.filter((d) => d.type === currentDocumentFilter) : documents;
     if (affichees.length === 0) {
       list.innerHTML = '<div class="empty-state">Aucun document pour le moment. Ajoutez vos contrats, attestations d\'assurance, plans ou photos de chantier.</div>';
