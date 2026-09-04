@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260904-reference">
+<link rel="stylesheet" href="style.css?v=20260904-reference2">
 </head>
 <body>
 
@@ -543,18 +543,18 @@
         </div>
       </div>
 
-      <nav class="entreprise-subnav" aria-label="Sections Entreprise">
-        <a href="#entreprise-form-box">Profil</a>
-        <a href="#visual-identity-box">Identité visuelle</a>
-        <a href="#automatisation-form-box">Automatisations</a>
-        <a href="#ent-sec-contrats">Contrats</a>
-        <a href="#ent-sec-equipe">Équipe</a>
-        <a href="#ent-sec-prestations">Prestations</a>
-        <a href="#ent-sec-fournisseurs">Fournisseurs</a>
-        <a href="#ent-sec-conformite">Conformité</a>
-      </nav>
+      <div class="filters entreprise-tabs" id="entreprise-tabs" role="tablist" aria-label="Sections Entreprise">
+        <button type="button" class="filter-chip active" data-tab="profil">Profil</button>
+        <button type="button" class="filter-chip" data-tab="identite-visuelle">Identité visuelle</button>
+        <button type="button" class="filter-chip" data-tab="equipe">Équipe</button>
+        <button type="button" class="filter-chip" data-tab="prestations">Prestations</button>
+        <button type="button" class="filter-chip" data-tab="fournisseurs">Fournisseurs</button>
+        <button type="button" class="filter-chip" data-tab="automatisations">Automatisations</button>
+        <button type="button" class="filter-chip" data-tab="contrats">Contrats</button>
+        <button type="button" class="filter-chip" data-tab="conformite">Conformité</button>
+      </div>
 
-      <div class="form-box" id="entreprise-form-box">
+      <div class="form-box" id="entreprise-form-box" data-tab-panel="profil">
         <h3>Mes informations</h3>
         <form id="entreprise-form">
           <div class="form-section">
@@ -595,7 +595,7 @@
         </form>
       </div>
 
-      <div class="form-box visual-identity-box" id="visual-identity-box">
+      <div class="form-box visual-identity-box" id="visual-identity-box" data-tab-panel="identite-visuelle">
         <h3>Identité visuelle</h3>
         <p class="section-hint">Ajoutez votre logo et de vraies photos de votre activité pour préparer votre site vitrine.</p>
         <div class="visual-identity-grid">
@@ -624,26 +624,28 @@
         <div id="site-photos-list" class="site-photos-list"></div>
       </div>
 
-      <div class="form-box" id="automatisation-form-box">
-        <h3>Automatisation des relances</h3>
-        <p class="section-hint">Délais avant qu'une relance ne devienne "à faire" dans vos notifications.</p>
-        <form id="automatisation-form">
-          <div class="form-grid">
-            <div><label for="auto-devis-j1">Devis : 1ère relance après (jours)</label><input type="number" min="1" id="auto-devis-j1" required></div>
-            <div><label for="auto-devis-j2">Devis : 2e relance après (jours)</label><input type="number" min="1" id="auto-devis-j2" required></div>
-            <div><label for="auto-devis-j3">Devis : 3e relance après (jours)</label><input type="number" min="1" id="auto-devis-j3" required></div>
-            <div><label for="auto-facture-jours">Facture impayée : relancer tous les (jours)</label><input type="number" min="1" id="auto-facture-jours" required></div>
-          </div>
-          <p class="field-error" id="automatisation-form-error" hidden></p>
-          <div class="form-actions">
-            <button type="submit" class="btn-sm btn-sm-primary">Enregistrer</button>
-          </div>
-        </form>
-        <div id="automation-status"></div>
+      <div data-tab-panel="automatisations">
+        <div class="form-box" id="automatisation-form-box">
+          <h3>Automatisation des relances</h3>
+          <p class="section-hint">Délais avant qu'une relance ne devienne "à faire" dans vos notifications.</p>
+          <form id="automatisation-form">
+            <div class="form-grid">
+              <div><label for="auto-devis-j1">Devis : 1ère relance après (jours)</label><input type="number" min="1" id="auto-devis-j1" required></div>
+              <div><label for="auto-devis-j2">Devis : 2e relance après (jours)</label><input type="number" min="1" id="auto-devis-j2" required></div>
+              <div><label for="auto-devis-j3">Devis : 3e relance après (jours)</label><input type="number" min="1" id="auto-devis-j3" required></div>
+              <div><label for="auto-facture-jours">Facture impayée : relancer tous les (jours)</label><input type="number" min="1" id="auto-facture-jours" required></div>
+            </div>
+            <p class="field-error" id="automatisation-form-error" hidden></p>
+            <div class="form-actions">
+              <button type="submit" class="btn-sm btn-sm-primary">Enregistrer</button>
+            </div>
+          </form>
+          <div id="automation-status"></div>
+        </div>
+        <div id="automatisation-paywall" hidden></div>
       </div>
-      <div id="automatisation-paywall" hidden></div>
 
-      <div class="entreprise-section entreprise-section-first" id="ent-sec-contrats">
+      <div class="entreprise-section" id="ent-sec-contrats" data-tab-panel="contrats">
         <div class="view-header subsection-header">
           <h2>Contrats récurrents</h2>
           <button type="button" class="btn-primary" data-action="show-contrat-form">+ Nouveau contrat</button>
@@ -655,7 +657,7 @@
         <div id="contrats-list" class="list"></div>
       </div>
 
-      <div class="entreprise-section" id="ent-sec-equipe">
+      <div class="entreprise-section" id="ent-sec-equipe" data-tab-panel="equipe">
         <div class="view-header subsection-header">
           <h2>Équipe</h2>
           <button type="button" class="btn-primary" data-action="show-membre-form" id="btn-show-membre-form">+ Ajouter un membre</button>
@@ -667,7 +669,7 @@
         <div id="equipe-list" class="list"></div>
       </div>
 
-      <div class="entreprise-section" id="ent-sec-prestations">
+      <div class="entreprise-section" id="ent-sec-prestations" data-tab-panel="prestations">
         <div class="view-header subsection-header">
           <h2>Catalogue de prestations</h2>
           <button type="button" class="btn-primary" data-action="show-prestation-form">+ Nouvelle prestation</button>
@@ -679,7 +681,7 @@
         <div id="prestations-list" class="list"></div>
       </div>
 
-      <div class="entreprise-section" id="ent-sec-fournisseurs">
+      <div class="entreprise-section" id="ent-sec-fournisseurs" data-tab-panel="fournisseurs">
         <div class="view-header subsection-header">
           <h2>Fournisseurs</h2>
           <button type="button" class="btn-primary" data-action="show-fournisseur-form">+ Nouveau fournisseur</button>
@@ -691,7 +693,7 @@
         <div id="fournisseurs-list" class="list"></div>
       </div>
 
-      <div class="entreprise-section" id="ent-sec-conformite">
+      <div class="entreprise-section" id="ent-sec-conformite" data-tab-panel="conformite">
         <div class="view-header subsection-header">
           <h2>Conformité</h2>
           <button type="button" class="btn-primary" data-action="show-conformite-form">+ Nouvel element</button>
@@ -793,7 +795,7 @@
 <script src="env.js"></script>
 <script src="config.js"></script>
 <script src="pricing.js"></script>
-<script src="api.js?v=20260904-reference"></script>
-<script src="app.js?v=20260904-reference"></script>
+<script src="api.js?v=20260904-reference2"></script>
+<script src="app.js?v=20260904-reference2"></script>
 </body>
 </html>

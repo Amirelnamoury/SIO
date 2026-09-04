@@ -673,6 +673,26 @@ function setupProfilPanel() {
 }
 
 // ===================== Entreprise (infos + conformite) =====================
+// Vrais onglets (un seul panneau visible a la fois), pas une simple
+// navigation d'ancrage : toutes les sections restent chargees en arriere-
+// plan des l'ouverture de la vue (switchView() appelle deja tous les
+// load*() existants), seule leur visibilite change ici - zero nouvel appel
+// reseau au changement d'onglet.
+function setupEntrepriseTabs() {
+  const tabs = document.getElementById("entreprise-tabs");
+  if (!tabs) return;
+  tabs.addEventListener("click", (e) => {
+    const btn = e.target.closest(".filter-chip");
+    if (!btn) return;
+    tabs.querySelectorAll(".filter-chip").forEach((c) => c.classList.remove("active"));
+    btn.classList.add("active");
+    const cible = btn.dataset.tab;
+    document.querySelectorAll("#view-entreprise [data-tab-panel]").forEach((panel) => {
+      panel.hidden = panel.dataset.tabPanel !== cible;
+    });
+  });
+}
+
 function loadEntrepriseForm() {
   document.getElementById("ent-nom-entreprise").value = currentArtisan.nom_entreprise || "";
   document.getElementById("ent-metier").value = currentArtisan.metier || "general";
@@ -5715,6 +5735,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupDashboardView();
   setupClientsView();
   setupArchivesPanel();
+  setupEntrepriseTabs();
   setupEntrepriseForm();
   setupSiteMedia();
   setupAutomatisationForm();
