@@ -2,6 +2,7 @@
 let currentArtisan = null;
 let currentUtilisateur = null; // { role, nom, email, membre_id } - qui est precisement connecte
 let currentDevisFilter = "";
+let currentAvisFilter = ""; // "" | "1" (publies) | "0" (non publies)
 let devisDueIds = new Set();
 
 function estAdministrateur() {
@@ -1405,21 +1406,41 @@ function avisResumeHtml(avis, clients) {
   return `<div class="avis-resume-grid">${gaucheHtml}${droiteHtml}</div>`;
 }
 
+// Dernier avis charge, pour filtrer par onglet (Tous/Publies/Non publies)
+// sans reinterroger l'API a chaque clic.
+let avisCache = [];
+
 async function loadAvis() {
   const list = document.getElementById("avis-list");
   const resume = document.getElementById("avis-resume");
   list.innerHTML = skeletonCards();
   try {
     const [avis, clients] = await Promise.all([Api.listAvis(), ensureClientsCache()]);
+    avisCache = avis;
     resume.innerHTML = avisResumeHtml(avis, clients);
-    if (avis.length === 0) {
-      list.innerHTML = '<div class="empty-state">Aucun avis pour le moment. Saisissez-en un, ou envoyez une demande d\'avis depuis la fiche d\'un client.</div>';
-      return;
-    }
-    list.innerHTML = `<div class="avis-grid">${avis.map(renderAvisCard).join("")}</div>`;
+    const setCount = (sel, n) => {
+      const el = document.querySelector(`#avis-filters [data-publie="${sel}"] .filter-chip-count`);
+      if (el) el.textContent = `(${n})`;
+    };
+    setCount("", avis.length);
+    setCount("1", avis.filter((a) => a.publie_site).length);
+    setCount("0", avis.filter((a) => !a.publie_site).length);
+    renderAvisListFiltered();
   } catch (err) {
     list.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
   }
+}
+
+function renderAvisListFiltered() {
+  const list = document.getElementById("avis-list");
+  if (avisCache.length === 0) {
+    list.innerHTML = '<div class="empty-state">Aucun avis pour le moment. Saisissez-en un, ou envoyez une demande d\'avis depuis la fiche d\'un client.</div>';
+    return;
+  }
+  const filtres = currentAvisFilter === "" ? avisCache : avisCache.filter((a) => (currentAvisFilter === "1" ? a.publie_site : !a.publie_site));
+  list.innerHTML = filtres.length
+    ? `<div class="avis-grid">${filtres.map(renderAvisCard).join("")}</div>`
+    : '<div class="empty-state">Aucun avis dans cet onglet.</div>';
 }
 
 function renderAvisCard(a) {
@@ -1509,6 +1530,14 @@ function showAvisForm() {
 
 function setupAvisView() {
   document.querySelector('[data-action="show-avis-form"]').addEventListener("click", showAvisForm);
+  document.getElementById("avis-filters").addEventListener("click", (e) => {
+    const chip = e.target.closest(".filter-chip");
+    if (!chip) return;
+    document.querySelectorAll("#avis-filters .filter-chip").forEach((c) => c.classList.remove("active"));
+    chip.classList.add("active");
+    currentAvisFilter = chip.dataset.publie;
+    renderAvisListFiltered();
+  });
   document.getElementById("avis-resume").addEventListener("click", async (e) => {
     const btn = e.target.closest('[data-action="demander-avis"]');
     if (btn) await demanderAvisEtCopierLien(parseInt(btn.dataset.clientId, 10));
@@ -1553,24 +1582,46 @@ const NOTIFICATION_TYPE_LABELS = {
 // serveur) forment un groupe "Important" separe du reste - meme donnee que
 // l'ancienne pastille rouge, seul le regroupement change. Ligne dense
 // plutot qu'un item-card par notification.
+let notificationsCache = [];
+
 async function loadNotifications() {
   const list = document.getElementById("notifications-list");
   list.innerHTML = skeletonCards();
   try {
     const notifications = await Api.listNotifications();
-    if (notifications.length === 0) {
-      list.innerHTML = '<div class="empty-state">Rien à signaler. Tout est à jour.</div>';
-      return;
-    }
-    const importantes = notifications.filter((n) => n.urgent);
-    const normales = notifications.filter((n) => !n.urgent);
-    list.innerHTML = `
-      ${importantes.length ? `<div class="notif-group"><p class="notif-group-title">Important</p>${importantes.map(notificationRowHtml).join("")}</div>` : ""}
-      ${normales.length ? `<div class="notif-group"><p class="notif-group-title">À faire</p>${normales.map(notificationRowHtml).join("")}</div>` : ""}
-    `;
+    notificationsCache = notifications;
+    const setCount = (mode, n) => {
+      const el = document.querySelector(`#notifications-filters [data-mode="${mode}"] .filter-chip-count`);
+      if (el) el.textContent = `(${n})`;
+    };
+    setCount("toutes", notifications.length);
+    setCount("non-lues", notifications.filter((n) => !n.lu).length);
+    setCount("importantes", notifications.filter((n) => n.urgent).length);
+    renderNotificationsFiltered();
   } catch (err) {
     list.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
   }
+}
+
+function renderNotificationsFiltered() {
+  const list = document.getElementById("notifications-list");
+  if (notificationsCache.length === 0) {
+    list.innerHTML = '<div class="empty-state">Rien à signaler. Tout est à jour.</div>';
+    return;
+  }
+  const base = currentNotificationsFilter === "non-lues" ? notificationsCache.filter((n) => !n.lu)
+    : currentNotificationsFilter === "importantes" ? notificationsCache.filter((n) => n.urgent)
+    : notificationsCache;
+  if (base.length === 0) {
+    list.innerHTML = '<div class="empty-state">Aucune notification dans cet onglet.</div>';
+    return;
+  }
+  const importantes = base.filter((n) => n.urgent);
+  const normales = base.filter((n) => !n.urgent);
+  list.innerHTML = `
+    ${importantes.length ? `<div class="notif-group"><p class="notif-group-title">Important</p>${importantes.map(notificationRowHtml).join("")}</div>` : ""}
+    ${normales.length ? `<div class="notif-group"><p class="notif-group-title">À faire</p>${normales.map(notificationRowHtml).join("")}</div>` : ""}
+  `;
 }
 
 function notificationRowHtml(n) {
@@ -1738,7 +1789,17 @@ function setupSiteMedia() {
   });
 }
 
+let currentNotificationsFilter = "toutes"; // toutes | non-lues | importantes
+
 function setupNotificationsView() {
+  document.getElementById("notifications-filters").addEventListener("click", (e) => {
+    const chip = e.target.closest(".filter-chip");
+    if (!chip) return;
+    document.querySelectorAll("#notifications-filters .filter-chip").forEach((c) => c.classList.remove("active"));
+    chip.classList.add("active");
+    currentNotificationsFilter = chip.dataset.mode;
+    renderNotificationsFiltered();
+  });
   document.getElementById("notifications-list").addEventListener("click", async (e) => {
     const btn = e.target.closest('[data-action="voir-notification"]');
     if (!btn) return;
