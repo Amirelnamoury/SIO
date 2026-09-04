@@ -602,6 +602,12 @@ input[readonly] { background: var(--sa-surface-2); }
 .kpi-card-sub.is-positive { color: var(--sa-success); }
 .kpi-card-sub.is-alert { color: var(--sa-danger); }
 .kpi-card-value.is-alert { color: var(--sa-danger); }
+/* Repartition de la valeur pipeline par maturite (voir prospectsKpiBandHtml) :
+   3 segments proportionnels a la valeur de chaque bloc de statuts. */
+.pipeline-value-bar { display: flex; height: 6px; border-radius: var(--sa-radius-full); overflow: hidden; margin-top: 10px; background: var(--sa-surface-3); }
+.pipeline-value-seg.is-tot { background: var(--sa-accent); }
+.pipeline-value-seg.is-qualif { background: var(--sa-success); }
+.pipeline-value-seg.is-avance { background: var(--sa-text-faint); }
 @media (max-width: 900px) { .kpi-band { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 520px) { .kpi-band { grid-template-columns: 1fr; } }
 

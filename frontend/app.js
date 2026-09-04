@@ -2439,6 +2439,26 @@ function prospectsKpiBandHtml(clients) {
   const enQualif = actifs.filter((c) => c.statut === "qualification").length;
   const visites = actifs.filter((c) => c.statut === "visite_prevue").length;
   const valeurPipeline = actifs.reduce((s, c) => s + (c.montant_estime || 0), 0);
+
+  // Repartition de la valeur pipeline par maturite (memes 7 statuts actifs
+  // que CLIENT_PIPELINE_ORDRE, regroupes en 3 blocs) : simple resomme de
+  // c.montant_estime deja utilise ci-dessus pour le total, aucune donnee
+  // supplementaire ni recalcul metier.
+  const sommeStatuts = (statuts) => actifs.filter((c) => statuts.includes(c.statut)).reduce((s, c) => s + (c.montant_estime || 0), 0);
+  const tot = ["nouveau", "contacte"];
+  const qualif = ["qualification", "visite_prevue"];
+  const avance = ["devis_a_faire", "devis_envoye", "negociation"];
+  const valeurTot = sommeStatuts(tot);
+  const valeurQualif = sommeStatuts(qualif);
+  const valeurAvance = sommeStatuts(avance);
+  const repartitionHtml = valeurPipeline
+    ? `<div class="pipeline-value-bar">
+        ${valeurTot ? `<div class="pipeline-value-seg is-tot" style="width:${(valeurTot / valeurPipeline) * 100}%;" title="Nouveau + Contacté : ${fmtEuro(valeurTot)}"></div>` : ""}
+        ${valeurQualif ? `<div class="pipeline-value-seg is-qualif" style="width:${(valeurQualif / valeurPipeline) * 100}%;" title="Qualification + Visite prévue : ${fmtEuro(valeurQualif)}"></div>` : ""}
+        ${valeurAvance ? `<div class="pipeline-value-seg is-avance" style="width:${(valeurAvance / valeurPipeline) * 100}%;" title="Devis à faire/envoyé + Négociation : ${fmtEuro(valeurAvance)}"></div>` : ""}
+      </div>`
+    : "";
+
   return `
   <div class="kpi-band">
     <div class="kpi-card">
@@ -2465,6 +2485,7 @@ function prospectsKpiBandHtml(clients) {
       <div class="kpi-card-label">Valeur pipeline</div>
       <div class="kpi-card-value">${fmtEuro(valeurPipeline)}</div>
       <div class="kpi-card-sub">Estimée, pipeline actif</div>
+      ${repartitionHtml}
     </div>
   </div>`;
 }
