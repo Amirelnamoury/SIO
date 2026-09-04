@@ -574,7 +574,11 @@ input[readonly] { background: var(--sa-surface-2); }
   cursor: pointer; box-shadow: var(--sa-shadow-xs);
 }
 .kanban-card:hover { border-color: var(--sa-border-strong); box-shadow: var(--sa-shadow-sm); }
-.kanban-card-title { font-weight: var(--sa-weight-semibold); font-size: var(--sa-text-sm); margin-bottom: 3px; color: var(--sa-text); }
+/* "Fort potentiel" (voir renderClientCard) : fond et bordure teintes
+   accent, comme la carte "Opportunite B" mise en avant sur la reference. */
+.kanban-card.is-fort-potentiel { background: var(--sa-accent-soft); border-color: var(--sa-border-strong); }
+.kanban-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 3px; }
+.kanban-card-title { font-weight: var(--sa-weight-semibold); font-size: var(--sa-text-sm); color: var(--sa-text); }
 .kanban-card-sub { font-size: var(--sa-text-xs); color: var(--sa-text-muted); line-height: 1.5; margin-bottom: 6px; }
 .kanban-card-field { font-size: var(--sa-text-xs); color: var(--sa-text); line-height: 1.6; }
 .kanban-card-field-label { color: var(--sa-text-faint); display: inline-block; min-width: 46px; }
@@ -625,6 +629,10 @@ input[readonly] { background: var(--sa-surface-2); }
 .pipeline-value-seg.is-tot { background: var(--sa-accent); }
 .pipeline-value-seg.is-qualif { background: var(--sa-success); }
 .pipeline-value-seg.is-avance { background: var(--sa-text-faint); }
+/* Prospects (5 KPI, voir 02-prospects) : les 5 tiennent sur une seule ligne
+   au lieu de retomber sur la grille generique a 4 colonnes. */
+.kpi-band-5col { grid-template-columns: repeat(5, 1fr); }
+@media (max-width: 1100px) { .kpi-band-5col { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 900px) { .kpi-band { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 520px) { .kpi-band { grid-template-columns: 1fr; } }
 
@@ -1017,7 +1025,7 @@ input[readonly] { background: var(--sa-surface-2); }
 /* =====================================================================
    CRM — annuaire clients : ligne dense, monogramme, pas de grosse carte.
    ===================================================================== */
-.crm-row { display: flex; align-items: center; gap: var(--sa-space-3); padding: 11px 4px; border-bottom: 1px solid var(--sa-border); }
+.crm-row { display: flex; align-items: center; gap: var(--sa-space-5); padding: 11px 4px; border-bottom: 1px solid var(--sa-border); }
 .list .crm-row:first-child { border-top: 1px solid var(--sa-border); }
 .crm-avatar {
   width: 32px; height: 32px; border-radius: 50%; background: var(--sa-surface-3); color: var(--sa-text-muted);
@@ -1027,14 +1035,16 @@ input[readonly] { background: var(--sa-surface-2); }
 .crm-main { min-width: 0; flex: 1.4; }
 .crm-name { font-weight: var(--sa-weight-semibold); font-size: var(--sa-text-sm); color: var(--sa-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .crm-contact { font-size: var(--sa-text-xs); color: var(--sa-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.crm-secondary { flex: 1; min-width: 0; display: none; }
-.crm-secondary-line { font-size: var(--sa-text-xs); color: var(--sa-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .crm-action { flex-shrink: 0; }
-.crm-stat { flex: 0.8; min-width: 0; text-align: right; display: none; }
-.crm-stat-label { font-size: var(--sa-text-2xs); color: var(--sa-text-faint); text-transform: uppercase; letter-spacing: 0.03em; }
-.crm-stat-value { font-size: var(--sa-text-xs); color: var(--sa-text); font-weight: var(--sa-weight-medium); white-space: nowrap; }
-@media (min-width: 720px) { .crm-secondary { display: block; } }
-@media (min-width: 980px) { .crm-stat { display: block; } }
+/* Chaque bloc "Derniere activite / Chantiers / CA genere" est separe par une
+   fine barre verticale (voir 03-clients), pas par un simple espace - un
+   border-left plutot qu'un caractere "|" pour un alignement pixel-parfait
+   quel que soit le contenu. Masques sous 980px (vue compacte) : seuls le
+   nom et le bouton restent garantis a toute largeur. */
+.crm-stat { flex: 0 0 auto; min-width: 0; padding-left: var(--sa-space-5); border-left: 1px solid var(--sa-border); display: none; }
+.crm-stat-label { font-size: var(--sa-text-2xs); color: var(--sa-text-faint); white-space: nowrap; }
+.crm-stat-value { font-size: var(--sa-text-xs); color: var(--sa-text); font-weight: var(--sa-weight-medium); white-space: nowrap; margin-top: 2px; }
+@media (min-width: 980px) { .crm-stat { display: block; } .crm-main { flex: 1; } }
 
 /* ---------- Formulaires inline ---------- */
 .form-box { background: var(--sa-surface); border: 1px solid var(--sa-border); border-radius: var(--sa-radius-lg); padding: var(--sa-space-6); margin-bottom: var(--sa-space-5); }

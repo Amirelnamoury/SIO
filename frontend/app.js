@@ -32,6 +32,10 @@ function fmtDateTime(iso) {
   if (!iso) return "-";
   return new Date(iso).toLocaleString("fr-FR");
 }
+function fmtDateCourte(iso) {
+  if (!iso) return "-";
+  return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+}
 function fmtEuro(n) {
   if (n === null || n === undefined) return null;
   return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(n);
@@ -2493,7 +2497,7 @@ function prospectsKpiBandHtml(clients) {
     : "";
 
   return `
-  <div class="kpi-band">
+  <div class="kpi-band kpi-band-5col">
     <div class="kpi-card">
       <div class="kpi-card-label">Total prospects</div>
       <div class="kpi-card-value">${actifs.length}</div>
@@ -2586,9 +2590,27 @@ function renderClientCard(c) {
     : "Inconnue";
   const actionTxt = c.prochaine_action || "Aucune action prévue";
 
+  // Indication ponctuelle (voir 02-prospects) : "Fort potentiel" (accent)
+  // quand la probabilite deja saisie est elevee, "Visite prevue" (vert)
+  // pour l'etape du meme nom, "A contacter" (accent) pour un prospect tout
+  // juste arrive - memes champs deja lus ci-dessus (c.probabilite,
+  // c.statut), aucune nouvelle donnee. Une seule indication a la fois,
+  // la plus specifique en priorite.
+  let badge = null;
+  if (c.probabilite !== null && c.probabilite !== undefined && c.probabilite >= 70) {
+    badge = { label: "Fort potentiel", cls: "pill-accent" };
+  } else if (c.statut === "visite_prevue") {
+    badge = { label: "Visite prévue", cls: "pill-green" };
+  } else if (c.statut === "nouveau") {
+    badge = { label: "À contacter", cls: "pill-accent" };
+  }
+
   return `
-  <div class="kanban-card" data-action="voir-timeline" data-id="${c.id}">
-    <div class="kanban-card-title">${escapeHtml(c.nom)}</div>
+  <div class="kanban-card${badge && badge.label === "Fort potentiel" ? " is-fort-potentiel" : ""}" data-action="voir-timeline" data-id="${c.id}">
+    <div class="kanban-card-top">
+      <div class="kanban-card-title">${escapeHtml(c.nom)}</div>
+      ${badge ? `<span class="pill ${badge.cls}">${badge.label}</span>` : ""}
+    </div>
     <div class="kanban-card-sub">${contact || "Pas de coordonnees"}${c.societe ? " · " + escapeHtml(c.societe) : ""}</div>
     <div class="kanban-card-field"><span class="kanban-card-field-label">Source</span>${escapeHtml(sourceTxt)}</div>
     <div class="kanban-card-field"><span class="kanban-card-field-label">Valeur</span>${escapeHtml(valeurTxt)}</div>
@@ -3011,10 +3033,11 @@ async function loadClientsDirectory() {
   const kpiBand = document.getElementById("clients-kpi-band");
   container.innerHTML = skeletonCards();
   try {
-    const [clients, chantiers, factures] = await Promise.all([
+    const [clients, chantiers, factures, devis] = await Promise.all([
       Api.listClients("gagne"),
       Api.listChantiers().catch(() => []),
       Api.listFactures().catch(() => []),
+      Api.listDevis().catch(() => []),
     ]);
     if (clients.length === 0) {
       kpiBand.innerHTML = "";
@@ -3025,20 +3048,41 @@ async function loadClientsDirectory() {
       return;
     }
     kpiBand.innerHTML = clientsKpiBandHtml(clients, chantiers);
-    container.innerHTML = clients.map((c) => renderClientDirectoryRow(c, chantiers, factures)).join("");
+    container.innerHTML = clients.map((c) => renderClientDirectoryRow(c, chantiers, factures, devis)).join("");
   } catch (err) {
     container.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
   }
 }
 
-// chantiers/factures : memes listes completes deja recuperees pour la bande
-// de KPI (voir clientsKpiBandHtml), simplement rejointes par client_id ici
-// pour les deux colonnes "Chantiers" et "CA genere" - aucun nouvel appel,
-// aucune donnee inventee (FactureOut.client_id et .montant_paye existent
-// deja cote API, voir backend/app/schemas.py).
-function renderClientDirectoryRow(c, chantiers, factures) {
-  const contact = [c.telephone, c.email].filter(Boolean).join(" · ");
-  const secondaire = [c.societe, c.ville].filter(Boolean).join(" · ");
+// "Derniere activite" : le plus recent des evenements commerciaux DEJA
+// dates que l'on connait pour ce client (devis envoye/signe, facture
+// envoyee/payee) - aucune donnee inventee ni nouvel endpoint ; juste le
+// max() des dates deja presentes sur les devis/factures de ce client parmi
+// les listes recues ci-dessus. Rien si le client n'a encore aucun de ces
+// evenements (ex. gagne hier, aucun devis/facture cree depuis).
+function dernierActiviteClient(clientId, devisListe, facturesListe) {
+  const candidats = [];
+  devisListe.filter((d) => d.client_id === clientId).forEach((d) => {
+    if (d.date_signature) candidats.push({ date: d.date_signature, label: "Devis accepté" });
+    else if (d.date_envoi) candidats.push({ date: d.date_envoi, label: "Devis envoyé" });
+  });
+  facturesListe.filter((f) => f.client_id === clientId).forEach((f) => {
+    if (f.statut === "payee" && f.date_envoi) candidats.push({ date: f.date_envoi, label: "Facture payée" });
+    else if (f.date_envoi) candidats.push({ date: f.date_envoi, label: "Facture envoyée" });
+  });
+  if (!candidats.length) return null;
+  candidats.sort((a, b) => new Date(b.date) - new Date(a.date));
+  return { label: candidats[0].label, date: fmtDateCourte(candidats[0].date) };
+}
+
+// chantiers/factures/devis : memes listes completes deja recuperees pour la
+// bande de KPI ou juste au-dessus (voir clientsKpiBandHtml et
+// dernierActiviteClient), simplement rejointes par client_id ici - aucun
+// nouvel appel au-dela de celui deja ajoute, aucune donnee inventee
+// (FactureOut.client_id/.montant_paye et DevisOut.client_id existent deja
+// cote API, voir backend/app/schemas.py).
+function renderClientDirectoryRow(c, chantiers, factures, devis) {
+  const contact = [c.email, c.telephone].filter(Boolean).join(" · ");
   const chantiersClient = chantiers.filter((ch) => ch.client_id === c.id);
   const enCours = chantiersClient.filter((ch) => !["termine", "facture", "paye"].includes(ch.statut)).length;
   const termines = chantiersClient.filter((ch) => ["termine", "facture", "paye"].includes(ch.statut)).length;
@@ -3046,6 +3090,7 @@ function renderClientDirectoryRow(c, chantiers, factures) {
     ? [enCours ? `${enCours} en cours` : null, termines ? `${termines} terminé${termines > 1 ? "s" : ""}` : null].filter(Boolean).join(" · ")
     : "Aucun";
   const caGenere = factures.filter((f) => f.client_id === c.id).reduce((s, f) => s + (f.montant_paye || 0), 0);
+  const activite = dernierActiviteClient(c.id, devis, factures);
   return `
   <div class="crm-row" data-action="voir-timeline" data-id="${c.id}" role="button" tabindex="0">
     <div class="crm-avatar">${escapeHtml(monogram(c.nom))}</div>
@@ -3053,9 +3098,9 @@ function renderClientDirectoryRow(c, chantiers, factures) {
       <div class="crm-name">${escapeHtml(c.nom)}</div>
       <div class="crm-contact">${escapeHtml(contact || "Pas de coordonnées")}</div>
     </div>
-    <div class="crm-secondary">
-      <div class="crm-secondary-line">${secondaire ? escapeHtml(secondaire) : "—"}</div>
-      ${c.prochaine_action ? `<div class="crm-secondary-line crm-next-action">→ ${escapeHtml(c.prochaine_action)}</div>` : ""}
+    <div class="crm-stat">
+      <div class="crm-stat-label">Dernière activité</div>
+      <div class="crm-stat-value">${activite ? `${escapeHtml(activite.label)} · ${escapeHtml(activite.date)}` : "—"}</div>
     </div>
     <div class="crm-stat">
       <div class="crm-stat-label">Chantiers</div>
@@ -3066,7 +3111,7 @@ function renderClientDirectoryRow(c, chantiers, factures) {
       <div class="crm-stat-value">${caGenere > 0 ? fmtEuro(caGenere) : "—"}</div>
     </div>
     <div class="crm-action">
-      <button type="button" class="btn-sm" data-action="voir-timeline" data-id="${c.id}">Voir l'historique</button>
+      <button type="button" class="btn-sm" data-action="voir-timeline" data-id="${c.id}">Voir le client</button>
     </div>
   </div>`;
 }
@@ -6225,7 +6270,8 @@ function setupListeSearch(inputId, itemSelector) {
 }
 
 function setupListesSearch() {
-  setupListeSearch("prospects-search", "#clients-kanban .kanban-card");
+  // Pas de recherche sur Prospects : la reference (02-prospects) n'en montre
+  // pas sur cette vue, et l'utilisateur a explicitement demande son retrait.
   setupListeSearch("clients-search", "#clients-directory .crm-row");
   setupListeSearch("devis-search", "#devis-list .list-row");
   setupListeSearch("factures-search", "#factures-list .list-row");
