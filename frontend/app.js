@@ -3089,6 +3089,28 @@ function devisTabCountsHtml(tousDevis) {
   };
 }
 
+// Dernier lot recu pour le statut actif (currentDevisFilter), pour pouvoir
+// re-trier sans refaire l'appel serveur a chaque changement de tri.
+let devisListCache = [];
+let currentDevisSort = "date_desc";
+
+function devisSort(devis) {
+  const d = devis.slice();
+  if (currentDevisSort === "montant_desc") return d.sort((a, b) => (b.montant_ttc || 0) - (a.montant_ttc || 0));
+  if (currentDevisSort === "client_asc") return d.sort((a, b) => a.client_nom.localeCompare(b.client_nom, "fr"));
+  return d.sort((a, b) => b.created_at.localeCompare(a.created_at)); // date_desc, par defaut
+}
+
+function renderDevisListFiltered() {
+  const list = document.getElementById("devis-list");
+  if (devisListCache.length === 0) {
+    list.innerHTML = '<div class="empty-state">Aucun devis pour le moment.</div>';
+    return;
+  }
+  list.innerHTML = devisSort(devisListCache).map(renderDevisCard).join("");
+  reapplyListSearch("devis-search", "#devis-list .list-row");
+}
+
 async function loadDevis() {
   const kpiBand = document.getElementById("devis-kpi-band");
   const list = document.getElementById("devis-list");
@@ -3108,11 +3130,8 @@ async function loadDevis() {
     setCount("envoye", counts.envoye);
     setCount("signe", counts.signe);
     setCount("perdu", counts.perdu);
-    if (devis.length === 0) {
-      list.innerHTML = '<div class="empty-state">Aucun devis pour le moment.</div>';
-      return;
-    }
-    list.innerHTML = devis.map(renderDevisCard).join("");
+    devisListCache = devis;
+    renderDevisListFiltered();
   } catch (err) {
     list.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
   }
@@ -3463,6 +3482,11 @@ function setupDevisView() {
     loadDevis();
   });
 
+  document.getElementById("devis-sort").addEventListener("change", (e) => {
+    currentDevisSort = e.target.value;
+    renderDevisListFiltered();
+  });
+
   document.getElementById("devis-list").addEventListener("click", async (e) => {
     const btn = e.target.closest("[data-action]");
     if (!btn) return;
@@ -3604,6 +3628,37 @@ function tresorerieHeaderHtml(factures) {
   </div>`;
 }
 
+let facturesCache = [];
+let currentFactureSort = ""; // "" = respecte l'ordre deja produit par le filtre actif (ex: echeance pour "a_encaisser")
+
+function factureSort(factures) {
+  if (!currentFactureSort) return factures;
+  const f = factures.slice();
+  if (currentFactureSort === "montant_desc") return f.sort((a, b) => (b.montant_ttc || 0) - (a.montant_ttc || 0));
+  if (currentFactureSort === "echeance_asc") return f.sort((a, b) => (a.date_echeance || "9999-99-99").localeCompare(b.date_echeance || "9999-99-99"));
+  if (currentFactureSort === "client_asc") return f.sort((a, b) => a.client_nom.localeCompare(b.client_nom, "fr"));
+  return f;
+}
+
+function renderFacturesListFiltered() {
+  const list = document.getElementById("factures-list");
+  let affichees = facturesCache;
+  if (currentFactureFilter === "a_encaisser") {
+    affichees = facturesCache
+      .filter((f) => f.montant_restant > 0 && !["brouillon", "annulee"].includes(f.statut))
+      .sort((a, b) => (a.date_echeance || "9999-99-99").localeCompare(b.date_echeance || "9999-99-99"));
+  } else if (currentFactureFilter) {
+    affichees = facturesCache.filter((f) => f.statut === currentFactureFilter);
+  }
+  affichees = factureSort(affichees);
+  if (affichees.length === 0) {
+    list.innerHTML = '<div class="empty-state">Aucune facture pour le moment. Convertissez un devis signé, ou créez-en une directement.</div>';
+    return;
+  }
+  list.innerHTML = affichees.map(renderFactureCard).join("");
+  reapplyListSearch("factures-search", "#factures-list .list-row");
+}
+
 async function loadFactures() {
   const list = document.getElementById("factures-list");
   const tresorerie = document.getElementById("factures-tresorerie");
@@ -3626,22 +3681,9 @@ async function loadFactures() {
   try {
     const [factures, aRelancer] = await Promise.all([Api.listFactures(), Api.facturesARelancer()]);
     facturesDueIds = new Set(aRelancer.map((f) => f.id));
+    facturesCache = factures;
     tresorerie.innerHTML = tresorerieHeaderHtml(factures);
-
-    let affichees = factures;
-    if (currentFactureFilter === "a_encaisser") {
-      affichees = factures
-        .filter((f) => f.montant_restant > 0 && !["brouillon", "annulee"].includes(f.statut))
-        .sort((a, b) => (a.date_echeance || "9999-99-99").localeCompare(b.date_echeance || "9999-99-99"));
-    } else if (currentFactureFilter) {
-      affichees = factures.filter((f) => f.statut === currentFactureFilter);
-    }
-
-    if (affichees.length === 0) {
-      list.innerHTML = '<div class="empty-state">Aucune facture pour le moment. Convertissez un devis signé, ou créez-en une directement.</div>';
-      return;
-    }
-    list.innerHTML = affichees.map(renderFactureCard).join("");
+    renderFacturesListFiltered();
   } catch (err) {
     list.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
   }
@@ -3886,7 +3928,12 @@ function setupFacturesView() {
     document.querySelectorAll("#facture-filters .filter-chip").forEach((c) => c.classList.remove("active"));
     chip.classList.add("active");
     currentFactureFilter = chip.dataset.statut;
-    loadFactures();
+    renderFacturesListFiltered();
+  });
+
+  document.getElementById("factures-sort").addEventListener("change", (e) => {
+    currentFactureSort = e.target.value;
+    renderFacturesListFiltered();
   });
 
   document.querySelector('[data-action="show-facture-form"]').addEventListener("click", showFactureForm);
@@ -4234,15 +4281,30 @@ function chantierMatchesFilter(c, filtre) {
   return true;
 }
 
+let currentChantierSort = "date_debut_desc";
+
+// Tri purement client sur des champs deja recus (c.date_debut, c.budget,
+// c.titre) - aucune donnee nouvelle, juste un reordonnancement de
+// chantiersCache avant le rendu. .slice() : ne jamais trier le tableau
+// source en place (chantiersKpiBandHtml et le compteur par onglet lisent
+// le meme chantiersCache juste avant).
+function chantierSort(chantiers) {
+  const c = chantiers.slice();
+  if (currentChantierSort === "budget_desc") return c.sort((a, b) => (b.budget || 0) - (a.budget || 0));
+  if (currentChantierSort === "titre_asc") return c.sort((a, b) => a.titre.localeCompare(b.titre, "fr"));
+  return c.sort((a, b) => (b.date_debut || "").localeCompare(a.date_debut || "")); // date_debut_desc, par defaut
+}
+
 function renderChantiersListFiltered() {
   const list = document.getElementById("chantiers-list");
   ["", "a_preparer", "en_cours", "a_surveiller", "termine"].forEach((f) => {
     const el = document.querySelector(`#chantier-filters [data-statut="${f}"] .filter-chip-count`);
     if (el) el.textContent = `(${chantiersCache.filter((c) => chantierMatchesFilter(c, f)).length})`;
   });
-  const filtres = chantiersCache.filter((c) => chantierMatchesFilter(c, currentChantierFilter));
+  const filtres = chantierSort(chantiersCache.filter((c) => chantierMatchesFilter(c, currentChantierFilter)));
   list.innerHTML = filtres.length ? filtres.map(renderChantierCard).join("") : '<div class="empty-state">Aucun chantier dans cet onglet.</div>';
   focusChantierCard();
+  reapplyListSearch("chantiers-search", "#chantiers-list .chantier-card");
 }
 
 async function loadChantiers() {
@@ -4659,6 +4721,11 @@ function setupChantiersView() {
     document.querySelectorAll("#chantier-filters .filter-chip").forEach((c) => c.classList.remove("active"));
     chip.classList.add("active");
     currentChantierFilter = chip.dataset.statut;
+    renderChantiersListFiltered();
+  });
+
+  document.getElementById("chantiers-sort").addEventListener("change", (e) => {
+    currentChantierSort = e.target.value;
     renderChantiersListFiltered();
   });
 
@@ -5177,6 +5244,26 @@ function fmtTaille(octets) {
   return `${(octets / (1024 * 1024)).toFixed(1)} Mo`;
 }
 
+let documentsCache = [];
+let currentDocumentSort = "date_desc";
+
+function documentSort(documents) {
+  const d = documents.slice();
+  if (currentDocumentSort === "nom_asc") return d.sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
+  return d.sort((a, b) => b.created_at.localeCompare(a.created_at)); // date_desc, par defaut
+}
+
+function renderDocumentsListFiltered() {
+  const list = document.getElementById("documents-list");
+  const affichees = documentSort(currentDocumentFilter ? documentsCache.filter((d) => d.type === currentDocumentFilter) : documentsCache);
+  if (affichees.length === 0) {
+    list.innerHTML = '<div class="empty-state">Aucun document dans cet onglet.</div>';
+    return;
+  }
+  list.innerHTML = affichees.map(renderDocumentCard).join("");
+  reapplyListSearch("documents-search", "#documents-list .doc-row");
+}
+
 async function loadDocuments() {
   const list = document.getElementById("documents-list");
   const compteur = document.getElementById("documents-compteur");
@@ -5191,6 +5278,7 @@ async function loadDocuments() {
       ensureClientsCache(),
       Api.listConformite().catch(() => []),
     ]);
+    documentsCache = documents;
     const echeances = conformite.filter((c) => c.alerte).length;
     if (compteur) {
       compteur.innerHTML = documents.length
@@ -5199,12 +5287,11 @@ async function loadDocuments() {
           }`
         : "";
     }
-    const affichees = currentDocumentFilter ? documents.filter((d) => d.type === currentDocumentFilter) : documents;
-    if (affichees.length === 0) {
+    if (documents.length === 0) {
       list.innerHTML = '<div class="empty-state">Aucun document pour le moment. Ajoutez vos contrats, attestations d\'assurance, plans ou photos de chantier.</div>';
       return;
     }
-    list.innerHTML = affichees.map(renderDocumentCard).join("");
+    renderDocumentsListFiltered();
   } catch (err) {
     list.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
   }
@@ -5320,7 +5407,12 @@ function setupDocumentsView() {
     document.querySelectorAll("#document-filters .filter-chip").forEach((c) => c.classList.remove("active"));
     chip.classList.add("active");
     currentDocumentFilter = chip.dataset.type;
-    loadDocuments();
+    renderDocumentsListFiltered();
+  });
+
+  document.getElementById("documents-sort").addEventListener("change", (e) => {
+    currentDocumentSort = e.target.value;
+    renderDocumentsListFiltered();
   });
 
   document.getElementById("documents-list").addEventListener("click", async (e) => {
@@ -6059,15 +6151,23 @@ function setupConformiteView() {
 // toujours prefixe par l'id du conteneur de LA page consultee, pour ne
 // jamais affecter les elements (memes classes) d'une autre page encore
 // presente, cachee, dans le DOM.
+// Reapplicable (pas seulement branchee sur "input") : un tri ou un filtre
+// par onglet regenere le HTML de la liste et doit donc reappliquer la
+// recherche en cours par-dessus, sinon un texte deja tape serait ignore au
+// rendu suivant.
+function reapplyListSearch(inputId, itemSelector) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const q = input.value.trim().toLowerCase();
+  document.querySelectorAll(itemSelector).forEach((el) => {
+    el.hidden = !!q && !el.textContent.toLowerCase().includes(q);
+  });
+}
+
 function setupListeSearch(inputId, itemSelector) {
   const input = document.getElementById(inputId);
   if (!input) return;
-  input.addEventListener("input", () => {
-    const q = input.value.trim().toLowerCase();
-    document.querySelectorAll(itemSelector).forEach((el) => {
-      el.hidden = !!q && !el.textContent.toLowerCase().includes(q);
-    });
-  });
+  input.addEventListener("input", () => reapplyListSearch(inputId, itemSelector));
 }
 
 function setupListesSearch() {

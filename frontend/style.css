@@ -534,9 +534,15 @@ input[readonly] { background: var(--sa-surface-2); }
    Documents/Avis/Notifications) ---------- */
 /* Filtre purement visuel sur le texte deja affiche (voir setupListeSearch
    dans app.js) : aucun nouvel appel, aucune donnee recalculee. */
-.list-search { position: relative; margin-bottom: var(--sa-space-5); max-width: 420px; }
+.list-search { position: relative; max-width: 420px; flex: 1 1 260px; margin-bottom: var(--sa-space-5); }
 .list-search input { width: 100%; padding: 9px 12px 9px 34px; }
 .list-search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--sa-text-faint); pointer-events: none; }
+/* Pages avec un tri (Devis/Factures/Chantiers/Documents) : recherche et
+   tri sur la meme ligne. La marge basse de .list-search suffit a espacer
+   tout le groupe de ce qui suit, pas besoin d'une marge dupliquee ici. */
+.list-toolbar { display: flex; gap: var(--sa-space-3); align-items: center; flex-wrap: wrap; }
+.list-toolbar .list-search { margin-bottom: 0; }
+.list-toolbar select { flex: 0 0 auto; min-width: 150px; padding: 9px 10px; margin-bottom: var(--sa-space-5); }
 
 /* ---------- Kanban (pipeline prospects) ---------- */
 .kanban { display: flex; gap: var(--sa-space-6); overflow-x: auto; padding-bottom: var(--sa-space-3); align-items: flex-start; scroll-snap-type: x proximity; }
