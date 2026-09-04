@@ -633,6 +633,9 @@ input[readonly] { background: var(--sa-surface-2); }
    au lieu de retomber sur la grille generique a 4 colonnes. */
 .kpi-band-5col { grid-template-columns: repeat(5, 1fr); }
 @media (max-width: 1100px) { .kpi-band-5col { grid-template-columns: repeat(3, 1fr); } }
+/* Factures (3 KPI, voir 05-factures) : occupent toute la largeur au lieu de
+   3 cartes sur une grille a 4 colonnes qui laisse un 4e espace vide. */
+.kpi-band-3col { grid-template-columns: repeat(3, 1fr); }
 @media (max-width: 900px) { .kpi-band { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 520px) { .kpi-band { grid-template-columns: 1fr; } }
 
@@ -1007,7 +1010,16 @@ input[readonly] { background: var(--sa-surface-2); }
   #devis-list .list-row:last-child, #factures-list .list-row:last-child { border-bottom: none; }
 
   .list-row-devis, .list-header-row-devis { grid-template-columns: minmax(0, 1.5fr) 110px 100px minmax(0, 1fr) 110px auto auto; }
+  /* Client | Facture ID | Statut | Montant | Paiement | Echeance | action | menu */
+  .list-row-facture, .list-header-row-facture { grid-template-columns: minmax(0, 1.3fr) 110px 130px 100px minmax(0, 1fr) 120px auto auto; }
 }
+.list-row-paiement { font-size: var(--sa-text-xs); color: var(--sa-text-muted); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list-row-echeance { font-size: var(--sa-text-xs); color: var(--sa-text-muted); white-space: nowrap; }
+.list-row-echeance.is-alert { color: var(--sa-danger); font-weight: var(--sa-weight-medium); }
+/* Barre de recherche compacte (Factures, voir 05-factures) : plus etroite
+   que la barre par defaut, pour laisser la place aux 4 filtres a cote sur
+   la meme ligne sans que la recherche ne domine visuellement. */
+.list-search-compact { max-width: 220px; }
 @media (max-width: 999px) {
   .list-row {
     grid-template-columns: 1fr auto;
@@ -1019,12 +1031,17 @@ input[readonly] { background: var(--sa-surface-2); }
   .list-row-status { grid-area: status; display: flex; align-items: center; }
   .list-row-amount { grid-area: amount; }
   .list-row-context { grid-area: context; white-space: normal; }
-  /* Vue compacte (<1000px) : "Suivi" reprend la meme case que l'ancienne
-     colonne "Details" (meme role, une seule ligne de contexte), "Devis N°"
-     reste visible uniquement dans le tableau desktop pour ne pas surcharger
-     une carte deja dense - toujours consultable en ouvrant le devis. */
-  .list-row-suivi { grid-area: context; white-space: normal; }
+  /* Vue compacte (<1000px) : "Suivi"/"Paiement" reprennent la meme case que
+     l'ancienne colonne "Details" (meme role, une ligne de contexte),
+     "Devis N°" reste visible uniquement dans le tableau desktop pour ne pas
+     surcharger une carte deja dense - toujours consultable en ouvrant la
+     ligne. "Echeance" garde sa propre ligne (Factures), assez importante
+     pour rester visible partout.
+  */
+  .list-row-suivi, .list-row-paiement { grid-area: context; white-space: normal; }
   .list-row-numero { display: none; }
+  .list-row-facture { grid-template-areas: "primary menu" "status amount" "context context" "echeance echeance" "action action"; }
+  .list-row-echeance { grid-area: echeance; }
   .list-row-primary-action { grid-area: action; justify-content: flex-start; }
   .list-row-primary-action .btn-sm { width: 100%; }
 }

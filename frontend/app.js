@@ -3731,7 +3731,7 @@ function tresorerieHeaderHtml(factures) {
   const facturesEnRetard = enCours.filter((f) => f.est_en_retard);
   const enRetard = facturesEnRetard.reduce((s, f) => s + f.montant_restant, 0);
   return `
-  <div class="kpi-band">
+  <div class="kpi-band kpi-band-3col">
     <div class="kpi-card">
       <div class="kpi-card-label">À encaisser</div>
       <div class="kpi-card-value">${fmtEuro(aEncaisser)}</div>
@@ -3752,6 +3752,12 @@ function tresorerieHeaderHtml(factures) {
 
 let facturesCache = [];
 let currentFactureSort = ""; // "" = respecte l'ordre deja produit par le filtre actif (ex: echeance pour "a_encaisser")
+// Filtres additionnels (voir 05-factures) au-dela de l'onglet/menu Statut
+// deja synchronises par activerFactureFiltreStatut() : Paiement et
+// Echeance, tous deux calcules sur des champs deja recus
+// (montant_paye/montant_restant/date_echeance/est_en_retard).
+let currentFacturePaiementFiltre = "";
+let currentFactureEcheanceFiltre = "";
 
 function factureSort(factures) {
   if (!currentFactureSort) return factures;
@@ -3760,6 +3766,20 @@ function factureSort(factures) {
   if (currentFactureSort === "echeance_asc") return f.sort((a, b) => (a.date_echeance || "9999-99-99").localeCompare(b.date_echeance || "9999-99-99"));
   if (currentFactureSort === "client_asc") return f.sort((a, b) => a.client_nom.localeCompare(b.client_nom, "fr"));
   return f;
+}
+
+function factureMatchesFiltresSupp(f) {
+  if (currentFacturePaiementFiltre === "paye" && !(f.montant_restant <= 0 && f.montant_paye > 0)) return false;
+  if (currentFacturePaiementFiltre === "partiel" && !(f.montant_paye > 0 && f.montant_restant > 0)) return false;
+  if (currentFacturePaiementFiltre === "non_paye" && f.montant_paye > 0) return false;
+  if (currentFactureEcheanceFiltre) {
+    if (!f.date_echeance) return false;
+    const jours = Math.round((new Date(f.date_echeance) - new Date()) / 86400000);
+    if (currentFactureEcheanceFiltre === "retard" && !f.est_en_retard) return false;
+    if (currentFactureEcheanceFiltre === "semaine" && !(jours >= 0 && jours <= 7)) return false;
+    if (currentFactureEcheanceFiltre === "mois" && !(jours >= 0 && jours <= 31)) return false;
+  }
+  return true;
 }
 
 function renderFacturesListFiltered() {
@@ -3772,9 +3792,10 @@ function renderFacturesListFiltered() {
   } else if (currentFactureFilter) {
     affichees = facturesCache.filter((f) => f.statut === currentFactureFilter);
   }
-  affichees = factureSort(affichees);
+  affichees = factureSort(affichees.filter(factureMatchesFiltresSupp));
   if (affichees.length === 0) {
-    list.innerHTML = '<div class="empty-state">Aucune facture pour le moment. Convertissez un devis signé, ou créez-en une directement.</div>';
+    list.innerHTML = '<div class="empty-state">Aucune facture dans ce filtre.</div>';
+    reapplyListSearch("factures-search", "#factures-list .list-row");
     return;
   }
   list.innerHTML = affichees.map(renderFactureCard).join("");
@@ -3879,13 +3900,16 @@ function renderFactureCard(f) {
   const montantCle = f.montant_restant > 0 ? fmtEuro(f.montant_restant) : fmtEuro(f.montant_ttc);
   const montantCleLabel = f.montant_restant > 0 ? "restant" : "soldée";
 
-  // Le retard prime sur l'echeance quand les deux sont vraies : c'est
-  // l'info la plus actionnable, et la ligne est deja signalee par l'accent
-  // rouge sur le bord gauche - pas besoin des deux dates dans une colonne
-  // etroite.
-  const contextTxt = retard !== null
+  // Colonnes "Paiement" et "Echeance" (voir 05-factures) : deux colonnes
+  // reelles distinctes, au lieu d'un seul texte de contexte combine comme
+  // avant - memes champs deja recus (f.montant_paye/.montant_restant/
+  // .date_echeance), aucune donnee nouvelle.
+  const paiementTxt = f.montant_paye > 0
+    ? `${fmtEuro(f.montant_paye)} payé${f.montant_restant > 0 ? `, ${fmtEuro(f.montant_restant)} restant` : ""}`
+    : "—";
+  const echeanceTxt = retard !== null
     ? `${retard} j de retard`
-    : (f.date_echeance ? "Éch. " + fmtDate(f.date_echeance) : "");
+    : (f.date_echeance ? "Éch. " + fmtDate(f.date_echeance) : "—");
 
   // Historique (paiements, relances) : releve seulement quand il y a
   // effectivement quelque chose a dire, sous la ligne plutot que dans une
@@ -3901,14 +3925,16 @@ function renderFactureCard(f) {
   }
 
   return `
-  <div class="list-row ${f.est_en_retard ? "is-due" : ""}">
+  <div class="list-row list-row-facture ${f.est_en_retard ? "is-due" : ""}">
     <div class="list-row-primary">
-      <div class="list-row-title">${escapeHtml(f.client_nom)} &mdash; ${escapeHtml(f.numero)}</div>
-      <div class="list-row-sub">${FACTURE_TYPE_LABELS[f.type] || f.type} · Payé ${fmtEuro(f.montant_paye)}</div>
+      <div class="list-row-title">${escapeHtml(f.client_nom)}</div>
+      <div class="list-row-sub">${FACTURE_TYPE_LABELS[f.type] || f.type}</div>
     </div>
+    <div class="list-row-numero">${escapeHtml(f.numero)}</div>
     <div class="list-row-status"><span class="badge ${meta.badge}">${meta.label}</span></div>
     <div class="list-row-amount">${montantCle}<span class="list-row-amount-sub">${montantCleLabel}</span></div>
-    <div class="list-row-context" title="${escapeHtml(contextTxt)}">${escapeHtml(contextTxt)}</div>
+    <div class="list-row-paiement">${escapeHtml(paiementTxt)}</div>
+    <div class="list-row-echeance${retard !== null ? " is-alert" : ""}">${escapeHtml(echeanceTxt)}</div>
     <div class="list-row-primary-action">${primaireHtml}</div>
     <div class="list-row-menu">
       <div class="action-menu">
@@ -4043,13 +4069,33 @@ function showFactureForm() {
   });
 }
 
+// Partagee entre les onglets (#facture-filters) et le menu deroulant
+// "Statut" (voir 05-factures, qui montre les deux a la fois) : une seule
+// source de verite (currentFactureFilter), les deux controles restent donc
+// toujours synchronises plutot que de filtrer chacun dans son coin.
+function activerFactureFiltreStatut(statut) {
+  currentFactureFilter = statut;
+  document.querySelectorAll("#facture-filters .filter-chip").forEach((c) => c.classList.toggle("active", c.dataset.statut === statut));
+  const select = document.getElementById("factures-statut-filtre");
+  if (select) select.value = statut;
+  renderFacturesListFiltered();
+}
+
 function setupFacturesView() {
   document.getElementById("facture-filters").addEventListener("click", (e) => {
     const chip = e.target.closest(".filter-chip");
     if (!chip) return;
-    document.querySelectorAll("#facture-filters .filter-chip").forEach((c) => c.classList.remove("active"));
-    chip.classList.add("active");
-    currentFactureFilter = chip.dataset.statut;
+    activerFactureFiltreStatut(chip.dataset.statut);
+  });
+  document.getElementById("factures-statut-filtre").addEventListener("change", (e) => {
+    activerFactureFiltreStatut(e.target.value);
+  });
+  document.getElementById("factures-paiement-filtre").addEventListener("change", (e) => {
+    currentFacturePaiementFiltre = e.target.value;
+    renderFacturesListFiltered();
+  });
+  document.getElementById("factures-echeance-filtre").addEventListener("change", (e) => {
+    currentFactureEcheanceFiltre = e.target.value;
     renderFacturesListFiltered();
   });
 

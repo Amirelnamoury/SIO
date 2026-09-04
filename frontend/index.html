@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260904-reference23">
+<link rel="stylesheet" href="style.css?v=20260904-reference24">
 </head>
 <body>
 
@@ -442,10 +442,31 @@
       </div>
 
       <div class="list-toolbar">
-        <div class="list-search">
+        <div class="list-search list-search-compact">
           <svg viewBox="0 0 24 24" class="nav-icon list-search-icon"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-          <input type="text" id="factures-search" placeholder="Rechercher un client, une facture...">
+          <input type="text" id="factures-search" placeholder="Rechercher...">
         </div>
+        <select id="factures-statut-filtre" aria-label="Filtrer par statut">
+          <option value="">Statut</option>
+          <option value="a_encaisser">À encaisser</option>
+          <option value="brouillon">Brouillon</option>
+          <option value="envoyee">Envoyée</option>
+          <option value="partiellement_payee">Partiellement payée</option>
+          <option value="payee">Payée</option>
+          <option value="en_retard">En retard</option>
+        </select>
+        <select id="factures-paiement-filtre" aria-label="Filtrer par paiement">
+          <option value="">Paiement</option>
+          <option value="paye">Payée intégralement</option>
+          <option value="partiel">Partiellement payée</option>
+          <option value="non_paye">Non payée</option>
+        </select>
+        <select id="factures-echeance-filtre" aria-label="Filtrer par échéance">
+          <option value="">Échéance</option>
+          <option value="retard">En retard</option>
+          <option value="semaine">Cette semaine</option>
+          <option value="mois">Ce mois</option>
+        </select>
         <select id="factures-sort" aria-label="Trier les factures">
           <option value="">Trier par</option>
           <option value="echeance_asc">Échéance</option>
@@ -454,11 +475,13 @@
         </select>
       </div>
 
-      <div class="list-header-row">
+      <div class="list-header-row list-header-row-facture">
         <span>Client</span>
+        <span>Facture ID</span>
         <span>Statut</span>
         <span>Montant</span>
-        <span>Détails</span>
+        <span>Paiement</span>
+        <span>Échéance</span>
         <span></span>
         <span></span>
       </div>
@@ -911,7 +934,7 @@
 <script src="env.js"></script>
 <script src="config.js"></script>
 <script src="pricing.js"></script>
-<script src="api.js?v=20260904-reference23"></script>
-<script src="app.js?v=20260904-reference23"></script>
+<script src="api.js?v=20260904-reference24"></script>
+<script src="app.js?v=20260904-reference24"></script>
 </body>
 </html>
