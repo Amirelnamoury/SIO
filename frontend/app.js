@@ -2882,9 +2882,10 @@ async function loadClientsDirectory() {
   const kpiBand = document.getElementById("clients-kpi-band");
   container.innerHTML = skeletonCards();
   try {
-    const [clients, chantiers] = await Promise.all([
+    const [clients, chantiers, factures] = await Promise.all([
       Api.listClients("gagne"),
       Api.listChantiers().catch(() => []),
+      Api.listFactures().catch(() => []),
     ]);
     if (clients.length === 0) {
       kpiBand.innerHTML = "";
@@ -2895,15 +2896,27 @@ async function loadClientsDirectory() {
       return;
     }
     kpiBand.innerHTML = clientsKpiBandHtml(clients, chantiers);
-    container.innerHTML = clients.map(renderClientDirectoryRow).join("");
+    container.innerHTML = clients.map((c) => renderClientDirectoryRow(c, chantiers, factures)).join("");
   } catch (err) {
     container.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
   }
 }
 
-function renderClientDirectoryRow(c) {
+// chantiers/factures : memes listes completes deja recuperees pour la bande
+// de KPI (voir clientsKpiBandHtml), simplement rejointes par client_id ici
+// pour les deux colonnes "Chantiers" et "CA genere" - aucun nouvel appel,
+// aucune donnee inventee (FactureOut.client_id et .montant_paye existent
+// deja cote API, voir backend/app/schemas.py).
+function renderClientDirectoryRow(c, chantiers, factures) {
   const contact = [c.telephone, c.email].filter(Boolean).join(" · ");
   const secondaire = [c.societe, c.ville].filter(Boolean).join(" · ");
+  const chantiersClient = chantiers.filter((ch) => ch.client_id === c.id);
+  const enCours = chantiersClient.filter((ch) => !["termine", "facture", "paye"].includes(ch.statut)).length;
+  const termines = chantiersClient.filter((ch) => ["termine", "facture", "paye"].includes(ch.statut)).length;
+  const chantiersTxt = chantiersClient.length
+    ? [enCours ? `${enCours} en cours` : null, termines ? `${termines} terminé${termines > 1 ? "s" : ""}` : null].filter(Boolean).join(" · ")
+    : "Aucun";
+  const caGenere = factures.filter((f) => f.client_id === c.id).reduce((s, f) => s + (f.montant_paye || 0), 0);
   return `
   <div class="crm-row" data-action="voir-timeline" data-id="${c.id}" role="button" tabindex="0">
     <div class="crm-avatar">${escapeHtml(monogram(c.nom))}</div>
@@ -2914,6 +2927,14 @@ function renderClientDirectoryRow(c) {
     <div class="crm-secondary">
       <div class="crm-secondary-line">${secondaire ? escapeHtml(secondaire) : "—"}</div>
       ${c.prochaine_action ? `<div class="crm-secondary-line crm-next-action">→ ${escapeHtml(c.prochaine_action)}</div>` : ""}
+    </div>
+    <div class="crm-stat">
+      <div class="crm-stat-label">Chantiers</div>
+      <div class="crm-stat-value">${escapeHtml(chantiersTxt)}</div>
+    </div>
+    <div class="crm-stat">
+      <div class="crm-stat-label">CA généré</div>
+      <div class="crm-stat-value">${caGenere > 0 ? fmtEuro(caGenere) : "—"}</div>
     </div>
     <div class="crm-action">
       <button type="button" class="btn-sm" data-action="voir-timeline" data-id="${c.id}">Voir l'historique</button>

@@ -1001,7 +1001,11 @@ input[readonly] { background: var(--sa-surface-2); }
 .crm-secondary { flex: 1; min-width: 0; display: none; }
 .crm-secondary-line { font-size: var(--sa-text-xs); color: var(--sa-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .crm-action { flex-shrink: 0; }
+.crm-stat { flex: 0.8; min-width: 0; text-align: right; display: none; }
+.crm-stat-label { font-size: var(--sa-text-2xs); color: var(--sa-text-faint); text-transform: uppercase; letter-spacing: 0.03em; }
+.crm-stat-value { font-size: var(--sa-text-xs); color: var(--sa-text); font-weight: var(--sa-weight-medium); white-space: nowrap; }
 @media (min-width: 720px) { .crm-secondary { display: block; } }
+@media (min-width: 980px) { .crm-stat { display: block; } }
 
 /* ---------- Formulaires inline ---------- */
 .form-box { background: var(--sa-surface); border: 1px solid var(--sa-border); border-radius: var(--sa-radius-lg); padding: var(--sa-space-6); margin-bottom: var(--sa-space-5); }
