@@ -2828,18 +2828,63 @@ function monogram(nom) {
   return (mots[0][0] + mots[1][0]).toUpperCase();
 }
 
+// Bande de KPI de l'annuaire Clients : chantiers recupere en parallele
+// (avec repli silencieux sur [] si le plan ne l'autorise pas, comme
+// ailleurs dans le fichier) uniquement pour le rattacher aux clients
+// gagnes par client_id - aucune nouvelle donnee, aucun nouvel endpoint.
+function clientsKpiBandHtml(clients, chantiers) {
+  const idsClients = new Set(clients.map((c) => c.id));
+  const chantiersClients = chantiers.filter((c) => idsClients.has(c.client_id));
+  const actifsParClient = new Set(
+    chantiersClients.filter((c) => !["termine", "facture", "paye"].includes(c.statut)).map((c) => c.client_id)
+  );
+  const valeurActifs = chantiersClients
+    .filter((c) => !["termine", "facture", "paye"].includes(c.statut))
+    .reduce((s, c) => s + (c.budget || 0), 0);
+  const sansChantier = clients.length - new Set(chantiersClients.map((c) => c.client_id)).size;
+  return `
+  <div class="kpi-band">
+    <div class="kpi-card">
+      <div class="kpi-card-label">Clients gagnés</div>
+      <div class="kpi-card-value">${clients.length}</div>
+      <div class="kpi-card-sub">Annuaire complet</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-label">Avec chantier en cours</div>
+      <div class="kpi-card-value">${actifsParClient.size}</div>
+      <div class="kpi-card-sub">${clients.length ? Math.round((actifsParClient.size / clients.length) * 100) : 0}% de l'annuaire</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-label">Budget chantiers en cours</div>
+      <div class="kpi-card-value">${fmtEuro(valeurActifs)}</div>
+      <div class="kpi-card-sub">Cumul, clients gagnés</div>
+    </div>
+    <div class="kpi-card${sansChantier ? " is-highlight" : ""}">
+      <div class="kpi-card-label">Sans chantier</div>
+      <div class="kpi-card-value">${sansChantier}</div>
+      <div class="kpi-card-sub">Jamais de chantier créé</div>
+    </div>
+  </div>`;
+}
+
 async function loadClientsDirectory() {
   const container = document.getElementById("clients-directory");
+  const kpiBand = document.getElementById("clients-kpi-band");
   container.innerHTML = skeletonCards();
   try {
-    const clients = await Api.listClients("gagne");
+    const [clients, chantiers] = await Promise.all([
+      Api.listClients("gagne"),
+      Api.listChantiers().catch(() => []),
+    ]);
     if (clients.length === 0) {
+      kpiBand.innerHTML = "";
       container.innerHTML = `<div class="empty-state">
         Aucun client pour le moment.<br><br>
         Un prospect devient client automatiquement quand il passe au statut "Gagne" dans le pipeline.
       </div>`;
       return;
     }
+    kpiBand.innerHTML = clientsKpiBandHtml(clients, chantiers);
     container.innerHTML = clients.map(renderClientDirectoryRow).join("");
   } catch (err) {
     container.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
