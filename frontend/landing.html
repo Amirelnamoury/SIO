@@ -3,146 +3,222 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Suite Artisan - Le CRM et les devis pour les artisans du BTP</title>
-<meta name="description" content="Suite Artisan centralise vos prospects, vos devis, vos relances et vos chantiers. Gratuit pour démarrer, sans carte bancaire.">
+<title>Suite Artisan — Le chantier avance, votre gestion aussi</title>
+<meta name="description" content="Suite Artisan réunit tout le cycle d'un chantier artisan : prospects, devis, planning, chantiers, factures et marge, dans un seul outil. Gratuit pour démarrer, sans carte bancaire.">
+<meta property="og:title" content="Suite Artisan — Le chantier avance, votre gestion aussi">
+<meta property="og:description" content="Du premier appel au chantier signé, jusqu'à la facture réglée : toute l'activité d'un artisan dans un seul espace.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0b0a08">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="landing.css">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="landing.css?v=3">
 </head>
-<body class="landing-body">
+<body class="scene-body">
 
-<header class="landing-nav">
-  <div class="landing-nav-inner">
-    <div class="landing-logo">Suite Artisan</div>
-    <nav class="landing-nav-links">
-      <a href="#fonctionnalites">Fonctionnalités</a>
+<a class="scene-skip-link" href="#produit">Passer l'expérience visuelle et aller au contenu</a>
+
+<header class="scene-nav">
+  <div class="scene-nav-inner">
+    <div class="scene-logo">Suite&nbsp;Artisan</div>
+    <nav class="scene-nav-links" aria-label="Navigation principale">
+      <a href="#produit">Produit</a>
+      <a href="#metiers">Métiers</a>
       <a href="#tarifs">Tarifs</a>
       <a href="#faq">FAQ</a>
     </nav>
-    <div class="landing-nav-actions">
-      <a href="index.html" class="landing-link-btn">Connexion</a>
-      <a href="index.html?tab=register" class="btn-primary landing-cta-small">Essayer gratuitement</a>
+    <div class="scene-nav-actions">
+      <a href="index.html" class="scene-link-btn">Connexion</a>
+      <a href="index.html?tab=register" class="scene-btn scene-btn-primary scene-btn-small">Essayer gratuitement</a>
     </div>
   </div>
 </header>
 
 <main>
 
-  <!-- ---------- Hero ---------- -->
-  <section class="landing-hero">
-    <div class="landing-hero-text">
-      <h1>Ne perdez plus un seul prospect ni un seul devis.</h1>
-      <p class="landing-hero-sub">
-        Suite Artisan centralise vos clients, vos devis, vos relances et vos chantiers
-        dans un seul outil pensé pour les artisans du BTP. Gratuit pour démarrer,
-        sans carte bancaire.
-      </p>
-      <div class="landing-hero-actions">
-        <a href="index.html?tab=register" class="btn-primary landing-cta-big">Créer mon compte gratuit</a>
-        <a href="#fonctionnalites" class="btn-secondary landing-cta-big">Voir comment ça marche</a>
+  <!-- =====================================================================
+       EXPERIENCE 3D — Scenes 1 a 9. Pin CSS (position: sticky) piloté par
+       la hauteur de #scene-track ; landing.js calcule la progression de
+       scroll et appelle landing-scene.js. En mode .no-3d (WebGL absent ou
+       prefers-reduced-motion), #scene-track redevient un flux normal et
+       chaque .scene-panel s'affiche empilé, sans dependance au JS.
+       ===================================================================== -->
+  <div class="scene-track" id="scene-track">
+    <div class="scene-pin">
+      <canvas id="scene-canvas" class="scene-canvas" aria-hidden="true"></canvas>
+      <div class="scene-vignette" aria-hidden="true"></div>
+
+      <div class="scene-progress" aria-hidden="true"><div class="scene-progress-bar" id="scene-progress-bar"></div></div>
+
+      <div class="scene-panels">
+
+        <!-- ---------- 1. Hero / exterieur ---------- -->
+        <article class="scene-panel scene-panel-hero" data-range="0,0.09">
+          <p class="scene-eyebrow">Suite Artisan</p>
+          <h1 class="scene-title">Le chantier avance.<br>Votre gestion aussi.</h1>
+          <p class="scene-copy">Suite Artisan réunit l'activité d'un artisan dans un même espace&nbsp;:
+            prospects, clients, devis, factures, planning, chantiers.</p>
+          <div class="scene-cta-row">
+            <a href="index.html?tab=register" class="scene-btn scene-btn-primary">Essayer gratuitement</a>
+            <a href="#produit" class="scene-btn scene-btn-ghost">Découvrir Suite Artisan</a>
+          </div>
+          <p class="scene-hint" aria-hidden="true">Faites défiler pour entrer dans le chantier ↓</p>
+        </article>
+
+        <!-- ---------- 2. Arrivee client / prospect ---------- -->
+        <article class="scene-panel" data-range="0.09,0.18">
+          <p class="scene-eyebrow">Prospects &amp; clients</p>
+          <h2 class="scene-title scene-title-md">Du premier appel<br>au chantier signé.</h2>
+          <p class="scene-copy">Chaque demande arrive au même endroit, avec son historique complet — plus aucun prospect ne se perd dans une boîte mail.</p>
+          <div class="scene-inline-card">
+            <span class="scene-inline-tag">Nouvelle demande</span>
+            <strong>Thomas Bernard</strong>
+            <span>Rénovation salle de bain</span>
+          </div>
+        </article>
+
+        <!-- ---------- 3. Plomberie ---------- -->
+        <article class="scene-panel" data-range="0.18,0.33">
+          <p class="scene-eyebrow">Devis &amp; budget</p>
+          <h2 class="scene-title scene-title-md">Chiffrez. Planifiez.<br>Commencez.</h2>
+          <p class="scene-copy">Un devis professionnel envoyé en quelques minutes, accepté en ligne, prêt à devenir un chantier.</p>
+          <div class="scene-inline-card">
+            <span class="scene-inline-tag scene-inline-tag-accent">Devis</span>
+            <strong>4&nbsp;850&nbsp;€</strong>
+            <span>Accepté</span>
+          </div>
+        </article>
+
+        <!-- ---------- 4. Electricite ---------- -->
+        <article class="scene-panel" data-range="0.33,0.46">
+          <p class="scene-eyebrow">Planning</p>
+          <h2 class="scene-title scene-title-md">Chaque intervention,<br>au bon moment.</h2>
+          <p class="scene-copy">Rendez-vous, visites techniques et interventions terrain organisés dans un planning simple, lisible d'un coup d'œil.</p>
+        </article>
+
+        <!-- ---------- 5. Renovation / avancement ---------- -->
+        <article class="scene-panel" data-range="0.46,0.60">
+          <p class="scene-eyebrow">Chantiers &amp; tâches</p>
+          <h2 class="scene-title scene-title-md">Voyez exactement<br>où en est chaque chantier.</h2>
+          <p class="scene-copy">Avancement, tâches restantes, prochaine intervention : une vue claire, chantier par chantier.</p>
+          <div class="scene-inline-card scene-inline-progress">
+            <span>Chantier en cours</span>
+            <strong>72&nbsp;%</strong>
+            <div class="scene-progress-mini" aria-hidden="true"><span style="width:72%"></span></div>
+          </div>
+        </article>
+
+        <!-- ---------- 6. Documents / terrain ---------- -->
+        <article class="scene-panel" data-range="0.60,0.70">
+          <p class="scene-eyebrow">Documents &amp; suivi terrain</p>
+          <h2 class="scene-title scene-title-md">Tout ce dont vous avez besoin,<br>là où vous travaillez.</h2>
+          <p class="scene-copy">Plans, photos, fiches techniques et checklists de chantier, accessibles depuis le terrain comme depuis le bureau.</p>
+        </article>
+
+        <!-- ---------- 7. Finances ---------- -->
+        <article class="scene-panel" data-range="0.70,0.80">
+          <p class="scene-eyebrow">Factures &amp; marge</p>
+          <h2 class="scene-title scene-title-md">Vous construisez.<br>Suite Artisan garde les chiffres sous contrôle.</h2>
+          <div class="scene-stat-grid">
+            <div class="scene-stat"><span>Facturé</span><strong>8&nbsp;450&nbsp;€</strong></div>
+            <div class="scene-stat"><span>Encaissé</span><strong>5&nbsp;000&nbsp;€</strong></div>
+            <div class="scene-stat"><span>Budget</span><strong>6&nbsp;200&nbsp;€</strong></div>
+            <div class="scene-stat scene-stat-accent"><span>Marge</span><strong>+&nbsp;2&nbsp;140&nbsp;€</strong></div>
+          </div>
+        </article>
+
+        <!-- ---------- 8. Maison terminee ---------- -->
+        <article class="scene-panel" data-range="0.80,0.89">
+          <p class="scene-eyebrow">Résultat</p>
+          <h2 class="scene-title scene-title-md">Un chantier maîtrisé,<br>du premier jour au dernier.</h2>
+          <p class="scene-copy">L'ordre, la visibilité et la satisfaction d'un chantier mené jusqu'au bout — sans feuille volante ni relance oubliée.</p>
+        </article>
+
+        <!-- ---------- 9. Transition monde physique -> SaaS ---------- -->
+        <article class="scene-panel scene-panel-transition" data-range="0.89,1">
+          <h2 class="scene-title scene-title-md">Tout ce qui se passe sur vos chantiers.<br>Au même endroit.</h2>
+        </article>
+
       </div>
-      <p class="landing-hero-note">Aucune carte bancaire requise pour le plan Gratuit.</p>
+
+      <!-- Chips de donnees qui se rassemblent pendant la transition (0.90-1.0) -->
+      <div class="scene-databloom" id="scene-databloom" aria-hidden="true">
+        <span class="scene-chip" data-sx="-220" data-sy="-140" data-gx="-180" data-gy="-54">Clients</span>
+        <span class="scene-chip" data-sx="180" data-sy="-160" data-gx="-60" data-gy="-54">Devis</span>
+        <span class="scene-chip" data-sx="-260" data-sy="60" data-gx="60" data-gy="-54">Planning</span>
+        <span class="scene-chip" data-sx="240" data-sy="120" data-gx="180" data-gy="-54">Chantiers</span>
+        <span class="scene-chip" data-sx="-140" data-sy="180" data-gx="-60" data-gy="20">Factures</span>
+        <span class="scene-chip" data-sx="160" data-sy="-40" data-gx="60" data-gy="20">Marge</span>
+      </div>
     </div>
-    <div class="landing-hero-visual">
-      <div class="mock-window">
-        <div class="mock-window-bar"><span></span><span></span><span></span></div>
-        <div class="mock-window-body">
-          <div class="mock-row"><div class="mock-dot mock-dot-green"></div><div class="mock-line" style="width:70%"></div></div>
-          <div class="mock-row"><div class="mock-dot mock-dot-orange"></div><div class="mock-line" style="width:55%"></div></div>
-          <div class="mock-row"><div class="mock-dot mock-dot-accent"></div><div class="mock-line" style="width:82%"></div></div>
-          <div class="mock-card"><div class="mock-line" style="width:40%"></div><div class="mock-line-lg">1 240 &euro;</div></div>
-          <div class="mock-card"><div class="mock-line" style="width:50%"></div><div class="mock-line-lg">Devis à relancer</div></div>
+  </div>
+
+  <!-- =====================================================================
+       SECTIONS CLASSIQUES — Scenes 10 a 12 + tarifs/FAQ existants, dans le
+       flux normal (pas de pin), avec reveal au scroll en CSS pur.
+       ===================================================================== -->
+
+  <!-- ---------- 10. Produit ---------- -->
+  <section id="produit" class="scene-section">
+    <div class="scene-section-head" data-reveal>
+      <p class="scene-eyebrow">Le produit</p>
+      <h2 class="scene-section-title">Un vrai outil professionnel,<br>pas une démonstration.</h2>
+    </div>
+    <div class="scene-editorial" data-reveal>
+      <div class="scene-editorial-text">
+        <p>Vous venez de traverser l'univers de Suite Artisan. Derrière cette mise en scène&nbsp;: un CRM, un générateur de devis et factures, un planning et un suivi de chantier réellement utilisés chaque jour par des artisans du bâtiment.</p>
+        <ul class="scene-benefit-list">
+          <li>Moins d'administratif, plus de temps sur le terrain</li>
+          <li>Une visibilité complète sur chaque prospect et chaque chantier</li>
+          <li>Des chantiers organisés, du budget à la marge réelle</li>
+          <li>Des paiements et relances suivis automatiquement</li>
+        </ul>
+        <a href="index.html?tab=register" class="scene-btn scene-btn-primary">Essayer gratuitement</a>
+      </div>
+      <div class="scene-editorial-visual" aria-hidden="true">
+        <div class="scene-frame">
+          <div class="scene-frame-bar"><span></span><span></span><span></span></div>
+          <div class="scene-frame-body">
+            <div class="scene-frame-row"><span class="scene-frame-dot is-accent"></span><span class="scene-frame-line" style="width:78%"></span></div>
+            <div class="scene-frame-row"><span class="scene-frame-dot"></span><span class="scene-frame-line" style="width:52%"></span></div>
+            <div class="scene-frame-row"><span class="scene-frame-dot"></span><span class="scene-frame-line" style="width:64%"></span></div>
+            <div class="scene-frame-card"><span>Facture à relancer</span><strong>1&nbsp;576&nbsp;€</strong></div>
+            <div class="scene-frame-card"><span>Chantier en cours</span><strong>3</strong></div>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ---------- Probleme / solution ---------- -->
-  <section class="landing-problem">
-    <div class="landing-problem-item">
-      <div class="landing-problem-icon">&#128203;</div>
-      <p>Des devis envoyés par mail, jamais relancés, et des clients perdus faute de suivi.</p>
+  <!-- ---------- 11. Metiers ---------- -->
+  <section id="metiers" class="scene-section scene-section-alt">
+    <div class="scene-section-head" data-reveal>
+      <p class="scene-eyebrow">Pour tous les métiers du bâtiment</p>
+      <h2 class="scene-section-title">Un seul outil,<br>quel que soit votre métier.</h2>
     </div>
-    <div class="landing-problem-arrow">&rarr;</div>
-    <div class="landing-problem-item landing-problem-solution">
-      <div class="landing-problem-icon">&#9989;</div>
-      <p>Un seul endroit pour vos prospects, vos devis et vos relances automatiques.</p>
-    </div>
+    <p class="scene-metiers-row" data-reveal>
+      <span>Plombier</span><span>Électricien</span><span>Peintre</span><span>Maçon</span>
+      <span>Menuisier</span><span>Chauffagiste</span><span>Rénovation</span><span>Artisan du bâtiment</span>
+    </p>
   </section>
 
-  <!-- ---------- Fonctionnalites ---------- -->
-  <section id="fonctionnalites" class="landing-section">
-    <h2 class="landing-section-title">Tout ce qu'il faut, rien de superflu</h2>
-    <p class="landing-section-sub">Pensé pour le quotidien d'un artisan, pas pour une équipe commerciale.</p>
-    <div class="landing-features-grid">
-      <div class="landing-feature-card">
-        <div class="landing-feature-icon">&#128101;</div>
-        <h3>Clients &amp; prospects</h3>
-        <p>Toutes vos demandes au même endroit, avec l'historique complet de chaque contact.</p>
-      </div>
-      <div class="landing-feature-card">
-        <div class="landing-feature-icon">&#128196;</div>
-        <h3>Devis &amp; relances</h3>
-        <p>Devis PDF professionnels en quelques clics, et un rappel automatique quand il faut relancer.</p>
-      </div>
-      <div class="landing-feature-card">
-        <div class="landing-feature-icon">&#128179;</div>
-        <h3>Facturation</h3>
-        <p>Acomptes, situations, factures finales : convertissez un devis signé en facture en un clic.</p>
-      </div>
-      <div class="landing-feature-card">
-        <div class="landing-feature-icon">&#127959;</div>
-        <h3>Chantiers</h3>
-        <p>Budget, dépenses, marge estimée et documents de chantier au même endroit.</p>
-      </div>
-      <div class="landing-feature-card">
-        <div class="landing-feature-icon">&#128737;</div>
-        <h3>Conformité</h3>
-        <p>Assurance décennale, Qualibat, RGE : soyez alerté avant l'échéance, pas après.</p>
-      </div>
-      <div class="landing-feature-card">
-        <div class="landing-feature-icon">&#128197;</div>
-        <h3>Planning &amp; tâches</h3>
-        <p>Vos rendez-vous, visites et tâches du jour, dans un planning simple et clair.</p>
-      </div>
+  <!-- ---------- Tarifs (donnees : pricing.js) ---------- -->
+  <section id="tarifs" class="scene-section">
+    <div class="scene-section-head" data-reveal>
+      <p class="scene-eyebrow">Tarifs</p>
+      <h2 class="scene-section-title">Des tarifs simples,<br>sans engagement.</h2>
     </div>
-  </section>
-
-  <!-- ---------- Comment ça marche ---------- -->
-  <section class="landing-section landing-section-alt">
-    <h2 class="landing-section-title">Comment ça marche</h2>
-    <div class="landing-steps">
-      <div class="landing-step">
-        <div class="landing-step-num">1</div>
-        <h3>Créez votre compte</h3>
-        <p>Renseignez votre entreprise en 2 minutes. Aucune carte bancaire nécessaire.</p>
-      </div>
-      <div class="landing-step">
-        <div class="landing-step-num">2</div>
-        <h3>Ajoutez vos contacts et devis</h3>
-        <p>Importez vos prospects, créez vos devis, envoyez-les en PDF depuis l'outil.</p>
-      </div>
-      <div class="landing-step">
-        <div class="landing-step-num">3</div>
-        <h3>Laissez Suite Artisan relancer</h3>
-        <p>Vous voyez chaque matin ce qui mérite votre attention aujourd'hui, rien de plus.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- ---------- Tarifs ---------- -->
-  <section id="tarifs" class="landing-section">
-    <h2 class="landing-section-title">Des tarifs simples</h2>
-    <p class="landing-section-sub">Commencez gratuitement, puis choisissez le niveau d'accompagnement adapté à votre entreprise.</p>
-    <div class="pricing-plans landing-pricing-plans" id="landing-pricing-plans"></div>
-    <div id="landing-site-offer"></div>
+    <div class="scene-plans" id="landing-pricing-plans" data-reveal></div>
+    <div id="landing-site-offer" data-reveal></div>
   </section>
 
   <!-- ---------- FAQ ---------- -->
-  <section id="faq" class="landing-section landing-section-alt">
-    <h2 class="landing-section-title">Questions fréquentes</h2>
-    <div class="landing-faq">
+  <section id="faq" class="scene-section scene-section-alt">
+    <div class="scene-section-head" data-reveal>
+      <p class="scene-eyebrow">Questions fréquentes</p>
+      <h2 class="scene-section-title">Tout ce qu'il faut savoir.</h2>
+    </div>
+    <div class="scene-faq" data-reveal>
       <details>
         <summary>Dois-je entrer ma carte bancaire pour commencer ?</summary>
         <p>Non. Le plan Gratuit ne demande aucune carte bancaire et n'a pas de limite de temps.</p>
@@ -173,72 +249,30 @@
       </details>
       <details>
         <summary>Mes données sont-elles visibles par d'autres artisans ?</summary>
-        <p>Non. Chaque compte est complètement isolé : vos clients, devis et chantiers ne sont visibles que par vous.</p>
+        <p>Non. Chaque compte est complètement isolé&nbsp;: vos clients, devis et chantiers ne sont visibles que par vous.</p>
       </details>
     </div>
   </section>
 
-  <!-- ---------- CTA final ---------- -->
-  <section class="landing-final-cta">
-    <h2>Prêt à arrêter de perdre des devis ?</h2>
-    <a href="index.html?tab=register" class="btn-primary landing-cta-big">Créer mon compte gratuit</a>
+  <!-- ---------- 12. CTA final ---------- -->
+  <section class="scene-final-cta" data-reveal>
+    <p class="scene-eyebrow">Prêt à commencer ?</p>
+    <h2 class="scene-final-title">Votre prochain chantier<br>commence ici.</h2>
+    <p class="scene-copy">Gratuit pour démarrer, sans carte bancaire.</p>
+    <div class="scene-cta-row scene-cta-row-center">
+      <a href="index.html?tab=register" class="scene-btn scene-btn-primary scene-btn-large">Essayer Suite Artisan</a>
+      <a href="index.html" class="scene-btn scene-btn-ghost scene-btn-large">Se connecter</a>
+    </div>
   </section>
 
 </main>
 
-<footer class="landing-footer">
+<footer class="scene-footer">
   <div>Suite Artisan</div>
-  <div class="landing-footer-links"><a href="index.html">Connexion</a></div>
+  <div class="scene-footer-links"><a href="index.html">Connexion</a><a href="index.html?tab=register">Inscription</a></div>
 </footer>
 
 <script src="pricing.js"></script>
-<script>
-  function planCardHtml(key, plan) {
-    const isPro = plan.recommande === true;
-    const priceHtml = `<div class="plan-price">${plan.prix}&nbsp;&euro; <span class="period">/ ${plan.periode}</span></div>`;
-    return `
-    <div class="plan-card ${isPro ? "plan-highlight" : ""}">
-      ${isPro ? '<span class="plan-badge">Recommandé</span>' : ""}
-      <div class="plan-name">${plan.nom}</div>
-      <div class="plan-accroche">${plan.accroche}</div>
-      ${priceHtml}
-      <div class="plan-mention">${plan.mention || "Sans engagement"}</div>
-      <p class="plan-positionnement">${plan.positionnement}</p>
-      <ul class="plan-features">
-        ${plan.fonctionnalites.map((f) => `<li>${f}</li>`).join("")}
-      </ul>
-      <a href="index.html?tab=register" class="${isPro ? "btn-primary" : "btn-secondary"}" style="display:block;text-align:center;text-decoration:none;">Commencer</a>
-    </div>`;
-  }
-  document.getElementById("landing-pricing-plans").innerHTML =
-    Object.entries(PRICING).map(([key, plan]) => planCardHtml(key, plan)).join("");
-  document.getElementById("landing-site-offer").innerHTML = `
-    <div class="site-offer">
-      <div>
-        <div class="site-offer-label">Option distincte du SaaS · Disponible avec tous les plans, y compris Gratuit</div>
-        <h3>${SITE_VITRINE_OFFER.nom}</h3>
-        <p class="site-offer-benefit">${SITE_VITRINE_OFFER.accroche}</p>
-        <p>${SITE_VITRINE_OFFER.description}</p>
-      </div>
-      <div class="site-offer-price">
-        <strong>${SITE_VITRINE_OFFER.creation}&nbsp;&euro; HT</strong> à la création
-        <span>+ ${SITE_VITRINE_OFFER.mensuel}&nbsp;&euro; HT / mois de gestion &amp; maintenance</span>
-      </div>
-      <ul>
-        ${SITE_VITRINE_OFFER.carteInclus.map((item) => `<li>${item}</li>`).join("")}
-      </ul>
-      <p class="site-offer-summary">${SITE_VITRINE_OFFER.resumeInclus}</p>
-    </div>`;
-  document.getElementById("faq-site-price").innerHTML =
-    `${SITE_VITRINE_OFFER.creation}&nbsp;&euro; ${SITE_VITRINE_OFFER.mention} à la création puis ${SITE_VITRINE_OFFER.mensuel}&nbsp;&euro; ${SITE_VITRINE_OFFER.mention}/mois de gestion &amp; maintenance`;
-  document.getElementById("faq-site-creation").innerHTML =
-    SITE_VITRINE_OFFER.creationInclut.map((item) => `<li>${item}</li>`).join("");
-  document.getElementById("faq-site-maintenance").innerHTML = `
-    <ul>${SITE_VITRINE_OFFER.maintenanceInclut.map((item) => `<li>${item}</li>`).join("")}</ul>
-    <p>${SITE_VITRINE_OFFER.domaineStandard}</p>`;
-  document.getElementById("faq-site-hors-forfait").innerHTML = `
-    <p>${SITE_VITRINE_OFFER.horsForfaitResume}</p>
-    <ul>${SITE_VITRINE_OFFER.horsForfait.map((item) => `<li>${item}</li>`).join("")}</ul>`;
-</script>
+<script src="landing.js?v=4" type="module"></script>
 </body>
 </html>
