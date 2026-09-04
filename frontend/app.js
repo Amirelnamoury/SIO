@@ -4177,20 +4177,22 @@ function setupContratsView() {
 }
 
 // ===================== Chantiers =====================
+// "A surveiller" : budget deja consomme au-dela de 85% - signal deja present
+// sur l'objet chantier (c.budget/c.total_depenses), pas de calcul metier
+// nouveau, juste un seuil d'affichage. Fonction partagee entre la bande de
+// KPI et le filtre par onglet pour ne jamais avoir deux definitions.
+function chantierEstASurveiller(c) {
+  if (["termine", "facture", "paye", "a_preparer"].includes(c.statut)) return false;
+  const consomme = c.budget && c.total_depenses ? (c.total_depenses / c.budget) * 100 : null;
+  return consomme !== null && consomme >= 85;
+}
+
 // Bande de KPI : agregee a partir des memes chantiers deja recus (aucun
 // nouvel appel, aucune donnee inventee).
 function chantiersKpiBandHtml(chantiers) {
   const enCours = chantiers.filter((c) => !["a_preparer", "termine", "facture", "paye"].includes(c.statut));
   const aPreparer = chantiers.filter((c) => c.statut === "a_preparer");
-  // "A surveiller" : budget deja consomme au-dela de 90% ou avancement
-  // en retard evident (progression connue mais nulle alors que le chantier
-  // a demarre) - signaux deja presents sur l'objet chantier, pas de calcul
-  // metier nouveau, juste un seuil d'affichage.
-  const aSurveiller = chantiers.filter((c) => {
-    if (["termine", "facture", "paye", "a_preparer"].includes(c.statut)) return false;
-    const consomme = c.budget && c.total_depenses ? (c.total_depenses / c.budget) * 100 : null;
-    return consomme !== null && consomme >= 85;
-  });
+  const aSurveiller = chantiers.filter(chantierEstASurveiller);
   const margeTotale = chantiers.reduce((s, c) => s + (c.marge_estimee || c.marge_reelle || 0), 0);
   return `
   <div class="kpi-band">
@@ -4215,6 +4217,32 @@ function chantiersKpiBandHtml(chantiers) {
       <div class="kpi-card-sub">Cumul, tous chantiers</div>
     </div>
   </div>`;
+}
+
+let currentChantierFilter = ""; // "" | a_preparer | en_cours | a_surveiller | termine
+
+// Certains onglets regroupent plusieurs vrais statuts (ex. "En cours" =
+// planifie+en_cours+en_pause, "Terminés" = termine+facture+paye) ou une
+// condition calculee ("À surveiller", voir chantierEstASurveiller) plutot
+// qu'un statut unique - comme le fait deja la bande de KPI juste au-dessus.
+function chantierMatchesFilter(c, filtre) {
+  if (!filtre) return true;
+  if (filtre === "a_preparer") return c.statut === "a_preparer";
+  if (filtre === "en_cours") return !["a_preparer", "termine", "facture", "paye"].includes(c.statut);
+  if (filtre === "a_surveiller") return chantierEstASurveiller(c);
+  if (filtre === "termine") return ["termine", "facture", "paye"].includes(c.statut);
+  return true;
+}
+
+function renderChantiersListFiltered() {
+  const list = document.getElementById("chantiers-list");
+  ["", "a_preparer", "en_cours", "a_surveiller", "termine"].forEach((f) => {
+    const el = document.querySelector(`#chantier-filters [data-statut="${f}"] .filter-chip-count`);
+    if (el) el.textContent = `(${chantiersCache.filter((c) => chantierMatchesFilter(c, f)).length})`;
+  });
+  const filtres = chantiersCache.filter((c) => chantierMatchesFilter(c, currentChantierFilter));
+  list.innerHTML = filtres.length ? filtres.map(renderChantierCard).join("") : '<div class="empty-state">Aucun chantier dans cet onglet.</div>';
+  focusChantierCard();
 }
 
 async function loadChantiers() {
@@ -4245,8 +4273,7 @@ async function loadChantiers() {
       list.innerHTML = '<div class="empty-state">Aucun chantier pour le moment.</div>';
       return;
     }
-    list.innerHTML = chantiers.map(renderChantierCard).join("");
-    focusChantierCard();
+    renderChantiersListFiltered();
   } catch (err) {
     list.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
   }
@@ -4626,6 +4653,15 @@ function showNoteForm(chantierId) {
 }
 
 function setupChantiersView() {
+  document.getElementById("chantier-filters").addEventListener("click", (e) => {
+    const chip = e.target.closest(".filter-chip");
+    if (!chip) return;
+    document.querySelectorAll("#chantier-filters .filter-chip").forEach((c) => c.classList.remove("active"));
+    chip.classList.add("active");
+    currentChantierFilter = chip.dataset.statut;
+    renderChantiersListFiltered();
+  });
+
   document.querySelector('[data-action="show-chantier-form"]').addEventListener("click", async () => {
     const container = document.getElementById("chantier-form-container");
     await ensureClientsCache();
