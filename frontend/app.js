@@ -5865,6 +5865,37 @@ function setupConformiteView() {
   });
 }
 
+// ===================== Recherche de liste (generique) =====================
+// Champ de recherche present sur toutes les references (Prospects, Clients,
+// Devis, Factures, Chantiers, Documents, Avis, Notifications) mais absent
+// jusqu'ici de notre reproduction, sauf Planning. Purement visuel : cache
+// par correspondance de texte les elements DEJA rendus par les load*()
+// existants - aucun nouvel appel, aucun recalcul metier. Le selecteur est
+// toujours prefixe par l'id du conteneur de LA page consultee, pour ne
+// jamais affecter les elements (memes classes) d'une autre page encore
+// presente, cachee, dans le DOM.
+function setupListeSearch(inputId, itemSelector) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  input.addEventListener("input", () => {
+    const q = input.value.trim().toLowerCase();
+    document.querySelectorAll(itemSelector).forEach((el) => {
+      el.hidden = !!q && !el.textContent.toLowerCase().includes(q);
+    });
+  });
+}
+
+function setupListesSearch() {
+  setupListeSearch("prospects-search", "#clients-kanban .kanban-card");
+  setupListeSearch("clients-search", "#clients-directory .crm-row");
+  setupListeSearch("devis-search", "#devis-list .list-row");
+  setupListeSearch("factures-search", "#factures-list .list-row");
+  setupListeSearch("chantiers-search", "#chantiers-list .chantier-card");
+  setupListeSearch("documents-search", "#documents-list .doc-row");
+  setupListeSearch("avis-search", "#avis-list .avis-card");
+  setupListeSearch("notifications-search", "#notifications-list .notif-row");
+}
+
 // ===================== Initialisation =====================
 document.addEventListener("DOMContentLoaded", async () => {
   onUnauthorized = () => {
@@ -5899,6 +5930,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupNotificationsView();
   setupAvisView();
   setupConformiteView();
+  setupListesSearch();
 
   const toast = document.createElement("div");
   toast.id = "toast";

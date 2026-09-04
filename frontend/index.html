@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260904-reference8">
+<link rel="stylesheet" href="style.css?v=20260904-reference9">
 </head>
 <body>
 
@@ -320,6 +320,11 @@
 
       <div id="prospects-kpi-band"></div>
 
+      <div class="list-search">
+        <svg viewBox="0 0 24 24" class="nav-icon list-search-icon"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="text" id="prospects-search" placeholder="Rechercher un prospect...">
+      </div>
+
       <div class="kanban" id="clients-kanban"></div>
     </section>
 
@@ -334,6 +339,10 @@
         <button type="button" class="btn-archives" data-action="voir-archives" data-entite="client">Archives</button>
       </div>
       <div id="clients-kpi-band"></div>
+      <div class="list-search">
+        <svg viewBox="0 0 24 24" class="nav-icon list-search-icon"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="text" id="clients-search" placeholder="Rechercher un client...">
+      </div>
       <div id="clients-directory" class="list"></div>
     </section>
 
@@ -361,6 +370,11 @@
         <button type="button" class="filter-chip" data-statut="envoye">Envoyés <span class="filter-chip-count"></span></button>
         <button type="button" class="filter-chip" data-statut="signe">Signés <span class="filter-chip-count"></span></button>
         <button type="button" class="filter-chip" data-statut="perdu">Perdus <span class="filter-chip-count"></span></button>
+      </div>
+
+      <div class="list-search">
+        <svg viewBox="0 0 24 24" class="nav-icon list-search-icon"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="text" id="devis-search" placeholder="Rechercher un client, un devis...">
       </div>
 
       <div class="list-header-row">
@@ -402,6 +416,11 @@
         <button type="button" class="filter-chip" data-statut="en_retard">En retard</button>
       </div>
 
+      <div class="list-search">
+        <svg viewBox="0 0 24 24" class="nav-icon list-search-icon"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="text" id="factures-search" placeholder="Rechercher un client, une facture...">
+      </div>
+
       <div class="list-header-row">
         <span>Client</span>
         <span>Statut</span>
@@ -430,6 +449,11 @@
       <div id="chantier-form-container" hidden></div>
 
       <div id="chantiers-kpi-band"></div>
+
+      <div class="list-search">
+        <svg viewBox="0 0 24 24" class="nav-icon list-search-icon"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="text" id="chantiers-search" placeholder="Rechercher un chantier, un client...">
+      </div>
 
       <div id="chantiers-list" class="list"></div>
     </section>
@@ -498,6 +522,11 @@
         <button type="button" class="filter-chip" data-type="autre">Autre</button>
       </div>
 
+      <div class="list-search">
+        <svg viewBox="0 0 24 24" class="nav-icon list-search-icon"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="text" id="documents-search" placeholder="Rechercher un document, un client...">
+      </div>
+
       <div id="documents-compteur" class="doc-compteur"></div>
 
       <div id="documents-list" class="list"></div>
@@ -530,6 +559,11 @@
       <div id="avis-resume"></div>
 
       <div id="avis-form-container" hidden></div>
+
+      <div class="list-search">
+        <svg viewBox="0 0 24 24" class="nav-icon list-search-icon"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="text" id="avis-search" placeholder="Rechercher un client, un avis...">
+      </div>
 
       <div id="avis-list" class="list"></div>
     </section>
@@ -718,6 +752,10 @@
         </div>
       </div>
       <p class="section-hint">Devis à relancer, factures impayées et échéances de conformité, regroupés ici.</p>
+      <div class="list-search">
+        <svg viewBox="0 0 24 24" class="nav-icon list-search-icon"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="text" id="notifications-search" placeholder="Rechercher une notification...">
+      </div>
       <div id="notifications-list" class="list"></div>
     </section>
 
@@ -796,7 +834,7 @@
 <script src="env.js"></script>
 <script src="config.js"></script>
 <script src="pricing.js"></script>
-<script src="api.js?v=20260904-reference8"></script>
-<script src="app.js?v=20260904-reference8"></script>
+<script src="api.js?v=20260904-reference9"></script>
+<script src="app.js?v=20260904-reference9"></script>
 </body>
 </html>

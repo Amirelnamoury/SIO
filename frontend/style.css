@@ -530,6 +530,14 @@ input[readonly] { background: var(--sa-surface-2); }
 .filter-chip.active { color: var(--sa-text); border-bottom-color: var(--sa-accent); font-weight: var(--sa-weight-semibold); }
 .filter-chip-count { color: var(--sa-text-faint); font-weight: var(--sa-weight-medium); font-variant-numeric: tabular-nums; }
 
+/* ---------- Recherche de liste (Prospects/Clients/Devis/Factures/Chantiers/
+   Documents/Avis/Notifications) ---------- */
+/* Filtre purement visuel sur le texte deja affiche (voir setupListeSearch
+   dans app.js) : aucun nouvel appel, aucune donnee recalculee. */
+.list-search { position: relative; margin-bottom: var(--sa-space-5); max-width: 420px; }
+.list-search input { width: 100%; padding: 9px 12px 9px 34px; }
+.list-search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--sa-text-faint); pointer-events: none; }
+
 /* ---------- Kanban (pipeline prospects) ---------- */
 .kanban { display: flex; gap: var(--sa-space-6); overflow-x: auto; padding-bottom: var(--sa-space-3); align-items: flex-start; scroll-snap-type: x proximity; }
 .kanban-column { width: 258px; flex-shrink: 0; scroll-snap-align: start; }
