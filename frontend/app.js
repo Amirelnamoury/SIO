@@ -1225,6 +1225,16 @@ function caAreaChartSvg(caParMois) {
   </svg>`;
 }
 
+// Interpolation pure entre deux couleurs hex (#rrggbb) - aucune donnee
+// metier, sert uniquement a degrader la couleur de fond de chaque etape
+// du ruban "Performance commerciale" (pale -> accent champagne).
+function mixHexColors(hexA, hexB, t) {
+  const a = [1, 3, 5].map((i) => parseInt(hexA.slice(i, i + 2), 16));
+  const b = [1, 3, 5].map((i) => parseInt(hexB.slice(i, i + 2), 16));
+  const c = a.map((v, i) => Math.round(v + (b[i] - v) * t));
+  return `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
+}
+
 async function loadStatistiques() {
   const container = document.getElementById("statistiques-content");
   container.innerHTML = skeletonCards();
@@ -1261,14 +1271,21 @@ async function loadStatistiques() {
         }).join("")
       : '<div class="dash-empty">Pas encore de contact enregistré.</div>';
 
-    const nbMax = a.funnel_site.length ? a.funnel_site[0].nb : 0;
-    const funnelHtml = a.funnel_site.length
-      ? `<div class="stats-funnel">${a.funnel_site.map((e) => `
-          <div class="stats-funnel-step">
-            <div class="stats-funnel-value">${e.nb}</div>
+    const nbEtapesFunnel = a.funnel_site.length;
+    const funnelHtml = nbEtapesFunnel
+      ? `<div class="stats-funnel">${a.funnel_site.map((e, i) => {
+          const t = nbEtapesFunnel > 1 ? i / (nbEtapesFunnel - 1) : 0;
+          const bg = mixHexColors("#f1ece0", "#c9a06a", t);
+          // Taux de conversion d'une etape a l'autre (etape precedente = 100%),
+          // pas de nouvelle donnee : simple ratio entre deux valeurs deja recues.
+          const precedent = i > 0 ? a.funnel_site[i - 1].nb : 0;
+          const conversion = i > 0 && precedent ? Math.round((e.nb / precedent) * 100) : null;
+          return `${i > 0 ? '<div class="stats-funnel-arrow"><span class="stats-funnel-arrow-glyph">&rarr;</span></div>' : ""}
+          <div class="stats-funnel-step" style="background:${bg};">
             <div class="stats-funnel-label">${escapeHtml(e.etape)}</div>
-            <div class="sante-barre"><div class="remplissage" style="width:${nbMax ? Math.round(e.nb / nbMax * 100) : 0}%;"></div></div>
-          </div>`).join("")}</div>`
+            <div class="stats-funnel-value">${e.nb}${conversion !== null ? ` (${conversion}%)` : ""}</div>
+          </div>`;
+        }).join("")}</div>`
       : "";
 
     container.innerHTML = `

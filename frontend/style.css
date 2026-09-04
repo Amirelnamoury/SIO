@@ -760,11 +760,28 @@ input[readonly] { background: var(--sa-surface-2); }
 .acq-source-bar { height: 6px; border-radius: var(--sa-radius-full); background: var(--sa-surface-3); overflow: hidden; }
 .acq-source-bar .remplissage { height: 100%; border-radius: var(--sa-radius-full); background: var(--sa-accent); }
 .acq-source-value { grid-column: 2; font-size: var(--sa-text-2xs); color: var(--sa-text-faint); }
-.stats-funnel { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--sa-space-4); }
-.stats-funnel-step { text-align: center; }
-.stats-funnel-value { font-family: var(--sa-font-display); font-size: 1.4rem; font-weight: 800; color: var(--sa-text); }
-.stats-funnel-label { font-size: var(--sa-text-xs); color: var(--sa-text-muted); margin: 2px 0 8px; }
-.stats-funnel .sante-barre .remplissage { background: var(--sa-accent); }
+/* Un seul ruban continu (pas des cartes separees) : le sommet est coupe en
+   diagonale pour suggerer l'entonnoir qui se resserre, et chaque etape
+   passe d'un fond clair a l'accent champagne a mesure que l'on avance -
+   couleur posee en inline-style par mixHexColors() (interpolation pure,
+   aucune donnee metier). En dessous de 640px le ruban devient une pile
+   verticale (une etape par ligne) : la diagonale et le nowrap n'ont plus
+   de sens sur une colonne etroite, voir le media query associe. */
+.stats-funnel { display: flex; align-items: stretch; min-height: 84px; border-radius: var(--sa-radius-lg); overflow: hidden; clip-path: polygon(0 0, 100% 14%, 100% 100%, 0 100%); }
+.stats-funnel-step { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: var(--sa-space-3) var(--sa-space-2); }
+.stats-funnel-label { font-size: var(--sa-text-xs); color: var(--sa-text-on-accent); opacity: .72; margin: 0 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.stats-funnel-value { font-family: var(--sa-font-display); font-size: 1.2rem; font-weight: 800; color: var(--sa-text-on-accent); white-space: nowrap; }
+.stats-funnel-arrow { flex: 0 0 auto; width: 26px; display: flex; align-items: center; justify-content: center; background: var(--sa-border-strong); color: var(--sa-text-on-accent); opacity: .55; font-size: var(--sa-text-sm); }
+@media (max-width: 640px) {
+  .stats-funnel { flex-direction: column; clip-path: none; }
+  .stats-funnel-step { padding: var(--sa-space-3) var(--sa-space-4); }
+  .stats-funnel-label { white-space: normal; overflow: visible; text-overflow: clip; }
+  .stats-funnel-arrow { width: 100%; height: 20px; }
+  /* Seul le glyphe (petite boite en ligne dimensionnee a son texte)
+     pivote - jamais le conteneur flex, sinon sa boite de mise en page
+     (large et basse) tourne aussi et deborde sur les lignes voisines. */
+  .stats-funnel-arrow-glyph { display: inline-block; transform: rotate(90deg); }
+}
 
 /* ---------- Avis clients : score global + panneau "a demander" + grille
    2 colonnes de cartes d'avis. ---------- */
