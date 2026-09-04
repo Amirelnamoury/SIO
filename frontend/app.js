@@ -678,6 +678,12 @@ function setupProfilPanel() {
 // plan des l'ouverture de la vue (switchView() appelle deja tous les
 // load*() existants), seule leur visibilite change ici - zero nouvel appel
 // reseau au changement d'onglet.
+function afficherOngletEntreprise(cible) {
+  document.querySelectorAll("#view-entreprise [data-tab-panel]").forEach((panel) => {
+    panel.hidden = panel.dataset.tabPanel !== cible;
+  });
+}
+
 function setupEntrepriseTabs() {
   const tabs = document.getElementById("entreprise-tabs");
   if (!tabs) return;
@@ -686,11 +692,15 @@ function setupEntrepriseTabs() {
     if (!btn) return;
     tabs.querySelectorAll(".filter-chip").forEach((c) => c.classList.remove("active"));
     btn.classList.add("active");
-    const cible = btn.dataset.tab;
-    document.querySelectorAll("#view-entreprise [data-tab-panel]").forEach((panel) => {
-      panel.hidden = panel.dataset.tabPanel !== cible;
-    });
+    afficherOngletEntreprise(btn.dataset.tab);
   });
+  // Sans cet appel, les 8 panneaux restent tous visibles (leur etat naturel
+  // dans le HTML) tant qu'aucun clic n'a jamais eu lieu sur un onglet - le
+  // gestionnaire de clic ci-dessus ne s'execute qu'au premier clic. Le nom
+  // de l'onglet actif par defaut vient du bouton deja marque .active dans
+  // le HTML (voir index.html), jamais code en dur ici.
+  const ongletParDefaut = tabs.querySelector(".filter-chip.active")?.dataset.tab || "profil";
+  afficherOngletEntreprise(ongletParDefaut);
 }
 
 function loadEntrepriseForm() {
