@@ -2428,14 +2428,21 @@ async function loadClients() {
     CLIENT_PIPELINE_ORDRE.forEach((s) => (parColonne[s] = []));
     clients.forEach((c) => { (parColonne[c.statut] || (parColonne[c.statut] = [])).push(c); });
 
-    board.innerHTML = CLIENT_PIPELINE_ORDRE.map((statut) => {
+    board.innerHTML = CLIENT_PIPELINE_ORDRE.map((statut, i) => {
       const meta = CLIENT_STATUT_META[statut] || { label: statut };
       const items = parColonne[statut] || [];
+      // Valeur totale de la colonne : meme champ montant_estime deja utilise
+      // par la bande de KPI (prospectsKpiBandHtml), simplement resomme par
+      // colonne plutot que sur tout le pipeline actif.
+      const valeurColonne = items.reduce((s, c) => s + (c.montant_estime || 0), 0);
       return `
       <div class="kanban-column">
         <div class="kanban-column-header">
-          <span class="kanban-column-title">${meta.label}</span>
-          <span class="kanban-column-count">${items.length}</span>
+          <div>
+            <span class="kanban-column-title">${meta.label}</span>
+            <div class="kanban-column-meta">${items.length} prospect${items.length > 1 ? "s" : ""}${valeurColonne ? ` · ${fmtEuro(valeurColonne)}` : ""}</div>
+          </div>
+          ${i < CLIENT_PIPELINE_ORDRE.length - 1 ? '<span class="kanban-column-arrow">&rarr;</span>' : ""}
         </div>
         <div class="kanban-cards">
           ${items.length ? items.map(renderClientCard).join("") : '<div class="kanban-empty">Vide</div>'}
@@ -2453,17 +2460,24 @@ function renderClientCard(c) {
     .map(([value, m]) => `<option value="${value}" ${value === c.statut ? "selected" : ""}>${m.label}</option>`)
     .join("");
 
-  const infosComplementaires = [
-    c.montant_estime ? fmtEuro(c.montant_estime) + (c.probabilite !== null && c.probabilite !== undefined ? ` · ${c.probabilite}%` : "") : null,
-    c.source && c.source !== "manuel" ? "Source : " + (CLIENT_SOURCE_LABELS[c.source] || c.source) : null,
-  ].filter(Boolean);
+  // Triplet Source / Valeur / Action toujours affiche (avec un texte de
+  // repli explicite quand la donnee est absente), au lieu de lignes qui
+  // apparaissent ou disparaissent selon les champs renseignes - memes
+  // champs reels qu'avant (c.source, c.montant_estime, c.probabilite,
+  // c.prochaine_action), juste une presentation constante entre les cartes.
+  const sourceTxt = c.source && c.source !== "manuel" ? (CLIENT_SOURCE_LABELS[c.source] || c.source) : "Non renseignée";
+  const valeurTxt = c.montant_estime
+    ? fmtEuro(c.montant_estime) + (c.probabilite !== null && c.probabilite !== undefined ? ` · ${c.probabilite}%` : "")
+    : "Inconnue";
+  const actionTxt = c.prochaine_action || "Aucune action prévue";
 
   return `
   <div class="kanban-card" data-action="voir-timeline" data-id="${c.id}">
     <div class="kanban-card-title">${escapeHtml(c.nom)}</div>
     <div class="kanban-card-sub">${contact || "Pas de coordonnees"}${c.societe ? " · " + escapeHtml(c.societe) : ""}</div>
-    ${infosComplementaires.map((t) => `<div class="kanban-card-sub">${escapeHtml(t)}</div>`).join("")}
-    ${c.prochaine_action ? `<div class="kanban-card-next">→ ${escapeHtml(c.prochaine_action)}</div>` : ""}
+    <div class="kanban-card-field"><span class="kanban-card-field-label">Source</span>${escapeHtml(sourceTxt)}</div>
+    <div class="kanban-card-field"><span class="kanban-card-field-label">Valeur</span>${escapeHtml(valeurTxt)}</div>
+    <div class="kanban-card-field"><span class="kanban-card-field-label">Action</span>${escapeHtml(actionTxt)}</div>
     <div class="kanban-card-actions">
       <select data-action="changer-statut-client" data-id="${c.id}" aria-label="Statut de ${escapeHtml(c.nom)}">${statutOptions}</select>
       <button type="button" class="btn-sm btn-sm-danger" data-action="delete-client" data-id="${c.id}" title="Archiver" aria-label="Archiver">&times;</button>
