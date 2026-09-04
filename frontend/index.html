@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260903-atelier">
+<link rel="stylesheet" href="style.css?v=20260904-reference">
 </head>
 <body>
 
@@ -318,6 +318,8 @@
 
       <div id="client-form-container" hidden></div>
 
+      <div id="prospects-kpi-band"></div>
+
       <div class="kanban" id="clients-kanban"></div>
     </section>
 
@@ -350,12 +352,14 @@
 
       <div id="devis-form-container" hidden></div>
 
+      <div id="devis-kpi-band"></div>
+
       <div class="filters" id="devis-filters">
         <button type="button" class="filter-chip active" data-statut="">Tous</button>
-        <button type="button" class="filter-chip" data-statut="nouveau">Nouvelles demandes</button>
-        <button type="button" class="filter-chip" data-statut="envoye">Envoyés</button>
-        <button type="button" class="filter-chip" data-statut="signe">Signés</button>
-        <button type="button" class="filter-chip" data-statut="perdu">Perdus</button>
+        <button type="button" class="filter-chip" data-statut="nouveau">Nouvelles demandes <span class="filter-chip-count"></span></button>
+        <button type="button" class="filter-chip" data-statut="envoye">Envoyés <span class="filter-chip-count"></span></button>
+        <button type="button" class="filter-chip" data-statut="signe">Signés <span class="filter-chip-count"></span></button>
+        <button type="button" class="filter-chip" data-statut="perdu">Perdus <span class="filter-chip-count"></span></button>
       </div>
 
       <div class="list-header-row">
@@ -446,7 +450,11 @@
     <!-- ---------- Section Tâches ---------- -->
     <section id="view-taches" class="view" hidden>
       <div class="view-header">
-        <h2>Tâches</h2>
+        <div class="view-header-text">
+          <p class="view-header-eyebrow">Organisation</p>
+          <h2>Tâches</h2>
+          <p class="view-header-desc">Priorisez vos actions et ne laissez rien passer.</p>
+        </div>
         <button type="button" class="btn-primary" data-action="show-tache-form">+ Nouvelle tâche</button>
       </div>
 
@@ -463,7 +471,11 @@
     <!-- ---------- Section Documents ---------- -->
     <section id="view-documents" class="view" hidden>
       <div class="view-header">
-        <h2>Documents</h2>
+        <div class="view-header-text">
+          <p class="view-header-eyebrow">Organisation</p>
+          <h2>Documents</h2>
+          <p class="view-header-desc">Centralisez et retrouvez tous vos documents professionnels.</p>
+        </div>
         <div class="view-header-actions">
           <button type="button" class="btn-archives" data-action="voir-archives" data-entite="document">Archives</button>
           <button type="button" class="btn-primary" data-action="show-document-form">+ Ajouter un document</button>
@@ -488,14 +500,24 @@
 
     <!-- ---------- Section Statistiques ---------- -->
     <section id="view-statistiques" class="view" hidden>
-      <div class="view-header"><h2>Statistiques</h2></div>
+      <div class="view-header">
+        <div class="view-header-text">
+          <p class="view-header-eyebrow">Organisation</p>
+          <h2>Statistiques</h2>
+          <p class="view-header-desc">Analysez les performances et l'évolution de votre activité.</p>
+        </div>
+      </div>
       <div id="statistiques-content"></div>
     </section>
 
     <!-- ---------- Section Avis clients ---------- -->
     <section id="view-avis" class="view" hidden>
       <div class="view-header">
-        <h2>Avis clients</h2>
+        <div class="view-header-text">
+          <p class="view-header-eyebrow">Entreprise</p>
+          <h2>Avis clients</h2>
+          <p class="view-header-desc">Collectez, suivez et valorisez la satisfaction de vos clients.</p>
+        </div>
         <button type="button" class="btn-primary" data-action="show-avis-form">+ Saisir un avis</button>
       </div>
       <p class="section-hint">Avis reçus par téléphone, Google, en personne... ou soumis directement par vos clients via un lien que vous leur envoyez depuis leur fiche.</p>
@@ -681,7 +703,13 @@
 
     <!-- ---------- Section Notifications ---------- -->
     <section id="view-notifications" class="view" hidden>
-      <div class="view-header"><h2>Notifications</h2></div>
+      <div class="view-header">
+        <div class="view-header-text">
+          <p class="view-header-eyebrow">Entreprise</p>
+          <h2>Notifications</h2>
+          <p class="view-header-desc">Suivez les événements importants et les actions qui nécessitent votre attention.</p>
+        </div>
+      </div>
       <p class="section-hint">Devis à relancer, factures impayées et échéances de conformité, regroupés ici.</p>
       <div id="notifications-list" class="list"></div>
     </section>
@@ -761,7 +789,7 @@
 <script src="env.js"></script>
 <script src="config.js"></script>
 <script src="pricing.js"></script>
-<script src="api.js?v=20260902-quiet-premium"></script>
-<script src="app.js?v=20260902-quiet-premium"></script>
+<script src="api.js?v=20260904-reference"></script>
+<script src="app.js?v=20260904-reference"></script>
 </body>
 </html>

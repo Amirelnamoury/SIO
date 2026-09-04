@@ -2131,26 +2131,33 @@ async function loadDashboard() {
         </div>
       </div>
 
-      <div class="dash-money">
-        <div class="dash-money-hero">
-          <span class="dash-money-label">Chiffre d'affaires ce mois-ci</span>
-          <span class="dash-money-value">${fmtEuro(d.finances.ca_mois)}</span>
+      <div class="kpi-band">
+        <div class="kpi-card">
+          <div class="kpi-card-label">Chiffre d'affaires</div>
+          <div class="kpi-card-value">${fmtEuro(d.finances.ca_mois)}</div>
+          <div class="kpi-card-sub${d.finances.a_encaisser > 0 ? " is-alert" : ""}">${d.finances.a_encaisser > 0 ? `${fmtEuro(d.finances.a_encaisser)} à encaisser` : "Tout encaissé"}</div>
         </div>
-        <div class="dash-money-hero dash-money-hero-secondary${d.finances.a_encaisser > 0 ? " is-alert" : ""}">
-          <span class="dash-money-label">À encaisser</span>
-          <span class="dash-money-value">${fmtEuro(d.finances.a_encaisser)}</span>
+        <div class="kpi-card">
+          <div class="kpi-card-label">Devis en attente</div>
+          <div class="kpi-card-value">${d.commercial.devis_en_attente}</div>
+          <div class="kpi-card-sub">${fmtEuro(d.commercial.valeur_pipeline)} de pipeline</div>
         </div>
-        <div class="dash-money-stats">
-          <div class="dash-money-stat"><span class="dash-money-stat-value">${fmtEuro(d.commercial.valeur_pipeline)}</span><span class="dash-money-stat-label">Pipeline</span></div>
-          <div class="dash-money-stat"><span class="dash-money-stat-value">${d.commercial.devis_en_attente}</span><span class="dash-money-stat-label">Devis en attente</span></div>
-          <div class="dash-money-stat"><span class="dash-money-stat-value">${d.commercial.taux_transformation}%</span><span class="dash-money-stat-label">Transformation</span></div>
-          <div class="dash-money-stat"><span class="dash-money-stat-value">${d.commercial.nouveaux_prospects_7j}</span><span class="dash-money-stat-label">Nouveaux prospects</span></div>
+        <div class="kpi-card${d.aujourdhui.factures_en_retard.length ? " is-highlight" : ""}">
+          <div class="kpi-card-label">Factures en retard</div>
+          <div class="kpi-card-value">${d.aujourdhui.factures_en_retard.length}</div>
+          <div class="kpi-card-sub${d.aujourdhui.factures_en_retard.length ? " is-alert" : ""}">${fmtEuro(d.aujourdhui.factures_en_retard.reduce((s, f) => s + f.montant_restant, 0))}</div>
         </div>
-        ${d.finances.paiements_recents.length ? `
-        <div class="dash-money-payments">
-          ${d.finances.paiements_recents.map((p) => `<span class="dash-money-payment"><span>${fmtDate(p.date_paiement)} · ${p.moyen}</span><strong>${fmtEuro(p.montant)}</strong></span>`).join("")}
-        </div>` : ""}
+        <div class="kpi-card">
+          <div class="kpi-card-label">Nouveaux prospects</div>
+          <div class="kpi-card-value">${d.commercial.nouveaux_prospects_7j}</div>
+          <div class="kpi-card-sub">${d.commercial.taux_transformation}% de transformation</div>
+        </div>
       </div>
+      ${d.finances.paiements_recents.length ? `
+      <div class="dash-section">
+        <h3>Paiements récents</h3>
+        ${d.finances.paiements_recents.map((p) => `<div class="dash-row"><span>${fmtDate(p.date_paiement)} · ${p.moyen}</span><strong>${fmtEuro(p.montant)}</strong></div>`).join("")}
+      </div>` : ""}
 
       ${activationChecklistHtml(activation)}
 
@@ -2181,12 +2188,52 @@ const CLIENT_PIPELINE_ORDRE = [
   "devis_a_faire", "devis_envoye", "negociation", "gagne", "perdu",
 ];
 
+// Bande de KPI du pipeline : calculee sur le pipeline actif (hors gagne/perdu,
+// qui sont des etats de sortie), a partir des memes clients deja recus.
+function prospectsKpiBandHtml(clients) {
+  const actifs = clients.filter((c) => !["gagne", "perdu"].includes(c.statut));
+  const aContacter = actifs.filter((c) => c.statut === "nouveau").length;
+  const enQualif = actifs.filter((c) => c.statut === "qualification").length;
+  const visites = actifs.filter((c) => c.statut === "visite_prevue").length;
+  const valeurPipeline = actifs.reduce((s, c) => s + (c.montant_estime || 0), 0);
+  return `
+  <div class="kpi-band">
+    <div class="kpi-card">
+      <div class="kpi-card-label">Total prospects</div>
+      <div class="kpi-card-value">${actifs.length}</div>
+      <div class="kpi-card-sub">Pipeline actif</div>
+    </div>
+    <div class="kpi-card${aContacter ? " is-highlight" : ""}">
+      <div class="kpi-card-label">À contacter</div>
+      <div class="kpi-card-value">${aContacter}</div>
+      <div class="kpi-card-sub">Nouveaux contacts</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-label">En qualification</div>
+      <div class="kpi-card-value">${enQualif}</div>
+      <div class="kpi-card-sub">&nbsp;</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-label">Visites à venir</div>
+      <div class="kpi-card-value">${visites}</div>
+      <div class="kpi-card-sub">&nbsp;</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-label">Valeur pipeline</div>
+      <div class="kpi-card-value">${fmtEuro(valeurPipeline)}</div>
+      <div class="kpi-card-sub">Estimée, pipeline actif</div>
+    </div>
+  </div>`;
+}
+
 async function loadClients() {
+  const kpiBand = document.getElementById("prospects-kpi-band");
   const board = document.getElementById("clients-kanban");
   board.innerHTML = skeletonCards();
   try {
     const clients = await Api.listClients();
     clientsCache = clients;
+    if (kpiBand) kpiBand.innerHTML = clients.length ? prospectsKpiBandHtml(clients) : "";
     if (clients.length === 0) {
       board.innerHTML = `<div class="empty-state">
         Aucun contact pour le moment.<br><br>
@@ -2660,12 +2707,75 @@ function renderClientDirectoryRow(c) {
 }
 
 // ===================== Devis & relances =====================
+// Bande de KPI + compteurs par onglet : calcules a partir de la liste
+// complete (jamais filtree par le statut actif), memes champs deja
+// renvoyes par l'API pour chaque devis - aucune nouvelle donnee.
+function devisKpiBandHtml(tousDevis, nbARelancer) {
+  const enCours = tousDevis.filter((d) => !["signe", "perdu", "expire"].includes(d.statut));
+  const enAttente = tousDevis.filter((d) => d.statut === "nouveau");
+  const valeurEnJeu = enCours.reduce((s, d) => s + (d.montant_ttc || 0), 0);
+  const signes = tousDevis.filter((d) => d.statut === "signe").length;
+  const perdus = tousDevis.filter((d) => d.statut === "perdu").length;
+  const tauxSignature = signes + perdus > 0 ? Math.round((signes / (signes + perdus)) * 100) : null;
+  return `
+  <div class="kpi-band">
+    <div class="kpi-card">
+      <div class="kpi-card-label">Devis en cours</div>
+      <div class="kpi-card-value">${enCours.length}</div>
+      <div class="kpi-card-sub">Total : ${tousDevis.length}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-label">En attente</div>
+      <div class="kpi-card-value">${enAttente.length}</div>
+      <div class="kpi-card-sub">Pas encore envoyés</div>
+    </div>
+    <div class="kpi-card${nbARelancer ? " is-highlight" : ""}">
+      <div class="kpi-card-label">À relancer</div>
+      <div class="kpi-card-value">${nbARelancer}</div>
+      <div class="kpi-card-sub${nbARelancer ? " is-alert" : ""}">${nbARelancer ? "Relance due" : "Rien à relancer"}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-label">Valeur en jeu</div>
+      <div class="kpi-card-value">${fmtEuro(valeurEnJeu)}</div>
+      <div class="kpi-card-sub">TTC, devis en cours</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-label">Taux de signature</div>
+      <div class="kpi-card-value">${tauxSignature !== null ? tauxSignature + "%" : "—"}</div>
+      <div class="kpi-card-sub">${signes} signé${signes > 1 ? "s" : ""} · ${perdus} perdu${perdus > 1 ? "s" : ""}</div>
+    </div>
+  </div>`;
+}
+
+function devisTabCountsHtml(tousDevis) {
+  const compte = (statut) => tousDevis.filter((d) => d.statut === statut).length;
+  return {
+    nouveau: compte("nouveau"),
+    envoye: tousDevis.filter((d) => ["envoye", "consulte", "relance_j3", "relance_j7", "relance_j15"].includes(d.statut)).length,
+    signe: compte("signe"),
+    perdu: compte("perdu"),
+  };
+}
+
 async function loadDevis() {
+  const kpiBand = document.getElementById("devis-kpi-band");
   const list = document.getElementById("devis-list");
   list.innerHTML = skeletonCards();
   try {
-    const [devis, aRelancer] = await Promise.all([Api.listDevis(currentDevisFilter), Api.devisARelancer()]);
+    const [devis, tousDevis, aRelancer] = await Promise.all([
+      Api.listDevis(currentDevisFilter), Api.listDevis(), Api.devisARelancer(),
+    ]);
     devisDueIds = new Set(aRelancer.map((d) => d.id));
+    if (kpiBand) kpiBand.innerHTML = devisKpiBandHtml(tousDevis, aRelancer.length);
+    const counts = devisTabCountsHtml(tousDevis);
+    const setCount = (statut, n) => {
+      const el = document.querySelector(`#devis-filters .filter-chip[data-statut="${statut}"] .filter-chip-count`);
+      if (el) el.textContent = `(${n})`;
+    };
+    setCount("nouveau", counts.nouveau);
+    setCount("envoye", counts.envoye);
+    setCount("signe", counts.signe);
+    setCount("perdu", counts.perdu);
     if (devis.length === 0) {
       list.innerHTML = '<div class="empty-state">Aucun devis pour le moment.</div>';
       return;
@@ -3143,10 +3253,22 @@ function tresorerieHeaderHtml(factures) {
   const facturesEnRetard = enCours.filter((f) => f.est_en_retard);
   const enRetard = facturesEnRetard.reduce((s, f) => s + f.montant_restant, 0);
   return `
-  <div class="kpi-row">
-    <div class="kpi-inline is-primary"><span class="kpi-label">À encaisser</span><span class="kpi-value">${fmtEuro(aEncaisser)}</span></div>
-    <div class="kpi-inline${enRetard > 0 ? " is-alert" : ""}"><span class="kpi-label">Dont en retard</span><span class="kpi-value">${fmtEuro(enRetard)}</span></div>
-    <div class="kpi-inline"><span class="kpi-label">Factures en cours</span><span class="kpi-value">${enCours.length}</span></div>
+  <div class="kpi-band">
+    <div class="kpi-card">
+      <div class="kpi-card-label">À encaisser</div>
+      <div class="kpi-card-value">${fmtEuro(aEncaisser)}</div>
+      <div class="kpi-card-sub">${enCours.length} facture${enCours.length > 1 ? "s" : ""}</div>
+    </div>
+    <div class="kpi-card${enRetard > 0 ? " is-highlight" : ""}">
+      <div class="kpi-card-label">En retard</div>
+      <div class="kpi-card-value${enRetard > 0 ? " is-alert" : ""}">${fmtEuro(enRetard)}</div>
+      <div class="kpi-card-sub${enRetard > 0 ? " is-alert" : ""}">${facturesEnRetard.length} facture${facturesEnRetard.length > 1 ? "s" : ""}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-label">Factures en cours</div>
+      <div class="kpi-card-value">${enCours.length}</div>
+      <div class="kpi-card-sub">Hors brouillons et payées</div>
+    </div>
   </div>`;
 }
 
