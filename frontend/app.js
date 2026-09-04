@@ -5109,27 +5109,39 @@ function tacheEcheanceMeta(t) {
   return { label: fmtDate(t.echeance), pill: "pill-gray" };
 }
 
+let tachesCache = [];
+let currentTacheSousFiltre = ""; // "" | en_retard | aujourdhui | cette_semaine (voir tacheGroupe)
+
+function renderTachesFiltered() {
+  const list = document.getElementById("taches-list");
+  if (tachesCache.length === 0) {
+    list.innerHTML = '<div class="empty-state">Aucune tâche ici.</div>';
+    return;
+  }
+  if (currentTacheFilter !== "a_faire") {
+    list.innerHTML = tachesCache.map(renderTacheRow).join("");
+    reapplyListSearch("taches-search", "#taches-list .tache-row");
+    return;
+  }
+  const parGroupe = {};
+  tachesCache.forEach((t) => { (parGroupe[tacheGroupe(t)] = parGroupe[tacheGroupe(t)] || []).push(t); });
+  const groupesAffiches = currentTacheSousFiltre ? [currentTacheSousFiltre] : TACHE_GROUPE_ORDRE;
+  const html = groupesAffiches
+    .filter((g) => parGroupe[g] && parGroupe[g].length)
+    .map((g) => `
+      <div class="tache-groupe-label">${TACHE_GROUPE_LABELS[g]}</div>
+      ${parGroupe[g].map(renderTacheRow).join("")}
+    `).join("");
+  list.innerHTML = html || '<div class="empty-state">Aucune tâche dans ce filtre.</div>';
+  reapplyListSearch("taches-search", "#taches-list .tache-row");
+}
+
 async function loadTaches() {
   const list = document.getElementById("taches-list");
   list.innerHTML = skeletonCards();
   try {
-    const taches = await Api.listTaches(currentTacheFilter);
-    if (taches.length === 0) {
-      list.innerHTML = '<div class="empty-state">Aucune tâche ici.</div>';
-      return;
-    }
-    if (currentTacheFilter !== "a_faire") {
-      list.innerHTML = taches.map(renderTacheRow).join("");
-      return;
-    }
-    const parGroupe = {};
-    taches.forEach((t) => { (parGroupe[tacheGroupe(t)] = parGroupe[tacheGroupe(t)] || []).push(t); });
-    list.innerHTML = TACHE_GROUPE_ORDRE
-      .filter((g) => parGroupe[g] && parGroupe[g].length)
-      .map((g) => `
-        <div class="tache-groupe-label">${TACHE_GROUPE_LABELS[g]}</div>
-        ${parGroupe[g].map(renderTacheRow).join("")}
-      `).join("");
+    tachesCache = await Api.listTaches(currentTacheFilter);
+    renderTachesFiltered();
   } catch (err) {
     list.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
   }
@@ -5220,6 +5232,15 @@ function setupTachesView() {
     chip.classList.add("active");
     currentTacheFilter = chip.dataset.statut;
     loadTaches();
+  });
+
+  document.getElementById("tache-subfilters").addEventListener("click", (e) => {
+    const btn = e.target.closest(".subfilter-link");
+    if (!btn) return;
+    document.querySelectorAll("#tache-subfilters .subfilter-link").forEach((c) => c.classList.remove("active"));
+    btn.classList.add("active");
+    currentTacheSousFiltre = btn.dataset.groupe;
+    renderTachesFiltered();
   });
 
   document.querySelector('[data-action="show-tache-form"]').addEventListener("click", showTacheForm);
@@ -6212,6 +6233,7 @@ function setupListesSearch() {
   setupListeSearch("documents-search", "#documents-list .doc-row");
   setupListeSearch("avis-search", "#avis-list .avis-card");
   setupListeSearch("notifications-search", "#notifications-list .notif-row");
+  setupListeSearch("taches-search", "#taches-list .tache-row");
 }
 
 // ===================== Initialisation =====================

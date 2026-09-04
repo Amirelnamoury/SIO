@@ -530,6 +530,17 @@ input[readonly] { background: var(--sa-surface-2); }
 .filter-chip.active { color: var(--sa-text); border-bottom-color: var(--sa-accent); font-weight: var(--sa-weight-semibold); }
 .filter-chip-count { color: var(--sa-text-faint); font-weight: var(--sa-weight-medium); font-variant-numeric: tabular-nums; }
 
+/* ---------- Sous-filtres en ligne (ex : Taches - Toutes/Aujourd'hui/En
+   retard/Cette semaine) : liens texte separes par un point, plus discrets
+   qu'un .filter-chip plein, pour un deuxieme niveau de filtre sous les
+   onglets principaux. ---------- */
+.subfilters { display: flex; flex-wrap: wrap; gap: 0; align-items: center; margin-bottom: var(--sa-space-5); font-size: var(--sa-text-sm); }
+.subfilter-link { border: none; background: transparent; padding: 4px 8px; color: var(--sa-text-muted); font-size: inherit; }
+.subfilter-link:first-child { padding-left: 0; }
+.subfilter-link:not(:last-child)::after { content: "·"; margin-left: 16px; color: var(--sa-text-faint); }
+.subfilter-link:hover { color: var(--sa-text); }
+.subfilter-link.active { color: var(--sa-text); font-weight: var(--sa-weight-semibold); }
+
 /* ---------- Recherche de liste (Prospects/Clients/Devis/Factures/Chantiers/
    Documents/Avis/Notifications) ---------- */
 /* Filtre purement visuel sur le texte deja affiche (voir setupListeSearch
