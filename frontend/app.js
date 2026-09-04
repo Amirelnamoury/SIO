@@ -2165,12 +2165,14 @@ function taskRowHtml(item) {
   // plutot qu'une seule chaine concatenee : memes donnees deja calculees
   // par prioriteItems, juste reparties pour rester scannable d'un coup
   // d'oeil (voir aussi item.label, conserve tel quel pour compat).
+  // Le type (Facture/Devis/...) n'est plus affiche en ligne : chaque ligne
+  // vit desormais sous un en-tete de categorie (voir dashTaskGroupsHtml) qui
+  // joue deja ce role, comme sur la reference.
   return `
   <div class="task-row ${classe}">
     <span class="task-dot"></span>
     <div class="task-row-body">
       <div class="task-row-top">
-        ${item.type ? `<span class="task-row-type">${item.type}</span>` : ""}
         <span class="task-row-titre">${item.titre || item.label}</span>
       </div>
       ${item.meta ? `<span class="task-row-meta">${item.meta}</span>` : ""}
@@ -2178,6 +2180,21 @@ function taskRowHtml(item) {
     ${item.montant ? `<span class="task-row-montant">${item.montant}</span>` : ""}
     <span class="task-row-actions">${actionBtn}${voirBtn}</span>
   </div>`;
+}
+
+// Regroupe les items "a faire" par categorie avec un sous-en-tete (comme
+// "FACTURES EN RETARD" / "DEVIS A RELANCER" sur la reference), au lieu
+// d'une liste plate ou seul un badge en ligne indiquait le type. Memes
+// items, seul le regroupement visuel change.
+function dashTaskGroupsHtml(groupes) {
+  return groupes
+    .filter((g) => g.items.length)
+    .map((g) => `
+      <div class="task-group">
+        <p class="task-group-label">${g.label}</p>
+        <div class="task-feed">${g.items.map(taskRowHtml).join("")}</div>
+      </div>`)
+    .join("");
 }
 
 const RECOMMANDATION_URGENCE_LABELS = { haute: "Important", moyenne: "À surveiller", basse: "Info" };
@@ -2252,8 +2269,12 @@ async function loadDashboard() {
   const container = document.getElementById("dashboard-content");
   container.innerHTML = skeletonCards();
   try {
-    const [d, recommandations, sante, activation] = await Promise.all([
+    const [d, recommandations, sante, activation, chantiers] = await Promise.all([
       Api.dashboard(), Api.dashboardRecommandations(), Api.dashboardSante(), Api.dashboardActivation(),
+      // "Chantiers en cours" n'existe pas dans DashboardOut (voir backend/app/
+      // schemas.py) : meme endpoint que la page Chantiers, avec le meme
+      // repli silencieux qu'ailleurs si le plan ne l'autorise pas.
+      Api.listChantiers().catch(() => []),
     ]);
 
     // Compte neuf : aucun client, devis ou facture pose encore. Un ecran de
@@ -2283,41 +2304,59 @@ async function loadDashboard() {
       return;
     }
 
-    // "A faire" = ce qui demande une action ; les rendez-vous du jour vivent
-    // a part, dans le panneau "Aujourd'hui au planning" (meme donnee
-    // d.aujourdhui.evenements, seule la place dans la page change).
-    const prioriteItems = [
-      ...d.aujourdhui.factures_en_retard.map((f) => ({
-        urgence: "haute", view: "factures",
-        type: "Facture", titre: escapeHtml(f.client_nom), meta: `${escapeHtml(f.numero)} · en retard`,
-        montant: fmtEuro(f.montant_restant),
-        label: `${escapeHtml(f.numero)} · ${escapeHtml(f.client_nom)} · ${fmtEuro(f.montant_restant)} en retard`,
-        ...(hasPlan("essentiel") ? { action: "relancer-facture", actionId: f.id, actionLabel: "Relancer" } : {}),
-      })),
-      ...d.alertes_conformite.map((c) => ({
-        urgence: c.jours_restants < 7 ? "haute" : "moyenne", view: "entreprise",
-        type: "Conformité", titre: escapeHtml(c.libelle), meta: `Expire dans ${c.jours_restants} j`,
-        label: `${escapeHtml(c.libelle)} · expire dans ${c.jours_restants} j`,
-      })),
-      ...d.aujourdhui.devis_a_relancer.map((dv) => ({
-        urgence: "moyenne", view: "devis",
-        type: "Devis", titre: escapeHtml(dv.client_nom), meta: escapeHtml(dv.numero || "Devis #" + dv.id),
-        label: `Relancer ${escapeHtml(dv.client_nom)} (${escapeHtml(dv.numero || "devis #" + dv.id)})`,
-        ...(hasPlan("essentiel") && dv.relance_manuelle_possible !== false
-          ? { action: "relancer-devis", actionId: dv.id, actionLabel: "Relancer" }
-          : {}),
-      })),
-      ...d.aujourdhui.taches.map((t) => ({
-        urgence: "moyenne", view: "taches",
-        type: "Tâche", titre: escapeHtml(t.titre),
-        label: `Tache du jour : ${escapeHtml(t.titre)}`,
-      })),
-      ...d.aujourdhui.chantiers_a_venir.map((c) => ({
-        urgence: "basse", view: "chantiers",
-        type: "Chantier", titre: escapeHtml(c.titre), meta: `Commence le ${fmtDate(c.date_debut)}`,
-        label: `Chantier '${escapeHtml(c.titre)}' commence le ${fmtDate(c.date_debut)}`,
-      })),
+    // "A faire" = ce qui demande une action, regroupe par categorie (comme
+    // "FACTURES EN RETARD" / "DEVIS A RELANCER" sur la reference) plutot
+    // qu'en une seule liste plate ; les rendez-vous du jour vivent a part,
+    // dans le panneau "Planning du jour" (meme donnee d.aujourdhui.
+    // evenements, seule la place dans la page change).
+    const taskGroupes = [
+      {
+        label: "Factures en retard",
+        items: d.aujourdhui.factures_en_retard.map((f) => ({
+          urgence: "haute", view: "factures",
+          titre: escapeHtml(f.client_nom), meta: `${escapeHtml(f.numero)} · en retard`,
+          montant: fmtEuro(f.montant_restant),
+          label: `${escapeHtml(f.numero)} · ${escapeHtml(f.client_nom)} · ${fmtEuro(f.montant_restant)} en retard`,
+          ...(hasPlan("essentiel") ? { action: "relancer-facture", actionId: f.id, actionLabel: "Relancer" } : {}),
+        })),
+      },
+      {
+        label: "Devis à relancer",
+        items: d.aujourdhui.devis_a_relancer.map((dv) => ({
+          urgence: "moyenne", view: "devis",
+          titre: escapeHtml(dv.client_nom), meta: escapeHtml(dv.numero || "Devis #" + dv.id),
+          label: `Relancer ${escapeHtml(dv.client_nom)} (${escapeHtml(dv.numero || "devis #" + dv.id)})`,
+          ...(hasPlan("essentiel") && dv.relance_manuelle_possible !== false
+            ? { action: "relancer-devis", actionId: dv.id, actionLabel: "Relancer" }
+            : {}),
+        })),
+      },
+      {
+        label: "Conformité",
+        items: d.alertes_conformite.map((c) => ({
+          urgence: c.jours_restants < 7 ? "haute" : "moyenne", view: "entreprise",
+          titre: escapeHtml(c.libelle), meta: `Expire dans ${c.jours_restants} j`,
+          label: `${escapeHtml(c.libelle)} · expire dans ${c.jours_restants} j`,
+        })),
+      },
+      {
+        label: "Tâches",
+        items: d.aujourdhui.taches.map((t) => ({
+          urgence: "moyenne", view: "taches",
+          titre: escapeHtml(t.titre),
+          label: `Tache du jour : ${escapeHtml(t.titre)}`,
+        })),
+      },
+      {
+        label: "Chantiers à venir",
+        items: d.aujourdhui.chantiers_a_venir.map((c) => ({
+          urgence: "basse", view: "chantiers",
+          titre: escapeHtml(c.titre), meta: `Commence le ${fmtDate(c.date_debut)}`,
+          label: `Chantier '${escapeHtml(c.titre)}' commence le ${fmtDate(c.date_debut)}`,
+        })),
+      },
     ];
+    const prioriteItems = taskGroupes.flatMap((g) => g.items);
 
     const planningDuJourHtml = d.aujourdhui.evenements.length
       ? d.aujourdhui.evenements.map((e) => `
@@ -2331,47 +2370,25 @@ async function loadDashboard() {
           <span class="dash-agenda-empty-sub">Aucun rendez-vous prévu aujourd'hui.</span>
         </div>`;
 
-    // Nouvelle composition (refonte dashboard) : 1) un bandeau editorial qui
-    // resume la journee en une phrase (memes compteurs que le reste, juste
-    // lus une fois de plus tot) ; 2) une zone "aujourd'hui" dominante et
-    // asymetrique (a faire / planning, jamais 50-50) ; 3) une bande argent
-    // avec deux chiffres forts (CA, a encaisser) et le reste en petit ;
-    // 4) un niveau secondaire resserre (recommandations/sante/presence).
-    // Memes appels API, memes valeurs deja calculees cote serveur - seule
-    // la composition change.
+    // Ordre et contenu calques sur la reference (01-dashboard) : bandeau
+    // statique, PUIS la bande de KPI, PUIS "A faire"/Planning - dans cet
+    // ordre precis. Les 4 KPI reprennent exactement les 4 categories de la
+    // reference (CA, devis en attente, factures a relancer, chantiers en
+    // cours), pas une substitution jugee "plus utile" (l'ancienne 4e carte
+    // "Nouveaux prospects" a ete retiree : la reference ne montre que ces 4
+    // categories sur le dashboard, cette donnee reste consultable sur
+    // Prospects/Statistiques).
     const nbUrgent = prioriteItems.length;
-    const nbRdv = d.aujourdhui.evenements.length;
-    let lede;
-    if (nbUrgent > 0 && nbRdv > 0) {
-      lede = `${nbUrgent} chose${nbUrgent > 1 ? "s" : ""} à traiter, ${nbRdv} rendez-vous aujourd'hui.`;
-    } else if (nbUrgent > 0) {
-      lede = `${nbUrgent} chose${nbUrgent > 1 ? "s" : ""} à traiter aujourd'hui.`;
-    } else if (nbRdv > 0) {
-      lede = `${nbRdv} rendez-vous aujourd'hui, rien d'urgent à traiter.`;
-    } else {
-      lede = "Rien d'urgent aujourd'hui.";
-    }
+    // "Chantiers en cours" : meme definition que la bande de KPI de la page
+    // Chantiers (statut hors a_preparer/termine/facture/paye), appliquee ici
+    // aux chantiers recuperes en plus (voir Promise.all ci-dessus).
+    const chantiersEnCours = chantiers.filter((c) => !["a_preparer", "termine", "facture", "paye"].includes(c.statut));
+    const prochainChantier = d.aujourdhui.chantiers_a_venir[0];
 
     container.innerHTML = `
       <div class="dash-masthead">
         <p class="dash-masthead-eyebrow">${dateLabel}</p>
-        <h2 class="dash-masthead-lede">${lede}</h2>
-      </div>
-
-      <div class="dash-today">
-        <div class="dash-today-main">
-          <div class="dash-today-head">
-            <h3>À faire</h3>
-            ${nbUrgent ? `<span class="dash-today-count">${nbUrgent}</span>` : ""}
-          </div>
-          ${prioriteItems.length
-            ? `<div class="task-feed">${prioriteItems.map(taskRowHtml).join("")}</div>`
-            : '<div class="dash-today-clear">Rien qui nécessite votre attention aujourd\'hui.</div>'}
-        </div>
-        <div class="dash-today-rail">
-          <h3>Planning</h3>
-          <div class="dash-agenda">${planningDuJourHtml}</div>
-        </div>
+        <h2 class="dash-masthead-lede">Votre activité, en un coup d'œil.</h2>
       </div>
 
       <div class="kpi-band">
@@ -2386,14 +2403,30 @@ async function loadDashboard() {
           <div class="kpi-card-sub">${fmtEuro(d.commercial.valeur_pipeline)} de pipeline</div>
         </div>
         <div class="kpi-card${d.aujourdhui.factures_en_retard.length ? " is-highlight" : ""}">
-          <div class="kpi-card-label">Factures en retard</div>
+          <div class="kpi-card-label">Factures à relancer</div>
           <div class="kpi-card-value">${d.aujourdhui.factures_en_retard.length}</div>
           <div class="kpi-card-sub${d.aujourdhui.factures_en_retard.length ? " is-alert" : ""}">${fmtEuro(d.aujourdhui.factures_en_retard.reduce((s, f) => s + f.montant_restant, 0))}</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-card-label">Nouveaux prospects</div>
-          <div class="kpi-card-value">${d.commercial.nouveaux_prospects_7j}</div>
-          <div class="kpi-card-sub">${d.commercial.taux_transformation}% de transformation</div>
+          <div class="kpi-card-label">Chantiers en cours</div>
+          <div class="kpi-card-value">${chantiersEnCours.length}</div>
+          <div class="kpi-card-sub">${prochainChantier ? `Prochain : ${escapeHtml(prochainChantier.titre)}` : "&nbsp;"}</div>
+        </div>
+      </div>
+
+      <div class="dash-today">
+        <div class="dash-today-main">
+          <div class="dash-today-head">
+            <h3>À faire</h3>
+            ${nbUrgent ? `<span class="dash-today-count">${nbUrgent}</span>` : ""}
+          </div>
+          ${prioriteItems.length
+            ? dashTaskGroupsHtml(taskGroupes)
+            : '<div class="dash-today-clear">Rien qui nécessite votre attention aujourd\'hui.</div>'}
+        </div>
+        <div class="dash-today-rail">
+          <h3>Planning du jour</h3>
+          <div class="dash-agenda">${planningDuJourHtml}</div>
         </div>
       </div>
       ${d.finances.paiements_recents.length ? `

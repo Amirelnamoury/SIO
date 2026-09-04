@@ -701,10 +701,15 @@ input[readonly] { background: var(--sa-surface-2); }
 /* =====================================================================
    TASK FEED — "A faire aujourd'hui", le coeur du dashboard.
    ===================================================================== */
+/* Un groupe par categorie (Factures en retard / Devis a relancer / ...),
+   chacun avec son propre sous-en-tete - voir dashTaskGroupsHtml(). */
+.task-group + .task-group { margin-top: var(--sa-space-5); }
+.task-group-label { font-size: var(--sa-text-2xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sa-text-faint); margin: 0 0 6px; padding: 0 4px; }
 .task-feed { display: flex; flex-direction: column; }
 .task-row { display: flex; align-items: flex-start; gap: 11px; padding: 12px 4px; border-bottom: 1px solid var(--sa-border); }
 .task-row:last-child { border-bottom: none; }
 .task-row.urgence-haute { padding-left: 12px; box-shadow: inset 2px 0 0 var(--sa-danger); }
+.task-row.urgence-moyenne { padding-left: 12px; box-shadow: inset 2px 0 0 var(--sa-warning); }
 .task-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; background: var(--sa-border-strong); margin-top: 6px; }
 .task-row.urgence-haute .task-dot { background: var(--sa-danger); }
 .task-row.urgence-moyenne .task-dot { background: var(--sa-warning); }
@@ -712,7 +717,6 @@ input[readonly] { background: var(--sa-surface-2); }
 .task-row.urgence-info .task-dot { background: var(--sa-success); }
 .task-row-body { flex: 1; min-width: 0; }
 .task-row-top { display: flex; align-items: baseline; gap: 7px; flex-wrap: wrap; }
-.task-row-type { font-size: 0.64rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sa-text-faint); flex-shrink: 0; }
 .task-row-titre { font-size: var(--sa-text-sm); color: var(--sa-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .task-row.urgence-haute .task-row-titre { font-weight: 600; }
 .task-row-meta { display: block; font-size: var(--sa-text-xs); color: var(--sa-text-muted); margin-top: 2px; }
