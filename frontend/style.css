@@ -722,7 +722,111 @@ input[readonly] { background: var(--sa-surface-2); }
 .sante-sous-score .ligne .valeur { font-weight: var(--sa-weight-bold); }
 .sante-barre { height: 4px; border-radius: var(--sa-radius-full); background: var(--sa-surface-3); overflow: hidden; }
 .sante-barre .remplissage { height: 100%; border-radius: var(--sa-radius-full); background: var(--sa-accent); }
+.sante-barre .remplissage.niveau-haut { background: var(--sa-success); }
+.sante-barre .remplissage.niveau-moyen { background: var(--sa-warning); }
+.sante-barre .remplissage.niveau-bas { background: var(--sa-danger); }
 .sante-sous-score .raison { font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
+
+/* =====================================================================
+   PILL — badge a fond teinte (par opposition a .badge, point + texte).
+   Utilise pour les dates d'echeance et priorites (Taches), les types
+   (Documents), les etats de publication (Avis).
+   ===================================================================== */
+.pill {
+  display: inline-flex; align-items: center; padding: 3px 10px; border-radius: var(--sa-radius-full);
+  font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-semibold); white-space: nowrap;
+  background: var(--sa-surface-3); color: var(--sa-text-muted);
+}
+.pill-gray { background: var(--sa-surface-3); color: var(--sa-text-muted); }
+.pill-orange { background: var(--sa-warning-soft); color: var(--sa-warning); }
+.pill-red { background: var(--sa-danger-soft); color: var(--sa-danger); }
+.pill-green { background: var(--sa-success-soft); color: var(--sa-success); }
+.pill-accent { background: var(--sa-accent-soft); color: var(--sa-accent); }
+
+/* ---------- Statistiques : panneau CA + graphique en aire (SVG). ---------- */
+.stats-ca-panel { background: var(--sa-surface); border: 1px solid var(--sa-border); border-radius: var(--sa-radius-lg); padding: var(--sa-space-6); margin-bottom: var(--sa-space-6); }
+.stats-ca-head { margin-bottom: var(--sa-space-4); }
+.stats-ca-value { font-family: var(--sa-font-display); font-size: 2.2rem; font-weight: 800; color: var(--sa-text); letter-spacing: -0.02em; margin-top: 4px; }
+.chart-svg { width: 100%; height: auto; display: block; }
+.chart-gridline { stroke: var(--sa-border); stroke-width: 1; }
+.chart-axis-label { fill: var(--sa-text-faint); font-size: 9px; font-family: var(--sa-font); }
+.acq-source-list { display: flex; flex-direction: column; gap: var(--sa-space-3); }
+.acq-source-row { display: grid; grid-template-columns: 110px 1fr; gap: 4px 10px; align-items: center; }
+.acq-source-label { font-size: var(--sa-text-xs); color: var(--sa-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acq-source-bar { height: 6px; border-radius: var(--sa-radius-full); background: var(--sa-surface-3); overflow: hidden; }
+.acq-source-bar .remplissage { height: 100%; border-radius: var(--sa-radius-full); background: var(--sa-accent); }
+.acq-source-value { grid-column: 2; font-size: var(--sa-text-2xs); color: var(--sa-text-faint); }
+.stats-funnel { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--sa-space-4); }
+.stats-funnel-step { text-align: center; }
+.stats-funnel-value { font-family: var(--sa-font-display); font-size: 1.4rem; font-weight: 800; color: var(--sa-text); }
+.stats-funnel-label { font-size: var(--sa-text-xs); color: var(--sa-text-muted); margin: 2px 0 8px; }
+.stats-funnel .sante-barre .remplissage { background: var(--sa-accent); }
+
+/* ---------- Avis clients : score global + panneau "a demander" + grille
+   2 colonnes de cartes d'avis. ---------- */
+.avis-resume-grid { display: grid; grid-template-columns: minmax(220px, .8fr) minmax(300px, 1.4fr); gap: var(--sa-space-5); margin-bottom: var(--sa-space-6); align-items: stretch; }
+@media (max-width: 760px) { .avis-resume-grid { grid-template-columns: 1fr; } }
+.avis-score-card { background: var(--sa-surface); border: 1px solid var(--sa-border); border-radius: var(--sa-radius-lg); padding: var(--sa-space-6); display: flex; flex-direction: column; justify-content: center; }
+.avis-score-chiffre { font-family: var(--sa-font-display); font-size: 2.6rem; font-weight: 800; color: var(--sa-text); letter-spacing: -0.02em; }
+.avis-score-chiffre span { font-size: 1.2rem; font-weight: 600; color: var(--sa-text-muted); }
+.avis-score-stars { font-size: 1.2rem; margin: 6px 0 4px; }
+.avis-score-sub { font-size: var(--sa-text-sm); color: var(--sa-text-muted); }
+.avis-demander-card { background: var(--sa-surface); border: 1px solid var(--sa-border); border-radius: var(--sa-radius-lg); padding: var(--sa-space-5); }
+.avis-demander-title { font-size: var(--sa-text-xs); font-weight: var(--sa-weight-bold); text-transform: uppercase; letter-spacing: 0.05em; color: var(--sa-text-faint); margin-bottom: var(--sa-space-3); }
+.avis-demander-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--sa-space-3); }
+.avis-demander-item { border: 1px solid var(--sa-border); border-radius: var(--sa-radius-md); padding: 10px 12px; }
+.avis-demander-nom { font-size: var(--sa-text-sm); font-weight: var(--sa-weight-semibold); color: var(--sa-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.avis-demander-sub { font-size: var(--sa-text-xs); color: var(--sa-text-muted); margin-bottom: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.avis-demander-item .btn-sm { width: 100%; }
+.avis-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--sa-space-3); }
+.avis-card { background: var(--sa-surface); border: 1px solid var(--sa-border); border-radius: var(--sa-radius-lg); padding: var(--sa-space-5); }
+.avis-card-top { display: flex; align-items: flex-start; gap: 10px; }
+.avis-card-identity { flex: 1; min-width: 0; }
+.avis-card-quote { font-size: var(--sa-text-sm); color: var(--sa-text); line-height: 1.55; margin: var(--sa-space-3) 0; font-style: italic; }
+.avis-card-bottom { display: flex; align-items: center; justify-content: space-between; gap: var(--sa-space-3); margin-top: var(--sa-space-3); }
+
+/* ---------- Documents : compteur + ligne dense avec icone de type. ---------- */
+.doc-compteur { display: flex; align-items: center; gap: 8px; margin-bottom: var(--sa-space-4); }
+.doc-compteur-label { font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-bold); text-transform: uppercase; letter-spacing: 0.06em; color: var(--sa-text-faint); }
+.doc-row { display: flex; align-items: center; gap: var(--sa-space-3); padding: 11px 4px; border-bottom: 1px solid var(--sa-border); }
+.list .doc-row:first-child { border-top: 1px solid var(--sa-border); }
+.doc-row-icon {
+  width: 32px; height: 32px; flex-shrink: 0; border-radius: var(--sa-radius-sm); background: var(--sa-surface-3);
+  display: flex; align-items: center; justify-content: center; color: var(--sa-text-muted);
+}
+.doc-row-icon .nav-icon { width: 15px; height: 15px; }
+.doc-row-body { flex: 1.4; min-width: 0; }
+.doc-row-title { font-size: var(--sa-text-sm); font-weight: var(--sa-weight-semibold); color: var(--sa-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.doc-row-sub { font-size: var(--sa-text-xs); color: var(--sa-text-muted); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.doc-row-action { flex-shrink: 0; }
+@media (max-width: 720px) {
+  .doc-row { flex-wrap: wrap; }
+  .doc-row-body { flex-basis: calc(100% - 44px); order: 1; }
+}
+
+/* ---------- Taches : regroupees par echeance, ligne dense avec case a
+   cocher (la case EST l'action principale : marquer faite/reouvrir). ---------- */
+.tache-groupe-label {
+  font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-bold); text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--sa-text-faint); margin: var(--sa-space-6) 0 var(--sa-space-2);
+}
+.tache-groupe-label:first-child { margin-top: 0; }
+.tache-row { display: flex; align-items: center; gap: var(--sa-space-3); padding: 11px 4px; border-bottom: 1px solid var(--sa-border); }
+.list .tache-row:first-child { border-top: 1px solid var(--sa-border); }
+.tache-row-check { width: 17px; height: 17px; flex-shrink: 0; accent-color: var(--sa-accent); cursor: pointer; }
+.tache-row-body { flex: 1; min-width: 0; }
+.tache-row-titre { font-size: var(--sa-text-sm); font-weight: var(--sa-weight-medium); color: var(--sa-text); }
+.tache-row-titre.is-done { color: var(--sa-text-faint); text-decoration: line-through; }
+.tache-row-sub { font-size: var(--sa-text-xs); color: var(--sa-text-muted); margin-top: 1px; }
+@media (max-width: 720px) {
+  .tache-row { flex-wrap: wrap; }
+  .tache-row-body { flex-basis: 100%; order: 1; }
+}
+
+/* ---------- Progression de chantier ---------- */
+.chantier-progress { margin: 10px 0; }
+.chantier-progress-row { display: flex; justify-content: space-between; font-size: var(--sa-text-xs); color: var(--sa-text-muted); margin-bottom: 3px; }
+.chantier-progress-row strong { color: var(--sa-text); font-variant-numeric: tabular-nums; }
 
 /* ---------- Skeleton loaders ---------- */
 .skeleton {

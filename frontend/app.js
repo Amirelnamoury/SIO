@@ -1160,6 +1160,51 @@ function setupFournisseursView() {
 }
 
 // ===================== Statistiques =====================
+function fmtMoisCourt(moisIso) {
+  const [annee, mois] = String(moisIso).split("-").map(Number);
+  if (!annee || !mois) return escapeHtml(moisIso);
+  return new Date(annee, mois - 1, 1).toLocaleDateString("fr-FR", { month: "short" });
+}
+
+// Graphique en aire (SVG inline) du CA par mois : memes points que
+// l'ancienne liste .dash-row (a.ca_par_mois), juste trace au lieu
+// d'enumere. Echelle lineaire simple, pas de librairie.
+function caAreaChartSvg(caParMois) {
+  const W = 760, H = 220, PAD_L = 44, PAD_R = 8, PAD_T = 12, PAD_B = 24;
+  const values = caParMois.map((m) => m.ca);
+  const max = Math.max(1, ...values);
+  const innerW = W - PAD_L - PAD_R, innerH = H - PAD_T - PAD_B;
+  const stepX = caParMois.length > 1 ? innerW / (caParMois.length - 1) : 0;
+  const points = values.map((v, i) => ({
+    x: PAD_L + stepX * i,
+    y: PAD_T + innerH - (v / max) * innerH,
+  }));
+  const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+  const areaPath = `${linePath} L${points[points.length - 1].x.toFixed(1)},${PAD_T + innerH} L${points[0].x.toFixed(1)},${PAD_T + innerH} Z`;
+  const gridLines = [0, 0.25, 0.5, 0.75, 1].map((f) => {
+    const y = PAD_T + innerH * (1 - f);
+    return `<line x1="${PAD_L}" y1="${y.toFixed(1)}" x2="${W - PAD_R}" y2="${y.toFixed(1)}" class="chart-gridline"/>
+      <text x="${PAD_L - 8}" y="${(y + 3).toFixed(1)}" class="chart-axis-label" text-anchor="end">${fmtEuro(Math.round(max * f))}</text>`;
+  }).join("");
+  const moisLabels = caParMois.map((m, i) => {
+    if (caParMois.length > 8 && i % 2 !== 0 && i !== caParMois.length - 1) return "";
+    return `<text x="${points[i].x.toFixed(1)}" y="${H - 6}" class="chart-axis-label" text-anchor="middle">${fmtMoisCourt(m.mois)}</text>`;
+  }).join("");
+  return `
+  <svg viewBox="0 0 ${W} ${H}" class="chart-svg" role="img" aria-label="Chiffre d'affaires par mois">
+    <defs>
+      <linearGradient id="chartFade" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="var(--sa-accent)" stop-opacity="0.35"/>
+        <stop offset="100%" stop-color="var(--sa-accent)" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    ${gridLines}
+    <path d="${areaPath}" fill="url(#chartFade)"/>
+    <path d="${linePath}" fill="none" stroke="var(--sa-accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    ${moisLabels}
+  </svg>`;
+}
+
 async function loadStatistiques() {
   const container = document.getElementById("statistiques-content");
   container.innerHTML = skeletonCards();
@@ -1172,47 +1217,87 @@ async function loadStatistiques() {
   }
   try {
     const a = await Api.analytics();
-    const stats = [
-      { label: "CA (12 derniers mois)", value: fmtEuro(a.ca_par_mois.reduce((s, m) => s + m.ca, 0)) },
-      { label: "Valeur du pipeline", value: fmtEuro(a.valeur_pipeline) },
-      { label: "Impayés", value: fmtEuro(a.montant_impayes) },
-      { label: "Devis envoyés", value: a.nb_devis_total },
-      { label: "Devis signés", value: a.nb_devis_signes },
-      { label: "Taux d'acceptation", value: `${a.taux_acceptation}%` },
-      { label: "Panier moyen", value: fmtEuro(a.panier_moyen) },
-      { label: "Délai moyen de paiement", value: a.delai_moyen_paiement_jours !== null ? `${a.delai_moyen_paiement_jours} j` : "-" },
-      { label: "Clients acquis", value: a.nb_clients_acquis },
-      { label: "Clients récurrents", value: a.nb_clients_recurrents },
-    ];
-    const statsHtml = stats.map((s) => `<div class="dash-stat"><div class="value">${s.value}</div><div class="label">${escapeHtml(s.label)}</div></div>`).join("");
+    const caTotal = a.ca_par_mois.reduce((s, m) => s + m.ca, 0);
+    // Delta honnete : dernier mois vs precedent (mêmes points deja recus),
+    // pas une periode fabriquee.
+    const nbMois = a.ca_par_mois.length;
+    const dernierMois = nbMois ? a.ca_par_mois[nbMois - 1].ca : 0;
+    const moisPrecedent = nbMois > 1 ? a.ca_par_mois[nbMois - 2].ca : null;
+    const deltaPct = moisPrecedent ? Math.round(((dernierMois - moisPrecedent) / moisPrecedent) * 100) : null;
 
-    const moisHtml = a.ca_par_mois.length
-      ? a.ca_par_mois.map((m) => `<div class="dash-row"><span>${escapeHtml(m.mois)}</span><strong>${fmtEuro(m.ca)}</strong></div>`).join("")
-      : '<div class="dash-empty">Pas encore de paiement enregistre.</div>';
+    const chartHtml = a.ca_par_mois.length
+      ? caAreaChartSvg(a.ca_par_mois)
+      : '<div class="dash-empty">Pas encore de paiement enregistré.</div>';
 
     const sourcesHtml = a.sources_acquisition.length
-      ? a.sources_acquisition.map((s) => `<div class="dash-row"><span>${escapeHtml(CLIENT_SOURCE_LABELS[s.source] || s.source)}</span><strong>${s.nb_clients} contact${s.nb_clients > 1 ? "s" : ""} · ${s.nb_gagnes} gagne${s.nb_gagnes > 1 ? "s" : ""} · ${fmtEuro(s.ca)}</strong></div>`).join("")
-      : '<div class="dash-empty">Pas encore de contact enregistre.</div>';
+      ? a.sources_acquisition.map((s) => {
+          const maxContacts = Math.max(1, ...a.sources_acquisition.map((x) => x.nb_clients));
+          return `
+          <div class="acq-source-row">
+            <span class="acq-source-label">${escapeHtml(CLIENT_SOURCE_LABELS[s.source] || s.source)}</span>
+            <div class="acq-source-bar"><div class="remplissage" style="width:${Math.round((s.nb_clients / maxContacts) * 100)}%;"></div></div>
+            <span class="acq-source-value">${s.nb_clients} contact${s.nb_clients > 1 ? "s" : ""}, ${s.nb_gagnes} client${s.nb_gagnes > 1 ? "s" : ""} (${fmtEuro(s.ca)})</span>
+          </div>`;
+        }).join("")
+      : '<div class="dash-empty">Pas encore de contact enregistré.</div>';
 
     const nbMax = a.funnel_site.length ? a.funnel_site[0].nb : 0;
     const funnelHtml = a.funnel_site.length
-      ? a.funnel_site.map((e) => `
-        <div class="sante-sous-score" style="margin-bottom:10px;">
-          <div class="ligne"><span>${escapeHtml(e.etape)}</span><span class="valeur">${e.nb}</span></div>
-          <div class="sante-barre"><div class="remplissage" style="width:${nbMax ? Math.round(e.nb / nbMax * 100) : 0}%;background:var(--info);"></div></div>
-        </div>`).join("")
+      ? `<div class="stats-funnel">${a.funnel_site.map((e) => `
+          <div class="stats-funnel-step">
+            <div class="stats-funnel-value">${e.nb}</div>
+            <div class="stats-funnel-label">${escapeHtml(e.etape)}</div>
+            <div class="sante-barre"><div class="remplissage" style="width:${nbMax ? Math.round(e.nb / nbMax * 100) : 0}%;"></div></div>
+          </div>`).join("")}</div>`
       : "";
 
     container.innerHTML = `
-      <div class="dash-grid">${statsHtml}</div>
-      <div class="dash-section">
-        <h3>CA par mois</h3>
-        ${moisHtml}
+      <div class="stats-ca-panel">
+        <div class="stats-ca-head">
+          <div>
+            <div class="kpi-card-label">Chiffre d'affaires (12 derniers mois)</div>
+            <div class="stats-ca-value">${fmtEuro(caTotal)}</div>
+            ${deltaPct !== null ? `<div class="kpi-card-sub${deltaPct >= 0 ? " is-positive" : " is-alert"}">${deltaPct >= 0 ? "+" : ""}${deltaPct}% vs mois précédent</div>` : ""}
+          </div>
+        </div>
+        ${chartHtml}
       </div>
-      <div class="dash-section">
-        <h3>Sources d'acquisition</h3>
-        ${sourcesHtml}
+
+      <div class="kpi-band">
+        <div class="kpi-card">
+          <div class="kpi-card-label">Taux d'acceptation</div>
+          <div class="kpi-card-value">${a.taux_acceptation}%</div>
+          <div class="kpi-card-sub">${a.nb_devis_signes} signés / ${a.nb_devis_total} envoyés</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card-label">Panier moyen</div>
+          <div class="kpi-card-value">${fmtEuro(a.panier_moyen)}</div>
+          <div class="kpi-card-sub">Sur devis signés</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card-label">Valeur du pipeline</div>
+          <div class="kpi-card-value">${fmtEuro(a.valeur_pipeline)}</div>
+          <div class="kpi-card-sub">Prospects actifs</div>
+        </div>
+        <div class="kpi-card${a.montant_impayes > 0 ? " is-highlight" : ""}">
+          <div class="kpi-card-label">Impayés</div>
+          <div class="kpi-card-value${a.montant_impayes > 0 ? " is-alert" : ""}">${fmtEuro(a.montant_impayes)}</div>
+          <div class="kpi-card-sub">Délai moyen : ${a.delai_moyen_paiement_jours !== null ? a.delai_moyen_paiement_jours + " j" : "—"}</div>
+        </div>
       </div>
+
+      <div class="dash-glance">
+        <div class="dash-glance-col">
+          <h4>Acquisition clients</h4>
+          <div class="acq-source-list">${sourcesHtml}</div>
+        </div>
+        <div class="dash-glance-col">
+          <h4>Clients</h4>
+          <div class="dash-row"><span>Clients acquis</span><strong>${a.nb_clients_acquis}</strong></div>
+          <div class="dash-row"><span>Clients récurrents</span><strong>${a.nb_clients_recurrents}</strong></div>
+        </div>
+      </div>
+
       ${funnelHtml ? `<div class="dash-section"><h3>Entonnoir d'acquisition du site vitrine</h3>${funnelHtml}</div>` : ""}
     `;
   } catch (err) {
@@ -1227,14 +1312,50 @@ function starsText(note) {
   return "★".repeat(note) + "☆".repeat(5 - note);
 }
 
-function avisResumeHtml(avis) {
-  if (avis.length === 0) return "";
-  const moyenne = avis.reduce((s, a) => s + a.note, 0) / avis.length;
-  return `
-    <div class="dash-grid" style="margin-bottom:20px;">
-      <div class="dash-stat"><div class="value">${moyenne.toFixed(1)}/5</div><div class="label">Note moyenne</div></div>
-      <div class="dash-stat"><div class="value">${avis.length}</div><div class="label">Avis reçus</div></div>
+// Partagee entre le panneau timeline client et le panneau "Avis a demander"
+// de la vue Avis clients : meme action, deux points d'entree.
+async function demanderAvisEtCopierLien(clientId) {
+  await withErrorToast(async () => {
+    const { token_avis } = await Api.demanderAvis(clientId);
+    const url = `${window.location.origin}/avis-public.html?t=${token_avis}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast("Lien copié. Envoyez-le à votre client par email ou SMS.");
+    } catch (err) {
+      showToast(url, false);
+    }
+  });
+}
+
+function avisResumeHtml(avis, clients) {
+  // Panneau "Avis a demander" : clients gagnes qui n'ont pas encore d'avis
+  // enregistre - simple difference d'ensembles sur des donnees deja
+  // chargees (clientsCache + avis), aucun nouvel appel, aucune invention.
+  const idsAvecAvis = new Set(avis.map((a) => a.client_id).filter(Boolean));
+  const aDemander = (clients || []).filter((c) => c.statut === "gagne" && !idsAvecAvis.has(c.id)).slice(0, 4);
+
+  const moyenne = avis.length ? avis.reduce((s, a) => s + a.note, 0) / avis.length : null;
+  const gaucheHtml = `
+    <div class="avis-score-card">
+      ${moyenne !== null
+        ? `<div class="avis-score-chiffre">${moyenne.toFixed(1)}<span>/5</span></div>
+           <div class="avis-stars avis-score-stars">${starsText(Math.round(moyenne))}</div>
+           <div class="avis-score-sub">${avis.length} avis</div>`
+        : `<div class="dash-empty">Pas encore d'avis reçu.</div>`}
     </div>`;
+  const droiteHtml = aDemander.length ? `
+    <div class="avis-demander-card">
+      <div class="avis-demander-title">Avis à demander</div>
+      <div class="avis-demander-grid">
+        ${aDemander.map((c) => `
+          <div class="avis-demander-item">
+            <div class="avis-demander-nom">${escapeHtml(c.nom)}</div>
+            <div class="avis-demander-sub">${escapeHtml(c.societe || c.ville || "Client gagné")}</div>
+            <button type="button" class="btn-sm btn-sm-primary" data-action="demander-avis" data-client-id="${c.id}">Demander</button>
+          </div>`).join("")}
+      </div>
+    </div>` : "";
+  return `<div class="avis-resume-grid">${gaucheHtml}${droiteHtml}</div>`;
 }
 
 async function loadAvis() {
@@ -1242,34 +1363,44 @@ async function loadAvis() {
   const resume = document.getElementById("avis-resume");
   list.innerHTML = skeletonCards();
   try {
-    const [avis] = await Promise.all([Api.listAvis(), ensureClientsCache()]);
-    resume.innerHTML = avisResumeHtml(avis);
+    const [avis, clients] = await Promise.all([Api.listAvis(), ensureClientsCache()]);
+    resume.innerHTML = avisResumeHtml(avis, clients);
     if (avis.length === 0) {
       list.innerHTML = '<div class="empty-state">Aucun avis pour le moment. Saisissez-en un, ou envoyez une demande d\'avis depuis la fiche d\'un client.</div>';
       return;
     }
-    list.innerHTML = avis.map(renderAvisCard).join("");
+    list.innerHTML = `<div class="avis-grid">${avis.map(renderAvisCard).join("")}</div>`;
   } catch (err) {
     list.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
   }
 }
 
 function renderAvisCard(a) {
+  const statutPill = a.publie_site ? { classe: "pill-green", label: "Publié sur le site" } : { classe: "pill-gray", label: "Non publié" };
   return `
-  <div class="item-card">
-    <div class="item-card-top">
-      <div>
-        <div class="item-title avis-stars">${starsText(a.note)}</div>
-        <div class="item-sub">${escapeHtml(a.client_nom || "Anonyme")} · ${fmtDate(a.created_at)}</div>
+  <div class="avis-card">
+    <div class="avis-card-top">
+      <div class="crm-avatar">${escapeHtml(monogram(a.client_nom || "?"))}</div>
+      <div class="avis-card-identity">
+        <div class="avis-stars">${starsText(a.note)}</div>
+        <div class="item-sub">${escapeHtml(a.client_nom || "Anonyme")}</div>
+        <div class="item-sub">${fmtDate(a.created_at)} · ${AVIS_SOURCE_LABELS[a.source] || a.source}</div>
       </div>
-      <span class="badge badge-gray">${AVIS_SOURCE_LABELS[a.source] || a.source}</span>
+      <div class="action-menu">
+        <button type="button" class="action-menu-trigger" data-action="toggle-action-menu" aria-haspopup="true" aria-expanded="false" aria-label="Plus d'actions sur cet avis">
+          <svg viewBox="0 0 24 24" class="nav-icon"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg>
+        </button>
+        <div class="action-menu-panel" role="menu">
+          <button type="button" class="is-danger" data-action="delete-avis" data-id="${a.id}">Supprimer</button>
+        </div>
+      </div>
     </div>
-    ${a.commentaire ? `<div class="item-meta">${escapeHtml(a.commentaire)}</div>` : ""}
-    <div class="item-actions">
-      <button type="button" class="btn-sm ${a.publie_site ? "btn-sm-primary" : ""}" data-action="toggle-publie-site" data-id="${a.id}" data-publie="${a.publie_site ? "1" : "0"}">
-        ${a.publie_site ? "Publié sur le site" : "Publier sur le site"}
+    ${a.commentaire ? `<div class="avis-card-quote">« ${escapeHtml(a.commentaire)} »</div>` : ""}
+    <div class="avis-card-bottom">
+      <span class="pill ${statutPill.classe}">${statutPill.label}</span>
+      <button type="button" class="btn-sm ${a.publie_site ? "" : "btn-sm-primary"}" data-action="toggle-publie-site" data-id="${a.id}" data-publie="${a.publie_site ? "1" : "0"}">
+        ${a.publie_site ? "Retirer du site" : "Publier sur le site"}
       </button>
-      <button type="button" class="btn-sm btn-sm-danger" data-action="delete-avis" data-id="${a.id}">Supprimer</button>
     </div>
   </div>`;
 }
@@ -1331,6 +1462,10 @@ function showAvisForm() {
 
 function setupAvisView() {
   document.querySelector('[data-action="show-avis-form"]').addEventListener("click", showAvisForm);
+  document.getElementById("avis-resume").addEventListener("click", async (e) => {
+    const btn = e.target.closest('[data-action="demander-avis"]');
+    if (btn) await demanderAvisEtCopierLien(parseInt(btn.dataset.clientId, 10));
+  });
   document.getElementById("avis-form-container").addEventListener("click", (e) => {
     if (e.target.closest('[data-action="cancel-avis-form"]')) {
       const container = document.getElementById("avis-form-container");
@@ -2522,19 +2657,7 @@ function setupClientsView() {
     }
 
     const avisBtn = e.target.closest('[data-action="demander-avis"]');
-    if (avisBtn) {
-      const clientId = parseInt(avisBtn.dataset.clientId, 10);
-      await withErrorToast(async () => {
-        const { token_avis } = await Api.demanderAvis(clientId);
-        const url = `${window.location.origin}/avis-public.html?t=${token_avis}`;
-        try {
-          await navigator.clipboard.writeText(url);
-          showToast("Lien copié. Envoyez-le à votre client par email ou SMS.");
-        } catch (err) {
-          showToast(url, false);
-        }
-      });
-    }
+    if (avisBtn) await demanderAvisEtCopierLien(parseInt(avisBtn.dataset.clientId, 10));
 
     const portailBtn = e.target.closest('[data-action="copier-lien-portail"]');
     if (portailBtn) {
@@ -3845,12 +3968,54 @@ function setupContratsView() {
 }
 
 // ===================== Chantiers =====================
+// Bande de KPI : agregee a partir des memes chantiers deja recus (aucun
+// nouvel appel, aucune donnee inventee).
+function chantiersKpiBandHtml(chantiers) {
+  const enCours = chantiers.filter((c) => !["a_preparer", "termine", "facture", "paye"].includes(c.statut));
+  const aPreparer = chantiers.filter((c) => c.statut === "a_preparer");
+  // "A surveiller" : budget deja consomme au-dela de 90% ou avancement
+  // en retard evident (progression connue mais nulle alors que le chantier
+  // a demarre) - signaux deja presents sur l'objet chantier, pas de calcul
+  // metier nouveau, juste un seuil d'affichage.
+  const aSurveiller = chantiers.filter((c) => {
+    if (["termine", "facture", "paye", "a_preparer"].includes(c.statut)) return false;
+    const consomme = c.budget && c.total_depenses ? (c.total_depenses / c.budget) * 100 : null;
+    return consomme !== null && consomme >= 85;
+  });
+  const margeTotale = chantiers.reduce((s, c) => s + (c.marge_estimee || c.marge_reelle || 0), 0);
+  return `
+  <div class="kpi-band">
+    <div class="kpi-card">
+      <div class="kpi-card-label">Chantiers en cours</div>
+      <div class="kpi-card-value">${enCours.length}</div>
+      <div class="kpi-card-sub">${chantiers.length ? Math.round((enCours.length / chantiers.length) * 100) : 0}% du total</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-label">À préparer</div>
+      <div class="kpi-card-value">${aPreparer.length}</div>
+      <div class="kpi-card-sub">Démarrage à planifier</div>
+    </div>
+    <div class="kpi-card${aSurveiller.length ? " is-highlight" : ""}">
+      <div class="kpi-card-label">À surveiller</div>
+      <div class="kpi-card-value">${aSurveiller.length}</div>
+      <div class="kpi-card-sub${aSurveiller.length ? " is-alert" : ""}">Budget consommé ≥ 85%</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-label">Marge prévisionnelle</div>
+      <div class="kpi-card-value">${fmtEuro(margeTotale)}</div>
+      <div class="kpi-card-sub">Cumul, tous chantiers</div>
+    </div>
+  </div>`;
+}
+
 async function loadChantiers() {
+  const kpiBand = document.getElementById("chantiers-kpi-band");
   const list = document.getElementById("chantiers-list");
   const newBtn = document.querySelector('[data-action="show-chantier-form"]');
   const formContainer = document.getElementById("chantier-form-container");
 
   if (!hasPlan("essentiel")) {
+    if (kpiBand) kpiBand.innerHTML = "";
     newBtn.hidden = true;
     formContainer.hidden = true;
     formContainer.innerHTML = "";
@@ -3866,6 +4031,7 @@ async function loadChantiers() {
   try {
     const chantiers = await Api.listChantiers();
     chantiersCache = chantiers;
+    if (kpiBand) kpiBand.innerHTML = chantiers.length ? chantiersKpiBandHtml(chantiers) : "";
     if (chantiers.length === 0) {
       list.innerHTML = '<div class="empty-state">Aucun chantier pour le moment.</div>';
       return;
@@ -3970,11 +4136,11 @@ function showHeuresForm(chantierId, heure = null) {
 
 function progressionHtml(c) {
   if (c.progression === null || c.progression === undefined) return "";
-  const couleur = c.progression >= 70 ? "var(--success)" : c.progression >= 40 ? "var(--warning)" : "var(--danger)";
+  const niveau = c.progression >= 70 ? "haut" : c.progression >= 40 ? "moyen" : "bas";
   return `
-    <div style="margin:10px 0;">
-      <div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:3px;"><span>Avancement</span><strong>${c.progression}%</strong></div>
-      <div class="sante-barre"><div class="remplissage" style="width:${c.progression}%;background:${couleur};"></div></div>
+    <div class="chantier-progress">
+      <div class="chantier-progress-row"><span>Avancement</span><strong>${c.progression}%</strong></div>
+      <div class="sante-barre"><div class="remplissage niveau-${niveau}" style="width:${c.progression}%;"></div></div>
     </div>`;
 }
 
@@ -4550,6 +4716,36 @@ function setupChantiersView() {
 // ===================== Taches =====================
 let currentTacheFilter = "a_faire";
 const TACHE_PRIORITE_BADGE = { basse: "badge-gray", normale: "badge-blue", haute: "badge-orange", urgente: "badge-red" };
+const TACHE_PRIORITE_LABELS = { basse: "Priorité basse", normale: "Priorité normale", haute: "Priorité haute", urgente: "Priorité urgente" };
+const TACHE_PRIORITE_PILL = { basse: "pill-green", normale: "pill-gray", haute: "pill-accent", urgente: "pill-red" };
+const TACHE_GROUPE_LABELS = { en_retard: "En retard", aujourdhui: "Aujourd'hui", cette_semaine: "Cette semaine", plus_tard: "Plus tard" };
+const TACHE_GROUPE_ORDRE = ["en_retard", "aujourdhui", "cette_semaine", "plus_tard"];
+
+// Regroupement par echeance (En retard / Aujourd'hui / Cette semaine / Plus
+// tard) : simple lecture de t.echeance deja recu, aucun nouveau calcul
+// metier - juste une facon de presenter la meme liste plate.
+function tacheGroupe(t) {
+  if (!t.echeance || t.statut !== "a_faire") return "plus_tard";
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const due = new Date(t.echeance + "T00:00:00");
+  const diffJours = Math.round((due - today) / 86400000);
+  if (diffJours < 0) return "en_retard";
+  if (diffJours === 0) return "aujourdhui";
+  if (diffJours > 0 && diffJours <= 7) return "cette_semaine";
+  return "plus_tard";
+}
+
+function tacheEcheanceMeta(t) {
+  if (!t.echeance) return null;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const due = new Date(t.echeance + "T00:00:00");
+  const diffJours = Math.round((due - today) / 86400000);
+  if (t.statut === "a_faire" && diffJours < 0) return { label: `En retard · ${Math.abs(diffJours)} j`, pill: "pill-red" };
+  if (diffJours === 0) return { label: "Aujourd'hui", pill: "pill-accent" };
+  if (diffJours === 1) return { label: "Demain", pill: "pill-gray" };
+  if (diffJours > 1 && diffJours <= 7) return { label: "Cette semaine", pill: "pill-green" };
+  return { label: fmtDate(t.echeance), pill: "pill-gray" };
+}
 
 async function loadTaches() {
   const list = document.getElementById("taches-list");
@@ -4560,29 +4756,43 @@ async function loadTaches() {
       list.innerHTML = '<div class="empty-state">Aucune tâche ici.</div>';
       return;
     }
-    list.innerHTML = taches.map(renderTacheCard).join("");
+    if (currentTacheFilter !== "a_faire") {
+      list.innerHTML = taches.map(renderTacheRow).join("");
+      return;
+    }
+    const parGroupe = {};
+    taches.forEach((t) => { (parGroupe[tacheGroupe(t)] = parGroupe[tacheGroupe(t)] || []).push(t); });
+    list.innerHTML = TACHE_GROUPE_ORDRE
+      .filter((g) => parGroupe[g] && parGroupe[g].length)
+      .map((g) => `
+        <div class="tache-groupe-label">${TACHE_GROUPE_LABELS[g]}</div>
+        ${parGroupe[g].map(renderTacheRow).join("")}
+      `).join("");
   } catch (err) {
     list.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
   }
 }
 
-function renderTacheCard(t) {
+function renderTacheRow(t) {
   const estFaite = t.statut === "faite";
+  const echeance = tacheEcheanceMeta(t);
   return `
-  <div class="item-card">
-    <div class="item-card-top">
-      <div>
-        <div class="item-title" style="${estFaite ? "text-decoration:line-through;opacity:0.6;" : ""}">${escapeHtml(t.titre)}</div>
-        ${t.description ? `<div class="item-sub">${escapeHtml(t.description)}</div>` : ""}
-      </div>
-      <span class="badge ${TACHE_PRIORITE_BADGE[t.priorite] || "badge-gray"}">${t.priorite}</span>
+  <div class="tache-row">
+    <input type="checkbox" class="tache-row-check" ${estFaite ? "checked" : ""}
+      data-action="${estFaite ? "reouvrir-tache" : "terminer-tache"}" data-id="${t.id}" aria-label="${estFaite ? "Réouvrir la tâche" : "Marquer la tâche faite"}">
+    <div class="tache-row-body">
+      <div class="tache-row-titre${estFaite ? " is-done" : ""}">${escapeHtml(t.titre)}</div>
+      ${t.description ? `<div class="tache-row-sub">${escapeHtml(t.description)}</div>` : ""}
     </div>
-    <div class="item-meta">${t.echeance ? "Échéance : " + fmtDate(t.echeance) : "Pas d'échéance"}</div>
-    <div class="item-actions">
-      ${!estFaite
-        ? `<button type="button" class="btn-sm btn-sm-primary" data-action="terminer-tache" data-id="${t.id}">Marquer faite</button>`
-        : `<button type="button" class="btn-sm" data-action="reouvrir-tache" data-id="${t.id}">Réouvrir</button>`}
-      <button type="button" class="btn-sm btn-sm-danger" data-action="delete-tache" data-id="${t.id}">Supprimer</button>
+    ${echeance ? `<span class="pill ${echeance.pill}">${echeance.label}</span>` : "<span></span>"}
+    <span class="pill ${TACHE_PRIORITE_PILL[t.priorite] || "pill-gray"}">${TACHE_PRIORITE_LABELS[t.priorite] || t.priorite}</span>
+    <div class="action-menu">
+      <button type="button" class="action-menu-trigger" data-action="toggle-action-menu" aria-haspopup="true" aria-expanded="false" aria-label="Plus d'actions sur cette tâche">
+        <svg viewBox="0 0 24 24" class="nav-icon"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg>
+      </button>
+      <div class="action-menu-panel" role="menu">
+        <button type="button" class="is-danger" data-action="delete-tache" data-id="${t.id}">Supprimer</button>
+      </div>
     </div>
   </div>`;
 }
@@ -4691,6 +4901,10 @@ const DOCUMENT_TYPE_LABELS = {
   contrat: "Contrat", attestation: "Attestation", assurance: "Assurance",
   photo: "Photo", plan: "Plan", administratif: "Administratif", autre: "Autre",
 };
+const DOCUMENT_TYPE_PILL = {
+  contrat: "pill-accent", attestation: "pill-green", assurance: "pill-gray",
+  photo: "pill-gray", plan: "pill-gray", administratif: "pill-gray", autre: "pill-gray",
+};
 
 let currentDocumentFilter = "";
 
@@ -4703,9 +4917,11 @@ function fmtTaille(octets) {
 
 async function loadDocuments() {
   const list = document.getElementById("documents-list");
+  const compteur = document.getElementById("documents-compteur");
   list.innerHTML = skeletonCards();
   try {
     const [documents] = await Promise.all([Api.listDocuments(), ensureClientsCache()]);
+    if (compteur) compteur.innerHTML = documents.length ? `<span class="doc-compteur-label">Documents</span><span class="pill pill-gray">${documents.length}</span>` : "";
     const affichees = currentDocumentFilter ? documents.filter((d) => d.type === currentDocumentFilter) : documents;
     if (affichees.length === 0) {
       list.innerHTML = '<div class="empty-state">Aucun document pour le moment. Ajoutez vos contrats, attestations d\'assurance, plans ou photos de chantier.</div>';
@@ -4720,22 +4936,28 @@ async function loadDocuments() {
 function renderDocumentCard(d) {
   const client = d.client_id ? clientsCache.find((c) => c.id === d.client_id) : null;
   const lienTxt = client ? `Client : ${escapeHtml(client.nom)}` : "";
+  const meta = [d.taille_octets ? fmtTaille(d.taille_octets) : null, `Ajouté le ${fmtDate(d.created_at)}`].filter(Boolean).join(" · ");
   const estFichier = !!d.nom_original;
   return `
-  <div class="item-card">
-    <div class="item-card-top">
-      <div>
-        <div class="item-title">${escapeHtml(d.nom)}</div>
-        <div class="item-sub">${lienTxt}${lienTxt && d.taille_octets ? " · " : ""}${d.taille_octets ? fmtTaille(d.taille_octets) : ""}</div>
-      </div>
-      <span class="badge badge-gray">${DOCUMENT_TYPE_LABELS[d.type] || d.type}</span>
+  <div class="doc-row">
+    <span class="doc-row-icon"><svg viewBox="0 0 24 24" class="nav-icon"><path d="M7 2h7l5 5v15H7z"/><path d="M14 2v5h5"/></svg></span>
+    <div class="doc-row-body">
+      <div class="doc-row-title">${escapeHtml(d.nom)}</div>
+      <div class="doc-row-sub">${lienTxt ? lienTxt + " · " : ""}${meta}</div>
     </div>
-    <div class="item-meta">Ajouté le ${fmtDate(d.created_at)}</div>
-    <div class="item-actions">
+    <span class="pill ${DOCUMENT_TYPE_PILL[d.type] || "pill-gray"}">${DOCUMENT_TYPE_LABELS[d.type] || d.type}</span>
+    <div class="doc-row-action">
       ${estFichier
-        ? `<button type="button" class="btn-sm btn-sm-primary" data-action="telecharger-document" data-id="${d.id}" data-nom="${escapeHtml(d.nom_original)}">Télécharger</button>`
+        ? `<button type="button" class="btn-sm" data-action="telecharger-document" data-id="${d.id}" data-nom="${escapeHtml(d.nom_original)}">Télécharger</button>`
         : `<a class="btn-sm" href="${escapeHtml(d.url)}" target="_blank" rel="noopener">Ouvrir le lien</a>`}
-      <button type="button" class="btn-sm btn-sm-danger" data-action="delete-document" data-id="${d.id}">Supprimer</button>
+    </div>
+    <div class="action-menu">
+      <button type="button" class="action-menu-trigger" data-action="toggle-action-menu" aria-haspopup="true" aria-expanded="false" aria-label="Plus d'actions sur ce document">
+        <svg viewBox="0 0 24 24" class="nav-icon"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg>
+      </button>
+      <div class="action-menu-panel" role="menu">
+        <button type="button" class="is-danger" data-action="delete-document" data-id="${d.id}">Supprimer</button>
+      </div>
     </div>
   </div>`;
 }
