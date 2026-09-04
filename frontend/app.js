@@ -4322,6 +4322,22 @@ function showHeuresForm(chantierId, heure = null) {
     </div>`;
 }
 
+// Meme paire de champs et meme seuil (85%) que "A surveiller" dans
+// chantiersKpiBandHtml (bande de KPI de la page Chantiers) - ici affiche par
+// chantier au lieu d'etre agrege. Le sens des couleurs est invense de
+// progressionHtml() : un budget CONSOMME eleve est un signal d'alerte
+// (rouge), pas un signal positif.
+function budgetConsommeHtml(c) {
+  if (!c.budget || c.total_depenses === null || c.total_depenses === undefined) return "";
+  const pct = Math.round((c.total_depenses / c.budget) * 100);
+  const niveau = pct >= 85 ? "bas" : pct >= 60 ? "moyen" : "haut";
+  return `
+    <div class="chantier-progress">
+      <div class="chantier-progress-row"><span>Budget consommé</span><strong>${pct}%</strong></div>
+      <div class="sante-barre"><div class="remplissage niveau-${niveau}" style="width:${Math.min(pct, 100)}%;"></div></div>
+    </div>`;
+}
+
 function progressionHtml(c) {
   if (c.progression === null || c.progression === undefined) return "";
   const niveau = c.progression >= 70 ? "haut" : c.progression >= 40 ? "moyen" : "bas";
@@ -4520,6 +4536,7 @@ function renderChantierCard(c) {
       ${c.budget !== null ? ` · Budget : ${fmtEuro(c.budget)}` : ""}
       ${c.marge_estimee !== null ? ` · Marge estimée : ${fmtEuro(c.marge_estimee)}` : ""}
     </div>
+    ${budgetConsommeHtml(c)}
     ${progressionHtml(c)}
     ${checklistHtml(c)}
     ${rentabiliteHtml(c)}
