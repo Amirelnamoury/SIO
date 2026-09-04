@@ -5153,6 +5153,50 @@ const PLANNING_TYPE_CLASS = { rdv: "planning-item-blue", visite: "planning-item-
 let planningViewMode = "semaine"; // jour | semaine | mois
 let planningAnchorDate = new Date();
 
+// Filtres (recherche + type/client/chantier) : purement client, appliques
+// sur les items deja recus par Api.planning() pour la periode affichee -
+// aucun nouvel appel reseau au changement de filtre, seulement un nouveau
+// rendu depuis planningItemsCache. La periode courante est memorisee pour
+// pouvoir re-rendre sans refaire un aller-retour serveur.
+let planningFilters = { q: "", type: "", clientId: "", chantierId: "" };
+let planningRangeDebut = null;
+let planningRangeFin = null;
+let planningChantiersCache = [];
+
+function planningFilterItems(items) {
+  const q = planningFilters.q.trim().toLowerCase();
+  return items.filter((i) => {
+    if (planningFilters.type && i.type !== planningFilters.type) return false;
+    if (planningFilters.clientId && String(i.client_id || "") !== planningFilters.clientId) return false;
+    if (planningFilters.chantierId && String(i.chantier_id || "") !== planningFilters.chantierId) return false;
+    if (q && !`${i.titre} ${i.lieu || ""}`.toLowerCase().includes(q)) return false;
+    return true;
+  });
+}
+
+function planningFiltersHtml() {
+  const typeOptions = Object.entries(PLANNING_TYPE_LABELS)
+    .map(([v, l]) => `<option value="${v}" ${planningFilters.type === v ? "selected" : ""}>${escapeHtml(l)}</option>`)
+    .join("");
+  const clientOptions = clientsCache
+    .map((c) => `<option value="${c.id}" ${planningFilters.clientId === String(c.id) ? "selected" : ""}>${escapeHtml(c.nom)}</option>`)
+    .join("");
+  const chantierOptions = planningChantiersCache
+    .map((c) => `<option value="${c.id}" ${planningFilters.chantierId === String(c.id) ? "selected" : ""}>${escapeHtml(c.titre)}</option>`)
+    .join("");
+  return `
+    <div class="planning-filters">
+      <input type="text" id="planning-filtre-q" placeholder="Rechercher un client, chantier..." value="${escapeHtml(planningFilters.q)}">
+      <select id="planning-filtre-type"><option value="">Type</option>${typeOptions}</select>
+      <select id="planning-filtre-client"><option value="">Client</option>${clientOptions}</select>
+      <select id="planning-filtre-chantier"><option value="">Chantier</option>${chantierOptions}</select>
+    </div>`;
+}
+
+function renderPlanningFiltered() {
+  renderPlanning(planningRangeDebut, planningRangeFin, planningFilterItems(planningItemsCache));
+}
+
 // Fuseau fixe (pas le fuseau ambiant du navigateur) : la cle "jour" d'une
 // date doit rester la meme quel que soit le fuseau systeme de la machine qui
 // affiche l'ecran, et gerer automatiquement le passage heure d'ete/hiver
@@ -5374,7 +5418,7 @@ function renderPlanning(debut, fin, items) {
       ${jours.map((j) => planningDayCellHtml(j, items, { compact: true, showWeekday: false, extraClass: j.getMonth() !== moisAnchor ? "is-outside-month" : "" })).join("")}
     </div>`;
   }
-  container.innerHTML = planningToolbarHtml(debut, fin) + gridHtml;
+  container.innerHTML = planningToolbarHtml(debut, fin) + planningFiltersHtml() + gridHtml;
 }
 
 // Derniers items charges, pour retrouver le detail complet (lieu, client_id...)
@@ -5386,9 +5430,17 @@ async function loadPlanning() {
   container.innerHTML = skeletonCards();
   try {
     const [debut, fin] = planningRange();
-    const items = await Api.planning(planningToIso(debut), planningToIso(fin));
+    planningRangeDebut = debut;
+    planningRangeFin = fin;
+    const [items] = await Promise.all([
+      Api.planning(planningToIso(debut), planningToIso(fin)),
+      ensureClientsCache(),
+    ]);
     planningItemsCache = items;
-    renderPlanning(debut, fin, items);
+    // Chantiers pour le filtre uniquement (repli silencieux comme ailleurs
+    // si le plan ne les autorise pas) - meme endpoint que la page Chantiers.
+    planningChantiersCache = await Api.listChantiers().catch(() => []);
+    renderPlanningFiltered();
   } catch (err) {
     container.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
   }
@@ -5574,6 +5626,29 @@ function setupPlanningView() {
       planningViewMode = btn.dataset.mode;
       loadPlanning();
     }
+  });
+
+  // Filtres : jamais un rechargement serveur, seulement un nouveau rendu
+  // depuis planningItemsCache (deja recu pour la periode affichee).
+  planningContent.addEventListener("input", (e) => {
+    if (e.target.id === "planning-filtre-q") {
+      const pos = e.target.selectionStart;
+      planningFilters.q = e.target.value;
+      renderPlanningFiltered();
+      // renderPlanningFiltered() remplace tout innerHTML(donc aussi ce
+      // champ) a chaque frappe : sans ca, le focus et le curseur sauteraient
+      // au debut du champ apres chaque caractere tape.
+      const nouveauChamp = document.getElementById("planning-filtre-q");
+      nouveauChamp?.focus();
+      nouveauChamp?.setSelectionRange(pos, pos);
+    }
+  });
+  planningContent.addEventListener("change", (e) => {
+    if (e.target.id === "planning-filtre-type") planningFilters.type = e.target.value;
+    else if (e.target.id === "planning-filtre-client") planningFilters.clientId = e.target.value;
+    else if (e.target.id === "planning-filtre-chantier") planningFilters.chantierId = e.target.value;
+    else return;
+    renderPlanningFiltered();
   });
 
   planningContent.addEventListener("keydown", (e) => {

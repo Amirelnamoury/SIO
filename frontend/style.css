@@ -1037,11 +1037,23 @@ input[readonly] { background: var(--sa-surface-2); }
    PLANNING — grille horaire, une seule couleur d'accent pour "aujourd'hui".
    ===================================================================== */
 .planning-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--sa-space-3); margin-bottom: var(--sa-space-5); }
+/* Recherche + filtres type/client/chantier : purement client (voir
+   planningFilterItems), places entre la barre de navigation et la grille
+   comme dans les references. */
+.planning-filters { display: flex; flex-wrap: wrap; gap: var(--sa-space-3); margin-bottom: var(--sa-space-5); }
+.planning-filters input[type="text"] { flex: 1 1 240px; min-width: 180px; padding: 8px 12px; }
+.planning-filters select { flex: 0 0 auto; min-width: 130px; padding: 8px 10px; }
+@media (max-width: 760px) { .planning-filters select { flex: 1 1 130px; } }
 .planning-nav { display: flex; align-items: center; gap: 4px; }
 .planning-label { text-transform: capitalize; margin-left: 6px; font-weight: var(--sa-weight-semibold); font-size: var(--sa-text-sm); }
 .planning-modes { display: flex; gap: 2px; background: var(--sa-surface-2); padding: 2px; border-radius: var(--sa-radius-sm); }
 .planning-modes .btn-sm { border: none; background: transparent; }
-.planning-modes .btn-sm.active, .planning-modes .btn-sm[aria-pressed="true"] { background: var(--sa-surface-3); box-shadow: var(--sa-shadow-xs); }
+/* Le mode actif recoit la classe .btn-sm-primary (voir planningToolbarHtml) -
+   ni .active ni [aria-pressed] ne sont jamais poses, et sans cette regle le
+   fond transparent ci-dessus (meme specificite, 2 classes) l'emportait sur
+   le fond accent de .btn-sm-primary : le mode actif semblait alors moins
+   marque que les deux inactifs, au lieu de plus. */
+.planning-modes .btn-sm-primary { background: var(--sa-accent); color: var(--sa-text-on-accent); }
 /* Vues jour/semaine : une colonne de gutter (heures) fixe + N colonnes de
    jour (1 en vue jour, 7 en vue semaine) - le gutter est un enfant du meme
    conteneur grid que les .planning-day-cell (voir renderPlanning), donc il
