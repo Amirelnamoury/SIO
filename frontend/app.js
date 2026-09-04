@@ -3128,7 +3128,7 @@ function devisKpiBandHtml(tousDevis, nbARelancer) {
   const perdus = tousDevis.filter((d) => d.statut === "perdu").length;
   const tauxSignature = signes + perdus > 0 ? Math.round((signes / (signes + perdus)) * 100) : null;
   return `
-  <div class="kpi-band">
+  <div class="kpi-band kpi-band-5col">
     <div class="kpi-card">
       <div class="kpi-card-label">Devis en cours</div>
       <div class="kpi-card-value">${enCours.length}</div>
@@ -3171,6 +3171,14 @@ function devisTabCountsHtml(tousDevis) {
 // re-trier sans refaire l'appel serveur a chaque changement de tri.
 let devisListCache = [];
 let currentDevisSort = "date_desc";
+// Filtres additionnels (voir 04-devis&relances) au-dela de l'onglet de
+// statut grossier deja existant (#devis-filters) : un statut plus fin
+// (les sous-etats de relance), une tranche de montant et un filtre sur la
+// relance due - tout calcule cote client sur devisListCache/devisDueIds
+// deja recus, aucun nouvel appel.
+let currentDevisStatutFiltre = "";
+let currentDevisMontantFiltre = "";
+let currentDevisRelanceFiltre = "";
 
 function devisSort(devis) {
   const d = devis.slice();
@@ -3179,13 +3187,27 @@ function devisSort(devis) {
   return d.sort((a, b) => b.created_at.localeCompare(a.created_at)); // date_desc, par defaut
 }
 
+function devisMatchesFiltres(d) {
+  if (currentDevisStatutFiltre && d.statut !== currentDevisStatutFiltre) return false;
+  if (currentDevisMontantFiltre) {
+    const m = d.montant_ttc || 0;
+    if (currentDevisMontantFiltre === "lt2000" && !(m < 2000)) return false;
+    if (currentDevisMontantFiltre === "2000_10000" && !(m >= 2000 && m <= 10000)) return false;
+    if (currentDevisMontantFiltre === "gt10000" && !(m > 10000)) return false;
+  }
+  if (currentDevisRelanceFiltre === "a_relancer" && !devisDueIds.has(d.id)) return false;
+  if (currentDevisRelanceFiltre === "pas_de_relance" && devisDueIds.has(d.id)) return false;
+  return true;
+}
+
 function renderDevisListFiltered() {
   const list = document.getElementById("devis-list");
   if (devisListCache.length === 0) {
     list.innerHTML = '<div class="empty-state">Aucun devis pour le moment.</div>';
     return;
   }
-  list.innerHTML = devisSort(devisListCache).map(renderDevisCard).join("");
+  const filtres = devisSort(devisListCache.filter(devisMatchesFiltres));
+  list.innerHTML = filtres.length ? filtres.map(renderDevisCard).join("") : '<div class="empty-state">Aucun devis dans ce filtre.</div>';
   reapplyListSearch("devis-search", "#devis-list .list-row");
 }
 
@@ -3365,18 +3387,28 @@ function renderDevisCard(d) {
       : `<button type="button"${it.danger ? ' class="is-danger"' : ""} ${it.attrs}>${it.label}</button>`)
     .join("");
 
-  const contextTxt = [d.numero, d.nb_relances > 0 ? `${d.nb_relances} relance${d.nb_relances > 1 ? "s" : ""}` : null]
-    .filter(Boolean).join(" · ");
+  // "Suivi" (voir 04-devis&relances) : un texte de statut contextuel colore,
+  // separe du numero de devis (colonne dediee "Devis N°" juste a cote) -
+  // toujours derive de champs deja recus (statut, date_signature, relance
+  // due, nb_relances), jamais une nouvelle donnee.
+  let suivi;
+  if (isDue) suivi = { texte: "Relance due aujourd'hui", cls: "is-accent" };
+  else if (d.statut === "signe") suivi = { texte: `Accepté${d.date_signature ? " · " + fmtDateCourte(d.date_signature) : ""}`, cls: "is-success" };
+  else if (d.statut === "perdu") suivi = { texte: "Perdu", cls: "is-muted" };
+  else if (d.statut === "nouveau") suivi = { texte: d.montant_ht !== null ? "Prêt à envoyer" : "À chiffrer", cls: "is-muted" };
+  else if (d.nb_relances > 0) suivi = { texte: `${d.nb_relances} relance${d.nb_relances > 1 ? "s" : ""} envoyée${d.nb_relances > 1 ? "s" : ""}`, cls: "is-muted" };
+  else suivi = { texte: "En attente de réponse", cls: "is-muted" };
 
   return `
-  <div class="list-row ${isDue ? "is-due" : ""}">
+  <div class="list-row list-row-devis ${isDue ? "is-due" : ""}">
     <div class="list-row-primary">
       <div class="list-row-title">${escapeHtml(d.client_nom)}</div>
       <div class="list-row-sub">${escapeHtml(d.titre || d.description || "Sans titre")}</div>
     </div>
     <div class="list-row-status"><span class="badge ${meta.badge}">${meta.label}</span></div>
     <div class="list-row-amount">${montantTxt}${d.montant_ttc !== null && d.montant_ttc !== undefined ? '<span class="list-row-amount-sub">TTC</span>' : ""}</div>
-    <div class="list-row-context" title="${isDue ? "Relance due aujourd'hui" : escapeHtml(contextTxt)}">${isDue ? "Relance due aujourd'hui" : escapeHtml(contextTxt)}</div>
+    <div class="list-row-suivi ${suivi.cls}">${escapeHtml(suivi.texte)}</div>
+    <div class="list-row-numero">${escapeHtml(d.numero)}</div>
     <div class="list-row-primary-action">${primaireHtml}</div>
     <div class="list-row-menu">
       <div class="action-menu">
@@ -3562,6 +3594,18 @@ function setupDevisView() {
 
   document.getElementById("devis-sort").addEventListener("change", (e) => {
     currentDevisSort = e.target.value;
+    renderDevisListFiltered();
+  });
+  document.getElementById("devis-statut-filtre").addEventListener("change", (e) => {
+    currentDevisStatutFiltre = e.target.value;
+    renderDevisListFiltered();
+  });
+  document.getElementById("devis-montant-filtre").addEventListener("change", (e) => {
+    currentDevisMontantFiltre = e.target.value;
+    renderDevisListFiltered();
+  });
+  document.getElementById("devis-relance-filtre").addEventListener("change", (e) => {
+    currentDevisRelanceFiltre = e.target.value;
     renderDevisListFiltered();
   });
 

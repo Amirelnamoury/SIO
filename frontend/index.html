@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260904-reference22">
+<link rel="stylesheet" href="style.css?v=20260904-reference23">
 </head>
 <body>
 
@@ -372,18 +372,41 @@
           <svg viewBox="0 0 24 24" class="nav-icon list-search-icon"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
           <input type="text" id="devis-search" placeholder="Rechercher un client, un devis...">
         </div>
+        <select id="devis-statut-filtre" aria-label="Filtrer par statut">
+          <option value="">Statut</option>
+          <option value="nouveau">Nouvelle demande</option>
+          <option value="envoye">Envoyé</option>
+          <option value="consulte">Consulté</option>
+          <option value="relance_j3">Relance J+3</option>
+          <option value="relance_j7">Relance J+7</option>
+          <option value="relance_j15">Relance J+15</option>
+          <option value="signe">Signé</option>
+          <option value="perdu">Perdu</option>
+        </select>
+        <select id="devis-montant-filtre" aria-label="Filtrer par montant">
+          <option value="">Montant</option>
+          <option value="lt2000">Moins de 2 000 €</option>
+          <option value="2000_10000">2 000 € - 10 000 €</option>
+          <option value="gt10000">Plus de 10 000 €</option>
+        </select>
+        <select id="devis-relance-filtre" aria-label="Filtrer par relance">
+          <option value="">Relance</option>
+          <option value="a_relancer">À relancer</option>
+          <option value="pas_de_relance">Pas de relance due</option>
+        </select>
         <select id="devis-sort" aria-label="Trier les devis">
-          <option value="date_desc">Date (récent)</option>
-          <option value="montant_desc">Montant</option>
-          <option value="client_asc">Client</option>
+          <option value="date_desc">Trier par : Date (récent)</option>
+          <option value="montant_desc">Trier par : Montant</option>
+          <option value="client_asc">Trier par : Client</option>
         </select>
       </div>
 
-      <div class="list-header-row">
+      <div class="list-header-row list-header-row-devis">
         <span>Client</span>
         <span>Statut</span>
         <span>Montant</span>
-        <span>Détails</span>
+        <span>Suivi</span>
+        <span>Devis N°</span>
         <span></span>
         <span></span>
       </div>
@@ -888,7 +911,7 @@
 <script src="env.js"></script>
 <script src="config.js"></script>
 <script src="pricing.js"></script>
-<script src="api.js?v=20260904-reference22"></script>
-<script src="app.js?v=20260904-reference22"></script>
+<script src="api.js?v=20260904-reference23"></script>
+<script src="app.js?v=20260904-reference23"></script>
 </body>
 </html>
