@@ -46,12 +46,16 @@
   // -------------------------------------------------------------------
   var FRAMES = [
     // -- 01 arrivee ---------------------------------------------------
-    { id: "a", chapter: 1, w: 110, t: 0.45, from: 1.00, to: 1.05, pos: "50% 58%" },
-    { id: "b", chapter: 1, w: 80,  t: 0.60, from: 1.00, to: 1.05, pos: "50% 55%" },
+    // Approche resserree : l'exterieur est joli mais ce n'est pas lui qui
+    // vend le produit, il ne doit pas couter 4 ecrans de scroll.
+    { id: "a", chapter: 1, w: 85, t: 0.45, from: 1.00, to: 1.05, pos: "50% 58%" },
+    { id: "b", chapter: 1, w: 58, t: 0.62, from: 1.00, to: 1.05, pos: "50% 55%" },
     // -- 02 l'entree --------------------------------------------------
-    { id: "c", chapter: 2, w: 80,  t: 0.40, from: 1.00, to: 1.04, pos: "50% 50%" },
-    { id: "d", chapter: 2, w: 76,  t: 0.45, from: 1.02, to: 1.06, pos: "50% 50%" },
-    { id: "e", chapter: 2, w: 54,  t: 0.70, from: 1.00, to: 1.06, pos: "50% 50%" },
+    // La frame E (seuil) est volontairement absente : elle montrait le
+    // meme hall que D et F et n'ajoutait qu'un temps mort. D -> F se lit
+    // comme une avancee franche vers l'interieur.
+    { id: "c", chapter: 2, w: 66, t: 0.42, from: 1.00, to: 1.04, pos: "50% 50%" },
+    { id: "d", chapter: 2, w: 64, t: 0.55, from: 1.02, to: 1.06, pos: "50% 50%" },
     // -- 03 le terrain ------------------------------------------------
     { id: "f", chapter: 3, w: 60,  t: 0.50, from: 1.00, to: 1.05, pos: "50% 50%" },
     { id: "g", chapter: 3, w: 42,  t: 0.70, from: 1.00, to: 1.04, pos: "50% 50%" },
@@ -77,13 +81,13 @@
     { id: "t", chapter: 7, w: 0,   t: 0,    from: 1.00, to: 1.06, pos: "50% 50%", fill: true }
   ];
 
-  // Emplacement de l'ecran du bureau dans la frame R, en % de l'image.
-  // Mesure sur la photo d'origine. `src: null` => rien n'est affiche : on
-  // laisse l'ecran neutre tant qu'aucune capture produit validee n'existe
-  // (le SaaS est en cours de refonte, on n'y colle pas une vieille image).
+  // Emplacement de l'ecran du bureau dans la frame R, en % de l'image
+  // (mesure sur la photo d'origine). On y affiche la marque, pas une
+  // capture du SaaS : l'application est en refonte, et y incruster une
+  // vieille capture donnerait une fausse idee du produit.
   var PRODUCT_SCREEN = {
-    src: null,            // ex. "assets/landing/product-screen.webp"
-    left: 48.9, top: 45.5, width: 13.8, height: 16.3
+    enabled: true,
+    left: 48.9, top: 45.4, width: 13.9, height: 16.4
   };
 
   var film = document.getElementById("lc-film");
@@ -276,6 +280,23 @@
     // on ne le laisse entrer que lorsque la frame O prend la main.
     if (lateBlock) lateBlock.classList.toggle("is-ready", f.id === "o");
 
+    // L'ecran du bureau n'existe que sur la frame R : il suit exactement
+    // son opacite, sinon il flotterait au-dessus des autres plans.
+    if (screenSlot) {
+      var so = idx === rIndex ? 1 - tp : (idx === rIndex - 1 ? tp : 0);
+      screenSlot.style.opacity = so.toFixed(3);
+    }
+
+    // Le calque des scenes 1-6 s'eteint AVANT que le contenu du chapitre 7
+    // n'entre dans l'ecran. Sans cela le texte du bureau restait affiche
+    // par-dessus les benefices qui remontaient : les deux se superposaient.
+    if (overlayEl && finalEl) {
+      var ft = finalEl.getBoundingClientRect().top;
+      var o = Math.min(1, Math.max(0, (ft - vh * 0.55) / (vh * 0.45)));
+      overlayEl.style.opacity = o.toFixed(3);
+      overlayEl.style.pointerEvents = o < 0.05 ? "none" : "";
+    }
+
     // Libelle Avant / Pendant / Apres, cale sur le volet
     if (phaseEl) {
       var phase = !f.reveal ? (f.id === "o" ? 3 : 0) : (tp < 0.08 ? 1 : tp < 0.92 ? 2 : 3);
@@ -309,6 +330,10 @@
   var nav = document.getElementById("lc-nav");
   var progress = document.getElementById("lc-progress");
   var progressLinks = progress ? progress.querySelectorAll("[data-chap]") : null;
+  var overlayEl = document.getElementById("lc-overlay");
+  var finalEl = document.querySelector(".lc-chapter-final");
+  var rIndex = 0;
+  FRAMES.forEach(function (f, i) { if (f.id === "r") rIndex = i; });
 
   var revealEdge = null;
   var phaseEl = document.getElementById("lc-phase");
@@ -330,13 +355,16 @@
   //    rectangle reellement occupe par la photo pour poser l'ecran
   //    exactement sur le moniteur, quelle que soit la taille du viewport.
   // -------------------------------------------------------------------
+  // Rendu en HTML et non en image : on reutilise ainsi les polices de la
+  // page, le texte reste net a toutes les resolutions, et il n'y a aucun
+  // fichier supplementaire a charger.
   var screenSlot = null;
-  if (PRODUCT_SCREEN.src) {
-    screenSlot = document.createElement("img");
+  if (PRODUCT_SCREEN.enabled) {
+    screenSlot = document.createElement("div");
     screenSlot.className = "lc-screen";
-    screenSlot.alt = "";
-    screenSlot.src = PRODUCT_SCREEN.src;
     screenSlot.setAttribute("aria-hidden", "true");
+    screenSlot.innerHTML = '<span class="lc-screen-mark"></span>'
+      + '<span class="lc-screen-word">Suite Artisan</span>';
     document.querySelector(".lc-stage").appendChild(screenSlot);
   }
 
@@ -346,10 +374,14 @@
     var w = W, h = W / ar;
     if (h < H) { h = H; w = H * ar; }
     var offX = (W - w) / 2, offY = (H - h) / 2;
+    var sw = w * PRODUCT_SCREEN.width / 100;
     screenSlot.style.left = (offX + w * PRODUCT_SCREEN.left / 100) + "px";
     screenSlot.style.top = (offY + h * PRODUCT_SCREEN.top / 100) + "px";
-    screenSlot.style.width = (w * PRODUCT_SCREEN.width / 100) + "px";
+    screenSlot.style.width = sw + "px";
     screenSlot.style.height = (h * PRODUCT_SCREEN.height / 100) + "px";
+    // Tout l'interieur est dimensionne en em : une seule valeur a poser
+    // pour que la marque suive la taille reelle du moniteur a l'ecran.
+    screenSlot.style.fontSize = (sw * 0.098).toFixed(2) + "px";
   }
 
   // -------------------------------------------------------------------

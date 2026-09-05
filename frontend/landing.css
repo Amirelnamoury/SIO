@@ -161,10 +161,26 @@
 
 /* Emplacement pour une capture produit dans l'ecran du bureau (frame R).
    Vide tant qu'aucune capture validee n'existe : voir PRODUCT_SCREEN. */
-/* z-index 2 : au-dessus des photos mais SOUS le grain et le voile, pour
-   que la capture recoive le meme traitement que le reste de l'image et
-   paraisse reellement posee sur le moniteur. */
-.lc-screen { position: absolute; z-index: 2; object-fit: cover; opacity: .96; }
+/* La marque affichee sur le moniteur du bureau (frame R).
+   z-index 2 : au-dessus des photos mais SOUS le grain et le voile, pour
+   qu'elle recoive le meme traitement que le reste de l'image et paraisse
+   reellement allumee dans la piece. Son opacite suit celle de la frame R
+   (posee par landing.js), sinon elle flotterait sur les autres plans. */
+.lc-screen {
+  position: absolute; z-index: 2; opacity: 0;
+  display: grid; place-content: center; justify-items: center; gap: .62em;
+  background: linear-gradient(158deg, #23211c 0%, #14130f 62%, #0d0c0a 100%);
+  box-shadow: inset 0 0 2.4em rgba(0, 0, 0, .55), inset 0 .08em 0 rgba(247, 243, 236, .07);
+  overflow: hidden;
+}
+.lc-screen-mark {
+  width: 1.5em; height: 1.5em; border-radius: .42em;
+  background: var(--lc-champagne); box-shadow: inset 0 0 0 .26em #14130f;
+}
+.lc-screen-word {
+  font-family: var(--lc-display); font-weight: 600; font-size: .92em;
+  letter-spacing: .01em; color: var(--lc-white); white-space: nowrap;
+}
 
 /* ================= CALQUE DE CONTENU — SCENES 1 A 6 =================
    Les textes vivent DANS le plateau colle : ils sont donc toujours
@@ -219,10 +235,23 @@
 .lc-h2 { font-size: clamp(1.85rem, 3.1vw, 2.75rem); font-weight: 400; }
 .lc-h2-xl { font-size: clamp(2.2rem, 4.4vw, 3.7rem); }
 .lc-lead { font-size: clamp(1.02rem, 1.35vw, 1.18rem); color: var(--lc-muted); max-width: 34em; margin-top: 24px; }
+/* `max-width` seul ne centre pas : il faut les marges auto. */
+.lc-lead-center { margin-inline: auto; }
 .lc-body { font-size: 1.02rem; color: var(--lc-muted); max-width: 34em; margin-top: 20px; }
 .lc-note { margin-top: 22px; font-size: .84rem; color: var(--lc-faint); }
 .lc-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 34px; }
 .lc-actions-center { justify-content: center; }
+
+/* CTA discret pour les scenes intermediaires : une invitation, sans
+   poser un gros bouton par-dessus la photographie a chaque plan. */
+.lc-cta-inline {
+  display: inline-flex; align-items: center; gap: 10px; margin-top: 30px;
+  font-size: .92rem; font-weight: 600; color: var(--lc-white);
+  padding-bottom: 6px; border-bottom: 1px solid rgba(200, 168, 122, .5);
+  transition: border-color .3s, gap .3s var(--lc-ease);
+}
+.lc-cta-inline::after { content: "→"; color: var(--lc-champagne); transition: transform .3s var(--lc-ease); }
+.lc-cta-inline:hover { border-color: var(--lc-champagne); gap: 14px; }
 
 /* Indice de scroll, au bas du hero */
 .lc-scrollcue {
@@ -375,12 +404,54 @@
 /* ============================ FOOTER ============================ */
 .lc-footer { position: relative; z-index: 3; background: var(--lc-ink-2); border-top: 1px solid var(--lc-line); }
 .lc-footer-in {
-  max-width: var(--lc-max); margin: 0 auto; padding: 34px 32px;
-  display: flex; align-items: center; justify-content: space-between; gap: 26px; flex-wrap: wrap;
+  max-width: var(--lc-max); margin: 0 auto; padding: 72px 32px 40px;
+  display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 48px;
 }
-.lc-footer-links { display: flex; flex-wrap: wrap; gap: 24px; }
-.lc-footer-links a { font-size: .85rem; color: var(--lc-muted); transition: color .25s; }
-.lc-footer-links a:hover { color: var(--lc-champagne); }
+.lc-footer-brand { max-width: 300px; }
+.lc-footer-baseline { margin-top: 16px; font-size: .9rem; color: var(--lc-muted); }
+.lc-footer-brand .lc-btn { margin-top: 22px; }
+.lc-footer-col h3 {
+  font-family: var(--lc-sans); font-size: .7rem; font-weight: 600;
+  letter-spacing: .14em; text-transform: uppercase; color: var(--lc-champagne); margin-bottom: 16px;
+}
+.lc-footer-col ul { display: grid; gap: 11px; }
+.lc-footer-col a { font-size: .89rem; color: var(--lc-muted); transition: color .25s; }
+.lc-footer-col a:hover { color: var(--lc-white); }
+.lc-footer-bottom {
+  max-width: var(--lc-max); margin: 0 auto; padding: 22px 32px 34px;
+  border-top: 1px solid var(--lc-line);
+  display: flex; justify-content: space-between; gap: 18px; flex-wrap: wrap;
+  font-size: .82rem; color: var(--lc-faint);
+}
+.lc-footer-legal { display: flex; flex-wrap: wrap; gap: 20px; }
+.lc-footer-legal a { transition: color .25s; }
+.lc-footer-legal a:hover { color: var(--lc-champagne); }
+@media (max-width: 900px) {
+  .lc-footer-in { grid-template-columns: 1fr 1fr; gap: 38px; padding-top: 56px; }
+  .lc-footer-brand { grid-column: 1 / -1; max-width: none; }
+}
+@media (max-width: 520px) { .lc-footer-in { grid-template-columns: 1fr; } }
+
+/* ===================== PAGES LEGALES (statiques) ===================== */
+.lc-legal { max-width: 780px; margin: 0 auto; padding: 148px 32px 96px; }
+.lc-legal h1 { font-size: clamp(2rem, 3.6vw, 2.9rem); margin-bottom: 12px; }
+.lc-legal-updated { font-size: .84rem; color: var(--lc-faint); margin-bottom: 52px; }
+.lc-legal h2 { font-size: 1.35rem; margin: 46px 0 14px; }
+.lc-legal h3 { font-family: var(--lc-sans); font-size: .96rem; font-weight: 600; margin: 24px 0 8px; }
+.lc-legal p, .lc-legal li { color: var(--lc-muted); font-size: .96rem; }
+.lc-legal p + p { margin-top: 12px; }
+.lc-legal ul { margin-top: 12px; display: grid; gap: 9px; }
+.lc-legal ul li { position: relative; padding-left: 20px; }
+.lc-legal ul li::before { content: ""; position: absolute; left: 0; top: .64em; width: 7px; height: 1px; background: var(--lc-champagne); }
+.lc-legal a { color: var(--lc-champagne); text-decoration: underline; text-underline-offset: 3px; }
+/* Marqueur visible pour tout ce qui doit encore etre renseigne par
+   l'editeur du site : impossible de le laisser passer en production. */
+.lc-todo {
+  display: inline-block; background: rgba(200, 168, 122, .16); color: var(--lc-champagne);
+  border: 1px dashed rgba(200, 168, 122, .5); border-radius: 4px;
+  padding: 1px 8px; font-size: .86em; font-weight: 600;
+}
+.lc-legal-back { display: inline-flex; align-items: center; gap: 9px; margin-top: 56px; font-size: .9rem; }
 
 /* ============================ RESPONSIVE ============================ */
 @media (max-width: 1000px) {

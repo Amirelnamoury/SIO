@@ -9,7 +9,7 @@ l'ordre narratif de la visite :
 | Frame | Plan | Chapitre |
 |---|---|---|
 | a, b | vue extérieure, approche de la façade | 01 — Arrivée |
-| c, d, e | porte fermée, porte ouverte, seuil | 02 — L'entrée |
+| c, d | porte fermée, porte ouverte | 02 — L'entrée |
 | f, g, h, i | hall, salle de bain | 03 — Le terrain |
 | j, k, l | retour hall, local technique | 04 — La technique |
 | m, n, o | pièce en travaux, **puis la même terminée** | 05 — Le chantier |
@@ -18,6 +18,12 @@ l'ordre narratif de la visite :
 
 `n` et `o` sont cadrées à l'identique : c'est ce qui permet le volet
 avant/après (`clip-path`) sans aucun décalage visible.
+
+**`frame-e` n'est pas utilisée.** Elle montrait le seuil, entre la porte
+ouverte (`d`) et le hall (`f`) — soit à peu près la même vue que ses deux
+voisines, pour un temps mort supplémentaire à l'entrée. Les fichiers sont
+conservés : il suffit de rajouter une ligne dans la table `FRAMES` de
+`landing.js` pour la remettre.
 
 ### Format et poids
 

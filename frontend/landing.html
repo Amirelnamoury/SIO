@@ -19,7 +19,7 @@
      progressivement par landing.js a mesure que le visiteur descend. -->
 <link rel="preload" as="image" href="assets/landing/frames/frame-a.webp" imagesrcset="assets/landing/frames/frame-a-sm.webp 1100w, assets/landing/frames/frame-a.webp 1920w" imagesizes="100vw" fetchpriority="high">
 
-<link rel="stylesheet" href="landing.css?v=7">
+<link rel="stylesheet" href="landing.css?v=8">
 </head>
 <body class="lc">
 
@@ -106,7 +106,11 @@
         <div class="lc-scene-in">
           <div class="lc-block lc-block-center">
             <p class="lc-eyebrow">Tout commence ici</p>
-            <h2 class="lc-h2">Pilotez toute votre activité<br>sans multiplier les outils.</h2>
+            <h2 class="lc-h2">Un seul outil, du premier appel<br>jusqu'à l'argent encaissé.</h2>
+            <p class="lc-lead lc-lead-center">
+              Plus de devis perdus dans une boîte mail, plus de factures oubliées
+              trois semaines après la fin du chantier.
+            </p>
             <ul class="lc-chips">
               <li>Clients</li><li>Devis</li><li>Factures</li><li>Chantiers</li><li>Planning</li>
             </ul>
@@ -121,13 +125,14 @@
             <p class="lc-eyebrow">Pensé pour le terrain</p>
             <h2 class="lc-h2">Chaque intervention reste reliée<br>au bon client et au bon chantier.</h2>
             <ul class="lc-points">
-              <li>Informations accessibles immédiatement, même sur place</li>
-              <li>Photos, documents et suivi centralisés</li>
-              <li>Planning toujours à jour</li>
+              <li>Le dossier complet du client, consultable depuis le chantier</li>
+              <li>Photos, documents et notes rattachés à la bonne intervention</li>
+              <li>Un planning que toute l'équipe voit à jour, en temps réel</li>
             </ul>
             <ul class="lc-tags">
               <li>Plomberie</li><li>Chauffage</li><li>Sanitaire</li><li>Rénovation</li>
             </ul>
+            <a href="index.html?tab=register" class="lc-cta-inline">Essayer gratuitement</a>
           </div>
         </div>
       </section>
@@ -139,8 +144,9 @@
             <p class="lc-eyebrow">Organisation</p>
             <h2 class="lc-h2">La précision,<br>sans la paperasse.</h2>
             <p class="lc-body">
-              Interventions, documents, échéances et informations techniques
-              restent organisés dans un seul espace.
+              Contrats récurrents, échéances de maintenance, attestations et
+              relevés techniques : tout est rangé, daté, et remonte tout seul
+              au bon moment.
             </p>
             <ul class="lc-tags">
               <li>Électricité</li><li>Maintenance</li><li>Climatisation</li><li>Domotique</li>
@@ -168,6 +174,7 @@
               <div class="lc-figure-hero"><dt>Marge réelle</dt><dd>+ 2 135 €</dd></div>
             </dl>
             <p class="lc-figures-note">Exemple illustratif — vos chiffres réels s'affichent à la place.</p>
+            <a href="index.html?tab=register" class="lc-cta-inline">Calculer la marge de mes chantiers</a>
           </div>
         </div>
       </section>
@@ -180,7 +187,7 @@
             <h2 class="lc-h2">Le terrain,<br>enfin connecté au bureau.</h2>
             <p class="lc-body">
               Une seule vue pour savoir ce qui avance, ce qui doit être relancé
-              et ce qui demande votre attention.
+              et ce qui demande votre attention. Le reste, l'outil s'en occupe.
             </p>
             <div class="lc-modules">
               <div>
@@ -196,6 +203,7 @@
                 <ul><li>Planning</li><li>Tâches</li><li>Équipes</li></ul>
               </div>
             </div>
+            <a href="index.html?tab=register" class="lc-cta-inline">Ouvrir mon espace gratuitement</a>
           </div>
         </div>
       </section>
@@ -314,17 +322,53 @@
 
 <footer class="lc-footer">
   <div class="lc-footer-in">
-    <a class="lc-logo" href="landing.html">
-      <span class="lc-logo-mark" aria-hidden="true"></span>
-      Suite&nbsp;Artisan
-    </a>
-    <nav class="lc-footer-links" aria-label="Liens de bas de page">
-      <a href="#chap-6">Produit</a>
-      <a href="#metiers">Métiers</a>
-      <a href="#tarifs">Tarifs</a>
-      <a href="#faq">FAQ</a>
-      <a href="index.html">Connexion</a>
-      <a href="index.html?tab=register">Inscription</a>
+    <div class="lc-footer-brand">
+      <a class="lc-logo" href="landing.html">
+        <span class="lc-logo-mark" aria-hidden="true"></span>
+        Suite&nbsp;Artisan
+      </a>
+      <p class="lc-footer-baseline">
+        Le logiciel de gestion des artisans du bâtiment : devis, factures,
+        chantiers et planning au même endroit.
+      </p>
+      <a href="index.html?tab=register" class="lc-btn lc-btn-primary lc-btn-sm">Essayer gratuitement</a>
+    </div>
+
+    <div class="lc-footer-col">
+      <h3>Produit</h3>
+      <ul>
+        <li><a href="#chap-6">Fonctionnalités</a></li>
+        <li><a href="#tarifs">Tarifs</a></li>
+        <li><a href="#metiers">Métiers</a></li>
+        <li><a href="#faq">FAQ</a></li>
+      </ul>
+    </div>
+
+    <div class="lc-footer-col">
+      <h3>Mon compte</h3>
+      <ul>
+        <li><a href="index.html">Connexion</a></li>
+        <li><a href="index.html?tab=register">Créer un compte</a></li>
+      </ul>
+    </div>
+
+    <div class="lc-footer-col">
+      <h3>Informations légales</h3>
+      <ul>
+        <li><a href="mentions-legales.html">Mentions légales</a></li>
+        <li><a href="cgv.html">CGV</a></li>
+        <li><a href="confidentialite.html">Confidentialité</a></li>
+        <li><a href="confidentialite.html#cookies">Cookies</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="lc-footer-bottom">
+    <p>© 2026 Suite Artisan. Tous droits réservés.</p>
+    <nav class="lc-footer-legal" aria-label="Liens légaux">
+      <a href="mentions-legales.html">Mentions légales</a>
+      <a href="cgv.html">CGV</a>
+      <a href="confidentialite.html">Politique de confidentialité</a>
     </nav>
   </div>
 </footer>
@@ -332,6 +376,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script src="pricing.js"></script>
-<script src="landing.js?v=5"></script>
+<script src="landing.js?v=6"></script>
 </body>
 </html>
