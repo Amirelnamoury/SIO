@@ -1,9 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.database import get_db
 from app.deps import UtilisateurActif, generate_unique_slug, get_current_artisan, get_utilisateur_actif
+from app.media_processing import MediaValidationError
 from app.models import Artisan, Membre
+from app.profile_photo_service import delete_profile_photo, read_profile_photo, save_profile_photo
 from app.schemas import ArtisanCreate, ArtisanLogin, ArtisanOut, ArtisanUpdate, MoiOut, PasswordChange, Token
 from app.security import create_access_token, hash_password, verify_password
 
@@ -93,6 +97,56 @@ def modifier_profil(
     db.commit()
     db.refresh(current_artisan)
     return ArtisanOut.model_validate(current_artisan)
+
+
+@router.post("/me/photo-profil", response_model=ArtisanOut)
+async def ajouter_photo_profil(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_artisan: Artisan = Depends(get_current_artisan),
+):
+    max_bytes = settings.site_media_max_upload_mo * 1024 * 1024
+    content = await file.read(max_bytes + 1)
+    if len(content) > max_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"Image trop volumineuse (maximum {settings.site_media_max_upload_mo} Mo)",
+        )
+    filename = (file.filename or "photo").replace("\\", "/").split("/")[-1][:255]
+    try:
+        artisan = save_profile_photo(
+            db,
+            current_artisan,
+            content=content,
+            filename=filename,
+            declared_mime=file.content_type,
+        )
+    except MediaValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    return ArtisanOut.model_validate(artisan)
+
+
+@router.get("/me/photo-profil")
+def obtenir_photo_profil(current_artisan: Artisan = Depends(get_current_artisan)):
+    content = read_profile_photo(current_artisan)
+    if content is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Photo de profil introuvable")
+    return Response(
+        content=content,
+        media_type="image/webp",
+        headers={"Cache-Control": "private, max-age=300", "X-Content-Type-Options": "nosniff"},
+    )
+
+
+@router.delete("/me/photo-profil", status_code=status.HTTP_204_NO_CONTENT)
+def supprimer_photo_profil(
+    db: Session = Depends(get_db),
+    current_artisan: Artisan = Depends(get_current_artisan),
+):
+    try:
+        delete_profile_photo(db, current_artisan)
+    except LookupError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
 
 @router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)

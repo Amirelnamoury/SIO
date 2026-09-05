@@ -76,6 +76,7 @@ assert.match(styleSource, /minmax\(170px, 1\.35fr\) 122px 128px 96px minmax\(130
 assert.match(styleSource, /#view-devis \.list-toolbar \.list-search \{ flex: 0 1 460px/);
 assert.match(styleSource, /#view-devis \.list-toolbar \{[^}]*margin-bottom: var\(--sa-space-4\)/);
 assert.match(styleSource, /#view-factures \.list-toolbar \{[^}]*margin-bottom: var\(--sa-space-4\)/);
+assert.match(styleSource, /#view-factures #facture-filters \{ margin-bottom: var\(--sa-space-4\); \}/);
 assert.match(styleSource, /#view-factures #factures-statut-filtre \{ width: 108px; \}/);
 assert.doesNotMatch(styleSource, /\.list-row\.is-due \{[^}]*padding-left/);
 assert.match(styleSource, /\.chantier-row \{[\s\S]*?min-height: 82px/);

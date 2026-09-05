@@ -50,6 +50,7 @@ const end = appSource.indexOf("async function showContratForm", start);
 assert.ok(start !== -1 && end > start, "les fonctions de rendu Contrat sont introuvables");
 const context = {
   escapeHtml: (value) => String(value ?? ""),
+  monogram: (value) => String(value || "?").slice(0, 2).toUpperCase(),
   fmtEuro: (value) => `${value} €`,
   fmtDate: (value) => String(value),
 };

@@ -125,6 +125,7 @@ class ArtisanOut(BaseModel):
     siret: Optional[str] = None
     assurance_decennale_nom: Optional[str] = None
     logo_url: Optional[str] = None
+    photo_profil_url: Optional[str] = None
     site_url: Optional[str] = None
     site_statut: str
     onboarding_termine: bool

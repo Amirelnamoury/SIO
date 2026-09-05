@@ -49,6 +49,12 @@ class Artisan(Base):
     siret = Column(String, nullable=True)
     assurance_decennale_nom = Column(String, nullable=True)
     logo_url = Column(String, nullable=True)
+    photo_profil_key = Column(String, nullable=True)
+
+    @property
+    def photo_profil_url(self):
+        """URL API stable, sans exposer la cle de stockage interne."""
+        return "/auth/me/photo-profil" if self.photo_profil_key else None
 
     # Presence en ligne : le site vitrine est livre par nous (pas de generateur
     # dans le SaaS), on garde juste un etat visible par l'artisan.

@@ -78,6 +78,8 @@ const Api = {
   me: () => apiFetch("/auth/me"),
   moi: () => apiFetch("/auth/moi"),
   updateMe: (payload) => apiFetch("/auth/me", { method: "PATCH", body: payload }),
+  uploadProfilePhoto: (formData) => uploadFetch("/auth/me/photo-profil", formData),
+  deleteProfilePhoto: () => apiFetch("/auth/me/photo-profil", { method: "DELETE" }),
   changerMotDePasse: (payload) => apiFetch("/auth/change-password", { method: "POST", body: payload }),
 
   // ---------- Equipe ----------

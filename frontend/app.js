@@ -4,6 +4,8 @@ let currentUtilisateur = null; // { role, nom, email, membre_id } - qui est prec
 let currentDevisFilter = "";
 let currentAvisFilter = ""; // "" | "1" (publies) | "0" (non publies)
 let devisDueIds = new Set();
+let profilePhotoObjectUrl = null;
+let profilePhotoApiPath = null;
 
 function estAdministrateur() {
   return currentUtilisateur && (currentUtilisateur.role === "proprietaire" || currentUtilisateur.role === "administrateur");
@@ -221,6 +223,7 @@ const CONFORMITE_TYPE_LABELS = {
 
 // ===================== Ecran d'authentification =====================
 function showAuthScreen() {
+  clearProfilePhoto();
   document.getElementById("auth-screen").hidden = false;
   document.getElementById("dashboard-screen").hidden = true;
 }
@@ -436,6 +439,7 @@ document.addEventListener("keydown", (e) => {
 function enterDashboard() {
   document.getElementById("auth-screen").hidden = true;
   document.getElementById("dashboard-screen").hidden = false;
+  refreshProfilePhoto().catch(() => {});
   switchView("dashboard");
   refreshBadges();
   maybeShowOnboarding();
@@ -622,7 +626,9 @@ function setupProfilPanel() {
     // une page publique partageable.
     content.innerHTML = `
       <div class="profil-identity">
-        <div class="crm-avatar profil-identity-avatar">${escapeHtml(monogram(currentArtisan.nom_entreprise))}</div>
+        ${profilePhotoObjectUrl
+          ? `<img class="crm-avatar profil-identity-avatar profil-identity-avatar-photo" src="${escapeHtml(profilePhotoObjectUrl)}" alt="Photo du compte">`
+          : `<div class="crm-avatar profil-identity-avatar">${escapeHtml(monogram(currentArtisan.nom_entreprise))}</div>`}
         <div>
           <div class="profil-identity-name">${escapeHtml(currentArtisan.nom_entreprise)}</div>
           <div class="profil-identity-sub">${escapeHtml(METIER_LABELS[currentArtisan.metier] || currentArtisan.metier)}</div>
@@ -699,8 +705,12 @@ function setupEntrepriseTabs() {
   tabs.addEventListener("click", (e) => {
     const btn = e.target.closest(".filter-chip");
     if (!btn) return;
-    tabs.querySelectorAll(".filter-chip").forEach((c) => c.classList.remove("active"));
+    tabs.querySelectorAll(".filter-chip").forEach((c) => {
+      c.classList.remove("active");
+      c.setAttribute("aria-selected", "false");
+    });
     btn.classList.add("active");
+    btn.setAttribute("aria-selected", "true");
     afficherOngletEntreprise(btn.dataset.tab);
   });
   // Sans cet appel, les 8 panneaux restent tous visibles (leur etat naturel
@@ -710,6 +720,57 @@ function setupEntrepriseTabs() {
   // le HTML (voir index.html), jamais code en dur ici.
   const ongletParDefaut = tabs.querySelector(".filter-chip.active")?.dataset.tab || "profil";
   afficherOngletEntreprise(ongletParDefaut);
+}
+
+function applyProfilePhoto(url) {
+  const enterprisePhoto = document.getElementById("enterprise-profile-photo");
+  const enterpriseFallback = document.getElementById("enterprise-profile-monogram");
+  const topbarPhoto = document.getElementById("topbar-profile-photo");
+  const topbarFallback = document.getElementById("topbar-profile-fallback");
+  const hasPhoto = Boolean(url);
+  if (enterprisePhoto) {
+    enterprisePhoto.hidden = !hasPhoto;
+    enterprisePhoto.src = url || "";
+  }
+  if (enterpriseFallback) enterpriseFallback.hidden = hasPhoto;
+  if (topbarPhoto) {
+    topbarPhoto.hidden = !hasPhoto;
+    topbarPhoto.src = url || "";
+  }
+  if (topbarFallback) topbarFallback.hidden = hasPhoto;
+}
+
+function updateProfilePhotoControls() {
+  const hasPhoto = Boolean(currentArtisan && currentArtisan.photo_profil_url);
+  const choose = document.getElementById("profile-photo-choose");
+  const remove = document.getElementById("profile-photo-delete");
+  if (choose) choose.textContent = hasPhoto ? "Remplacer la photo" : "Ajouter une photo";
+  if (remove) remove.hidden = !hasPhoto;
+}
+
+function clearProfilePhoto() {
+  if (profilePhotoObjectUrl) URL.revokeObjectURL(profilePhotoObjectUrl);
+  profilePhotoObjectUrl = null;
+  profilePhotoApiPath = null;
+  applyProfilePhoto(null);
+}
+
+async function refreshProfilePhoto({ force = false } = {}) {
+  const path = currentArtisan && currentArtisan.photo_profil_url;
+  updateProfilePhotoControls();
+  if (!path) {
+    clearProfilePhoto();
+    return;
+  }
+  if (!force && profilePhotoObjectUrl && profilePhotoApiPath === path) {
+    applyProfilePhoto(profilePhotoObjectUrl);
+    return;
+  }
+  const nextUrl = await protectedImageUrl(path);
+  if (profilePhotoObjectUrl) URL.revokeObjectURL(profilePhotoObjectUrl);
+  profilePhotoObjectUrl = nextUrl;
+  profilePhotoApiPath = path;
+  applyProfilePhoto(nextUrl);
 }
 
 function refreshEntrepriseProfileSummary() {
@@ -729,6 +790,7 @@ function refreshEntrepriseProfileSummary() {
   document.getElementById("enterprise-profile-missing").textContent = manquantes
     ? `${manquantes} information${manquantes > 1 ? "s" : ""} manquante${manquantes > 1 ? "s" : ""}`
     : "Profil complet";
+  updateProfilePhotoControls();
 }
 
 function loadEntrepriseForm() {
@@ -794,6 +856,52 @@ function setupEntrepriseForm() {
   document.getElementById("entreprise-form-cancel").addEventListener("click", () => {
     loadEntrepriseForm();
     document.getElementById("entreprise-form-error").hidden = true;
+  });
+}
+
+function setupProfilePhoto() {
+  const input = document.getElementById("profile-photo-file");
+  const choose = document.getElementById("profile-photo-choose");
+  const remove = document.getElementById("profile-photo-delete");
+  const errorBox = document.getElementById("profile-photo-error");
+  choose.addEventListener("click", () => input.click());
+  input.addEventListener("change", async () => {
+    if (!input.files || !input.files[0]) return;
+    errorBox.hidden = true;
+    choose.disabled = true;
+    const previous = choose.textContent;
+    choose.textContent = "Traitement...";
+    try {
+      currentArtisan = await Api.uploadProfilePhoto(new FormData(document.getElementById("profile-photo-form")));
+      await refreshProfilePhoto({ force: true });
+      refreshEntrepriseProfileSummary();
+      showToast("Photo de profil enregistrée.");
+    } catch (error) {
+      errorBox.hidden = false;
+      errorBox.textContent = error.message;
+    } finally {
+      input.value = "";
+      choose.disabled = false;
+      choose.textContent = previous;
+      updateProfilePhotoControls();
+    }
+  });
+  remove.addEventListener("click", async () => {
+    if (!(await confirmDialog("Supprimer la photo de profil ?", { danger: true }))) return;
+    errorBox.hidden = true;
+    remove.disabled = true;
+    try {
+      await Api.deleteProfilePhoto();
+      currentArtisan = await Api.me();
+      clearProfilePhoto();
+      refreshEntrepriseProfileSummary();
+      showToast("Photo de profil supprimée.");
+    } catch (error) {
+      errorBox.hidden = false;
+      errorBox.textContent = error.message;
+    } finally {
+      remove.disabled = false;
+    }
   });
 }
 
@@ -887,16 +995,15 @@ function renderMembreCard(m) {
     }
   }
   return `
-  <div class="item-card">
-    <div class="item-card-top">
-      <div>
-        <div class="item-title">${escapeHtml(m.nom)}${estMoi ? " (vous)" : ""}</div>
-        <div class="item-sub">${escapeHtml(m.email)}</div>
-      </div>
-      <span class="badge ${m.role === "administrateur" ? "badge-blue" : "badge-gray"}">${MEMBRE_ROLE_LABELS[m.role] || m.role}</span>
+  <div class="item-card enterprise-record">
+    <span class="enterprise-record-avatar">${escapeHtml(monogram(m.nom))}</span>
+    <div class="enterprise-record-main">
+      <div class="item-title">${escapeHtml(m.nom)}${estMoi ? " (vous)" : ""}</div>
+      <div class="item-sub">${escapeHtml(m.email)}</div>
+      ${!m.actif ? '<div class="item-meta"><span class="badge badge-gray">Compte désactivé</span></div>' : ""}
     </div>
-    ${!m.actif ? '<div class="item-meta"><span class="badge badge-gray">Désactivé</span></div>' : ""}
-    ${actions ? `<div class="item-actions">${actions}</div>` : ""}
+    <span class="badge enterprise-record-status ${m.role === "administrateur" ? "badge-blue" : "badge-gray"}">${MEMBRE_ROLE_LABELS[m.role] || m.role}</span>
+    ${actions ? `<div class="item-actions enterprise-record-actions">${actions}</div>` : ""}
   </div>`;
 }
 
@@ -1006,15 +1113,14 @@ async function loadPrestations() {
 
 function renderPrestationCard(p) {
   return `
-  <div class="item-card">
-    <div class="item-card-top">
-      <div>
-        <div class="item-title">${escapeHtml(p.description)}</div>
-        <div class="item-sub">${escapeHtml(p.categorie || PRESTATION_CATEGORIE_DEFAUT)} · ${escapeHtml(p.unite)} · TVA ${p.taux_tva}%</div>
-      </div>
-      <strong>${fmtEuro(p.prix_unitaire_ht)}</strong>
+  <div class="item-card enterprise-record">
+    <span class="enterprise-record-avatar">${escapeHtml(monogram(p.description))}</span>
+    <div class="enterprise-record-main">
+      <div class="item-title">${escapeHtml(p.description)}</div>
+      <div class="item-sub">${escapeHtml(p.categorie || PRESTATION_CATEGORIE_DEFAUT)} · ${escapeHtml(p.unite)} · TVA ${p.taux_tva}%</div>
     </div>
-    <div class="item-actions">
+    <strong class="enterprise-record-amount">${fmtEuro(p.prix_unitaire_ht)}</strong>
+    <div class="item-actions enterprise-record-actions">
       <button type="button" class="btn-sm btn-sm-danger" data-action="delete-prestation" data-id="${p.id}">Supprimer</button>
     </div>
   </div>`;
@@ -1134,16 +1240,15 @@ async function loadFournisseurs() {
 function renderFournisseurCard(f) {
   const contact = [f.contact_nom, f.telephone, f.email].filter(Boolean).map(escapeHtml).join(" · ");
   return `
-  <div class="item-card">
-    <div class="item-card-top">
-      <div>
-        <div class="item-title">${escapeHtml(f.nom)}</div>
-        <div class="item-sub">${contact || "Pas de contact renseigné"}</div>
-      </div>
-      <span class="badge badge-gray">${FOURNISSEUR_CATEGORIE_LABELS[f.categorie] || f.categorie}</span>
+  <div class="item-card enterprise-record">
+    <span class="enterprise-record-avatar">${escapeHtml(monogram(f.nom))}</span>
+    <div class="enterprise-record-main">
+      <div class="item-title">${escapeHtml(f.nom)}</div>
+      <div class="item-sub">${contact || "Pas de contact renseigné"}</div>
+      ${f.total_achats > 0 ? `<div class="item-meta">Total achats : ${fmtEuro(f.total_achats)}</div>` : ""}
     </div>
-    ${f.total_achats > 0 ? `<div class="item-meta">Total achats : ${fmtEuro(f.total_achats)}</div>` : ""}
-    <div class="item-actions">
+    <span class="badge badge-gray enterprise-record-status">${FOURNISSEUR_CATEGORIE_LABELS[f.categorie] || f.categorie}</span>
+    <div class="item-actions enterprise-record-actions">
       <button type="button" class="btn-sm btn-sm-danger" data-action="delete-fournisseur" data-id="${f.id}">Supprimer</button>
     </div>
   </div>`;
@@ -4448,20 +4553,19 @@ async function loadContrats() {
 function renderContratCard(c) {
   const meta = CONTRAT_STATUT_META[c.statut] || { label: c.statut, badge: "badge-gray" };
   return `
-  <div class="item-card">
-    <div class="item-card-top">
-      <div>
-        <div class="item-title">${escapeHtml(c.titre)}</div>
-        <div class="item-sub">${escapeHtml(c.client_nom)} · ${fmtEuro(c.montant_ht)} HT · TVA ${c.taux_tva}% · ${CONTRAT_FREQUENCE_LABELS[c.frequence] || c.frequence}</div>
+  <div class="item-card enterprise-record">
+    <span class="enterprise-record-avatar">${escapeHtml(monogram(c.titre))}</span>
+    <div class="enterprise-record-main">
+      <div class="item-title">${escapeHtml(c.titre)}</div>
+      <div class="item-sub">${escapeHtml(c.client_nom)} · ${fmtEuro(c.montant_ht)} HT · TVA ${c.taux_tva}% · ${CONTRAT_FREQUENCE_LABELS[c.frequence] || c.frequence}</div>
+      <div class="item-meta">
+        Prochaine échéance : ${fmtDate(c.prochaine_echeance)}
+        ${c.derniere_generation ? ` · Dernière facture générée le ${fmtDate(c.derniere_generation)}` : ""}
+        · ${c.nb_factures_generees} facture${c.nb_factures_generees > 1 ? "s" : ""} générée${c.nb_factures_generees > 1 ? "s" : ""}
       </div>
-      <span class="badge ${meta.badge}">${meta.label}</span>
     </div>
-    <div class="item-meta">
-      Prochaine échéance : ${fmtDate(c.prochaine_echeance)}
-      ${c.derniere_generation ? ` · Dernière facture générée le ${fmtDate(c.derniere_generation)}` : ""}
-      · ${c.nb_factures_generees} facture${c.nb_factures_generees > 1 ? "s" : ""} générée${c.nb_factures_generees > 1 ? "s" : ""}
-    </div>
-    <div class="item-actions">
+    <span class="badge enterprise-record-status ${meta.badge}">${meta.label}</span>
+    <div class="item-actions enterprise-record-actions">
       <button type="button" class="btn-sm" data-action="edit-contrat" data-id="${c.id}">Modifier</button>
       ${c.statut === "actif" ? `<button type="button" class="btn-sm btn-sm-primary" data-action="generer-contrat" data-id="${c.id}">Générer maintenant</button>` : ""}
       ${c.statut === "actif" ? `<button type="button" class="btn-sm" data-action="suspendre-contrat" data-id="${c.id}">Suspendre</button>` : ""}
@@ -6583,20 +6687,20 @@ async function loadConformite() {
 function renderConformiteCard(item) {
   const badgeClass = item.alerte ? "badge-red" : "badge-green";
   const badgeLabel = item.jours_restants < 0 ? "Expiré" : item.alerte ? `Expire dans ${item.jours_restants} j` : "À jour";
+  const typeLabel = CONFORMITE_TYPE_LABELS[item.type] || item.type;
   return `
-  <div class="item-card ${item.alerte ? "is-due" : ""}">
-    <div class="item-card-top">
-      <div>
-        <div class="item-title">${escapeHtml(item.libelle)}</div>
-        <div class="item-sub">${CONFORMITE_TYPE_LABELS[item.type] || item.type}</div>
+  <div class="item-card enterprise-record ${item.alerte ? "is-due" : ""}">
+    <span class="enterprise-record-avatar">${escapeHtml(monogram(typeLabel))}</span>
+    <div class="enterprise-record-main">
+      <div class="item-title">${escapeHtml(item.libelle)}</div>
+      <div class="item-sub">${escapeHtml(typeLabel)}</div>
+      <div class="item-meta">
+        Échéance : ${fmtDate(item.date_expiration)}
+        ${item.document_url ? ` · <a href="${escapeHtml(item.document_url)}" target="_blank" rel="noopener">Document</a>` : ""}
       </div>
-      <span class="badge ${badgeClass}">${badgeLabel}</span>
     </div>
-    <div class="item-meta">
-      Echeance : ${fmtDate(item.date_expiration)}
-      ${item.document_url ? ` · <a href="${escapeHtml(item.document_url)}" target="_blank" rel="noopener">Document</a>` : ""}
-    </div>
-    <div class="item-actions">
+    <span class="badge enterprise-record-status ${badgeClass}">${badgeLabel}</span>
+    <div class="item-actions enterprise-record-actions">
       <button type="button" class="btn-sm btn-sm-danger" data-action="delete-conformite" data-id="${item.id}">Supprimer</button>
     </div>
   </div>`;
@@ -6738,6 +6842,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupArchivesPanel();
   setupEntrepriseTabs();
   setupEntrepriseForm();
+  setupProfilePhoto();
   setupSiteMedia();
   setupAutomatisationForm();
   setupEquipeView();
