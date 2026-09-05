@@ -1,332 +1,422 @@
 /* =====================================================================
    Suite Artisan — landing.css
    -----------------------------------------------------------------------
-   Feuille de style ENTIEREMENT ISOLEE de style.css (le SaaS authentifie) :
-   tokens et classes prefixes .scene-*, aucune dependance a --primary /
-   --surface / .btn-primary / .plan-card etc. definis ailleurs. Un autre
-   agent fait evoluer le SaaS en parallele sur une autre branche ; cette
-   isolation garantit qu'aucun changement de part et d'autre ne peut faire
-   fuir un style involontairement.
+   Feuille de style de la LANDING PUBLIQUE uniquement, entierement isolee
+   du SaaS authentifie : tous les selecteurs sont prefixes .lp-* et tous
+   les tokens --lp-*. Aucune dependance a style.css ni a ses variables
+   (--primary/--surface/.btn-primary/.plan-card...), donc aucun risque de
+   fuite de style dans un sens ou dans l'autre pendant qu'un autre agent
+   fait evoluer le SaaS en parallele.
    ===================================================================== */
 
 :root {
-  /* Palette architecturale sombre + accent champagne/laiton, discret. */
-  --l-bg: #0b0a08;
-  --l-bg-soft: #121110;
-  --l-surface: #17140f;
-  --l-surface-2: #1e1a14;
-  --l-border: #2c261e;
-  --l-border-strong: #453b2c;
-  --l-text: #f2ece0;
-  --l-text-muted: #b6ab98;
-  --l-text-faint: #877d6d;
-  --l-champagne: #c9a15f;
-  --l-champagne-bright: #e4c988;
-  --l-champagne-soft: rgba(201, 161, 95, 0.14);
-  --l-on-champagne: #1a1610;
-  --l-success: #7fae86;
-  --l-font-display: "Fraunces", Georgia, "Times New Roman", serif;
-  --l-font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --l-radius: 14px;
-  --l-radius-sm: 8px;
-  --scene-track-height: 900vh;
+  /* Clair, franc, chantier : blanc + orange BTP + bleu nuit profond. */
+  --lp-bg: #ffffff;
+  --lp-bg-warm: #fbf8f4;
+  --lp-bg-ink: #0f172a;
+  --lp-ink: #0f172a;
+  --lp-ink-soft: #475569;
+  --lp-ink-faint: #94a3b8;
+  --lp-line: #e8e6e1;
+  --lp-line-strong: #d4d0c8;
+  --lp-orange: #ea580c;
+  --lp-orange-hot: #f97316;
+  --lp-orange-soft: #fff2e8;
+  --lp-green: #15803d;
+  --lp-green-soft: #eaf7ee;
+  --lp-blue: #1d4ed8;
+  --lp-blue-soft: #eef2ff;
+  --lp-display: "Bricolage Grotesque", "Inter", system-ui, sans-serif;
+  --lp-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --lp-r: 16px;
+  --lp-r-sm: 10px;
+  --lp-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 12px 32px -12px rgba(15, 23, 42, .16);
+  --lp-shadow-lg: 0 2px 4px rgba(15, 23, 42, .04), 0 32px 64px -24px rgba(15, 23, 42, .24);
+  --lp-max: 1180px;
 }
 
-/* ---------- Reset local (scope au body de la landing) ---------- */
-.scene-body {
+/* ---------- Base (scopee au body de la landing) ---------- */
+.lp {
   margin: 0;
-  background: var(--l-bg);
-  color: var(--l-text);
-  font-family: var(--l-font);
+  background: var(--lp-bg);
+  color: var(--lp-ink);
+  font-family: var(--lp-sans);
+  font-size: 16px;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
-  /* Surtout PAS de overflow-x sur <body>/<html> : des qu'un axe n'est pas
-     "visible", Chrome force l'autre axe a "auto" ET, avec <body> present,
-     bascule le scroll du document sur <body> lui-meme au lieu du viewport -
-     position:sticky perd alors toute reference stable et ne colle plus
-     nulle part (verifie en pratique). La prevention du scroll horizontal
-     se fait localement (max-width/min sur les elements), jamais ici. */
 }
-.scene-body * { box-sizing: border-box; }
-.scene-body a { color: inherit; }
-.scene-body h1, .scene-body h2, .scene-body h3 { font-family: var(--l-font-display); margin: 0; }
-.scene-body ul { list-style: none; margin: 0; padding: 0; }
-.scene-body img { max-width: 100%; display: block; }
+.lp *, .lp *::before, .lp *::after { box-sizing: border-box; }
+.lp h1, .lp h2, .lp h3 { font-family: var(--lp-display); margin: 0; line-height: 1.08; letter-spacing: -0.02em; }
+.lp p { margin: 0; }
+.lp ul, .lp ol { margin: 0; padding: 0; list-style: none; }
+/* `:where()` ne compte pas dans la specificite : la couleur heritee sert
+   seulement de defaut (a la place du bleu navigateur) et n'ecrase plus les
+   `color` poses par une simple classe comme .lp-btn-primary. */
+:where(.lp) a { color: inherit; }
+.lp a { text-decoration: none; }
+.lp img { max-width: 100%; display: block; }
+.lp :focus-visible { outline: 3px solid var(--lp-orange); outline-offset: 3px; border-radius: 4px; }
 
-.scene-skip-link {
-  position: absolute; left: 12px; top: -60px; z-index: 200;
-  background: var(--l-champagne); color: var(--l-on-champagne);
-  padding: 10px 16px; border-radius: var(--l-radius-sm); font-weight: 600; text-decoration: none;
-  transition: top 0.15s ease;
+.lp-skip {
+  position: absolute; left: 16px; top: -80px; z-index: 200;
+  background: var(--lp-ink); color: #fff; padding: 12px 20px;
+  border-radius: var(--lp-r-sm); font-weight: 600; transition: top .18s ease;
 }
-.scene-skip-link:focus { top: 12px; }
-
-.scene-body :focus-visible { outline: 2px solid var(--l-champagne-bright); outline-offset: 2px; }
-
-/* ---------- Nav ---------- */
-.scene-nav {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  background: rgba(11, 10, 8, 0.72); backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-.scene-nav-inner {
-  max-width: 1180px; margin: 0 auto; padding: 16px 24px;
-  display: flex; align-items: center; justify-content: space-between; gap: 20px;
-}
-.scene-logo { font-family: var(--l-font-display); font-weight: 600; font-size: 1.15rem; letter-spacing: 0.01em; }
-.scene-nav-links { display: flex; gap: 28px; }
-.scene-nav-links a { text-decoration: none; font-size: 0.88rem; font-weight: 500; color: var(--l-text-muted); }
-.scene-nav-links a:hover { color: var(--l-text); }
-.scene-nav-actions { display: flex; align-items: center; gap: 18px; }
-.scene-link-btn { text-decoration: none; font-size: 0.88rem; font-weight: 600; color: var(--l-text-muted); }
-.scene-link-btn:hover { color: var(--l-text); }
-@media (max-width: 760px) { .scene-nav-links { display: none; } }
-@media (max-width: 480px) { .scene-link-btn { display: none; } .scene-nav-inner { padding: 13px 16px; } }
+.lp-skip:focus { top: 16px; }
 
 /* ---------- Boutons ---------- */
-.scene-btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 13px 24px; border-radius: 999px; font-size: 0.92rem; font-weight: 600;
-  text-decoration: none; border: 1px solid transparent; white-space: nowrap; cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+.lp-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 13px 22px; border-radius: 999px; font-weight: 600; font-size: .95rem;
+  border: 1.5px solid transparent; white-space: nowrap; cursor: pointer;
+  transition: transform .16s ease, box-shadow .16s ease, background .16s ease, border-color .16s ease;
 }
-.scene-btn-primary { background: var(--l-champagne); color: var(--l-on-champagne); box-shadow: 0 8px 24px rgba(201, 161, 95, 0.22); }
-.scene-btn-primary:hover { background: var(--l-champagne-bright); transform: translateY(-1px); }
-.scene-btn-ghost { background: transparent; border-color: rgba(255, 255, 255, 0.22); color: var(--l-text); }
-.scene-btn-ghost:hover { border-color: var(--l-champagne); color: var(--l-champagne-bright); }
-.scene-btn-small { padding: 9px 18px; font-size: 0.84rem; }
-.scene-btn-large { padding: 16px 32px; font-size: 1rem; }
+.lp-btn-primary { background: var(--lp-orange); color: #fff; box-shadow: 0 8px 20px -8px rgba(234, 88, 12, .7); }
+.lp-btn-primary:hover { background: var(--lp-orange-hot); transform: translateY(-2px); box-shadow: 0 14px 28px -10px rgba(234, 88, 12, .75); }
+.lp-btn-ghost { background: #fff; border-color: var(--lp-line-strong); color: var(--lp-ink); }
+.lp-btn-ghost:hover { border-color: var(--lp-ink); transform: translateY(-2px); }
+.lp-btn-sm { padding: 9px 16px; font-size: .875rem; }
+.lp-btn-lg { padding: 16px 30px; font-size: 1rem; }
+.lp-link { font-weight: 600; font-size: .92rem; color: var(--lp-ink-soft); }
+.lp-link:hover { color: var(--lp-ink); }
 
-/* =====================================================================
-   EXPERIENCE 3D (scenes 1-9)
-   ===================================================================== */
-.scene-track { position: relative; height: var(--scene-track-height); }
-.scene-pin {
-  position: sticky; top: 0; height: 100svh; min-height: 100vh; overflow: hidden;
-  background: radial-gradient(ellipse at 50% 30%, #16130d 0%, var(--l-bg) 70%);
+/* ---------- Nav ---------- */
+.lp-nav {
+  position: sticky; top: 0; z-index: 100; background: rgba(255, 255, 255, .82);
+  backdrop-filter: saturate(180%) blur(12px); border-bottom: 1px solid transparent;
+  transition: border-color .2s ease, box-shadow .2s ease;
 }
-.scene-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.scene-vignette {
-  position: absolute; inset: 0; pointer-events: none;
-  background:
-    linear-gradient(to bottom, rgba(11,10,8,0.55) 0%, rgba(11,10,8,0) 22%, rgba(11,10,8,0) 70%, rgba(11,10,8,0.75) 100%),
-    radial-gradient(ellipse at 50% 50%, rgba(11,10,8,0) 45%, rgba(11,10,8,0.55) 100%);
+.lp-nav.is-stuck { border-bottom-color: var(--lp-line); box-shadow: 0 4px 20px -12px rgba(15, 23, 42, .3); }
+.lp-nav-in {
+  max-width: var(--lp-max); margin: 0 auto; padding: 14px 24px;
+  display: flex; align-items: center; justify-content: space-between; gap: 24px;
 }
-.scene-progress { position: absolute; top: 0; left: 0; right: 0; height: 2px; background: rgba(255,255,255,0.08); z-index: 5; }
-.scene-progress-bar { height: 100%; width: 100%; background: linear-gradient(90deg, var(--l-champagne), var(--l-champagne-bright)); transform-origin: left center; transform: scaleX(0); }
+.lp-logo { display: inline-flex; align-items: center; gap: 9px; font-family: var(--lp-display); font-weight: 800; font-size: 1.08rem; }
+.lp-logo-mark {
+  width: 18px; height: 18px; border-radius: 5px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--lp-orange-hot), var(--lp-orange));
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, .55);
+}
+.lp-nav-links { display: flex; gap: 26px; }
+.lp-nav-links a { font-size: .92rem; font-weight: 500; color: var(--lp-ink-soft); }
+.lp-nav-links a:hover { color: var(--lp-ink); }
+.lp-nav-cta { display: flex; align-items: center; gap: 16px; }
+@media (max-width: 900px) { .lp-nav-links { display: none; } }
+@media (max-width: 520px) { .lp-link { display: none; } .lp-nav-in { padding: 12px 16px; } }
 
-.scene-panels { position: absolute; inset: 0; }
-.scene-panel {
-  position: absolute; left: 8%; top: 50%; transform: translateY(-50%);
-  width: min(560px, 42vw); max-width: 560px; opacity: 0; visibility: hidden;
-  padding: 0 24px;
+/* ---------- Typo commune ---------- */
+.lp-eyebrow {
+  /* flex-start (et non center) : quand le libelle passe sur deux lignes en
+     mobile, la puce doit rester alignee sur la PREMIERE ligne au lieu de se
+     centrer verticalement entre les deux et paraitre orpheline. */
+  display: inline-flex; align-items: flex-start; gap: 8px;
+  font-size: .8rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--lp-orange); margin-bottom: 18px;
 }
-.scene-panel-hero { width: min(620px, 46vw); }
-.scene-panel-transition { left: 50%; top: 42%; transform: translate(-50%, -50%); text-align: center; width: min(680px, 70vw); }
-
-.scene-eyebrow {
-  font-size: 0.76rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
-  color: var(--l-champagne-bright); margin: 0 0 14px;
-}
-.scene-title { font-size: clamp(2.4rem, 4.2vw, 3.6rem); line-height: 1.08; font-weight: 600; letter-spacing: -0.01em; margin: 0 0 20px; }
-.scene-title-md { font-size: clamp(1.7rem, 2.6vw, 2.4rem); line-height: 1.15; margin-bottom: 16px; }
-.scene-copy { font-size: 1.02rem; line-height: 1.6; color: var(--l-text-muted); margin: 0 0 26px; max-width: 46ch; }
-.scene-hint { font-size: 0.8rem; color: var(--l-text-faint); margin-top: 34px; }
-
+.lp-eyebrow-c { justify-content: center; }
+.lp-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--lp-orange); flex-shrink: 0; margin-top: .42em; }
 @media (prefers-reduced-motion: no-preference) {
-  .scene-hint { animation: scene-hint-float 2.4s ease-in-out infinite; }
+  .lp-dot { animation: lp-blink 2.4s ease-in-out infinite; }
 }
-@keyframes scene-hint-float { 0%, 100% { transform: translateY(0); opacity: 0.7; } 50% { transform: translateY(6px); opacity: 1; } }
+@keyframes lp-blink { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(.8); } }
 
-.scene-cta-row { display: flex; gap: 14px; flex-wrap: wrap; }
-.scene-cta-row-center { justify-content: center; }
+/* Taille calee pour que chaque phrase du titre tienne sur UNE ligne a partir
+   de ~1100px (l'effet recherche : deux lignes courtes et percutantes, pas
+   quatre lignes molles). En dessous, le titre passe naturellement a la ligne. */
+.lp-h1 { font-size: clamp(2.3rem, 4.6vw, 3.5rem); font-weight: 800; }
+.lp-h1 .lp-line { display: block; }
+.lp-accent { color: var(--lp-orange); }
+.lp-h2 { font-size: clamp(1.9rem, 3.6vw, 2.9rem); font-weight: 700; }
+.lp-lead { font-size: clamp(1.05rem, 1.5vw, 1.2rem); color: var(--lp-ink-soft); max-width: 34em; margin-top: 22px; }
+.lp-body { color: var(--lp-ink-soft); margin-top: 18px; max-width: 46ch; }
+.lp-head { text-align: center; max-width: 760px; margin: 0 auto 60px; }
 
-.scene-inline-card {
-  display: inline-flex; flex-direction: column; gap: 4px; align-items: flex-start;
-  background: rgba(23, 20, 15, 0.72); backdrop-filter: blur(6px);
-  border: 1px solid var(--l-border-strong); border-radius: var(--l-radius);
-  padding: 16px 20px; font-size: 0.92rem;
-}
-.scene-inline-card strong { font-family: var(--l-font-display); font-size: 1.2rem; font-weight: 600; }
-.scene-inline-card span { color: var(--l-text-muted); font-size: 0.85rem; }
-.scene-inline-tag {
-  align-self: flex-start; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
-  color: var(--l-text-faint); background: rgba(255,255,255,0.06); padding: 3px 9px; border-radius: 999px; margin-bottom: 4px;
-}
-.scene-inline-tag-accent { color: var(--l-on-champagne); background: var(--l-champagne); }
-.scene-inline-progress { min-width: 220px; }
-.scene-progress-mini { width: 100%; height: 6px; border-radius: 999px; background: rgba(255,255,255,0.1); overflow: hidden; margin-top: 6px; }
-.scene-progress-mini span { display: block; height: 100%; background: linear-gradient(90deg, var(--l-champagne), var(--l-success)); border-radius: 999px; }
-
-.scene-stat-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; max-width: 420px; }
-.scene-stat {
-  background: rgba(23, 20, 15, 0.72); backdrop-filter: blur(6px); border: 1px solid var(--l-border-strong);
-  border-radius: var(--l-radius-sm); padding: 14px 16px;
-}
-.scene-stat span { display: block; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--l-text-faint); margin-bottom: 6px; }
-.scene-stat strong { font-family: var(--l-font-display); font-size: 1.3rem; font-weight: 600; }
-.scene-stat-accent strong { color: var(--l-champagne-bright); }
-
-/* Chips de la scene de transition (assemblage vers l'UI) */
-.scene-databloom { position: absolute; inset: 0; pointer-events: none; opacity: 0; }
-.scene-chip {
-  position: absolute; left: 50%; top: 50%; margin: -16px 0 0 -46px;
-  width: 92px; text-align: center; padding: 8px 10px; border-radius: 999px;
-  background: rgba(23, 20, 15, 0.85); border: 1px solid var(--l-border-strong);
-  font-size: 0.76rem; font-weight: 600; color: var(--l-champagne-bright);
-  opacity: 0; will-change: transform, opacity;
-}
-
-/* ---------- Mode sans 3D (WebGL absent ou prefers-reduced-motion) ---------- */
-.no-3d .scene-track { height: auto; }
-.no-3d .scene-pin { position: static; height: auto; min-height: 0; background: none; padding: 0; }
-.no-3d .scene-canvas, .no-3d .scene-vignette, .no-3d .scene-progress, .no-3d .scene-databloom { display: none; }
-.no-3d .scene-panels { position: static; }
-.no-3d .scene-panel, .no-3d .scene-panel-hero, .no-3d .scene-panel-transition {
-  position: static; transform: none !important; opacity: 1 !important; visibility: visible !important;
-  width: min(680px, 90vw); max-width: 680px; margin: 0 auto; padding: 12vh 24px; text-align: left;
-}
-.no-3d .scene-panel-hero { padding-top: 18vh; }
-.no-3d .scene-panel-transition { text-align: center; }
-.no-3d .scene-panel:not(:last-child) { border-bottom: 1px solid var(--l-border); }
-/* L'invite "Faites defiler..." n'a de sens que pour l'experience pilotee
-   par le scroll (camera + scene) ; en repli statique, tout le contenu est
-   deja visible d'emblee, l'invite serait trompeuse. */
-.no-3d .scene-hint { display: none; }
-
-/* =====================================================================
-   SECTIONS CLASSIQUES (scenes 10-12, tarifs, FAQ)
-   ===================================================================== */
-.scene-section { max-width: 1180px; margin: 0 auto; padding: 110px 24px; }
-.scene-section-alt { max-width: none; background: var(--l-bg-soft); }
-.scene-section-alt > * { max-width: 1180px; margin-left: auto; margin-right: auto; }
-.scene-section-head { text-align: center; margin: 0 0 56px; }
-.scene-section-title { font-size: clamp(1.7rem, 3vw, 2.3rem); font-weight: 600; line-height: 1.2; letter-spacing: -0.01em; }
-.scene-section-head .scene-eyebrow { text-align: center; }
-
-[data-reveal] { }
+/* ---------- Reveal au scroll (anime mais leger) ---------- */
 @media (prefers-reduced-motion: no-preference) {
-  [data-reveal] { opacity: 0; transform: translateY(28px); transition: opacity 0.7s ease, transform 0.7s ease; }
-  [data-reveal].is-revealed { opacity: 1; transform: translateY(0); }
+  [data-anim] { opacity: 0; transform: translateY(22px); transition: opacity .6s cubic-bezier(.16,1,.3,1), transform .6s cubic-bezier(.16,1,.3,1); }
+  [data-anim].is-in { opacity: 1; transform: none; }
+  [data-anim][data-anim-delay="1"] { transition-delay: .07s; }
+  [data-anim][data-anim-delay="2"] { transition-delay: .14s; }
+  [data-anim][data-anim-delay="3"] { transition-delay: .21s; }
+  [data-anim][data-anim-delay="4"] { transition-delay: .28s; }
+  [data-anim][data-anim-delay="5"] { transition-delay: .35s; }
+  [data-anim][data-anim-delay="6"] { transition-delay: .42s; }
 }
 
-/* ---------- Produit (editorial) ---------- */
-.scene-editorial { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 60px; align-items: center; }
-.scene-benefit-list { display: flex; flex-direction: column; gap: 12px; margin: 22px 0 30px; }
-.scene-benefit-list li { position: relative; padding-left: 26px; color: var(--l-text-muted); font-size: 0.96rem; line-height: 1.5; }
-.scene-benefit-list li::before { content: "—"; position: absolute; left: 0; color: var(--l-champagne); }
-.scene-editorial-visual { display: flex; justify-content: center; }
-.scene-frame {
-  width: 100%; max-width: 380px; background: var(--l-surface); border: 1px solid var(--l-border-strong);
-  border-radius: 16px; overflow: hidden; box-shadow: 0 40px 90px rgba(0,0,0,0.45);
+/* ============================ HERO ============================ */
+.lp-hero { position: relative; overflow: hidden; padding: clamp(56px, 8vw, 104px) 0 clamp(60px, 8vw, 110px); }
+.lp-hero-in {
+  position: relative; z-index: 2; max-width: var(--lp-max); margin: 0 auto; padding: 0 24px;
+  display: grid; grid-template-columns: 1.15fr .85fr; gap: 56px; align-items: center;
 }
-.scene-frame-bar { display: flex; gap: 6px; padding: 12px 14px; background: var(--l-bg-soft); }
-.scene-frame-bar span { width: 9px; height: 9px; border-radius: 50%; background: var(--l-border-strong); }
-.scene-frame-body { padding: 22px; display: flex; flex-direction: column; gap: 14px; }
-.scene-frame-row { display: flex; align-items: center; gap: 10px; }
-.scene-frame-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--l-border-strong); flex-shrink: 0; }
-.scene-frame-dot.is-accent { background: var(--l-champagne); }
-.scene-frame-line { height: 8px; border-radius: 5px; background: var(--l-border-strong); }
-.scene-frame-card { background: var(--l-surface-2); border-radius: 10px; padding: 14px; display: flex; justify-content: space-between; align-items: center; }
-.scene-frame-card span { color: var(--l-text-muted); font-size: 0.85rem; }
-.scene-frame-card strong { font-family: var(--l-font-display); font-weight: 600; color: var(--l-champagne-bright); }
-@media (max-width: 900px) { .scene-editorial { grid-template-columns: 1fr; } }
+.lp-hero-blob {
+  position: absolute; z-index: 0; top: -22%; right: -12%; width: 62vw; max-width: 900px; aspect-ratio: 1;
+  background: radial-gradient(circle at 35% 35%, rgba(249, 115, 22, .17), rgba(249, 115, 22, 0) 62%);
+  border-radius: 50%; will-change: transform; pointer-events: none;
+}
+.lp-hero-grid-bg {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background-image: linear-gradient(var(--lp-line) 1px, transparent 1px), linear-gradient(90deg, var(--lp-line) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse 80% 60% at 30% 0%, #000 20%, transparent 72%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 30% 0%, #000 20%, transparent 72%);
+  opacity: .7;
+}
+.lp-hero-actions { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 32px; }
+.lp-center { justify-content: center; }
+.lp-hero-note { margin-top: 20px; font-size: .88rem; color: var(--lp-ink-faint); }
+.lp-hero-note strong { color: var(--lp-green); font-weight: 600; }
 
-/* ---------- Metiers ---------- */
-.scene-metiers-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 10px; }
-.scene-metiers-row span {
-  font-size: 0.88rem; color: var(--l-text-muted); padding: 9px 18px; border: 1px solid var(--l-border-strong);
-  border-radius: 999px; background: var(--l-surface);
+/* Composition de cartes (remplace la 3D : tout en CSS, tres peu couteux).
+   Positions calees pour que les 4 cartes ne se recouvrent JAMAIS de facon
+   accidentelle : la carte devis occupe le haut-droite, les trois autres se
+   repartissent en dessous. Les chevauchements visibles sont voulus et
+   limites aux ombres. */
+.lp-hero-visual { position: relative; min-height: 460px; }
+.lp-card { background: #fff; border: 1px solid var(--lp-line); border-radius: var(--lp-r); box-shadow: var(--lp-shadow); }
+.lp-card-main { position: absolute; z-index: 2; top: 0; right: 0; width: min(300px, 74%); padding: 22px; box-shadow: var(--lp-shadow-lg); }
+.lp-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.lp-chip { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: 4px 10px; border-radius: 999px; }
+.lp-chip-orange { background: var(--lp-orange-soft); color: var(--lp-orange); }
+.lp-chip-green { background: var(--lp-green-soft); color: var(--lp-green); }
+.lp-card-ref { font-size: .75rem; color: var(--lp-ink-faint); font-variant-numeric: tabular-nums; }
+.lp-card-client { font-family: var(--lp-display); font-weight: 700; font-size: 1.05rem; }
+.lp-card-sub { font-size: .85rem; color: var(--lp-ink-faint); margin-top: 2px; }
+.lp-card-amount { font-family: var(--lp-display); font-weight: 800; font-size: 2.1rem; margin: 14px 0 6px; font-variant-numeric: tabular-nums; }
+.lp-card-status { display: flex; align-items: center; gap: 7px; font-size: .85rem; font-weight: 600; color: var(--lp-green); }
+.lp-tick { width: 16px; height: 16px; border-radius: 50%; background: var(--lp-green-soft); position: relative; flex-shrink: 0; }
+.lp-tick::after { content: ""; position: absolute; left: 5px; top: 3px; width: 4px; height: 7px; border: solid var(--lp-green); border-width: 0 2px 2px 0; transform: rotate(45deg); }
+
+.lp-card-float { position: absolute; padding: 15px 17px; width: max-content; will-change: transform; }
+.lp-card-planning { left: 0; top: 46%; width: 200px; }
+.lp-card-cash { left: 0; bottom: 0; }
+.lp-card-relance { right: 0; top: 52%; padding-left: 34px; }
+.lp-mini-title { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--lp-ink-faint); margin-bottom: 10px; }
+.lp-mini-row { display: flex; align-items: center; gap: 9px; margin-bottom: 7px; }
+.lp-time { font-size: .74rem; color: var(--lp-ink-faint); font-variant-numeric: tabular-nums; width: 34px; flex-shrink: 0; }
+.lp-bar { height: 7px; border-radius: 999px; width: var(--w); }
+.lp-bar-o { background: var(--lp-orange); }
+.lp-bar-b { background: var(--lp-blue); opacity: .55; }
+.lp-bar-g { background: var(--lp-green); opacity: .6; }
+.lp-mini-amount { font-family: var(--lp-display); font-weight: 800; font-size: 1.5rem; font-variant-numeric: tabular-nums; }
+.lp-mini-trend { font-size: .78rem; color: var(--lp-green); font-weight: 600; margin-top: 2px; }
+.lp-mini-strong { font-weight: 700; font-size: .92rem; }
+.lp-mini-sub { font-size: .78rem; color: var(--lp-ink-faint); margin-top: 1px; }
+.lp-pulse { position: absolute; left: 15px; top: 21px; width: 9px; height: 9px; border-radius: 50%; background: var(--lp-orange); }
+@media (prefers-reduced-motion: no-preference) {
+  .lp-pulse::after { content: ""; position: absolute; inset: -5px; border-radius: 50%; border: 2px solid var(--lp-orange); animation: lp-ping 2s cubic-bezier(0,0,.2,1) infinite; }
+  .lp-card-float { animation: lp-float 7s ease-in-out infinite; }
+  .lp-card-planning { animation-delay: -1.2s; }
+  .lp-card-cash { animation-delay: -3.4s; }
+  .lp-card-relance { animation-delay: -5s; }
+}
+@keyframes lp-ping { 0% { transform: scale(.7); opacity: 1; } 75%, 100% { transform: scale(2); opacity: 0; } }
+@keyframes lp-float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -9px; } }
+
+@media (max-width: 940px) {
+  .lp-hero-in { grid-template-columns: 1fr; gap: 44px; }
+  .lp-hero-visual { min-height: 430px; max-width: 480px; }
+}
+@media (max-width: 560px) {
+  /* En dessous de 560px il n'y a plus la place pour 4 cartes sans qu'elles
+     se marchent dessus : on garde le devis (le message principal) et la
+     relance automatique (le differenciateur), on retire les deux autres. */
+  .lp-hero-visual { min-height: 330px; }
+  .lp-card-cash, .lp-card-planning { display: none; }
+  /* Aligne a gauche (et non centre par transform) : la carte porte
+     data-parallax, et le JS ecrase alors toute transform CSS. */
+  .lp-card-main { width: 88%; left: 0; right: auto; }
+  .lp-card-relance { top: auto; bottom: 0; right: 0; }
+  /* Deux CTA de largeur egale plutot que deux pilules de tailles
+     differentes empilees - plus propre et plus facile a viser au pouce. */
+  .lp-hero-actions .lp-btn { flex: 1 1 100%; }
+  .lp-eyebrow { font-size: .72rem; }
+  /* Le clamp du titre est cale pour le desktop : a 390px son minimum de
+     2.3rem fait passer "Moins de paperasse." sur deux lignes, et le titre
+     occupe alors trois lignes au lieu des deux voulues. On redescend juste
+     ce qu'il faut pour que chaque phrase tienne sur sa ligne. */
+  .lp-h1 { font-size: clamp(1.7rem, 7.9vw, 2.15rem); }
 }
 
-/* ---------- Tarifs ---------- */
-.scene-plans { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; max-width: 1080px; margin: 0 auto 40px; }
-.scene-plan-card {
-  position: relative; background: var(--l-surface); border: 1px solid var(--l-border-strong); border-radius: var(--l-radius);
-  padding: 26px 22px; display: flex; flex-direction: column;
+/* ====================== BANDEAU MÉTIERS ====================== */
+.lp-marquee {
+  border-block: 1px solid var(--lp-line); background: var(--lp-bg-warm);
+  overflow: hidden; padding: 18px 0;
+  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
 }
-.scene-plan-card.is-highlight { border-color: var(--l-champagne); background: var(--l-surface-2); }
-.scene-plan-badge {
-  position: absolute; top: -11px; left: 22px; background: var(--l-champagne); color: var(--l-on-champagne);
-  font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 3px 10px; border-radius: 999px;
+.lp-marquee-track { display: flex; width: max-content; }
+.lp-marquee-set { display: flex; gap: 44px; padding-right: 44px; }
+.lp-marquee-set span {
+  font-family: var(--lp-display); font-weight: 600; font-size: 1.05rem;
+  color: var(--lp-ink-faint); white-space: nowrap;
 }
-.scene-plan-name { font-family: var(--l-font-display); font-size: 1.15rem; font-weight: 600; margin-bottom: 6px; }
-.scene-plan-accroche { color: var(--l-text-muted); font-size: 0.85rem; line-height: 1.45; min-height: 2.6em; }
-.scene-plan-price { font-family: var(--l-font-display); font-size: 1.9rem; font-weight: 600; margin: 10px 0 2px; }
-.scene-plan-price span { font-size: 0.85rem; font-weight: 400; color: var(--l-text-faint); }
-.scene-plan-mention { font-size: 0.72rem; color: var(--l-text-faint); margin-bottom: 18px; }
-.scene-plan-features { display: flex; flex-direction: column; gap: 8px; margin-bottom: 22px; flex: 1; }
-.scene-plan-features li { font-size: 0.82rem; color: var(--l-text-muted); line-height: 1.4; padding-left: 16px; position: relative; }
-.scene-plan-features li::before { content: "·"; position: absolute; left: 0; color: var(--l-champagne); font-weight: 700; }
-.scene-plan-card .scene-btn { width: 100%; }
-@media (max-width: 980px) { .scene-plans { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 620px) { .scene-plans { grid-template-columns: 1fr; } }
-
-.scene-offer {
-  max-width: 780px; margin: 0 auto; background: var(--l-surface); border: 1px solid var(--l-border-strong);
-  border-radius: var(--l-radius); padding: 30px 32px;
+@media (prefers-reduced-motion: no-preference) {
+  .lp-marquee-track { animation: lp-scroll 34s linear infinite; }
 }
-.scene-offer-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--l-text-faint); margin-bottom: 8px; }
-.scene-offer h3 { font-size: 1.2rem; margin-bottom: 6px; }
-.scene-offer-benefit { color: var(--l-champagne-bright); font-weight: 600; margin: 0 0 10px; }
-.scene-offer p { color: var(--l-text-muted); font-size: 0.9rem; line-height: 1.55; }
-.scene-offer-price { margin: 18px 0; font-size: 1rem; }
-.scene-offer-price strong { font-family: var(--l-font-display); font-size: 1.3rem; color: var(--l-champagne-bright); display: block; }
-.scene-offer-price span { color: var(--l-text-muted); font-size: 0.85rem; }
-.scene-offer ul { margin: 14px 0; display: flex; flex-direction: column; gap: 7px; }
-.scene-offer li { font-size: 0.86rem; color: var(--l-text-muted); padding-left: 16px; position: relative; }
-.scene-offer li::before { content: "—"; position: absolute; left: 0; color: var(--l-champagne); }
-.scene-offer-summary { font-size: 0.8rem; color: var(--l-text-faint); font-style: italic; }
+@keyframes lp-scroll { to { transform: translateX(-50%); } }
 
-/* ---------- FAQ ---------- */
-.scene-faq { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
-.scene-faq details { background: var(--l-surface); border: 1px solid var(--l-border); border-radius: 12px; padding: 18px 22px; }
-.scene-faq summary { font-weight: 600; cursor: pointer; font-size: 0.95rem; }
-.scene-faq summary:hover { color: var(--l-champagne-bright); }
-.scene-faq p { margin: 12px 0 0; color: var(--l-text-muted); font-size: 0.9rem; line-height: 1.6; }
-.scene-faq ul { margin: 12px 0 0; padding-left: 20px; color: var(--l-text-muted); list-style: disc; }
-.scene-faq li { margin: 6px 0; font-size: 0.88rem; line-height: 1.5; }
+/* ---------- Sections ---------- */
+.lp-section { max-width: var(--lp-max); margin: 0 auto; padding: clamp(72px, 9vw, 118px) 24px; }
+.lp-section-tight { padding-bottom: clamp(48px, 6vw, 72px); }
+.lp-section-alt { max-width: none; background: var(--lp-bg-warm); border-block: 1px solid var(--lp-line); }
+.lp-section-alt > * { max-width: var(--lp-max); margin-inline: auto; }
 
-/* ---------- CTA final ---------- */
-.scene-final-cta { text-align: center; padding: 130px 24px; background: var(--l-bg-soft); border-top: 1px solid var(--l-border); }
-.scene-final-cta .scene-eyebrow { text-align: center; }
-.scene-final-title { font-size: clamp(2rem, 4vw, 3rem); font-weight: 600; margin-bottom: 18px; }
-.scene-final-cta .scene-copy { margin-left: auto; margin-right: auto; text-align: center; }
+/* ========================= PROBLÈME ========================= */
+.lp-pain-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+.lp-pain { padding: 30px 26px; border: 1px solid var(--lp-line); border-radius: var(--lp-r); background: #fff; transition: transform .2s ease, box-shadow .2s ease; }
+.lp-pain:hover { transform: translateY(-4px); box-shadow: var(--lp-shadow); }
+.lp-pain-num { font-family: var(--lp-display); font-size: .95rem; font-weight: 800; color: var(--lp-orange); }
+.lp-pain h3 { font-size: 1.2rem; margin: 12px 0 8px; }
+.lp-pain p { color: var(--lp-ink-soft); font-size: .95rem; }
+@media (max-width: 860px) { .lp-pain-grid { grid-template-columns: 1fr; } }
+
+/* ======================= FONCTIONNEMENT ======================= */
+.lp-flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; counter-reset: step; }
+.lp-step { position: relative; padding: 28px 22px; background: #fff; border: 1px solid var(--lp-line); border-radius: var(--lp-r); }
+.lp-step::after {
+  content: ""; position: absolute; top: 50px; right: -20px; width: 20px; height: 2px;
+  background: repeating-linear-gradient(90deg, var(--lp-line-strong) 0 5px, transparent 5px 10px);
+}
+.lp-step:last-child::after { display: none; }
+.lp-step-dot {
+  display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%;
+  background: var(--lp-orange); color: #fff; font-family: var(--lp-display); font-weight: 800; font-size: .95rem;
+  margin-bottom: 16px;
+}
+.lp-step h3 { font-size: 1.1rem; margin-bottom: 8px; }
+.lp-step p { color: var(--lp-ink-soft); font-size: .92rem; }
+.lp-step-tag {
+  display: inline-block; margin-top: 14px; font-size: .74rem; font-weight: 600;
+  color: var(--lp-ink-faint); background: var(--lp-bg-warm); border: 1px solid var(--lp-line);
+  padding: 4px 10px; border-radius: 999px;
+}
+@media (max-width: 980px) { .lp-flow { grid-template-columns: 1fr 1fr; } .lp-step::after { display: none; } }
+@media (max-width: 560px) { .lp-flow { grid-template-columns: 1fr; } }
+
+/* ====================== DÉMO CHIFFRÉE ====================== */
+.lp-demo { display: grid; grid-template-columns: .95fr 1.05fr; gap: 56px; align-items: center; }
+.lp-demo-copy .lp-btn { margin-top: 28px; }
+.lp-demo-board { background: #fff; border: 1px solid var(--lp-line); border-radius: 20px; padding: 26px; box-shadow: var(--lp-shadow-lg); }
+.lp-board-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 22px; }
+.lp-board-title { font-weight: 600; font-size: .92rem; color: var(--lp-ink-soft); }
+.lp-board-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.lp-stat { padding: 16px 18px; border-radius: var(--lp-r-sm); background: var(--lp-bg-warm); border: 1px solid var(--lp-line); }
+.lp-stat-label { display: block; font-size: .74rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--lp-ink-faint); margin-bottom: 6px; }
+.lp-stat-val { font-family: var(--lp-display); font-weight: 800; font-size: 1.5rem; font-variant-numeric: tabular-nums; }
+.lp-stat-hero { background: var(--lp-green-soft); border-color: #bfe3c9; }
+.lp-stat-hero .lp-stat-val { color: var(--lp-green); }
+.lp-board-progress { margin-top: 20px; }
+.lp-board-progress-top { display: flex; justify-content: space-between; font-size: .84rem; color: var(--lp-ink-soft); margin-bottom: 8px; }
+.lp-progress { height: 9px; border-radius: 999px; background: var(--lp-line); overflow: hidden; }
+.lp-progress-fill { display: block; height: 100%; width: 0; border-radius: 999px; background: linear-gradient(90deg, var(--lp-orange), var(--lp-green)); transition: width 1.5s cubic-bezier(.16,1,.3,1); }
+.lp-board-note { margin-top: 16px; font-size: .78rem; color: var(--lp-ink-faint); font-style: italic; }
+@media (max-width: 940px) { .lp-demo { grid-template-columns: 1fr; gap: 40px; } }
+@media (max-width: 480px) { .lp-board-stats { grid-template-columns: 1fr; } }
+
+/* ====================== FONCTIONNALITÉS ====================== */
+.lp-feats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.lp-feat { padding: 28px 26px; background: #fff; border: 1px solid var(--lp-line); border-radius: var(--lp-r); transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+.lp-feat:hover { transform: translateY(-4px); box-shadow: var(--lp-shadow); border-color: var(--lp-line-strong); }
+.lp-feat h3 { font-size: 1.15rem; margin-bottom: 10px; }
+.lp-feat p { color: var(--lp-ink-soft); font-size: .94rem; }
+.lp-feat-wide { grid-column: span 2; }
+.lp-feat-visual { margin-top: 22px; display: flex; flex-direction: column; gap: 9px; }
+.lp-fv-row { display: flex; align-items: center; gap: 12px; }
+.lp-fv-label { font-size: .78rem; color: var(--lp-ink-faint); width: 92px; flex-shrink: 0; }
+.lp-fv-line { height: 8px; border-radius: 999px; background: var(--lp-line-strong); width: var(--w); }
+.lp-fv-o { background: var(--lp-orange); }
+.lp-fv-g { background: var(--lp-green); }
+/* Bandeau final pleine largeur plutot qu'une 6e carte seule sur sa ligne
+   (6 cartes dont une double = 7 unites sur une grille de 3 : la derniere
+   se retrouvait isolee avec deux trous a cote). */
+.lp-feat-accent {
+  grid-column: 1 / -1; background: var(--lp-ink); border-color: var(--lp-ink); color: #fff;
+  display: flex; align-items: center; justify-content: space-between; gap: 28px; flex-wrap: wrap;
+}
+.lp-feat-accent h3 { margin-bottom: 4px; }
+.lp-feat-accent p { color: #cbd5e1; max-width: 52ch; }
+.lp-feat-accent:hover { transform: none; }
+.lp-feat-link {
+  display: inline-flex; align-items: center; white-space: nowrap; font-weight: 600;
+  color: var(--lp-ink); background: #fff; padding: 12px 20px; border-radius: 999px;
+  transition: transform .16s ease;
+}
+.lp-feat-link:hover { transform: translateY(-2px); color: var(--lp-orange); }
+@media (max-width: 980px) { .lp-feats { grid-template-columns: 1fr 1fr; } .lp-feat-wide { grid-column: span 2; } }
+@media (max-width: 620px) { .lp-feats { grid-template-columns: 1fr; } .lp-feat-wide { grid-column: span 1; } }
+
+/* =========================== TARIFS =========================== */
+.lp-plans { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-bottom: 44px; }
+.lp-plan { position: relative; display: flex; flex-direction: column; padding: 28px 22px; background: #fff; border: 1px solid var(--lp-line); border-radius: var(--lp-r); }
+.lp-plan.is-reco { border: 2px solid var(--lp-orange); box-shadow: var(--lp-shadow); }
+.lp-plan-badge {
+  position: absolute; top: -12px; left: 22px; background: var(--lp-orange); color: #fff;
+  font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+  padding: 4px 11px; border-radius: 999px;
+}
+.lp-plan-name { font-family: var(--lp-display); font-weight: 700; font-size: 1.15rem; }
+.lp-plan-hook { color: var(--lp-ink-soft); font-size: .86rem; margin-top: 6px; min-height: 2.8em; }
+.lp-plan-price { font-family: var(--lp-display); font-weight: 800; font-size: 2.3rem; margin: 16px 0 2px; }
+.lp-plan-price span { font-family: var(--lp-sans); font-size: .85rem; font-weight: 500; color: var(--lp-ink-faint); }
+.lp-plan-mention { font-size: .74rem; color: var(--lp-ink-faint); margin-bottom: 20px; }
+.lp-plan-feats { display: flex; flex-direction: column; gap: 9px; margin-bottom: 24px; flex: 1; }
+.lp-plan-feats li { position: relative; padding-left: 22px; font-size: .86rem; color: var(--lp-ink-soft); }
+.lp-plan-feats li::before {
+  content: ""; position: absolute; left: 0; top: .45em; width: 12px; height: 7px;
+  border: solid var(--lp-green); border-width: 0 0 2px 2px; transform: rotate(-45deg);
+}
+.lp-plan .lp-btn { width: 100%; }
+@media (max-width: 1020px) { .lp-plans { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px) { .lp-plans { grid-template-columns: 1fr; } }
+
+.lp-offer { border: 1px solid var(--lp-line); border-radius: var(--lp-r); padding: 30px 32px; background: var(--lp-bg-warm); max-width: 860px; margin: 0 auto; }
+.lp-offer-tag { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--lp-ink-faint); }
+.lp-offer h3 { font-size: 1.35rem; margin: 8px 0 6px; }
+.lp-offer-hook { color: var(--lp-orange); font-weight: 600; margin-bottom: 10px; }
+.lp-offer p { color: var(--lp-ink-soft); font-size: .94rem; }
+.lp-offer-price { margin: 20px 0; }
+.lp-offer-price strong { display: block; font-family: var(--lp-display); font-size: 1.6rem; font-weight: 800; }
+.lp-offer-price span { font-size: .88rem; color: var(--lp-ink-soft); }
+.lp-offer ul { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 20px; margin: 16px 0; }
+.lp-offer li { position: relative; padding-left: 18px; font-size: .88rem; color: var(--lp-ink-soft); }
+.lp-offer li::before { content: "—"; position: absolute; left: 0; color: var(--lp-orange); }
+.lp-offer-sum { font-size: .82rem; color: var(--lp-ink-faint); font-style: italic; }
+@media (max-width: 640px) { .lp-offer ul { grid-template-columns: 1fr; } }
+
+/* ============================ FAQ ============================ */
+.lp-faq { max-width: 780px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
+.lp-faq details { background: #fff; border: 1px solid var(--lp-line); border-radius: var(--lp-r-sm); padding: 18px 22px; transition: border-color .18s ease; }
+.lp-faq details[open] { border-color: var(--lp-line-strong); }
+.lp-faq summary { font-weight: 600; cursor: pointer; list-style: none; display: flex; justify-content: space-between; gap: 16px; align-items: center; }
+.lp-faq summary::-webkit-details-marker { display: none; }
+.lp-faq summary::after { content: "+"; font-size: 1.35rem; color: var(--lp-orange); font-weight: 400; line-height: 1; flex-shrink: 0; }
+.lp-faq details[open] summary::after { content: "−"; }
+.lp-faq summary:hover { color: var(--lp-orange); }
+.lp-faq p { margin-top: 12px; color: var(--lp-ink-soft); font-size: .93rem; }
+.lp-faq ul { margin-top: 12px; padding-left: 18px; list-style: disc; color: var(--lp-ink-soft); }
+.lp-faq li { font-size: .9rem; margin: 5px 0; }
+
+/* ========================= CTA FINAL ========================= */
+.lp-final { position: relative; overflow: hidden; background: var(--lp-bg-ink); color: #fff; padding: clamp(80px, 10vw, 130px) 24px; text-align: center; }
+.lp-final-blob {
+  position: absolute; z-index: 0; top: -40%; left: 50%; translate: -50% 0; width: 120%; aspect-ratio: 2;
+  background: radial-gradient(ellipse at 50% 50%, rgba(249, 115, 22, .3), transparent 62%);
+  pointer-events: none; will-change: transform;
+}
+.lp-final-in { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; }
+.lp-final-title { font-size: clamp(2.1rem, 5vw, 3.4rem); font-weight: 800; }
+.lp-final-sub { color: #cbd5e1; margin-top: 16px; font-size: 1.05rem; }
+.lp-final .lp-btn-ghost { background: transparent; border-color: rgba(255, 255, 255, .3); color: #fff; }
+.lp-final .lp-btn-ghost:hover { border-color: #fff; background: rgba(255, 255, 255, .06); }
 
 /* ---------- Footer ---------- */
-.scene-footer {
-  max-width: 1180px; margin: 0 auto; padding: 34px 24px; display: flex; align-items: center;
-  justify-content: space-between; color: var(--l-text-faint); font-size: 0.84rem;
+.lp-footer { border-top: 1px solid var(--lp-line); background: #fff; }
+.lp-footer-in {
+  max-width: var(--lp-max); margin: 0 auto; padding: 30px 24px;
+  display: flex; align-items: center; justify-content: space-between; gap: 22px; flex-wrap: wrap;
 }
-.scene-footer-links { display: flex; gap: 20px; }
-.scene-footer-links a { text-decoration: none; color: var(--l-text-faint); }
-.scene-footer-links a:hover { color: var(--l-champagne-bright); }
-
-/* =====================================================================
-   RESPONSIVE — mobile : experience conservee mais allegee (voir landing.js
-   pour la reduction de qualite 3D / DPR ; ici, mise en page).
-   ===================================================================== */
-@media (max-width: 860px) {
-  :root { --scene-track-height: 620vh; }
-  .scene-panel, .scene-panel-hero { width: min(90vw, 460px); left: 6%; }
-  /* .scene-panel-transition porte AUSSI la classe .scene-panel (voir HTML),
-     donc la regle generique ci-dessus lui donne "left:6%" - qu'il faut
-     annuler explicitement ici, sinon ce left:6% se combine avec son propre
-     "transform: translate(-50%, ...)" (pense pour left:50%) et projette le
-     panneau hors-ecran a gauche. Toujours redefinir left+transform ENSEMBLE
-     pour ce panneau des qu'un autre point de rupture retouche .scene-panel. */
-  .scene-panel-transition { width: min(90vw, 460px); left: 50%; transform: translate(-50%, -50%); }
-  .scene-title { font-size: clamp(2rem, 7vw, 2.6rem); }
-  .scene-title-md { font-size: clamp(1.5rem, 6vw, 1.9rem); }
-  .scene-stat-grid { max-width: 100%; }
-}
-@media (max-width: 520px) {
-  .scene-panel, .scene-panel-hero, .scene-panel-transition { left: 50%; top: 54%; transform: translate(-50%, -50%); width: 88vw; text-align: center; }
-  .scene-cta-row { justify-content: center; }
-  .scene-copy { margin-left: auto; margin-right: auto; }
-  .scene-inline-card { align-items: center; }
-  .no-3d .scene-panel, .no-3d .scene-panel-hero, .no-3d .scene-panel-transition { text-align: left; padding: 8vh 20px; }
-  .no-3d .scene-panel-transition { text-align: center; }
-  .scene-section { padding: 70px 20px; }
-  .scene-final-cta { padding: 90px 20px; }
-}
-
+.lp-footer-brand { display: inline-flex; align-items: center; gap: 9px; font-family: var(--lp-display); font-weight: 700; }
+.lp-footer-links { display: flex; gap: 22px; flex-wrap: wrap; }
+.lp-footer-links a { font-size: .88rem; color: var(--lp-ink-soft); }
+.lp-footer-links a:hover { color: var(--lp-orange); }
