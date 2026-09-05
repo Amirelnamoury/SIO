@@ -3,357 +3,324 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Suite Artisan — Moins de paperasse, plus de chantiers</title>
-<meta name="description" content="Devis, factures, planning, chantiers et relances automatiques : Suite Artisan réunit toute la gestion d'un artisan du bâtiment dans un seul outil. Gratuit pour démarrer, sans carte bancaire.">
-<meta property="og:title" content="Suite Artisan — Moins de paperasse, plus de chantiers">
-<meta property="og:description" content="Le logiciel de gestion pensé pour les artisans du bâtiment : devis, factures, planning, chantiers et relances, au même endroit.">
+<title>Suite Artisan — Votre entreprise, du terrain au bureau</title>
+<meta name="description" content="Suite Artisan réunit clients, devis, factures, chantiers, planning et équipes dans un seul espace pensé pour les artisans du bâtiment. Gratuit pour démarrer, sans carte bancaire.">
+<meta property="og:title" content="Suite Artisan — Votre entreprise, du terrain au bureau">
+<meta property="og:description" content="Clients, devis, factures, chantiers et planning au même endroit. Le logiciel de gestion pensé pour les artisans du bâtiment.">
 <meta property="og:type" content="website">
-<meta name="theme-color" content="#ffffff">
-<!-- Icone inline (data URI) : reprend le carre orange du logo, evite une
-     requete supplementaire et le 404 /favicon.ico du navigateur. -->
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%23ea580c'/%3E%3Crect x='7' y='7' width='18' height='18' rx='5' fill='none' stroke='%23fff' stroke-width='4'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#11110f">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%23c8a87a'/%3E%3Crect x='7' y='7' width='18' height='18' rx='5' fill='none' stroke='%2311110f' stroke-width='4'/%3E%3C/svg%3E">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="landing.css?v=15">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- Seule la premiere frame est prechargee : les suivantes sont chargees
+     progressivement par landing.js a mesure que le visiteur descend. -->
+<link rel="preload" as="image" href="assets/landing/frames/frame-a.webp" imagesrcset="assets/landing/frames/frame-a-sm.webp 1100w, assets/landing/frames/frame-a.webp 1920w" imagesizes="100vw" fetchpriority="high">
+
+<link rel="stylesheet" href="landing.css?v=7">
 </head>
-<body class="lp">
+<body class="lc">
 
-<a class="lp-skip" href="#contenu">Aller au contenu principal</a>
+<a class="lc-skip" href="#contenu">Aller au contenu principal</a>
 
-<header class="lp-nav" id="lp-nav">
-  <div class="lp-nav-in">
-    <a class="lp-logo" href="landing.html">
-      <span class="lp-logo-mark" aria-hidden="true"></span>
+<header class="lc-nav" id="lc-nav">
+  <div class="lc-nav-in">
+    <a class="lc-logo" href="landing.html">
+      <span class="lc-logo-mark" aria-hidden="true"></span>
       Suite&nbsp;Artisan
     </a>
-    <nav class="lp-nav-links" aria-label="Navigation principale">
-      <a href="#fonctionnement">Comment ça marche</a>
-      <a href="#fonctionnalites">Fonctionnalités</a>
+    <nav class="lc-nav-links" aria-label="Navigation principale">
+      <a href="#chap-6">Produit</a>
+      <a href="#metiers">Métiers</a>
       <a href="#tarifs">Tarifs</a>
       <a href="#faq">FAQ</a>
     </nav>
-    <div class="lp-nav-cta">
-      <a href="index.html" class="lp-link">Connexion</a>
-      <a href="index.html?tab=register" class="lp-btn lp-btn-primary lp-btn-sm">Essayer gratuitement</a>
+    <div class="lc-nav-cta">
+      <a href="index.html" class="lc-link">Connexion</a>
+      <a href="index.html?tab=register" class="lc-btn lc-btn-primary lc-btn-sm">Essayer gratuitement</a>
     </div>
   </div>
 </header>
 
 <main id="contenu">
 
-  <!-- ============================ HERO ============================ -->
-  <section class="lp-hero">
-    <div class="lp-hero-blob" data-parallax="0.18" aria-hidden="true"></div>
-    <div class="lp-hero-grid-bg" aria-hidden="true"></div>
+<!-- ===================================================================
+     LE FILM
+     Un seul plateau (.lc-stage) reste colle en haut pendant toute la
+     visite. Il contient les 20 photographies ET les textes des scenes 1
+     a 6 (.lc-overlay).
 
-    <div class="lp-hero-in">
-      <div class="lp-hero-copy">
-        <p class="lp-eyebrow" data-anim>
-          <span class="lp-dot" aria-hidden="true"></span>
-          Logiciel de gestion pour artisans du bâtiment
-        </p>
-        <h1 class="lp-h1">
-          <span class="lp-line" data-anim data-anim-delay="1">Moins de paperasse.</span>
-          <span class="lp-line lp-accent" data-anim data-anim-delay="2">Plus de chantiers.</span>
-        </h1>
-        <p class="lp-lead" data-anim data-anim-delay="3">
-          Devis, factures, planning, chantiers et relances automatiques&nbsp;:
-          toute votre gestion dans un seul outil, pensé pour le terrain — pas pour un service comptable.
-        </p>
-        <div class="lp-hero-actions" data-anim data-anim-delay="4">
-          <a href="index.html?tab=register" class="lp-btn lp-btn-primary lp-btn-lg">Essayer gratuitement</a>
-          <a href="#fonctionnement" class="lp-btn lp-btn-ghost lp-btn-lg">Voir comment ça marche</a>
-        </div>
-        <p class="lp-hero-note" data-anim data-anim-delay="5">
-          <strong>Gratuit pour démarrer</strong> · Sans carte bancaire · Sans engagement
-        </p>
-      </div>
+     Pourquoi les textes vivent DANS le plateau : avec un `sticky` par
+     chapitre, le contenu n'est epingle que sur (hauteur - 100vh), donc
+     les 100 derniers vh de chaque chapitre font remonter le texte hors
+     de l'ecran alors que l'image, elle, continue. Le texte et l'image se
+     desynchronisaient. Ici les deux sont pilotes par la meme timeline :
+     la synchronisation est exacte par construction.
 
-      <!-- Composition produit : cartes qui flottent, sans 3D -->
-      <div class="lp-hero-visual" aria-hidden="true">
-        <div class="lp-card lp-card-main" data-parallax="-0.06">
-          <div class="lp-card-head">
-            <span class="lp-chip lp-chip-orange">Devis</span>
-            <span class="lp-card-ref">DEV-2026-0042</span>
+     Les .lc-spacer ne servent qu'a creer la hauteur de scroll ; leur
+     hauteur est posee par landing.js d'apres le poids des frames.
+     =================================================================== -->
+<div class="lc-film" id="lc-film">
+
+  <div class="lc-stage">
+    <div class="lc-layers" id="lc-layers" aria-hidden="true">
+      <!-- Les 19 autres frames sont creees par landing.js depuis la config
+           de scenes, pour que l'ordre narratif vive a un seul endroit. -->
+      <img class="lc-frame is-live" data-frame="a" alt=""
+           src="assets/landing/frames/frame-a.webp"
+           srcset="assets/landing/frames/frame-a-sm.webp 1100w, assets/landing/frames/frame-a.webp 1920w"
+           sizes="100vw" width="1920" height="1071" fetchpriority="high" decoding="async">
+    </div>
+    <div class="lc-grain" aria-hidden="true"></div>
+    <div class="lc-scrim" id="lc-scrim" aria-hidden="true"></div>
+
+    <div class="lc-overlay" id="lc-overlay">
+
+      <!-- ============ 01 — ARRIVÉE / EXTÉRIEUR (frames A B) ============ -->
+      <section class="lc-scene lc-scene-hero" data-scene="1" aria-label="Suite Artisan">
+        <div class="lc-scene-in">
+          <div class="lc-block">
+            <p class="lc-eyebrow">Suite Artisan</p>
+            <h1 class="lc-h1">
+              <span class="lc-line">Votre entreprise.</span>
+              <span class="lc-line lc-accent">Du terrain au bureau.</span>
+            </h1>
+            <p class="lc-lead">
+              Pilotez vos clients, devis, factures, chantiers et équipes
+              depuis un seul espace pensé pour les artisans.
+            </p>
+            <div class="lc-actions">
+              <a href="index.html?tab=register" class="lc-btn lc-btn-primary lc-btn-lg">Essayer gratuitement</a>
+              <a href="#chap-6" class="lc-btn lc-btn-ghost lc-btn-lg">Découvrir Suite Artisan</a>
+            </div>
+            <p class="lc-note">Gratuit pour démarrer · Sans carte bancaire · Sans engagement</p>
           </div>
-          <div class="lp-card-client">Rénovation salle de bain</div>
-          <div class="lp-card-sub">Thomas Bernard · Lyon 3e</div>
-          <div class="lp-card-amount"><span data-count="4850" data-count-suffix=" €">0 €</span></div>
-          <div class="lp-card-status"><span class="lp-tick" aria-hidden="true"></span> Accepté en ligne</div>
+          <p class="lc-scrollcue"><span class="lc-scrollcue-line" aria-hidden="true"></span> Scroll pour entrer</p>
         </div>
+      </section>
 
-        <div class="lp-card lp-card-float lp-card-planning" data-parallax="0.12">
-          <div class="lp-mini-title">Planning · Mardi</div>
-          <div class="lp-mini-row"><span class="lp-time">08:30</span><span class="lp-bar lp-bar-o" style="--w:70%"></span></div>
-          <div class="lp-mini-row"><span class="lp-time">11:00</span><span class="lp-bar lp-bar-b" style="--w:45%"></span></div>
-          <div class="lp-mini-row"><span class="lp-time">14:00</span><span class="lp-bar lp-bar-g" style="--w:85%"></span></div>
+      <!-- ============ 02 — L'ENTRÉE (frames C D E F) ============ -->
+      <section class="lc-scene" data-scene="2" aria-label="Tout commence ici">
+        <div class="lc-scene-in">
+          <div class="lc-block lc-block-center">
+            <p class="lc-eyebrow">Tout commence ici</p>
+            <h2 class="lc-h2">Pilotez toute votre activité<br>sans multiplier les outils.</h2>
+            <ul class="lc-chips">
+              <li>Clients</li><li>Devis</li><li>Factures</li><li>Chantiers</li><li>Planning</li>
+            </ul>
+          </div>
         </div>
+      </section>
 
-        <div class="lp-card lp-card-float lp-card-cash" data-parallax="0.2">
-          <div class="lp-mini-title">Encaissé ce mois</div>
-          <div class="lp-mini-amount"><span data-count="12480" data-count-suffix=" €">0 €</span></div>
-          <div class="lp-mini-trend">+18 % vs mois dernier</div>
+      <!-- ============ 03 — LE TERRAIN (frames F G H I) ============ -->
+      <section class="lc-scene" data-scene="3" aria-label="Pensé pour le terrain">
+        <div class="lc-scene-in">
+          <div class="lc-block">
+            <p class="lc-eyebrow">Pensé pour le terrain</p>
+            <h2 class="lc-h2">Chaque intervention reste reliée<br>au bon client et au bon chantier.</h2>
+            <ul class="lc-points">
+              <li>Informations accessibles immédiatement, même sur place</li>
+              <li>Photos, documents et suivi centralisés</li>
+              <li>Planning toujours à jour</li>
+            </ul>
+            <ul class="lc-tags">
+              <li>Plomberie</li><li>Chauffage</li><li>Sanitaire</li><li>Rénovation</li>
+            </ul>
+          </div>
         </div>
+      </section>
 
-        <div class="lp-card lp-card-float lp-card-relance" data-parallax="-0.14">
-          <span class="lp-pulse" aria-hidden="true"></span>
-          <div class="lp-mini-strong">3 devis à relancer</div>
-          <div class="lp-mini-sub">Relance automatique activée</div>
+      <!-- ============ 04 — LA TECHNIQUE (frames J K L) ============ -->
+      <section class="lc-scene" data-scene="4" aria-label="La précision, sans la paperasse">
+        <div class="lc-scene-in">
+          <div class="lc-block lc-block-right">
+            <p class="lc-eyebrow">Organisation</p>
+            <h2 class="lc-h2">La précision,<br>sans la paperasse.</h2>
+            <p class="lc-body">
+              Interventions, documents, échéances et informations techniques
+              restent organisés dans un seul espace.
+            </p>
+            <ul class="lc-tags">
+              <li>Électricité</li><li>Maintenance</li><li>Climatisation</li><li>Domotique</li>
+            </ul>
+          </div>
         </div>
-      </div>
-    </div>
-  </section>
+      </section>
 
-  <!-- ====================== BANDEAU MÉTIERS ====================== -->
-  <section class="lp-marquee" aria-label="Métiers couverts">
-    <div class="lp-marquee-track">
-      <div class="lp-marquee-set">
-        <span>Plombier</span><span>Électricien</span><span>Maçon</span><span>Peintre</span>
-        <span>Menuisier</span><span>Chauffagiste</span><span>Carreleur</span><span>Couvreur</span>
-        <span>Plaquiste</span><span>Rénovation</span>
-      </div>
-      <div class="lp-marquee-set" aria-hidden="true">
-        <span>Plombier</span><span>Électricien</span><span>Maçon</span><span>Peintre</span>
-        <span>Menuisier</span><span>Chauffagiste</span><span>Carreleur</span><span>Couvreur</span>
-        <span>Plaquiste</span><span>Rénovation</span>
-      </div>
-    </div>
-  </section>
+      <!-- ============ 05 — LE CHANTIER (frames M N O) ============ -->
+      <section class="lc-scene lc-scene-site" data-scene="5" aria-label="Gardez la maîtrise de votre marge">
+        <div class="lc-scene-in">
+          <!-- Libelle cale sur le front de transformation N -> O -->
+          <p class="lc-phase" id="lc-phase">
+            <span data-phase="1">Avant le chantier.</span>
+            <span data-phase="2">Pendant.</span>
+            <span data-phase="3">Après.</span>
+          </p>
+          <div class="lc-block lc-block-late">
+            <p class="lc-eyebrow">Rentabilité</p>
+            <h2 class="lc-h2">Gardez la maîtrise<br>de votre marge.</h2>
+            <dl class="lc-figures">
+              <div><dt>Budget</dt><dd>8 400 €</dd></div>
+              <div><dt>Dépenses</dt><dd>6 265 €</dd></div>
+              <div><dt>Avancement</dt><dd>100 %</dd></div>
+              <div class="lc-figure-hero"><dt>Marge réelle</dt><dd>+ 2 135 €</dd></div>
+            </dl>
+            <p class="lc-figures-note">Exemple illustratif — vos chiffres réels s'affichent à la place.</p>
+          </div>
+        </div>
+      </section>
 
-  <!-- ========================= PROBLÈME ========================= -->
-  <section class="lp-section lp-section-tight">
-    <div class="lp-head" data-anim>
-      <p class="lp-eyebrow lp-eyebrow-c">Le vrai coût de la paperasse</p>
-      <h2 class="lp-h2">Ce n'est pas le chantier qui vous prend du temps.</h2>
-    </div>
-    <div class="lp-pain-grid">
-      <article class="lp-pain" data-anim data-anim-delay="1">
-        <span class="lp-pain-num">01</span>
-        <h3>Des devis qui dorment</h3>
-        <p>Envoyés par mail, jamais relancés. Le client signe ailleurs, et vous ne l'apprenez jamais.</p>
-      </article>
-      <article class="lp-pain" data-anim data-anim-delay="2">
-        <span class="lp-pain-num">02</span>
-        <h3>Des factures oubliées</h3>
-        <p>Le chantier est fini depuis six semaines, la facture n'est toujours pas partie. La trésorerie encaisse.</p>
-      </article>
-      <article class="lp-pain" data-anim data-anim-delay="3">
-        <span class="lp-pain-num">03</span>
-        <h3>Des marges invisibles</h3>
-        <p>Budget sur un carnet, dépenses sur des tickets, heures dans la tête. À la fin, personne ne sait ce que le chantier a rapporté.</p>
-      </article>
-    </div>
-  </section>
+      <!-- ============ 06 — LE BUREAU / LE PRODUIT (frames P Q R) ============ -->
+      <section class="lc-scene" data-scene="6" aria-label="Le produit">
+        <div class="lc-scene-in">
+          <div class="lc-block">
+            <p class="lc-eyebrow">Le produit</p>
+            <h2 class="lc-h2">Le terrain,<br>enfin connecté au bureau.</h2>
+            <p class="lc-body">
+              Une seule vue pour savoir ce qui avance, ce qui doit être relancé
+              et ce qui demande votre attention.
+            </p>
+            <div class="lc-modules">
+              <div>
+                <h3>Commercial</h3>
+                <ul><li>Prospects &amp; clients</li><li>Devis &amp; relances</li><li>Factures</li></ul>
+              </div>
+              <div>
+                <h3>Gestion</h3>
+                <ul><li>Chantiers</li><li>Statistiques</li><li>Documents</li></ul>
+              </div>
+              <div>
+                <h3>Organisation</h3>
+                <ul><li>Planning</li><li>Tâches</li><li>Équipes</li></ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-  <!-- ======================= FONCTIONNEMENT ======================= -->
-  <section id="fonctionnement" class="lp-section lp-section-alt">
-    <div class="lp-head" data-anim>
-      <p class="lp-eyebrow lp-eyebrow-c">Comment ça marche</p>
-      <h2 class="lp-h2">Un seul fil, du premier appel <br>jusqu'à l'argent encaissé.</h2>
     </div>
+  </div>
 
-    <ol class="lp-flow">
-      <li class="lp-step" data-anim data-anim-delay="1">
-        <span class="lp-step-dot" aria-hidden="true">1</span>
-        <h3>Le client appelle</h3>
-        <p>La demande arrive dans Suite Artisan, avec son historique. Plus rien ne se perd dans la boîte mail.</p>
-        <span class="lp-step-tag">Prospects</span>
-      </li>
-      <li class="lp-step" data-anim data-anim-delay="2">
-        <span class="lp-step-dot" aria-hidden="true">2</span>
-        <h3>Vous chiffrez</h3>
-        <p>Devis PDF professionnel en quelques minutes, envoyé et signé en ligne. Relancé tout seul s'il traîne.</p>
-        <span class="lp-step-tag">Devis &amp; relances</span>
-      </li>
-      <li class="lp-step" data-anim data-anim-delay="3">
-        <span class="lp-step-dot" aria-hidden="true">3</span>
-        <h3>Le chantier tourne</h3>
-        <p>Planning, tâches, photos, dépenses et heures&nbsp;: l'avancement est à jour sans y penser.</p>
-        <span class="lp-step-tag">Chantiers &amp; planning</span>
-      </li>
-      <li class="lp-step" data-anim data-anim-delay="4">
-        <span class="lp-step-dot" aria-hidden="true">4</span>
-        <h3>Vous êtes payé</h3>
-        <p>Facture générée depuis le devis, paiements suivis, impayés relancés automatiquement. Marge calculée.</p>
-        <span class="lp-step-tag">Factures &amp; marge</span>
-      </li>
+  <!-- Indicateur de progression, tres discret, masque sous 1100px -->
+  <nav class="lc-progress" id="lc-progress" aria-label="Progression de la visite">
+    <ol>
+      <li><a href="#chap-1" data-chap="1"><span>01</span><i>Arrivée</i></a></li>
+      <li><a href="#chap-2" data-chap="2"><span>02</span><i>L'entrée</i></a></li>
+      <li><a href="#chap-3" data-chap="3"><span>03</span><i>Le terrain</i></a></li>
+      <li><a href="#chap-4" data-chap="4"><span>04</span><i>La technique</i></a></li>
+      <li><a href="#chap-5" data-chap="5"><span>05</span><i>Le chantier</i></a></li>
+      <li><a href="#chap-6" data-chap="6"><span>06</span><i>Le bureau</i></a></li>
+      <li><a href="#chap-7" data-chap="7"><span>07</span><i>Le salon</i></a></li>
     </ol>
-  </section>
+  </nav>
 
-  <!-- ====================== DÉMO CHIFFRÉE ====================== -->
-  <section class="lp-section">
-    <div class="lp-demo">
-      <div class="lp-demo-copy" data-anim>
-        <p class="lp-eyebrow">Exemple de chantier</p>
-        <h2 class="lp-h2">Vous voyez enfin <br>ce que chaque chantier rapporte.</h2>
-        <p class="lp-body">
-          Budget, dépenses fournisseurs, heures passées, factures encaissées&nbsp;:
-          Suite Artisan calcule la marge réelle au fur et à mesure, sans que vous ayez
-          à ressortir une calculatrice le dimanche soir.
-        </p>
-        <a href="index.html?tab=register" class="lp-btn lp-btn-primary">Essayer gratuitement</a>
+  <div class="lc-chapters" id="lc-chapters">
+    <!-- Hauteur de scroll des scenes 1 a 6 (posee par landing.js) -->
+    <div class="lc-spacer" id="chap-1" data-spacer="1"></div>
+    <div class="lc-spacer" id="chap-2" data-spacer="2"></div>
+    <div class="lc-spacer" id="chap-3" data-spacer="3"></div>
+    <div class="lc-spacer" id="chap-4" data-spacer="4"></div>
+    <div class="lc-spacer" id="chap-5" data-spacer="5"></div>
+    <div class="lc-spacer" id="chap-6" data-spacer="6"></div>
+
+    <!-- ============ 07 — LE SALON / CONCLUSION (frames S T) ============
+         Ici le contenu est long : il defile normalement par-dessus la
+         derniere photo, qui reste en fond. -->
+    <section class="lc-chapter-final" id="chap-7" data-spacer="7">
+      <div class="lc-final">
+
+        <div class="lc-panel">
+          <p class="lc-eyebrow">Bénéfices</p>
+          <h2 class="lc-h2">Tout votre métier.<br>Enfin au même endroit.</h2>
+          <ul class="lc-benefits">
+            <li><h3>Gagnez du temps</h3><p>Moins de ressaisie, moins d'allers-retours entre les outils.</p></li>
+            <li><h3>Centralisez vos informations</h3><p>Clients, documents et historique au même endroit.</p></li>
+            <li><h3>Suivez votre rentabilité</h3><p>La marge de chaque chantier se calcule toute seule.</p></li>
+            <li><h3>Gardez vos équipes alignées</h3><p>Planning et tâches partagés, à jour pour tout le monde.</p></li>
+          </ul>
+        </div>
+
+        <div class="lc-panel">
+          <a id="metiers" class="lc-anchor"></a>
+          <p class="lc-eyebrow">Métiers</p>
+          <h2 class="lc-h2">Conçu pour ceux qui font.</h2>
+          <ul class="lc-trades">
+            <li>Plombiers</li><li>Électriciens</li><li>Chauffagistes</li><li>Climaticiens</li>
+            <li>Entreprises de rénovation</li><li>Artisans du bâtiment</li><li>Maintenance</li><li>Multi-services</li>
+          </ul>
+        </div>
+
+        <div class="lc-panel">
+          <a id="tarifs" class="lc-anchor"></a>
+          <p class="lc-eyebrow">Tarifs</p>
+          <h2 class="lc-h2">Commencez gratuitement.<br>Montez en gamme si ça vous sert.</h2>
+          <div class="lc-plans" id="lc-plans"></div>
+        </div>
+
+        <div class="lc-panel">
+          <a id="faq" class="lc-anchor"></a>
+          <p class="lc-eyebrow">FAQ</p>
+          <h2 class="lc-h2">Ce qu'on nous demande le plus.</h2>
+          <div class="lc-faq">
+            <details>
+              <summary>Suite Artisan remplace-t-il plusieurs logiciels ?</summary>
+              <p>Oui. Devis, factures, clients, chantiers, planning, tâches et documents sont réunis dans un seul espace, au lieu d'être répartis entre un tableur, une boîte mail et un carnet.</p>
+            </details>
+            <details>
+              <summary>Puis-je l'utiliser sur mobile, sur mes chantiers ?</summary>
+              <p>Oui. L'interface s'adapte au téléphone : vous pouvez consulter un chantier, ajouter une photo ou retrouver un document depuis le terrain.</p>
+            </details>
+            <details>
+              <summary>Puis-je gérer devis, factures et chantiers au même endroit ?</summary>
+              <p>Oui, et surtout ils restent liés : un devis signé devient une facture en un clic, et le chantier correspondant garde son budget, ses dépenses et sa marge à jour.</p>
+            </details>
+            <details>
+              <summary>Est-ce adapté à une petite entreprise artisanale ?</summary>
+              <p>C'est même le cas de départ. Le plan gratuit permet de travailler seul sans carte bancaire, et les plans supérieurs n'ajoutent que ce dont vous avez besoin.</p>
+            </details>
+            <details>
+              <summary>Puis-je importer mes clients et documents existants ?</summary>
+              <p>Oui. Vos clients peuvent être importés, et vos documents rattachés aux bons chantiers ou aux bonnes fiches clients.</p>
+            </details>
+            <details>
+              <summary>Combien de temps faut-il pour commencer ?</summary>
+              <p>Quelques minutes. La création du compte est gratuite et vous pouvez émettre votre premier devis dans la foulée.</p>
+            </details>
+            <details>
+              <summary>Le Site Vitrine est-il inclus dans l'abonnement ?</summary>
+              <p>Non, c'est une <strong>prestation optionnelle</strong>, distincte de l'abonnement et disponible avec tous les plans, y compris le plan gratuit. <span id="lc-faq-site-price"></span></p>
+            </details>
+          </div>
+        </div>
+
+        <div class="lc-panel lc-panel-cta">
+          <h2 class="lc-h2 lc-h2-xl">Votre entreprise mérite mieux<br>qu'une pile d'outils.</h2>
+          <p class="lc-lead">Centralisez votre activité et concentrez-vous sur ce que vous faites de mieux.</p>
+          <div class="lc-actions lc-actions-center">
+            <a href="index.html?tab=register" class="lc-btn lc-btn-primary lc-btn-lg">Créer mon espace</a>
+            <a href="index.html" class="lc-btn lc-btn-ghost lc-btn-lg">Se connecter</a>
+          </div>
+          <p class="lc-note">Gratuit pour démarrer · Sans carte bancaire</p>
+        </div>
+
       </div>
-
-      <div class="lp-demo-board" data-anim data-anim-delay="2">
-        <div class="lp-board-head">
-          <span class="lp-chip lp-chip-green">Chantier terminé</span>
-          <span class="lp-board-title">Rénovation salle de bain — T. Bernard</span>
-        </div>
-        <div class="lp-board-stats">
-          <div class="lp-stat">
-            <span class="lp-stat-label">Facturé</span>
-            <strong class="lp-stat-val" data-count="8450" data-count-suffix=" €">0 €</strong>
-          </div>
-          <div class="lp-stat">
-            <span class="lp-stat-label">Encaissé</span>
-            <strong class="lp-stat-val" data-count="8450" data-count-suffix=" €">0 €</strong>
-          </div>
-          <div class="lp-stat">
-            <span class="lp-stat-label">Dépenses</span>
-            <strong class="lp-stat-val" data-count="6310" data-count-suffix=" €">0 €</strong>
-          </div>
-          <div class="lp-stat lp-stat-hero">
-            <span class="lp-stat-label">Marge réelle</span>
-            <strong class="lp-stat-val" data-count="2140" data-count-prefix="+ " data-count-suffix=" €">0 €</strong>
-          </div>
-        </div>
-        <div class="lp-board-progress">
-          <div class="lp-board-progress-top">
-            <span>Avancement du chantier</span><strong>100 %</strong>
-          </div>
-          <div class="lp-progress" role="img" aria-label="Chantier terminé à 100 %">
-            <span class="lp-progress-fill" data-fill="100"></span>
-          </div>
-        </div>
-        <p class="lp-board-note">Exemple illustratif — vos chiffres réels s'affichent à la place.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- ====================== FONCTIONNALITÉS ====================== -->
-  <section id="fonctionnalites" class="lp-section lp-section-alt">
-    <div class="lp-head" data-anim>
-      <p class="lp-eyebrow lp-eyebrow-c">Tout ce qu'il faut, rien de superflu</p>
-      <h2 class="lp-h2">Pensé pour un artisan, <br>pas pour une équipe commerciale.</h2>
-    </div>
-
-    <div class="lp-feats">
-      <article class="lp-feat lp-feat-wide" data-anim data-anim-delay="1">
-        <h3>Devis &amp; relances automatiques</h3>
-        <p>Devis PDF professionnels, signature en ligne, et des relances qui partent toutes seules quand le client ne répond pas.</p>
-        <div class="lp-feat-visual" aria-hidden="true">
-          <div class="lp-fv-row"><span class="lp-fv-label">Devis envoyé</span><span class="lp-fv-line" style="--w:100%"></span></div>
-          <div class="lp-fv-row"><span class="lp-fv-label">Relance J+3</span><span class="lp-fv-line lp-fv-o" style="--w:72%"></span></div>
-          <div class="lp-fv-row"><span class="lp-fv-label">Signé</span><span class="lp-fv-line lp-fv-g" style="--w:48%"></span></div>
-        </div>
-      </article>
-
-      <article class="lp-feat" data-anim data-anim-delay="2">
-        <h3>Factures &amp; paiements</h3>
-        <p>Acomptes, situations, facture finale. Convertissez un devis signé en facture en un clic, suivez les encaissements.</p>
-      </article>
-
-      <article class="lp-feat" data-anim data-anim-delay="3">
-        <h3>Planning</h3>
-        <p>Rendez-vous, visites techniques et interventions dans un planning lisible d'un coup d'œil, jour ou semaine.</p>
-      </article>
-
-      <article class="lp-feat" data-anim data-anim-delay="4">
-        <h3>Chantiers</h3>
-        <p>Budget, dépenses, heures de main-d'œuvre, photos et notes de chantier. La marge se calcule toute seule.</p>
-      </article>
-
-      <article class="lp-feat" data-anim data-anim-delay="5">
-        <h3>Conformité</h3>
-        <p>Décennale, Qualibat, RGE&nbsp;: vous êtes alerté <em>avant</em> l'échéance, pas après.</p>
-      </article>
-
-      <article class="lp-feat lp-feat-accent" data-anim data-anim-delay="6">
-        <div>
-          <h3>Et tout le reste</h3>
-          <p>Clients, tâches, documents, statistiques, avis clients, contrats récurrents, comptes salariés — sans supplément de complexité.</p>
-        </div>
-        <a href="index.html?tab=register" class="lp-feat-link">Voir par vous-même →</a>
-      </article>
-    </div>
-  </section>
-
-  <!-- =========================== TARIFS =========================== -->
-  <section id="tarifs" class="lp-section">
-    <div class="lp-head" data-anim>
-      <p class="lp-eyebrow lp-eyebrow-c">Tarifs</p>
-      <h2 class="lp-h2">Commencez gratuitement. <br>Montez en gamme si ça vous sert.</h2>
-    </div>
-    <div class="lp-plans" id="lp-plans" data-anim></div>
-    <div id="lp-site-offer" data-anim></div>
-  </section>
-
-  <!-- ============================ FAQ ============================ -->
-  <section id="faq" class="lp-section lp-section-alt">
-    <div class="lp-head" data-anim>
-      <p class="lp-eyebrow lp-eyebrow-c">Questions fréquentes</p>
-      <h2 class="lp-h2">Ce qu'on nous demande le plus.</h2>
-    </div>
-    <div class="lp-faq" data-anim>
-      <details>
-        <summary>Dois-je entrer ma carte bancaire pour commencer&nbsp;?</summary>
-        <p>Non. Le plan Gratuit ne demande aucune carte bancaire et n'a pas de limite de temps.</p>
-      </details>
-      <details>
-        <summary>Puis-je annuler mon abonnement à tout moment&nbsp;?</summary>
-        <p>Oui, les abonnements payants sont sans engagement. Vous pouvez annuler quand vous le souhaitez depuis votre profil.</p>
-      </details>
-      <details>
-        <summary>Le site vitrine (site internet) est-il inclus&nbsp;?</summary>
-        <p>Non. Le Site Vitrine professionnel est une prestation optionnelle et séparée du SaaS, disponible avec tous les plans Suite Artisan, y compris Gratuit, pour <span id="faq-site-price"></span>. Il est réalisé et géré par notre équipe, puis connecté au CRM Suite Artisan.</p>
-      </details>
-      <details>
-        <summary>Que couvre la création initiale du Site Vitrine&nbsp;?</summary>
-        <ul id="faq-site-creation"></ul>
-      </details>
-      <details>
-        <summary>Que couvre la gestion et maintenance mensuelle&nbsp;?</summary>
-        <div id="faq-site-maintenance"></div>
-      </details>
-      <details>
-        <summary>Quelles évolutions sont hors forfait&nbsp;?</summary>
-        <div id="faq-site-hors-forfait"></div>
-      </details>
-      <details>
-        <summary>Le Site Vitrine change-t-il selon mon plan&nbsp;?</summary>
-        <p>Non. Son prix et sa qualité sont identiques avec Gratuit, Essentiel, Pro ou Business. Vous pouvez changer de plan indépendamment de votre Site Vitrine.</p>
-      </details>
-      <details>
-        <summary>Mes données sont-elles visibles par d'autres artisans&nbsp;?</summary>
-        <p>Non. Chaque compte est complètement isolé&nbsp;: vos clients, devis et chantiers ne sont visibles que par vous.</p>
-      </details>
-    </div>
-  </section>
-
-  <!-- ========================= CTA FINAL ========================= -->
-  <section class="lp-final">
-    <div class="lp-final-blob" data-parallax="0.1" aria-hidden="true"></div>
-    <div class="lp-final-in" data-anim>
-      <h2 class="lp-final-title">Votre prochain devis <br>part aujourd'hui.</h2>
-      <p class="lp-final-sub">Créez votre compte en deux minutes. Gratuit, sans carte bancaire.</p>
-      <div class="lp-hero-actions lp-center">
-        <a href="index.html?tab=register" class="lp-btn lp-btn-primary lp-btn-lg">Créer mon compte gratuit</a>
-        <a href="index.html" class="lp-btn lp-btn-ghost lp-btn-lg">Se connecter</a>
-      </div>
-    </div>
-  </section>
+    </section>
+  </div>
+</div>
 
 </main>
 
-<footer class="lp-footer">
-  <div class="lp-footer-in">
-    <div class="lp-footer-brand">
-      <span class="lp-logo-mark" aria-hidden="true"></span>
-      Suite Artisan
-    </div>
-    <nav class="lp-footer-links" aria-label="Liens de pied de page">
-      <a href="#fonctionnalites">Fonctionnalités</a>
+<footer class="lc-footer">
+  <div class="lc-footer-in">
+    <a class="lc-logo" href="landing.html">
+      <span class="lc-logo-mark" aria-hidden="true"></span>
+      Suite&nbsp;Artisan
+    </a>
+    <nav class="lc-footer-links" aria-label="Liens de bas de page">
+      <a href="#chap-6">Produit</a>
+      <a href="#metiers">Métiers</a>
       <a href="#tarifs">Tarifs</a>
       <a href="#faq">FAQ</a>
       <a href="index.html">Connexion</a>
@@ -362,7 +329,9 @@
   </div>
 </footer>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script src="pricing.js"></script>
-<script src="landing.js?v=10"></script>
+<script src="landing.js?v=5"></script>
 </body>
 </html>

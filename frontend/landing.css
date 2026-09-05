@@ -1,438 +1,446 @@
 /* =====================================================================
    Suite Artisan — landing.css
-   -----------------------------------------------------------------------
-   Feuille de style de la LANDING PUBLIQUE uniquement, entierement isolee
-   du SaaS authentifie : tous les selecteurs sont prefixes .lp-* et tous
-   les tokens --lp-*. Aucune dependance a style.css ni a ses variables
-   (--primary/--surface/.btn-primary/.plan-card...), donc aucun risque de
-   fuite de style dans un sens ou dans l'autre pendant qu'un autre agent
-   fait evoluer le SaaS en parallele.
+   ---------------------------------------------------------------------
+   Feuille de style de la LANDING PUBLIQUE uniquement.
+
+   ISOLATION VIS-A-VIS DU SAAS : tout est prefixe `.lc-` (landing
+   cinematic) et toutes les variables `--lc-`. Ce fichier ne depend
+   d'aucune variable de style.css et n'est charge que par landing.html.
+   Un autre agent peut donc refondre le SaaS en parallele sans qu'aucun
+   des deux rendus ne bouge.
    ===================================================================== */
 
 :root {
-  /* Clair, franc, chantier : blanc + orange BTP + bleu nuit profond. */
-  --lp-bg: #ffffff;
-  --lp-bg-warm: #fbf8f4;
-  --lp-bg-ink: #0f172a;
-  --lp-ink: #0f172a;
-  --lp-ink-soft: #475569;
-  --lp-ink-faint: #94a3b8;
-  --lp-line: #e8e6e1;
-  --lp-line-strong: #d4d0c8;
-  --lp-orange: #ea580c;
-  --lp-orange-hot: #f97316;
-  --lp-orange-soft: #fff2e8;
-  --lp-green: #15803d;
-  --lp-green-soft: #eaf7ee;
-  --lp-blue: #1d4ed8;
-  --lp-blue-soft: #eef2ff;
-  --lp-display: "Bricolage Grotesque", "Inter", system-ui, sans-serif;
-  --lp-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --lp-r: 16px;
-  --lp-r-sm: 10px;
-  --lp-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 12px 32px -12px rgba(15, 23, 42, .16);
-  --lp-shadow-lg: 0 2px 4px rgba(15, 23, 42, .04), 0 32px 64px -24px rgba(15, 23, 42, .24);
-  --lp-max: 1180px;
+  --lc-ink: #11110f;
+  --lc-ink-2: #151411;
+  --lc-cream: #f2ede4;
+  --lc-white: #f7f3ec;
+  --lc-muted: rgba(247, 243, 236, .66);
+  --lc-faint: rgba(247, 243, 236, .42);
+  --lc-champagne: #c8a87a;
+  --lc-champagne-soft: rgba(200, 168, 122, .16);
+  --lc-line: rgba(247, 243, 236, .16);
+
+  --lc-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --lc-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  --lc-max: 1200px;
+  --lc-ease: cubic-bezier(.22, 1, .36, 1);
 }
 
-/* ---------- Base (scopee au body de la landing) ---------- */
-.lp {
+/* ---------- Reset local ---------- */
+.lc {
   margin: 0;
-  background: var(--lp-bg);
-  color: var(--lp-ink);
-  font-family: var(--lp-sans);
+  background: var(--lc-ink);
+  color: var(--lc-white);
+  font-family: var(--lc-sans);
   font-size: 16px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
-.lp *, .lp *::before, .lp *::after { box-sizing: border-box; }
-.lp h1, .lp h2, .lp h3 { font-family: var(--lp-display); margin: 0; line-height: 1.08; letter-spacing: -0.02em; }
-.lp p { margin: 0; }
-.lp ul, .lp ol { margin: 0; padding: 0; list-style: none; }
-/* `:where()` ne compte pas dans la specificite : la couleur heritee sert
-   seulement de defaut (a la place du bleu navigateur) et n'ecrase plus les
-   `color` poses par une simple classe comme .lp-btn-primary. */
-:where(.lp) a { color: inherit; }
-.lp a { text-decoration: none; }
-.lp img { max-width: 100%; display: block; }
-.lp :focus-visible { outline: 3px solid var(--lp-orange); outline-offset: 3px; border-radius: 4px; }
+.lc *, .lc *::before, .lc *::after { box-sizing: border-box; }
+.lc h1, .lc h2, .lc h3 { margin: 0; font-family: var(--lc-display); font-weight: 500; line-height: 1.1; letter-spacing: -.015em; }
+.lc p { margin: 0; }
+.lc ul, .lc ol, .lc dl { margin: 0; padding: 0; list-style: none; }
+/* `:where()` a une specificite nulle : la couleur heritee sert de defaut
+   (a la place du bleu navigateur) sans jamais ecraser le `color` pose par
+   une simple classe comme .lc-btn-primary. */
+:where(.lc) a { color: inherit; }
+.lc a { text-decoration: none; }
+.lc img { display: block; max-width: 100%; }
+.lc :focus-visible { outline: 2px solid var(--lc-champagne); outline-offset: 4px; border-radius: 3px; }
 
-.lp-skip {
-  position: absolute; left: 16px; top: -80px; z-index: 200;
-  background: var(--lp-ink); color: #fff; padding: 12px 20px;
-  border-radius: var(--lp-r-sm); font-weight: 600; transition: top .18s ease;
+.lc-skip {
+  position: absolute; left: -9999px; top: 12px; z-index: 200;
+  background: var(--lc-white); color: var(--lc-ink); padding: 12px 20px; border-radius: 999px; font-weight: 600;
 }
-.lp-skip:focus { top: 16px; }
+.lc-skip:focus { left: 16px; }
+.lc-anchor { position: absolute; top: -80px; }
 
-/* ---------- Boutons ---------- */
-.lp-btn {
+/* ============================ BOUTONS ============================ */
+.lc-btn {
   display: inline-flex; align-items: center; justify-content: center;
-  padding: 13px 22px; border-radius: 999px; font-weight: 600; font-size: .95rem;
-  border: 1.5px solid transparent; white-space: nowrap; cursor: pointer;
-  transition: transform .16s ease, box-shadow .16s ease, background .16s ease, border-color .16s ease;
+  padding: 13px 26px; border-radius: 999px; border: 1px solid transparent;
+  font-family: var(--lc-sans); font-size: .94rem; font-weight: 600; letter-spacing: .01em;
+  cursor: pointer; white-space: nowrap;
+  transition: transform .25s var(--lc-ease), background-color .25s, border-color .25s, color .25s;
 }
-.lp-btn-primary { background: var(--lp-orange); color: #fff; box-shadow: 0 8px 20px -8px rgba(234, 88, 12, .7); }
-.lp-btn-primary:hover { background: var(--lp-orange-hot); transform: translateY(-2px); box-shadow: 0 14px 28px -10px rgba(234, 88, 12, .75); }
-.lp-btn-ghost { background: #fff; border-color: var(--lp-line-strong); color: var(--lp-ink); }
-.lp-btn-ghost:hover { border-color: var(--lp-ink); transform: translateY(-2px); }
-.lp-btn-sm { padding: 9px 16px; font-size: .875rem; }
-.lp-btn-lg { padding: 16px 30px; font-size: 1rem; }
-.lp-link { font-weight: 600; font-size: .92rem; color: var(--lp-ink-soft); }
-.lp-link:hover { color: var(--lp-ink); }
+.lc-btn-primary { background: var(--lc-white); color: var(--lc-ink); }
+.lc-btn-primary:hover { transform: translateY(-2px); background: #fff; }
+.lc-btn-ghost { border-color: rgba(247, 243, 236, .34); color: var(--lc-white); backdrop-filter: blur(6px); }
+.lc-btn-ghost:hover { transform: translateY(-2px); border-color: var(--lc-white); background: rgba(247, 243, 236, .08); }
+.lc-btn-sm { padding: 9px 18px; font-size: .86rem; }
+.lc-btn-lg { padding: 16px 32px; font-size: 1rem; }
 
-/* ---------- Nav ---------- */
-.lp-nav {
-  position: sticky; top: 0; z-index: 100; background: rgba(255, 255, 255, .82);
-  backdrop-filter: saturate(180%) blur(12px); border-bottom: 1px solid transparent;
-  transition: border-color .2s ease, box-shadow .2s ease;
+/* ========================== NAVIGATION ========================== */
+.lc-nav { position: fixed; inset: 0 0 auto 0; z-index: 100; transition: background-color .4s, backdrop-filter .4s; }
+/* Degrade permanent en haut : garantit la lisibilite du logo et des liens
+   sur n'importe quelle photo, sans avoir a inverser les couleurs. */
+.lc-nav::before {
+  content: ""; position: absolute; inset: 0 0 -40px 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(17, 17, 15, .72), rgba(17, 17, 15, 0));
+  transition: opacity .4s;
 }
-.lp-nav.is-stuck { border-bottom-color: var(--lp-line); box-shadow: 0 4px 20px -12px rgba(15, 23, 42, .3); }
-.lp-nav-in {
-  max-width: var(--lp-max); margin: 0 auto; padding: 14px 24px;
-  display: flex; align-items: center; justify-content: space-between; gap: 24px;
+.lc-nav.is-stuck { background: rgba(17, 17, 15, .78); backdrop-filter: blur(14px); }
+.lc-nav.is-stuck::before { opacity: 0; }
+.lc-nav-in {
+  position: relative; max-width: var(--lc-max); margin: 0 auto; padding: 18px 32px;
+  display: flex; align-items: center; justify-content: space-between; gap: 28px;
 }
-.lp-logo { display: inline-flex; align-items: center; gap: 9px; font-family: var(--lp-display); font-weight: 800; font-size: 1.08rem; }
-.lp-logo-mark {
-  width: 18px; height: 18px; border-radius: 5px; flex-shrink: 0;
-  background: linear-gradient(135deg, var(--lp-orange-hot), var(--lp-orange));
-  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, .55);
+.lc-logo {
+  display: inline-flex; align-items: center; gap: 11px;
+  font-family: var(--lc-display); font-weight: 600; font-size: 1.06rem; letter-spacing: -.01em;
 }
-.lp-nav-links { display: flex; gap: 26px; }
-.lp-nav-links a { font-size: .92rem; font-weight: 500; color: var(--lp-ink-soft); }
-.lp-nav-links a:hover { color: var(--lp-ink); }
-.lp-nav-cta { display: flex; align-items: center; gap: 16px; }
-@media (max-width: 900px) { .lp-nav-links { display: none; } }
-@media (max-width: 520px) { .lp-link { display: none; } .lp-nav-in { padding: 12px 16px; } }
+.lc-logo-mark {
+  width: 17px; height: 17px; border-radius: 5px; flex-shrink: 0;
+  background: var(--lc-champagne); box-shadow: inset 0 0 0 3px rgba(17, 17, 15, .85);
+}
+.lc-nav-links { display: flex; gap: 30px; }
+.lc-nav-links a { font-size: .9rem; color: var(--lc-muted); transition: color .25s; }
+.lc-nav-links a:hover { color: var(--lc-white); }
+.lc-nav-cta { display: flex; align-items: center; gap: 20px; }
+.lc-link { font-size: .9rem; color: var(--lc-muted); transition: color .25s; }
+.lc-link:hover { color: var(--lc-white); }
+@media (max-width: 900px) { .lc-nav-links { display: none; } }
+@media (max-width: 560px) { .lc-nav-in { padding: 14px 18px; } .lc-link { display: none; } }
 
-/* ---------- Typo commune ---------- */
-.lp-eyebrow {
-  /* flex-start (et non center) : quand le libelle passe sur deux lignes en
-     mobile, la puce doit rester alignee sur la PREMIERE ligne au lieu de se
-     centrer verticalement entre les deux et paraitre orpheline. */
-  display: inline-flex; align-items: flex-start; gap: 8px;
-  font-size: .8rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
-  color: var(--lp-orange); margin-bottom: 18px;
-}
-.lp-eyebrow-c { justify-content: center; }
-.lp-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--lp-orange); flex-shrink: 0; margin-top: .42em; }
-@media (prefers-reduced-motion: no-preference) {
-  .lp-dot { animation: lp-blink 2.4s ease-in-out infinite; }
-}
-@keyframes lp-blink { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(.8); } }
+/* ====================== LE FILM / LE PLATEAU ======================
+   .lc-stage reste colle en haut pendant toute la visite ; .lc-chapters
+   est remonte de 100vh pour defiler PAR-DESSUS lui.
+   ================================================================= */
+.lc-film { position: relative; }
+.lc-stage { position: sticky; top: 0; height: 100vh; overflow: hidden; z-index: 1; background: var(--lc-ink); }
+.lc-chapters { position: relative; z-index: 2; margin-top: -100vh; }
 
-/* Taille calee pour que chaque phrase du titre tienne sur UNE ligne a partir
-   de ~1100px (l'effet recherche : deux lignes courtes et percutantes, pas
-   quatre lignes molles). En dessous, le titre passe naturellement a la ligne. */
-.lp-h1 { font-size: clamp(2.3rem, 4.6vw, 3.5rem); font-weight: 800; }
-.lp-h1 .lp-line { display: block; }
-.lp-accent { color: var(--lp-orange); }
-.lp-h2 { font-size: clamp(1.9rem, 3.6vw, 2.9rem); font-weight: 700; }
-/* Les <br> des titres sont cales pour le desktop (deux lignes equilibrees).
-   En etroit ils s'ajoutent au retour a la ligne naturel et laissent des
-   lignes orphelines d'un seul mot : on les neutralise et on laisse le
-   navigateur equilibrer lui-meme les lignes. */
-@media (max-width: 700px) {
-  .lp-h2 br, .lp-final-title br { display: none; }
-  .lp-h2, .lp-final-title { text-wrap: balance; }
+/* `isolation: isolate` cree un contexte d'empilement : sans lui, les
+   z-index 1..20 poses sur les frames par landing.js remontent dans le
+   contexte du plateau et passent AU-DESSUS du voile et du grain. */
+.lc-layers { position: absolute; inset: 0; z-index: 1; isolation: isolate; }
+.lc-frame {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; opacity: 0;
+  /* Les frames hors fenetre de compositing sont retirees du rendu : sans
+     cela, 20 images plein ecran resteraient composees sur le GPU. */
+  visibility: hidden;
+  transform-origin: 50% 50%;
 }
-.lp-lead { font-size: clamp(1.05rem, 1.5vw, 1.2rem); color: var(--lp-ink-soft); max-width: 34em; margin-top: 22px; }
-.lp-body { color: var(--lp-ink-soft); margin-top: 18px; max-width: 46ch; }
-.lp-head { text-align: center; max-width: 760px; margin: 0 auto 60px; }
+.lc-frame.is-live { visibility: visible; will-change: opacity, transform; }
 
-/* ---------- Reveal au scroll (anime mais leger) ---------- */
-@media (prefers-reduced-motion: no-preference) {
-  [data-anim] { opacity: 0; transform: translateY(22px); transition: opacity .6s cubic-bezier(.16,1,.3,1), transform .6s cubic-bezier(.16,1,.3,1); }
-  [data-anim].is-in { opacity: 1; transform: none; }
-  [data-anim][data-anim-delay="1"] { transition-delay: .07s; }
-  [data-anim][data-anim-delay="2"] { transition-delay: .14s; }
-  [data-anim][data-anim-delay="3"] { transition-delay: .21s; }
-  [data-anim][data-anim-delay="4"] { transition-delay: .28s; }
-  [data-anim][data-anim-delay="5"] { transition-delay: .35s; }
-  [data-anim][data-anim-delay="6"] { transition-delay: .42s; }
+/* Grain tres leger : casse le banding des degrades sur les aplats de mur */
+.lc-grain {
+  position: absolute; inset: 0; z-index: 3; pointer-events: none; opacity: .35; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
 }
 
-/* ============================ HERO ============================ */
-.lp-hero { position: relative; overflow: hidden; padding: clamp(56px, 8vw, 104px) 0 clamp(60px, 8vw, 110px); }
-.lp-hero-in {
-  position: relative; z-index: 2; max-width: var(--lp-max); margin: 0 auto; padding: 0 24px;
-  display: grid; grid-template-columns: 1.15fr .85fr; gap: 56px; align-items: center;
+/* Voile de lisibilite. Il s'intensifie seulement la ou du texte doit se
+   lire, et reste tres discret sur les plans purement contemplatifs. */
+.lc-scrim {
+  position: absolute; inset: 0; z-index: 4; pointer-events: none;
+  transition: opacity .6s var(--lc-ease), background .6s var(--lc-ease);
+  background:
+    linear-gradient(180deg, rgba(17, 17, 15, .34) 0%, rgba(17, 17, 15, 0) 26%),
+    radial-gradient(120% 90% at 50% 50%, rgba(17, 17, 15, 0) 42%, rgba(17, 17, 15, .38) 100%);
 }
-.lp-hero-blob {
-  position: absolute; z-index: 0; top: -22%; right: -12%; width: 62vw; max-width: 900px; aspect-ratio: 1;
-  background: radial-gradient(circle at 35% 35%, rgba(249, 115, 22, .17), rgba(249, 115, 22, 0) 62%);
-  border-radius: 50%; will-change: transform; pointer-events: none;
-}
-.lp-hero-grid-bg {
-  position: absolute; inset: 0; z-index: 0; pointer-events: none;
-  background-image: linear-gradient(var(--lp-line) 1px, transparent 1px), linear-gradient(90deg, var(--lp-line) 1px, transparent 1px);
-  background-size: 64px 64px;
-  mask-image: radial-gradient(ellipse 80% 60% at 30% 0%, #000 20%, transparent 72%);
-  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 30% 0%, #000 20%, transparent 72%);
-  opacity: .7;
-}
-.lp-hero-actions { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 32px; }
-.lp-center { justify-content: center; }
-.lp-hero-note { margin-top: 20px; font-size: .88rem; color: var(--lp-ink-faint); }
-.lp-hero-note strong { color: var(--lp-green); font-weight: 600; }
+/* Le hero est le seul plan ou le texte tombe sur un ciel clair : le
+   degre lateral y est plus soutenu, sinon le titre blanc disparait. */
+.lc-scrim[data-chapter="1"] { background: linear-gradient(180deg, rgba(17,17,15,.44) 0%, rgba(17,17,15,0) 30%), linear-gradient(90deg, rgba(17,17,15,.80) 0%, rgba(17,17,15,.55) 32%, rgba(17,17,15,.18) 60%, rgba(17,17,15,0) 84%); }
+.lc-scrim[data-chapter="2"] { background: linear-gradient(180deg, rgba(17,17,15,.40) 0%, rgba(17,17,15,.10) 28%), radial-gradient(90% 70% at 50% 50%, rgba(17,17,15,.52) 0%, rgba(17,17,15,.18) 70%); }
+.lc-scrim[data-chapter="3"] { background: linear-gradient(180deg, rgba(17,17,15,.40) 0%, rgba(17,17,15,0) 26%), linear-gradient(90deg, rgba(17,17,15,.70) 0%, rgba(17,17,15,.18) 56%, rgba(17,17,15,0) 82%); }
+.lc-scrim[data-chapter="4"] { background: linear-gradient(180deg, rgba(17,17,15,.40) 0%, rgba(17,17,15,0) 26%), linear-gradient(270deg, rgba(17,17,15,.70) 0%, rgba(17,17,15,.18) 56%, rgba(17,17,15,0) 82%); }
+.lc-scrim[data-chapter="5"] { background: linear-gradient(180deg, rgba(17,17,15,.40) 0%, rgba(17,17,15,0) 26%), linear-gradient(90deg, rgba(17,17,15,.66) 0%, rgba(17,17,15,.14) 54%, rgba(17,17,15,0) 80%); }
+.lc-scrim[data-chapter="6"] { background: linear-gradient(180deg, rgba(17,17,15,.44) 0%, rgba(17,17,15,0) 26%), linear-gradient(90deg, rgba(17,17,15,.74) 0%, rgba(17,17,15,.22) 58%, rgba(17,17,15,0) 84%); }
+.lc-scrim[data-chapter="7"] { background: linear-gradient(180deg, rgba(17,17,15,.62) 0%, rgba(17,17,15,.80) 100%); }
 
-/* Composition de cartes (remplace la 3D : tout en CSS, tres peu couteux).
-   Positions calees pour que les 4 cartes ne se recouvrent JAMAIS de facon
-   accidentelle : la carte devis occupe le haut-droite, les trois autres se
-   repartissent en dessous. Les chevauchements visibles sont voulus et
-   limites aux ombres. */
-.lp-hero-visual { position: relative; min-height: 460px; }
-.lp-card { background: #fff; border: 1px solid var(--lp-line); border-radius: var(--lp-r); box-shadow: var(--lp-shadow); }
-.lp-card-main { position: absolute; z-index: 2; top: 0; right: 0; width: min(300px, 74%); padding: 22px; box-shadow: var(--lp-shadow-lg); }
-.lp-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-.lp-chip { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: 4px 10px; border-radius: 999px; }
-.lp-chip-orange { background: var(--lp-orange-soft); color: var(--lp-orange); }
-.lp-chip-green { background: var(--lp-green-soft); color: var(--lp-green); }
-.lp-card-ref { font-size: .75rem; color: var(--lp-ink-faint); font-variant-numeric: tabular-nums; }
-.lp-card-client { font-family: var(--lp-display); font-weight: 700; font-size: 1.05rem; }
-.lp-card-sub { font-size: .85rem; color: var(--lp-ink-faint); margin-top: 2px; }
-.lp-card-amount { font-family: var(--lp-display); font-weight: 800; font-size: 2.1rem; margin: 14px 0 6px; font-variant-numeric: tabular-nums; }
-.lp-card-status { display: flex; align-items: center; gap: 7px; font-size: .85rem; font-weight: 600; color: var(--lp-green); }
-.lp-tick { width: 16px; height: 16px; border-radius: 50%; background: var(--lp-green-soft); position: relative; flex-shrink: 0; }
-.lp-tick::after { content: ""; position: absolute; left: 5px; top: 3px; width: 4px; height: 7px; border: solid var(--lp-green); border-width: 0 2px 2px 0; transform: rotate(45deg); }
-
-.lp-card-float { position: absolute; padding: 15px 17px; width: max-content; will-change: transform; }
-.lp-card-planning { left: 0; top: 46%; width: 200px; }
-.lp-card-cash { left: 0; bottom: 0; }
-.lp-card-relance { right: 0; top: 52%; padding-left: 34px; }
-.lp-mini-title { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--lp-ink-faint); margin-bottom: 10px; }
-.lp-mini-row { display: flex; align-items: center; gap: 9px; margin-bottom: 7px; }
-.lp-time { font-size: .74rem; color: var(--lp-ink-faint); font-variant-numeric: tabular-nums; width: 34px; flex-shrink: 0; }
-.lp-bar { height: 7px; border-radius: 999px; width: var(--w); }
-.lp-bar-o { background: var(--lp-orange); }
-.lp-bar-b { background: var(--lp-blue); opacity: .55; }
-.lp-bar-g { background: var(--lp-green); opacity: .6; }
-.lp-mini-amount { font-family: var(--lp-display); font-weight: 800; font-size: 1.5rem; font-variant-numeric: tabular-nums; }
-.lp-mini-trend { font-size: .78rem; color: var(--lp-green); font-weight: 600; margin-top: 2px; }
-.lp-mini-strong { font-weight: 700; font-size: .92rem; }
-.lp-mini-sub { font-size: .78rem; color: var(--lp-ink-faint); margin-top: 1px; }
-.lp-pulse { position: absolute; left: 15px; top: 21px; width: 9px; height: 9px; border-radius: 50%; background: var(--lp-orange); }
-@media (prefers-reduced-motion: no-preference) {
-  .lp-pulse::after { content: ""; position: absolute; inset: -5px; border-radius: 50%; border: 2px solid var(--lp-orange); animation: lp-ping 2s cubic-bezier(0,0,.2,1) infinite; }
-  .lp-card-float { animation: lp-float 7s ease-in-out infinite; }
-  .lp-card-planning { animation-delay: -1.2s; }
-  .lp-card-cash { animation-delay: -3.4s; }
-  .lp-card-relance { animation-delay: -5s; }
+/* Le trait qui marque le front de transformation avant/apres */
+.lc-reveal-edge {
+  position: absolute; top: 0; bottom: 0; width: 1px; z-index: 6; opacity: 0; pointer-events: none;
+  background: linear-gradient(180deg, transparent, rgba(247, 243, 236, .85) 22%, rgba(247, 243, 236, .85) 78%, transparent);
+  box-shadow: 0 0 22px rgba(247, 243, 236, .45);
+  transition: opacity .3s;
 }
-@keyframes lp-ping { 0% { transform: scale(.7); opacity: 1; } 75%, 100% { transform: scale(2); opacity: 0; } }
-@keyframes lp-float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -9px; } }
 
-@media (max-width: 940px) {
-  .lp-hero-in { grid-template-columns: 1fr; gap: 44px; }
-  .lp-hero-visual { min-height: 430px; max-width: 480px; }
+/* Emplacement pour une capture produit dans l'ecran du bureau (frame R).
+   Vide tant qu'aucune capture validee n'existe : voir PRODUCT_SCREEN. */
+/* z-index 2 : au-dessus des photos mais SOUS le grain et le voile, pour
+   que la capture recoive le meme traitement que le reste de l'image et
+   paraisse reellement posee sur le moniteur. */
+.lc-screen { position: absolute; z-index: 2; object-fit: cover; opacity: .96; }
+
+/* ================= CALQUE DE CONTENU — SCENES 1 A 6 =================
+   Les textes vivent DANS le plateau colle : ils sont donc toujours
+   parfaitement centres a l'ecran, et leur apparition est pilotee par la
+   meme timeline que les photos (voir le commentaire de landing.html).
+   ==================================================================== */
+.lc-overlay { position: absolute; inset: 0; z-index: 5; }
+.lc-scene {
+  position: absolute; inset: 0;
+  opacity: 0; pointer-events: none;
+  transition: opacity .7s var(--lc-ease);
+}
+.lc-scene.is-on { opacity: 1; pointer-events: auto; }
+.lc-scene-in {
+  height: 100%; max-width: var(--lc-max); margin: 0 auto; padding: 0 32px;
+  display: grid; align-content: center;
+}
+/* Hero : le bloc reste centre, l'indice de scroll descend en bas. */
+.lc-scene-hero .lc-scene-in { align-content: stretch; grid-template-rows: 1fr auto; padding-top: 92px; }
+.lc-scene-hero .lc-block { align-self: center; }
+/* Chantier : le libelle de phase se cale en haut, les chiffres au centre. */
+.lc-scene-site .lc-scene-in { align-content: stretch; grid-template-rows: auto 1fr; padding-top: 15vh; }
+.lc-scene-site .lc-block-late { align-self: center; }
+
+/* 700px (et non 620) : en dessous, un titre comme "Chaque intervention
+   reste reliee" passe sur deux lignes et le H2 en occupe quatre. */
+.lc-block {
+  max-width: 700px;
+  transform: translateY(22px); transition: transform .9s var(--lc-ease);
+}
+.lc-scene.is-on .lc-block { transform: none; }
+.lc-block-center { max-width: 760px; margin: 0 auto; text-align: center; }
+.lc-block-right { margin-left: auto; }
+/* Le bloc marge n'entre qu'une fois la piece terminee revelee par le
+   volet (is-ready est pose par landing.js quand la frame O prend la main). */
+.lc-block-late { opacity: 0; transition: opacity .6s var(--lc-ease); }
+.lc-block-late.is-ready { opacity: 1; }
+
+/* Les spacers ne portent aucun contenu : ils ne creent que la hauteur de
+   scroll des scenes 1 a 6. */
+.lc-spacer { position: relative; }
+
+/* ========================== TYPOGRAPHIE ========================== */
+.lc-eyebrow {
+  font-family: var(--lc-sans); font-size: .74rem; font-weight: 600;
+  letter-spacing: .18em; text-transform: uppercase; color: var(--lc-champagne);
+  margin-bottom: 22px;
+}
+.lc-h1 { font-size: clamp(2.6rem, 5.6vw, 4.6rem); font-weight: 400; }
+.lc-h1 .lc-line { display: block; }
+.lc-accent { color: var(--lc-champagne); font-style: italic; }
+.lc-h2 { font-size: clamp(1.85rem, 3.1vw, 2.75rem); font-weight: 400; }
+.lc-h2-xl { font-size: clamp(2.2rem, 4.4vw, 3.7rem); }
+.lc-lead { font-size: clamp(1.02rem, 1.35vw, 1.18rem); color: var(--lc-muted); max-width: 34em; margin-top: 24px; }
+.lc-body { font-size: 1.02rem; color: var(--lc-muted); max-width: 34em; margin-top: 20px; }
+.lc-note { margin-top: 22px; font-size: .84rem; color: var(--lc-faint); }
+.lc-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 34px; }
+.lc-actions-center { justify-content: center; }
+
+/* Indice de scroll, au bas du hero */
+.lc-scrollcue {
+  align-self: end; justify-self: start; margin-bottom: 42px;
+  display: flex; align-items: center; gap: 14px;
+  font-size: .76rem; letter-spacing: .16em; text-transform: uppercase; color: var(--lc-faint);
+}
+.lc-scrollcue-line { width: 46px; height: 1px; background: linear-gradient(90deg, var(--lc-champagne), transparent); }
+
+/* ---------- Chips / tags / points ---------- */
+.lc-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 34px; }
+.lc-chips li {
+  padding: 8px 18px; border: 1px solid var(--lc-line); border-radius: 999px;
+  font-size: .84rem; color: var(--lc-white); background: rgba(17, 17, 15, .28); backdrop-filter: blur(4px);
+}
+.lc-points { margin-top: 28px; display: grid; gap: 13px; }
+.lc-points li { position: relative; padding-left: 24px; color: var(--lc-muted); font-size: .98rem; }
+.lc-points li::before {
+  content: ""; position: absolute; left: 0; top: .62em;
+  width: 7px; height: 1px; background: var(--lc-champagne);
+}
+.lc-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 28px; }
+.lc-tags li {
+  font-size: .74rem; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--lc-champagne); background: var(--lc-champagne-soft);
+  border: 1px solid rgba(200, 168, 122, .3); padding: 6px 13px; border-radius: 4px;
+}
+
+/* ---------- Avant / pendant / apres ---------- */
+.lc-phase {
+  justify-self: start; align-self: start; margin-top: 108px;
+  font-family: var(--lc-display); font-size: clamp(1.5rem, 2.6vw, 2.2rem);
+  min-height: 1.4em; position: relative;
+}
+.lc-phase span {
+  position: absolute; left: 0; top: 0; white-space: nowrap;
+  opacity: 0; transform: translateY(10px);
+  transition: opacity .5s var(--lc-ease), transform .5s var(--lc-ease);
+}
+.lc-phase span.is-on { opacity: 1; transform: none; }
+
+/* ---------- Chiffres de marge ---------- */
+.lc-figures { margin-top: 30px; display: grid; grid-template-columns: repeat(2, minmax(0, 190px)); gap: 12px; }
+.lc-figures > div {
+  padding: 15px 18px; border: 1px solid var(--lc-line); border-radius: 10px;
+  background: rgba(17, 17, 15, .5); backdrop-filter: blur(8px);
+}
+.lc-figures dt { font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--lc-faint); }
+.lc-figures dd { margin: 5px 0 0; font-family: var(--lc-display); font-size: 1.5rem; font-variant-numeric: tabular-nums; }
+.lc-figure-hero { border-color: rgba(200, 168, 122, .42) !important; }
+.lc-figure-hero dd { color: var(--lc-champagne); }
+.lc-figures-note { margin-top: 14px; font-size: .78rem; color: var(--lc-faint); font-style: italic; }
+
+/* ---------- Modules produit ---------- */
+.lc-modules { margin-top: 36px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; max-width: 560px; }
+.lc-modules h3 {
+  font-family: var(--lc-sans); font-size: .72rem; font-weight: 600;
+  letter-spacing: .14em; text-transform: uppercase; color: var(--lc-champagne);
+  padding-bottom: 11px; margin-bottom: 13px; border-bottom: 1px solid var(--lc-line);
+}
+.lc-modules ul { display: grid; gap: 8px; }
+.lc-modules li { font-size: .92rem; color: var(--lc-muted); }
+
+/* ===================== CHAPITRE 7 — CONCLUSION =====================
+   Ici le contenu est long : on ne le colle pas, il defile normalement
+   par-dessus la derniere photo qui reste, elle, en fond.
+   ================================================================== */
+.lc-chapter-final { position: relative; }
+.lc-final { max-width: var(--lc-max); margin: 0 auto; padding: 34vh 32px 22vh; display: grid; gap: 20vh; }
+.lc-panel {
+  position: relative;
+  opacity: 0; transform: translateY(28px);
+  transition: opacity .9s var(--lc-ease), transform .9s var(--lc-ease);
+}
+.lc-panel.is-in { opacity: 1; transform: none; }
+.lc-panel-cta { text-align: center; }
+/* `max-width` seul ne centre pas un bloc : sans marges auto le paragraphe
+   reste cale a gauche alors que le panneau, lui, est centre. */
+.lc-panel-cta .lc-lead { margin-inline: auto; }
+
+.lc-benefits { margin-top: 48px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 34px 44px; }
+.lc-benefits h3 { font-size: 1.22rem; margin-bottom: 9px; }
+.lc-benefits p { color: var(--lc-muted); font-size: .96rem; }
+
+.lc-trades { margin-top: 44px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--lc-line); border: 1px solid var(--lc-line); }
+.lc-trades li {
+  background: rgba(17, 17, 15, .55); padding: 26px 20px;
+  font-family: var(--lc-display); font-size: 1.06rem;
+}
+
+/* ---------- Tarifs ---------- */
+.lc-plans { margin-top: 46px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.lc-plan {
+  position: relative; display: flex; flex-direction: column;
+  padding: 28px 24px; border: 1px solid var(--lc-line); border-radius: 14px;
+  background: rgba(17, 17, 15, .55); backdrop-filter: blur(8px);
+}
+.lc-plan.is-reco { border-color: rgba(200, 168, 122, .5); background: rgba(200, 168, 122, .07); }
+.lc-plan-badge {
+  position: absolute; top: -10px; left: 24px;
+  font-size: .64rem; letter-spacing: .12em; text-transform: uppercase; font-weight: 600;
+  background: var(--lc-champagne); color: var(--lc-ink); padding: 4px 11px; border-radius: 999px;
+}
+.lc-plan-name { font-family: var(--lc-display); font-size: 1.24rem; }
+.lc-plan-hook { margin-top: 6px; font-size: .85rem; color: var(--lc-faint); min-height: 2.6em; }
+.lc-plan-price { margin: 16px 0 22px; font-family: var(--lc-display); font-size: 2.1rem; }
+.lc-plan-price span { font-family: var(--lc-sans); font-size: .82rem; color: var(--lc-faint); }
+.lc-plan-feats { display: grid; gap: 9px; margin-bottom: 26px; flex: 1; }
+.lc-plan-feats li { position: relative; padding-left: 19px; font-size: .87rem; color: var(--lc-muted); }
+.lc-plan-feats li::before { content: ""; position: absolute; left: 0; top: .6em; width: 6px; height: 1px; background: var(--lc-champagne); }
+.lc-plan .lc-btn { width: 100%; }
+
+/* ---------- FAQ ---------- */
+.lc-faq { margin-top: 44px; border-top: 1px solid var(--lc-line); }
+.lc-faq details { border-bottom: 1px solid var(--lc-line); }
+.lc-faq summary {
+  list-style: none; cursor: pointer; padding: 24px 44px 24px 0; position: relative;
+  font-family: var(--lc-display); font-size: 1.1rem;
+}
+.lc-faq summary::-webkit-details-marker { display: none; }
+.lc-faq summary::after {
+  content: ""; position: absolute; right: 6px; top: 50%; width: 11px; height: 11px;
+  border-right: 1px solid var(--lc-champagne); border-bottom: 1px solid var(--lc-champagne);
+  transform: translateY(-70%) rotate(45deg); transition: transform .3s var(--lc-ease);
+}
+.lc-faq details[open] summary::after { transform: translateY(-30%) rotate(-135deg); }
+.lc-faq p { padding: 0 44px 26px 0; color: var(--lc-muted); font-size: .96rem; max-width: 62ch; }
+
+/* ==================== INDICATEUR DE PROGRESSION ==================== */
+.lc-progress {
+  position: fixed; right: 30px; top: 50%; transform: translateY(-50%); z-index: 60;
+  opacity: 0; pointer-events: none; transition: opacity .5s;
+}
+.lc-progress.is-on { opacity: 1; pointer-events: auto; }
+.lc-progress ol { display: grid; gap: 15px; }
+.lc-progress a { display: flex; align-items: center; justify-content: flex-end; gap: 11px; }
+.lc-progress span {
+  font-size: .66rem; letter-spacing: .1em; color: var(--lc-faint);
+  font-variant-numeric: tabular-nums; transition: color .3s;
+}
+.lc-progress i {
+  font-style: normal; font-size: .72rem; color: var(--lc-white);
+  max-width: 0; overflow: hidden; white-space: nowrap; opacity: 0;
+  transition: max-width .45s var(--lc-ease), opacity .35s;
+}
+.lc-progress li.is-on span { color: var(--lc-champagne); }
+.lc-progress li.is-on i, .lc-progress a:hover i { max-width: 110px; opacity: 1; }
+@media (max-width: 1100px) { .lc-progress { display: none; } }
+
+/* ============================ FOOTER ============================ */
+.lc-footer { position: relative; z-index: 3; background: var(--lc-ink-2); border-top: 1px solid var(--lc-line); }
+.lc-footer-in {
+  max-width: var(--lc-max); margin: 0 auto; padding: 34px 32px;
+  display: flex; align-items: center; justify-content: space-between; gap: 26px; flex-wrap: wrap;
+}
+.lc-footer-links { display: flex; flex-wrap: wrap; gap: 24px; }
+.lc-footer-links a { font-size: .85rem; color: var(--lc-muted); transition: color .25s; }
+.lc-footer-links a:hover { color: var(--lc-champagne); }
+
+/* ============================ RESPONSIVE ============================ */
+@media (max-width: 1000px) {
+  .lc-modules { grid-template-columns: 1fr 1fr; max-width: none; }
+  .lc-plans { grid-template-columns: 1fr 1fr; }
+  .lc-trades { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 760px) {
+  .lc-hold { padding: 0 20px; }
+  .lc-block, .lc-block-center, .lc-block-right { max-width: none; margin: 0; text-align: left; }
+  .lc-chips { justify-content: flex-start; }
+  .lc-benefits { grid-template-columns: 1fr; gap: 26px; }
+  .lc-final { padding: 22vh 20px 14vh; gap: 14vh; }
+  .lc-panel-cta { text-align: left; }
+  .lc-actions-center { justify-content: flex-start; }
+  /* Les <br> des titres sont cales pour le desktop ; en etroit ils
+     laisseraient des lignes d'un seul mot. */
+  .lc-h2 br, .lc-h1 br { display: none; }
+  .lc-h2 { text-wrap: balance; }
+  .lc-figures { grid-template-columns: 1fr 1fr; }
+  .lc-modules { grid-template-columns: 1fr; gap: 22px; }
+  .lc-phase { margin-top: 84px; }
 }
 @media (max-width: 560px) {
-  /* En dessous de 560px il n'y a plus la place pour 4 cartes sans qu'elles
-     se marchent dessus : on garde le devis (le message principal) et la
-     relance automatique (le differenciateur), on retire les deux autres. */
-  .lp-hero-visual { min-height: 330px; }
-  .lp-card-cash, .lp-card-planning { display: none; }
-  /* Aligne a gauche (et non centre par transform) : la carte porte
-     data-parallax, et le JS ecrase alors toute transform CSS. */
-  .lp-card-main { width: 88%; left: 0; right: auto; }
-  .lp-card-relance { top: auto; bottom: 0; right: 0; }
-  /* Deux CTA de largeur egale plutot que deux pilules de tailles
-     differentes empilees - plus propre et plus facile a viser au pouce. */
-  .lp-hero-actions .lp-btn { flex: 1 1 100%; }
-  .lp-eyebrow { font-size: .72rem; }
-  /* Le clamp du titre est cale pour le desktop : a 390px son minimum de
-     2.3rem fait passer "Moins de paperasse." sur deux lignes, et le titre
-     occupe alors trois lignes au lieu des deux voulues. On redescend juste
-     ce qu'il faut pour que chaque phrase tienne sur sa ligne. */
-  .lp-h1 { font-size: clamp(1.7rem, 7.9vw, 2.15rem); }
+  .lc-plans, .lc-trades { grid-template-columns: 1fr; }
+  .lc-actions .lc-btn { flex: 1 1 100%; }
+  .lc-scrollcue { margin-bottom: 26px; }
+  .lc-faq summary { font-size: 1rem; }
 }
 
-/* ====================== BANDEAU MÉTIERS ====================== */
-.lp-marquee {
-  border-block: 1px solid var(--lp-line); background: var(--lp-bg-warm);
-  overflow: hidden; padding: 18px 0;
-  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+/* ======================= MOUVEMENT REDUIT =======================
+   Aucune camera, aucun zoom, aucun volet : chaque chapitre montre une
+   image fixe et tout le contenu est immediatement lisible.
+   =============================================================== */
+.lc-static .lc-block,
+.lc-static .lc-panel,
+.lc-static .lc-scene { opacity: 1 !important; transform: none !important; transition: none !important; }
+/* Le plateau ne colle plus, les images empilees disparaissent : chaque
+   scene devient une section normale avec sa photo en fond. */
+.lc-static .lc-stage { position: relative; height: auto; overflow: visible; }
+.lc-static .lc-layers, .lc-static .lc-scrim, .lc-static .lc-spacer, .lc-static .lc-progress { display: none; }
+.lc-static .lc-overlay { position: relative; inset: auto; }
+.lc-static .lc-chapters { margin-top: 0; }
+.lc-static .lc-scene {
+  position: relative; inset: auto; min-height: 100vh;
+  background-size: cover; background-position: center; pointer-events: auto;
 }
-.lp-marquee-track { display: flex; width: max-content; }
-.lp-marquee-set { display: flex; gap: 44px; padding-right: 44px; }
-.lp-marquee-set span {
-  font-family: var(--lp-display); font-weight: 600; font-size: 1.05rem;
-  color: var(--lp-ink-faint); white-space: nowrap;
+/* Le voile global etant desactive, chaque section porte le sien. */
+.lc-static .lc-scene::before {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(90deg, rgba(17, 17, 15, .86) 0%, rgba(17, 17, 15, .55) 55%, rgba(17, 17, 15, .35) 100%);
 }
-@media (prefers-reduced-motion: no-preference) {
-  .lp-marquee-track { animation: lp-scroll 34s linear infinite; }
+/* `height: 100%` dans un parent de hauteur auto ne vaut rien : sans
+   min-height, `align-content: center` n'a rien a centrer et le texte se
+   colle en haut de section. */
+.lc-static .lc-scene-in { position: relative; z-index: 1; height: auto; min-height: 100vh; padding-block: 14vh; }
+.lc-static .lc-chapter-final { background-size: cover; background-position: center; background-attachment: local; }
+.lc-static .lc-chapter-final::before {
+  content: ""; position: absolute; inset: 0; background: rgba(17, 17, 15, .86);
 }
-@keyframes lp-scroll { to { transform: translateX(-50%); } }
-
-/* ---------- Sections ---------- */
-.lp-section { max-width: var(--lp-max); margin: 0 auto; padding: clamp(72px, 9vw, 118px) 24px; }
-.lp-section-tight { padding-bottom: clamp(48px, 6vw, 72px); }
-.lp-section-alt { max-width: none; background: var(--lp-bg-warm); border-block: 1px solid var(--lp-line); }
-.lp-section-alt > * { max-width: var(--lp-max); margin-inline: auto; }
-
-/* ========================= PROBLÈME ========================= */
-.lp-pain-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
-.lp-pain { padding: 30px 26px; border: 1px solid var(--lp-line); border-radius: var(--lp-r); background: #fff; transition: transform .2s ease, box-shadow .2s ease; }
-.lp-pain:hover { transform: translateY(-4px); box-shadow: var(--lp-shadow); }
-.lp-pain-num { font-family: var(--lp-display); font-size: .95rem; font-weight: 800; color: var(--lp-orange); }
-.lp-pain h3 { font-size: 1.2rem; margin: 12px 0 8px; }
-.lp-pain p { color: var(--lp-ink-soft); font-size: .95rem; }
-@media (max-width: 860px) { .lp-pain-grid { grid-template-columns: 1fr; } }
-
-/* ======================= FONCTIONNEMENT ======================= */
-.lp-flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; counter-reset: step; }
-/* Colonne flex : les paragraphes des 4 etapes n'ont pas le meme nombre de
-   lignes, donc sans cela les pastilles du bas flottaient a des hauteurs
-   differentes alors que les cartes, elles, sont d'egale hauteur. */
-.lp-step { position: relative; display: flex; flex-direction: column; padding: 28px 22px; background: #fff; border: 1px solid var(--lp-line); border-radius: var(--lp-r); }
-.lp-step::after {
-  content: ""; position: absolute; top: 50px; right: -20px; width: 20px; height: 2px;
-  background: repeating-linear-gradient(90deg, var(--lp-line-strong) 0 5px, transparent 5px 10px);
-}
-.lp-step:last-child::after { display: none; }
-.lp-step-dot {
-  display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%;
-  background: var(--lp-orange); color: #fff; font-family: var(--lp-display); font-weight: 800; font-size: .95rem;
-  margin-bottom: 16px;
-}
-.lp-step h3 { font-size: 1.1rem; margin-bottom: 8px; }
-/* L'ecart minimal avant la pastille vit ici et non sur .lp-step-tag : le
-   `margin-top:auto` de celle-ci vaut 0 dans la carte la plus haute. */
-.lp-step p { color: var(--lp-ink-soft); font-size: .92rem; margin-bottom: 14px; }
-.lp-step-tag {
-  /* align-self + margin-top:auto : la pastille se colle en bas de carte
-     sans s'etirer sur toute la largeur. */
-  align-self: flex-start; margin-top: auto;
-  display: inline-block; font-size: .74rem; font-weight: 600;
-  color: var(--lp-ink-faint); background: var(--lp-bg-warm); border: 1px solid var(--lp-line);
-  padding: 4px 10px; border-radius: 999px;
-}
-@media (max-width: 980px) { .lp-flow { grid-template-columns: 1fr 1fr; } .lp-step::after { display: none; } }
-@media (max-width: 560px) { .lp-flow { grid-template-columns: 1fr; } }
-
-/* ====================== DÉMO CHIFFRÉE ====================== */
-.lp-demo { display: grid; grid-template-columns: .95fr 1.05fr; gap: 56px; align-items: center; }
-.lp-demo-copy .lp-btn { margin-top: 28px; }
-.lp-demo-board { background: #fff; border: 1px solid var(--lp-line); border-radius: 20px; padding: 26px; box-shadow: var(--lp-shadow-lg); }
-.lp-board-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 22px; }
-.lp-board-title { font-weight: 600; font-size: .92rem; color: var(--lp-ink-soft); }
-.lp-board-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.lp-stat { padding: 16px 18px; border-radius: var(--lp-r-sm); background: var(--lp-bg-warm); border: 1px solid var(--lp-line); }
-.lp-stat-label { display: block; font-size: .74rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--lp-ink-faint); margin-bottom: 6px; }
-.lp-stat-val { font-family: var(--lp-display); font-weight: 800; font-size: 1.5rem; font-variant-numeric: tabular-nums; }
-.lp-stat-hero { background: var(--lp-green-soft); border-color: #bfe3c9; }
-.lp-stat-hero .lp-stat-val { color: var(--lp-green); }
-.lp-board-progress { margin-top: 20px; }
-.lp-board-progress-top { display: flex; justify-content: space-between; font-size: .84rem; color: var(--lp-ink-soft); margin-bottom: 8px; }
-.lp-progress { height: 9px; border-radius: 999px; background: var(--lp-line); overflow: hidden; }
-.lp-progress-fill { display: block; height: 100%; width: 0; border-radius: 999px; background: linear-gradient(90deg, var(--lp-orange), var(--lp-green)); transition: width 1.5s cubic-bezier(.16,1,.3,1); }
-.lp-board-note { margin-top: 16px; font-size: .78rem; color: var(--lp-ink-faint); font-style: italic; }
-@media (max-width: 940px) { .lp-demo { grid-template-columns: 1fr; gap: 40px; } }
-@media (max-width: 480px) { .lp-board-stats { grid-template-columns: 1fr; } }
-
-/* ====================== FONCTIONNALITÉS ====================== */
-.lp-feats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-.lp-feat { padding: 28px 26px; background: #fff; border: 1px solid var(--lp-line); border-radius: var(--lp-r); transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
-.lp-feat:hover { transform: translateY(-4px); box-shadow: var(--lp-shadow); border-color: var(--lp-line-strong); }
-.lp-feat h3 { font-size: 1.15rem; margin-bottom: 10px; }
-.lp-feat p { color: var(--lp-ink-soft); font-size: .94rem; }
-.lp-feat-wide { grid-column: span 2; }
-.lp-feat-visual { margin-top: 22px; display: flex; flex-direction: column; gap: 9px; }
-.lp-fv-row { display: flex; align-items: center; gap: 12px; }
-.lp-fv-label { font-size: .78rem; color: var(--lp-ink-faint); width: 92px; flex-shrink: 0; }
-.lp-fv-line { height: 8px; border-radius: 999px; background: var(--lp-line-strong); width: var(--w); }
-.lp-fv-o { background: var(--lp-orange); }
-.lp-fv-g { background: var(--lp-green); }
-/* Bandeau final pleine largeur plutot qu'une 6e carte seule sur sa ligne
-   (6 cartes dont une double = 7 unites sur une grille de 3 : la derniere
-   se retrouvait isolee avec deux trous a cote). */
-.lp-feat-accent {
-  grid-column: 1 / -1; background: var(--lp-ink); border-color: var(--lp-ink); color: #fff;
-  display: flex; align-items: center; justify-content: space-between; gap: 28px; flex-wrap: wrap;
-}
-.lp-feat-accent h3 { margin-bottom: 4px; }
-.lp-feat-accent p { color: #cbd5e1; max-width: 52ch; }
-.lp-feat-accent:hover { transform: none; }
-.lp-feat-link {
-  display: inline-flex; align-items: center; white-space: nowrap; font-weight: 600;
-  color: var(--lp-ink); background: #fff; padding: 12px 20px; border-radius: 999px;
-  transition: transform .16s ease;
-}
-.lp-feat-link:hover { transform: translateY(-2px); color: var(--lp-orange); }
-@media (max-width: 980px) { .lp-feats { grid-template-columns: 1fr 1fr; } .lp-feat-wide { grid-column: span 2; } }
-@media (max-width: 620px) { .lp-feats { grid-template-columns: 1fr; } .lp-feat-wide { grid-column: span 1; } }
-
-/* =========================== TARIFS =========================== */
-.lp-plans { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-bottom: 44px; }
-.lp-plan { position: relative; display: flex; flex-direction: column; padding: 28px 22px; background: #fff; border: 1px solid var(--lp-line); border-radius: var(--lp-r); }
-.lp-plan.is-reco { border: 2px solid var(--lp-orange); box-shadow: var(--lp-shadow); }
-.lp-plan-badge {
-  position: absolute; top: -12px; left: 22px; background: var(--lp-orange); color: #fff;
-  font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
-  padding: 4px 11px; border-radius: 999px;
-}
-.lp-plan-name { font-family: var(--lp-display); font-weight: 700; font-size: 1.15rem; }
-.lp-plan-hook { color: var(--lp-ink-soft); font-size: .86rem; margin-top: 6px; min-height: 2.8em; }
-.lp-plan-price { font-family: var(--lp-display); font-weight: 800; font-size: 2.3rem; margin: 16px 0 2px; }
-.lp-plan-price span { font-family: var(--lp-sans); font-size: .85rem; font-weight: 500; color: var(--lp-ink-faint); }
-.lp-plan-mention { font-size: .74rem; color: var(--lp-ink-faint); margin-bottom: 20px; }
-.lp-plan-feats { display: flex; flex-direction: column; gap: 9px; margin-bottom: 24px; flex: 1; }
-.lp-plan-feats li { position: relative; padding-left: 22px; font-size: .86rem; color: var(--lp-ink-soft); }
-.lp-plan-feats li::before {
-  content: ""; position: absolute; left: 0; top: .45em; width: 12px; height: 7px;
-  border: solid var(--lp-green); border-width: 0 0 2px 2px; transform: rotate(-45deg);
-}
-.lp-plan .lp-btn { width: 100%; }
-@media (max-width: 1020px) { .lp-plans { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 600px) { .lp-plans { grid-template-columns: 1fr; } }
-
-.lp-offer { border: 1px solid var(--lp-line); border-radius: var(--lp-r); padding: 30px 32px; background: var(--lp-bg-warm); max-width: 860px; margin: 0 auto; }
-.lp-offer-tag { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--lp-ink-faint); }
-.lp-offer h3 { font-size: 1.35rem; margin: 8px 0 6px; }
-.lp-offer-hook { color: var(--lp-orange); font-weight: 600; margin-bottom: 10px; }
-.lp-offer p { color: var(--lp-ink-soft); font-size: .94rem; }
-.lp-offer-price { margin: 20px 0; }
-.lp-offer-price strong { display: block; font-family: var(--lp-display); font-size: 1.6rem; font-weight: 800; }
-.lp-offer-price span { font-size: .88rem; color: var(--lp-ink-soft); }
-.lp-offer ul { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 20px; margin: 16px 0; }
-.lp-offer li { position: relative; padding-left: 18px; font-size: .88rem; color: var(--lp-ink-soft); }
-.lp-offer li::before { content: "—"; position: absolute; left: 0; color: var(--lp-orange); }
-.lp-offer-sum { font-size: .82rem; color: var(--lp-ink-faint); font-style: italic; }
-@media (max-width: 640px) { .lp-offer ul { grid-template-columns: 1fr; } }
-
-/* ============================ FAQ ============================ */
-.lp-faq { max-width: 780px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
-.lp-faq details { background: #fff; border: 1px solid var(--lp-line); border-radius: var(--lp-r-sm); padding: 18px 22px; transition: border-color .18s ease; }
-.lp-faq details[open] { border-color: var(--lp-line-strong); }
-.lp-faq summary { font-weight: 600; cursor: pointer; list-style: none; display: flex; justify-content: space-between; gap: 16px; align-items: center; }
-.lp-faq summary::-webkit-details-marker { display: none; }
-.lp-faq summary::after { content: "+"; font-size: 1.35rem; color: var(--lp-orange); font-weight: 400; line-height: 1; flex-shrink: 0; }
-.lp-faq details[open] summary::after { content: "−"; }
-.lp-faq summary:hover { color: var(--lp-orange); }
-.lp-faq p { margin-top: 12px; color: var(--lp-ink-soft); font-size: .93rem; }
-.lp-faq ul { margin-top: 12px; padding-left: 18px; list-style: disc; color: var(--lp-ink-soft); }
-.lp-faq li { font-size: .9rem; margin: 5px 0; }
-
-/* ========================= CTA FINAL ========================= */
-.lp-final { position: relative; overflow: hidden; background: var(--lp-bg-ink); color: #fff; padding: clamp(80px, 10vw, 130px) 24px; text-align: center; }
-.lp-final-blob {
-  position: absolute; z-index: 0; top: -40%; left: 50%; translate: -50% 0; width: 120%; aspect-ratio: 2;
-  background: radial-gradient(ellipse at 50% 50%, rgba(249, 115, 22, .3), transparent 62%);
-  pointer-events: none; will-change: transform;
-}
-.lp-final-in { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; }
-.lp-final-title { font-size: clamp(2.1rem, 5vw, 3.4rem); font-weight: 800; }
-.lp-final-sub { color: #cbd5e1; margin-top: 16px; font-size: 1.05rem; }
-.lp-final .lp-btn-ghost { background: transparent; border-color: rgba(255, 255, 255, .3); color: #fff; }
-.lp-final .lp-btn-ghost:hover { border-color: #fff; background: rgba(255, 255, 255, .06); }
-
-/* ---------- Footer ---------- */
-.lp-footer { border-top: 1px solid var(--lp-line); background: #fff; }
-.lp-footer-in {
-  max-width: var(--lp-max); margin: 0 auto; padding: 30px 24px;
-  display: flex; align-items: center; justify-content: space-between; gap: 22px; flex-wrap: wrap;
-}
-.lp-footer-brand { display: inline-flex; align-items: center; gap: 9px; font-family: var(--lp-display); font-weight: 700; }
-.lp-footer-links { display: flex; gap: 22px; flex-wrap: wrap; }
-.lp-footer-links a { font-size: .88rem; color: var(--lp-ink-soft); }
-.lp-footer-links a:hover { color: var(--lp-orange); }
+.lc-static .lc-final { position: relative; z-index: 1; }
+.lc-static .lc-phase span { position: static; opacity: 1; transform: none; display: inline; margin-right: .5em; }
+.lc-static .lc-phase { min-height: 0; margin-bottom: 20px; }

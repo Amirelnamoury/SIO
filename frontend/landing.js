@@ -1,209 +1,497 @@
 // =====================================================================
 // Suite Artisan — landing.js
-// -----------------------------------------------------------------------
-// Animations de la landing PUBLIQUE uniquement (aucun code SaaS ici) :
-//   - reveal au scroll (IntersectionObserver + classe CSS)
-//   - compteurs chiffres qui montent
-//   - parallaxe legere sur les elements decoratifs
-//   - barre de progression qui se remplit
-//   - ombre de la nav quand on quitte le haut de page
-//   - tarifs & FAQ remplis depuis pricing.js (donnees reelles partagees)
+// ---------------------------------------------------------------------
+// Landing PUBLIQUE uniquement. Aucun code du SaaS authentifie ici : ce
+// fichier n'est charge que par landing.html.
 //
-// Aucune dependance externe (pas de Three.js, pas de GSAP) : tout est en
-// JS natif + CSS, donc rien de lourd a charger et aucun risque de
-// saccade liee a un rendu 3D.
+// PRINCIPE
+// Un seul "plateau" (.lc-stage) reste colle en haut de l'ecran pendant
+// toute la visite. Les 20 photographies y sont empilees ; le scroll ne
+// fait que deplacer un curseur sur une timeline, qui decide quelles
+// frames sont visibles, avec quelle opacite et quel micro-zoom.
 //
-// prefers-reduced-motion est respecte partout : dans ce cas, aucun
-// mouvement n'est declenche et les valeurs finales sont posees
-// directement (le contenu reste integralement lisible).
+// Il n'y a donc ni video, ni 3D, ni images intermediaires inventees :
+// la sensation de camera vient uniquement de l'enchainement controle
+// des frames fournies (crossfade, Ken Burns tres leger, et un volet
+// clip-path pour l'avant/apres du chantier).
+//
+// TOUT SE REGLE DANS `FRAMES` ci-dessous : ordre, duree de scroll,
+// echelle de depart/arrivee, cadrage, type de transition.
 // =====================================================================
 
 (function () {
   "use strict";
 
+  var BASE = "assets/landing/frames/";
   var reduceMotion = window.matchMedia
     && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  // ---------------------------------------------------------------
-  // 1. Tarifs & FAQ — donnees partagees avec le SaaS (pricing.js), en
-  //    lecture seule : la landing ne fait que les afficher.
-  // ---------------------------------------------------------------
-  function euro(n) {
-    return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  // -------------------------------------------------------------------
+  // 1. CONFIGURATION DES SCENES
+  //
+  //   id       lettre de la frame (frame-a.webp / frame-a-sm.webp)
+  //   chapter  chapitre narratif auquel elle appartient (1..7)
+  //   w        duree de scroll en vh (poids sur la timeline)
+  //   t        part de `w` consacree a la transition vers la frame
+  //            suivante (0.4 = 40 % de transition, 60 % de pause)
+  //   from/to  micro-zoom Ken Burns (jamais au-dela de ~1.07 : au-dela
+  //            on voit la photo "respirer" et ca fait gadget)
+  //   pos      object-position, pour ne pas couper un element important
+  //   reveal   transition speciale : la frame suivante est devoilee par
+  //            un volet horizontal au lieu d'un fondu (avant/apres)
+  //
+  // La hauteur de chaque chapitre 1..6 est deduite automatiquement de la
+  // somme des `w` de ses frames : les changements d'image tombent donc
+  // toujours pile sur les changements de texte.
+  // -------------------------------------------------------------------
+  var FRAMES = [
+    // -- 01 arrivee ---------------------------------------------------
+    { id: "a", chapter: 1, w: 110, t: 0.45, from: 1.00, to: 1.05, pos: "50% 58%" },
+    { id: "b", chapter: 1, w: 80,  t: 0.60, from: 1.00, to: 1.05, pos: "50% 55%" },
+    // -- 02 l'entree --------------------------------------------------
+    { id: "c", chapter: 2, w: 80,  t: 0.40, from: 1.00, to: 1.04, pos: "50% 50%" },
+    { id: "d", chapter: 2, w: 76,  t: 0.45, from: 1.02, to: 1.06, pos: "50% 50%" },
+    { id: "e", chapter: 2, w: 54,  t: 0.70, from: 1.00, to: 1.06, pos: "50% 50%" },
+    // -- 03 le terrain ------------------------------------------------
+    { id: "f", chapter: 3, w: 60,  t: 0.50, from: 1.00, to: 1.05, pos: "50% 50%" },
+    { id: "g", chapter: 3, w: 42,  t: 0.70, from: 1.00, to: 1.04, pos: "50% 50%" },
+    { id: "h", chapter: 3, w: 46,  t: 0.65, from: 1.00, to: 1.05, pos: "50% 50%" },
+    { id: "i", chapter: 3, w: 82,  t: 0.40, from: 1.00, to: 1.05, pos: "50% 50%" },
+    // -- 04 la technique ----------------------------------------------
+    { id: "j", chapter: 4, w: 48,  t: 0.65, from: 1.00, to: 1.04, pos: "50% 50%" },
+    { id: "k", chapter: 4, w: 48,  t: 0.60, from: 1.00, to: 1.04, pos: "50% 50%" },
+    { id: "l", chapter: 4, w: 79,  t: 0.40, from: 1.00, to: 1.05, pos: "50% 50%" },
+    // -- 05 le chantier -----------------------------------------------
+    { id: "m", chapter: 5, w: 54,  t: 0.65, from: 1.00, to: 1.04, pos: "50% 50%" },
+    // n -> o : volet, pas fondu. Les deux photos sont cadrees a
+    // l'identique, donc le front de transformation est parfaitement net.
+    { id: "n", chapter: 5, w: 105, t: 0.60, from: 1.00, to: 1.03, pos: "50% 50%", reveal: true },
+    { id: "o", chapter: 5, w: 91,  t: 0.40, from: 1.03, to: 1.06, pos: "50% 50%" },
+    // -- 06 le bureau -------------------------------------------------
+    { id: "p", chapter: 6, w: 48,  t: 0.65, from: 1.00, to: 1.04, pos: "50% 50%" },
+    { id: "q", chapter: 6, w: 48,  t: 0.60, from: 1.00, to: 1.04, pos: "50% 50%" },
+    { id: "r", chapter: 6, w: 144, t: 0.30, from: 1.00, to: 1.04, pos: "50% 50%" },
+    // -- 07 le salon --------------------------------------------------
+    { id: "s", chapter: 7, w: 70,  t: 0.60, from: 1.00, to: 1.04, pos: "50% 50%" },
+    // `t` absorbe toute la hauteur restante du chapitre 7 (contenu long).
+    { id: "t", chapter: 7, w: 0,   t: 0,    from: 1.00, to: 1.06, pos: "50% 50%", fill: true }
+  ];
+
+  // Emplacement de l'ecran du bureau dans la frame R, en % de l'image.
+  // Mesure sur la photo d'origine. `src: null` => rien n'est affiche : on
+  // laisse l'ecran neutre tant qu'aucune capture produit validee n'existe
+  // (le SaaS est en cours de refonte, on n'y colle pas une vieille image).
+  var PRODUCT_SCREEN = {
+    src: null,            // ex. "assets/landing/product-screen.webp"
+    left: 48.9, top: 45.5, width: 13.8, height: 16.3
+  };
+
+  var film = document.getElementById("lc-film");
+  var layers = document.getElementById("lc-layers");
+  var chapters = document.getElementById("lc-chapters");
+  if (!film || !layers || !chapters) return;
+
+  // -------------------------------------------------------------------
+  // 2. CONSTRUCTION DES CALQUES
+  //    La frame A est deja dans le HTML (affichage immediat). Les autres
+  //    sont creees ici SANS src : elles ne seront chargees qu'a
+  //    l'approche (voir 4.), pour ne pas tirer 2,6 Mo au premier rendu.
+  // -------------------------------------------------------------------
+  var nodes = {};
+  FRAMES.forEach(function (f, i) {
+    var img = layers.querySelector('[data-frame="' + f.id + '"]');
+    if (!img) {
+      img = document.createElement("img");
+      img.className = "lc-frame";
+      img.alt = "";
+      img.width = 1920;
+      img.height = 1071;
+      img.decoding = "async";
+      img.dataset.frame = f.id;
+      layers.appendChild(img);
+    }
+    img.style.objectPosition = f.pos;
+    img.style.zIndex = String(i + 1);
+    f.node = img;
+    f.loaded = !!img.getAttribute("src");
+    nodes[f.id] = img;
+  });
+
+  function loadFrame(f) {
+    if (f.loaded) return;
+    f.loaded = true;
+    f.node.srcset = BASE + "frame-" + f.id + "-sm.webp 1100w, " + BASE + "frame-" + f.id + ".webp 1920w";
+    f.node.sizes = "100vw";
+    f.node.src = BASE + "frame-" + f.id + ".webp";
+  }
+  // Les deux frames suivantes tout de suite : le visiteur scrolle vite.
+  loadFrame(FRAMES[1]);
+  loadFrame(FRAMES[2]);
+
+  // -------------------------------------------------------------------
+  // 3. HAUTEURS DES CHAPITRES
+  //    Chapitres 1..6 : hauteur = somme des poids de leurs frames, pour
+  //    que image et texte changent au meme moment.
+  //    Chapitre 7 : hauteur libre, dictee par son contenu (benefices,
+  //    metiers, tarifs, FAQ, CTA) — on ne force pas un nombre arbitraire.
+  // -------------------------------------------------------------------
+  var chapterEls = {};
+  Array.prototype.forEach.call(chapters.querySelectorAll("[data-spacer]"), function (el) {
+    chapterEls[el.dataset.spacer] = el;
+  });
+  // Sur petit ecran on raccourcit la visite : les memes 18 frames en
+  // ~880vh au lieu de ~1295vh. Les mouvements restent lisibles mais le
+  // pouce a beaucoup moins de chemin a parcourir.
+  function scrollScale() { return window.innerWidth < 760 ? 0.68 : 1; }
+
+  function layoutSpacers() {
+    var k = scrollScale();
+    for (var c = 1; c <= 6; c++) {
+      var sum = 0;
+      FRAMES.forEach(function (f) { if (f.chapter === c) sum += f.w; });
+      if (chapterEls[c]) chapterEls[c].style.height = (sum * k) + "vh";
+    }
+  }
+  layoutSpacers();
+
+  // Les scenes du calque, indexees par numero de chapitre.
+  var sceneEls = {};
+  Array.prototype.forEach.call(document.querySelectorAll("[data-scene]"), function (el) {
+    sceneEls[el.dataset.scene] = el;
+  });
+
+  // -------------------------------------------------------------------
+  // 4. TIMELINE + RENDU
+  // -------------------------------------------------------------------
+  var timeline = [];   // { f, start, end, transStart } en pixels
+  var filmTop = 0, filmRange = 1, vh = 0;
+
+  function measure() {
+    vh = window.innerHeight;
+    layoutSpacers();
+    var rect = film.getBoundingClientRect();
+    filmTop = rect.top + window.scrollY;
+    // Le plateau est colle : la course utile s'arrete une hauteur
+    // d'ecran avant la fin du film.
+    filmRange = Math.max(1, film.offsetHeight - vh);
+
+    var k = scrollScale();
+    var fixedPx = 0;
+    FRAMES.forEach(function (f) { if (!f.fill) fixedPx += f.w * k * vh / 100; });
+    // Ce qui reste apres les frames a poids fixe revient a la frame T.
+    var fillPx = Math.max(vh, filmRange - fixedPx);
+
+    timeline = [];
+    var cursor = 0;
+    FRAMES.forEach(function (f) {
+      var span = f.fill ? fillPx : f.w * k * vh / 100;
+      timeline.push({
+        f: f,
+        start: cursor,
+        end: cursor + span,
+        transStart: cursor + span * (1 - f.t)
+      });
+      cursor += span;
+    });
   }
 
-  function renderPlans() {
-    var host = document.getElementById("lp-plans");
+  var lastIndex = -1;
+
+  function render(scrolled) {
+    var y = Math.min(Math.max(scrolled, 0), filmRange);
+
+    // Frame courante = celle dont la fenetre contient le curseur.
+    var idx = 0;
+    for (var i = 0; i < timeline.length; i++) {
+      if (y >= timeline[i].start) idx = i; else break;
+    }
+    var cur = timeline[idx];
+    var nxt = timeline[idx + 1];
+    var f = cur.f;
+
+    // Progression a l'interieur de la frame courante (0..1)
+    var span = cur.end - cur.start || 1;
+    var p = (y - cur.start) / span;
+
+    // Part de transition (0 tant qu'on est en pause, 1 a la bascule)
+    var tp = 0;
+    if (nxt && y > cur.transStart) {
+      tp = (y - cur.transStart) / Math.max(1, cur.end - cur.transStart);
+      tp = Math.min(1, Math.max(0, tp));
+    }
+
+    // --- Fenetre de compositing : seules les frames voisines restent
+    //     "vivantes". Sans cela, 20 images plein ecran resteraient
+    //     composees en permanence sur le GPU.
+    if (idx !== lastIndex) {
+      lastIndex = idx;
+      FRAMES.forEach(function (fr, i) {
+        var live = i >= idx - 1 && i <= idx + 2;
+        fr.node.classList.toggle("is-live", live);
+        if (i >= idx && i <= idx + 3) loadFrame(fr);
+      });
+    }
+
+    FRAMES.forEach(function (fr, i) {
+      var node = fr.node;
+      if (i < idx || i > idx + 1) {
+        // Avant : deja passee. Apres : pas encore entree.
+        node.style.opacity = i < idx ? "1" : "0";
+        if (i < idx - 1 || i > idx + 2) node.style.opacity = i < idx ? "1" : "0";
+        return;
+      }
+      if (i === idx) {
+        var scale = fr.from + (fr.to - fr.from) * p;
+        node.style.opacity = "1";
+        node.style.transform = "scale(" + scale.toFixed(4) + ")";
+        node.style.clipPath = "none";
+      } else {
+        // Frame suivante : elle entre en fondu, SAUF si la frame
+        // courante demande un volet (avant/apres du chantier).
+        if (f.reveal) {
+          node.style.opacity = tp > 0 ? "1" : "0";
+          node.style.clipPath = "inset(0 0 0 " + ((1 - tp) * 100).toFixed(2) + "%)";
+          node.style.transform = "scale(" + fr.from.toFixed(4) + ")";
+        } else {
+          node.style.opacity = tp.toFixed(3);
+          node.style.clipPath = "none";
+          node.style.transform = "scale(" + fr.from.toFixed(4) + ")";
+        }
+      }
+    });
+
+    // Le trait lumineux qui marque le front de transformation
+    if (revealEdge) {
+      if (f.reveal && tp > 0 && tp < 1) {
+        revealEdge.style.opacity = "1";
+        // La frame revelee est clippee par `inset(0 0 0 X%)` avec
+        // X = (1 - tp) * 100 : le front se trouve donc en X, pas en tp.
+        revealEdge.style.left = ((1 - tp) * 100).toFixed(2) + "%";
+      } else {
+        revealEdge.style.opacity = "0";
+      }
+    }
+
+    // Le bloc "marge" n'a de sens qu'une fois la piece terminee revelee :
+    // on ne le laisse entrer que lorsque la frame O prend la main.
+    if (lateBlock) lateBlock.classList.toggle("is-ready", f.id === "o");
+
+    // Libelle Avant / Pendant / Apres, cale sur le volet
+    if (phaseEl) {
+      var phase = !f.reveal ? (f.id === "o" ? 3 : 0) : (tp < 0.08 ? 1 : tp < 0.92 ? 2 : 3);
+      if (phase !== phaseEl._p) {
+        phaseEl._p = phase;
+        Array.prototype.forEach.call(phaseEl.children, function (s) {
+          s.classList.toggle("is-on", Number(s.dataset.phase) === phase);
+        });
+      }
+    }
+
+    // Voile : discret dehors, plus present quand du texte doit se lire.
+    // La scene correspondante s'allume en meme temps, donc texte et image
+    // ne peuvent pas se desynchroniser.
+    if (f.chapter !== lastChapter) {
+      lastChapter = f.chapter;
+      if (scrim) scrim.dataset.chapter = String(f.chapter);
+      for (var s = 1; s <= 6; s++) {
+        if (sceneEls[s]) sceneEls[s].classList.toggle("is-on", s === f.chapter);
+      }
+      if (progressLinks) {
+        Array.prototype.forEach.call(progressLinks, function (a) {
+          a.parentNode.classList.toggle("is-on", Number(a.dataset.chap) === f.chapter);
+        });
+      }
+    }
+  }
+  // Declares ici (et non plus bas) : render() s'en sert des le premier
+  // appel, qui a lieu avant la section 8.
+  var lastChapter = -1;
+  var nav = document.getElementById("lc-nav");
+  var progress = document.getElementById("lc-progress");
+  var progressLinks = progress ? progress.querySelectorAll("[data-chap]") : null;
+
+  var revealEdge = null;
+  var phaseEl = document.getElementById("lc-phase");
+  var scrim = document.getElementById("lc-scrim");
+  var lateBlock = document.querySelector(".lc-block-late");
+
+  (function buildRevealEdge() {
+    var stage = document.querySelector(".lc-stage");
+    if (!stage) return;
+    revealEdge = document.createElement("span");
+    revealEdge.className = "lc-reveal-edge";
+    revealEdge.setAttribute("aria-hidden", "true");
+    stage.appendChild(revealEdge);
+  })();
+
+  // -------------------------------------------------------------------
+  // 5. EMPLACEMENT ECRAN PRODUIT (frame R)
+  //    L'image de fond est en object-fit: cover : on recalcule donc le
+  //    rectangle reellement occupe par la photo pour poser l'ecran
+  //    exactement sur le moniteur, quelle que soit la taille du viewport.
+  // -------------------------------------------------------------------
+  var screenSlot = null;
+  if (PRODUCT_SCREEN.src) {
+    screenSlot = document.createElement("img");
+    screenSlot.className = "lc-screen";
+    screenSlot.alt = "";
+    screenSlot.src = PRODUCT_SCREEN.src;
+    screenSlot.setAttribute("aria-hidden", "true");
+    document.querySelector(".lc-stage").appendChild(screenSlot);
+  }
+
+  function placeScreen() {
+    if (!screenSlot) return;
+    var W = window.innerWidth, H = window.innerHeight, ar = 1920 / 1071;
+    var w = W, h = W / ar;
+    if (h < H) { h = H; w = H * ar; }
+    var offX = (W - w) / 2, offY = (H - h) / 2;
+    screenSlot.style.left = (offX + w * PRODUCT_SCREEN.left / 100) + "px";
+    screenSlot.style.top = (offY + h * PRODUCT_SCREEN.top / 100) + "px";
+    screenSlot.style.width = (w * PRODUCT_SCREEN.width / 100) + "px";
+    screenSlot.style.height = (h * PRODUCT_SCREEN.height / 100) + "px";
+  }
+
+  // -------------------------------------------------------------------
+  // 6. BRANCHEMENT AU SCROLL
+  //    GSAP + ScrollTrigger pilotent la progression (ils gerent proprement
+  //    resize, refresh et restauration de position). Si le CDN ne repond
+  //    pas, on retombe sur un listener natif : la page reste identique.
+  // -------------------------------------------------------------------
+  var hasGsap = typeof window.gsap !== "undefined" && typeof window.ScrollTrigger !== "undefined";
+
+  function frame() {
+    render(window.scrollY - filmTop);
+    placeScreen();
+  }
+
+  if (reduceMotion) {
+    // Pas de camera, pas de scroll pilote : la page redevient une page
+    // normale. Chaque scene devient une section classique avec, en fond,
+    // la photo de pause de son chapitre. Tout le contenu est lisible et
+    // rien ne bouge.
+    document.body.classList.add("lc-static");
+    var PAUSE = { 1: "a", 2: "d", 3: "i", 4: "l", 5: "o", 6: "r" };
+    Object.keys(PAUSE).forEach(function (s) {
+      if (!sceneEls[s]) return;
+      sceneEls[s].classList.add("is-on");
+      sceneEls[s].style.backgroundImage = "url(" + BASE + "frame-" + PAUSE[s] + ".webp)";
+    });
+    var fin = document.querySelector(".lc-chapter-final");
+    if (fin) fin.style.backgroundImage = "url(" + BASE + "frame-t.webp)";
+    if (lateBlock) lateBlock.classList.add("is-ready");
+    if (phaseEl) Array.prototype.forEach.call(phaseEl.children, function (s) { s.classList.add("is-on"); });
+  } else if (hasGsap) {
+    window.gsap.registerPlugin(window.ScrollTrigger);
+    measure();
+    window.ScrollTrigger.create({
+      trigger: film,
+      start: "top top",
+      end: "bottom bottom",
+      onUpdate: function (self) { render(self.progress * filmRange); placeScreen(); },
+      onRefresh: function () { measure(); lastIndex = -1; frame(); }
+    });
+    frame();
+  } else {
+    measure();
+    var ticking = false;
+    var onScroll = function () {
+      if (!ticking) { ticking = true; requestAnimationFrame(function () { ticking = false; frame(); }); }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", function () { measure(); lastIndex = -1; frame(); }, { passive: true });
+    frame();
+  }
+
+  // -------------------------------------------------------------------
+  // 7. PANNEAUX DE LA CONCLUSION
+  //    Les scenes 1 a 6 sont pilotees par la timeline (voir render).
+  //    Seul le chapitre 7, qui defile normalement, utilise un observer.
+  // -------------------------------------------------------------------
+  var panels = document.querySelectorAll(".lc-panel");
+  if (reduceMotion || !("IntersectionObserver" in window)) {
+    Array.prototype.forEach.call(panels, function (b) { b.classList.add("is-in"); });
+  } else {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add("is-in"); io.unobserve(e.target); }
+      });
+    }, { threshold: 0.2, rootMargin: "0px 0px -10% 0px" });
+    Array.prototype.forEach.call(panels, function (b) { io.observe(b); });
+  }
+
+  // Le chapitre 7 ne fait pas partie de la timeline des scenes : c'est
+  // lui qui allume la 7e pastille de l'indicateur.
+  if ("IntersectionObserver" in window && chapterEls[7] && progressLinks) {
+    new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        Array.prototype.forEach.call(progressLinks, function (a) {
+          a.parentNode.classList.toggle("is-on", a.dataset.chap === "7");
+        });
+      });
+    }, { threshold: 0.01, rootMargin: "-45% 0px -45% 0px" }).observe(chapterEls[7]);
+  }
+
+  // -------------------------------------------------------------------
+  // 8. NAV
+  // -------------------------------------------------------------------
+  var navTick = false;
+  window.addEventListener("scroll", function () {
+    if (navTick) return;
+    navTick = true;
+    requestAnimationFrame(function () {
+      navTick = false;
+      if (nav) nav.classList.toggle("is-stuck", window.scrollY > 24);
+      if (progress) progress.classList.toggle("is-on", window.scrollY > window.innerHeight * 0.6);
+    });
+  }, { passive: true });
+
+  // -------------------------------------------------------------------
+  // 9. TARIFS — donnees partagees avec le SaaS (pricing.js), en lecture
+  //    seule. La landing ne fait que les afficher : jamais de prix ecrit
+  //    en dur ici.
+  // -------------------------------------------------------------------
+  function euro(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " "); }
+
+  (function renderPlans() {
+    var host = document.getElementById("lc-plans");
     if (!host || typeof PRICING === "undefined") return;
     var order = (typeof PRICING_ORDRE !== "undefined") ? PRICING_ORDRE : Object.keys(PRICING);
-
     host.innerHTML = order.map(function (key) {
       var plan = PRICING[key];
       if (!plan) return "";
       var reco = plan.recommande === true;
       return ''
-        + '<div class="lp-plan' + (reco ? " is-reco" : "") + '">'
-        + (reco ? '<span class="lp-plan-badge">Recommandé</span>' : "")
-        + '<div class="lp-plan-name">' + plan.nom + "</div>"
-        + '<p class="lp-plan-hook">' + plan.accroche + "</p>"
-        + '<div class="lp-plan-price">' + euro(plan.prix) + " €<span> / " + plan.periode + "</span></div>"
-        + '<div class="lp-plan-mention">' + (plan.mention || "Sans engagement") + "</div>"
-        + '<ul class="lp-plan-feats">'
-        + plan.fonctionnalites.map(function (f) { return "<li>" + f + "</li>"; }).join("")
+        + '<div class="lc-plan' + (reco ? " is-reco" : "") + '">'
+        + (reco ? '<span class="lc-plan-badge">Recommandé</span>' : "")
+        + '<div class="lc-plan-name">' + plan.nom + "</div>"
+        + '<p class="lc-plan-hook">' + plan.accroche + "</p>"
+        + '<div class="lc-plan-price">' + euro(plan.prix) + " €<span> / " + plan.periode + "</span></div>"
+        + '<ul class="lc-plan-feats">'
+        + plan.fonctionnalites.map(function (x) { return "<li>" + x + "</li>"; }).join("")
         + "</ul>"
-        + '<a href="index.html?tab=register" class="lp-btn ' + (reco ? "lp-btn-primary" : "lp-btn-ghost") + '">Commencer</a>'
+        + '<a href="index.html?tab=register" class="lc-btn ' + (reco ? "lc-btn-primary" : "lc-btn-ghost") + '">Commencer</a>'
         + "</div>";
     }).join("");
-  }
+  })();
 
-  function renderSiteOffer() {
+  (function renderSiteOffer() {
     if (typeof SITE_VITRINE_OFFER === "undefined") return;
     var o = SITE_VITRINE_OFFER;
-
-    var host = document.getElementById("lp-site-offer");
-    if (host) {
-      host.innerHTML = ''
-        + '<div class="lp-offer">'
-        + '<div class="lp-offer-tag">Option distincte du SaaS · Disponible avec tous les plans, y compris Gratuit</div>'
-        + "<h3>" + o.nom + "</h3>"
-        + '<p class="lp-offer-hook">' + o.accroche + "</p>"
-        + "<p>" + o.description + "</p>"
-        + '<div class="lp-offer-price"><strong>' + euro(o.creation) + " € HT à la création</strong>"
-        + "<span>puis " + euro(o.mensuel) + " € HT / mois de gestion &amp; maintenance</span></div>"
-        + "<ul>" + o.carteInclus.map(function (i) { return "<li>" + i + "</li>"; }).join("") + "</ul>"
-        + '<p class="lp-offer-sum">' + o.resumeInclus + "</p>"
-        + "</div>";
-    }
-
-    var price = document.getElementById("faq-site-price");
+    var price = document.getElementById("lc-faq-site-price");
     if (price) {
-      price.innerHTML = euro(o.creation) + " € " + o.mention + " à la création puis "
-        + euro(o.mensuel) + " € " + o.mention + "/mois de gestion &amp; maintenance";
+      price.innerHTML = "Comptez " + euro(o.creation) + " " + o.mention + " à la création, puis "
+        + euro(o.mensuel) + " " + o.mention + "/mois de gestion &amp; maintenance.";
     }
-    var creation = document.getElementById("faq-site-creation");
-    if (creation) {
-      creation.innerHTML = o.creationInclut.map(function (i) { return "<li>" + i + "</li>"; }).join("");
-    }
-    var maint = document.getElementById("faq-site-maintenance");
-    if (maint) {
-      maint.innerHTML = "<ul>" + o.maintenanceInclut.map(function (i) { return "<li>" + i + "</li>"; }).join("")
-        + "</ul><p>" + o.domaineStandard + "</p>";
-    }
-    var hors = document.getElementById("faq-site-hors-forfait");
-    if (hors) {
-      hors.innerHTML = "<p>" + o.horsForfaitResume + "</p><ul>"
-        + o.horsForfait.map(function (i) { return "<li>" + i + "</li>"; }).join("") + "</ul>";
-    }
-  }
+  })();
 
-  renderPlans();
-  renderSiteOffer();
-
-  // ---------------------------------------------------------------
-  // 2. Compteurs : le chiffre monte quand il entre dans l'ecran.
-  // ---------------------------------------------------------------
-  function formatCount(el, value) {
-    var prefix = el.dataset.countPrefix || "";
-    var suffix = el.dataset.countSuffix || "";
-    return prefix + euro(Math.round(value)) + suffix;
-  }
-
-  function runCounter(el) {
-    var target = Number(el.dataset.count || 0);
-    if (reduceMotion) { el.textContent = formatCount(el, target); return; }
-
-    var duration = 1400;
-    var start = null;
-    function frame(now) {
-      if (start === null) start = now;
-      var t = Math.min(1, (now - start) / duration);
-      // easeOutExpo : demarre vite, finit en douceur - lisible tout du long.
-      var eased = t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
-      el.textContent = formatCount(el, target * eased);
-      if (t < 1) requestAnimationFrame(frame);
-    }
-    requestAnimationFrame(frame);
-  }
-
-  // ---------------------------------------------------------------
-  // 3. Reveal au scroll + declenchement des compteurs / barres.
-  //    Un seul observer pour tout, et chaque element n'est observe
-  //    qu'une fois (unobserve des qu'il est apparu) : aucun travail
-  //    residuel une fois la page parcourue.
-  // ---------------------------------------------------------------
-  var revealTargets = document.querySelectorAll("[data-anim], [data-count], [data-fill]");
-
-  function activate(el) {
-    if (el.hasAttribute("data-anim")) el.classList.add("is-in");
-    if (el.hasAttribute("data-count")) runCounter(el);
-    if (el.hasAttribute("data-fill")) {
-      var pct = Number(el.dataset.fill || 0);
-      if (reduceMotion) el.style.transition = "none";
-      el.style.width = pct + "%";
-    }
-    // Les compteurs a l'interieur d'un bloc revele ne sont pas
-    // forcement observes separement s'ils etaient deja visibles :
-    // on les declenche avec leur conteneur.
-    el.querySelectorAll && el.querySelectorAll("[data-count]").forEach(function (c) {
-      if (!c.dataset.countDone) { c.dataset.countDone = "1"; runCounter(c); }
+  // Recalage si les polices arrivent apres coup (evite un decalage des
+  // hauteurs de chapitre mesurees trop tot).
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(function () {
+      if (hasGsap && !reduceMotion) window.ScrollTrigger.refresh();
+      else { measure(); lastIndex = -1; frame(); }
     });
   }
-
-  if (!("IntersectionObserver" in window)) {
-    // Repli tres ancien navigateur : tout est affiche immediatement.
-    revealTargets.forEach(activate);
-  } else {
-    var observer = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (!entry.isIntersecting) return;
-        activate(entry.target);
-        observer.unobserve(entry.target);
-      });
-    }, { threshold: 0.18, rootMargin: "0px 0px -40px 0px" });
-
-    revealTargets.forEach(function (el) {
-      // Ce qui est deja visible au chargement (le hero) apparait tout de
-      // suite plutot que d'attendre un scroll qui ne viendra peut-etre pas.
-      var rect = el.getBoundingClientRect();
-      if (rect.top < window.innerHeight * 0.9) activate(el);
-      else observer.observe(el);
-    });
-  }
-
-  // ---------------------------------------------------------------
-  // 4. Parallaxe legere (elements decoratifs uniquement) + ombre nav.
-  //    Tout est regroupe dans UNE seule boucle rAF declenchee par le
-  //    scroll : pas de listener concurrent, pas de calcul quand rien
-  //    ne bouge, et transform uniquement (jamais top/left) pour rester
-  //    sur le compositeur.
-  // ---------------------------------------------------------------
-  var parallaxEls = Array.prototype.slice.call(document.querySelectorAll("[data-parallax]"));
-  var nav = document.getElementById("lp-nav");
-  var ticking = false;
-
-  function onFrame() {
-    ticking = false;
-    var y = window.scrollY;
-
-    if (nav) nav.classList.toggle("is-stuck", y > 8);
-
-    if (reduceMotion) return;
-    for (var i = 0; i < parallaxEls.length; i++) {
-      var el = parallaxEls[i];
-      var speed = parseFloat(el.dataset.parallax) || 0;
-      // On ne bouge que ce qui est proche de l'ecran : inutile de
-      // calculer une transform pour un element a 3 ecrans de distance.
-      var rect = el.getBoundingClientRect();
-      if (rect.bottom < -200 || rect.top > window.innerHeight + 200) continue;
-      el.style.transform = "translate3d(0," + (y * speed).toFixed(1) + "px,0)";
-    }
-  }
-
-  function onScroll() {
-    if (!ticking) { ticking = true; requestAnimationFrame(onFrame); }
-  }
-
-  onFrame();
-  window.addEventListener("scroll", onScroll, { passive: true });
-  window.addEventListener("resize", onScroll, { passive: true });
 })();
