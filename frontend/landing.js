@@ -278,7 +278,11 @@
 
     // Le bloc "marge" n'a de sens qu'une fois la piece terminee revelee :
     // on ne le laisse entrer que lorsque la frame O prend la main.
-    if (lateBlock) lateBlock.classList.toggle("is-ready", f.id === "o");
+    if (lateBlock) {
+      var ready = f.id === "o";
+      lateBlock.classList.toggle("is-ready", ready);
+      if (ready && !countersDone) { countersDone = true; runCounters(lateBlock); }
+    }
 
     // L'ecran du bureau n'existe que sur la frame R : il suit exactement
     // son opacite, sinon il flotterait au-dessus des autres plans.
@@ -335,6 +339,26 @@
   var rIndex = 0;
   FRAMES.forEach(function (f, i) { if (f.id === "r") rIndex = i; });
 
+  // Compteurs des chiffres de marge : ils montent une seule fois, quand
+  // la piece terminee vient d'etre revelee.
+  var countersDone = false;
+  function spaced(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " "); }
+  function runCounters(root) {
+    Array.prototype.forEach.call(root.querySelectorAll("[data-count]"), function (el) {
+      var target = Number(el.dataset.count || 0);
+      var pre = el.dataset.prefix || "", suf = el.dataset.suffix || "";
+      if (reduceMotion) { el.textContent = pre + spaced(target) + suf; return; }
+      var start = null, dur = 1250;
+      (function step(now) {
+        if (start === null) start = now;
+        var t = Math.min(1, (now - start) / dur);
+        var eased = 1 - Math.pow(1 - t, 3);
+        el.textContent = pre + spaced(Math.round(target * eased)) + suf;
+        if (t < 1) requestAnimationFrame(step);
+      })(performance.now());
+    });
+  }
+
   var revealEdge = null;
   var phaseEl = document.getElementById("lc-phase");
   var scrim = document.getElementById("lc-scrim");
@@ -363,9 +387,13 @@
     screenSlot = document.createElement("div");
     screenSlot.className = "lc-screen";
     screenSlot.setAttribute("aria-hidden", "true");
-    screenSlot.innerHTML = '<span class="lc-screen-mark"></span>'
+    screenSlot.innerHTML = '<img class="lc-screen-logo" src="' + BASE.replace("frames/", "") + 'logo.webp" alt="" decoding="async">'
+      + '<span class="lc-screen-rule"></span>'
       + '<span class="lc-screen-word">Suite Artisan</span>';
-    document.querySelector(".lc-stage").appendChild(screenSlot);
+    // Dans .lc-layers et non dans .lc-stage : l'ecran doit subir la meme
+    // parallaxe au curseur que la photo, sinon il glisse a cote du
+    // moniteur des que la souris bouge.
+    layers.appendChild(screenSlot);
   }
 
   function placeScreen() {
@@ -392,9 +420,60 @@
   // -------------------------------------------------------------------
   var hasGsap = typeof window.gsap !== "undefined" && typeof window.ScrollTrigger !== "undefined";
 
-  function frame() {
-    render(window.scrollY - filmTop);
+  // --- LISSAGE ------------------------------------------------------
+  // La camera glisse vers la position de scroll au lieu de la suivre au
+  // pixel pres. C'est ce qui separe "une image qui bouge quand je
+  // scrolle" d'un vrai mouvement de camera : la molette donne une
+  // impulsion, le plan la rattrape.
+  var SMOOTH = 0.11;
+  var targetY = 0, currentY = 0, looping = false;
+
+  // Parallaxe au curseur : quelques pixels seulement, mais la scene
+  // cesse d'etre une image plate. Souris uniquement — au doigt, le
+  // pointeur EST le scroll, ca n'aurait aucun sens.
+  var pointerFine = !!(window.matchMedia && window.matchMedia("(pointer: fine)").matches);
+  var tmx = 0, tmy = 0, mx = 0, my = 0;
+
+  function loop() {
+    var dy = targetY - currentY;
+    var dmx = tmx - mx, dmy = tmy - my;
+    currentY += dy * SMOOTH;
+    mx += dmx * 0.07;
+    my += dmy * 0.07;
+    if (Math.abs(dy) < 0.4) currentY = targetY;
+    if (Math.abs(dmx) < 0.002) mx = tmx;
+    if (Math.abs(dmy) < 0.002) my = tmy;
+
+    render(currentY);
     placeScreen();
+    if (pointerFine) {
+      // scale(1.03) : la marge qui evite de decouvrir un bord en
+      // deplacant le calque de quelques pixels.
+      layers.style.transform = "scale(1.03) translate3d("
+        + (-mx * 9).toFixed(2) + "px," + (-my * 6).toFixed(2) + "px,0)";
+    }
+
+    if (currentY === targetY && mx === tmx && my === tmy) { looping = false; return; }
+    requestAnimationFrame(loop);
+  }
+  function kick() { if (!looping) { looping = true; requestAnimationFrame(loop); } }
+
+  function frame() {
+    targetY = window.scrollY - filmTop;
+    currentY = targetY;
+    render(currentY);
+    placeScreen();
+    // Pose l'echelle du calque des le depart : sans cela le scale(1.03)
+    // apparaitrait d'un coup au premier mouvement de souris.
+    if (pointerFine && !reduceMotion) layers.style.transform = "scale(1.03) translate3d(0,0,0)";
+  }
+
+  if (pointerFine && !reduceMotion) {
+    window.addEventListener("pointermove", function (e) {
+      tmx = (e.clientX / window.innerWidth - 0.5) * 2;
+      tmy = (e.clientY / window.innerHeight - 0.5) * 2;
+      kick();
+    }, { passive: true });
   }
 
   if (reduceMotion) {
@@ -420,16 +499,13 @@
       trigger: film,
       start: "top top",
       end: "bottom bottom",
-      onUpdate: function (self) { render(self.progress * filmRange); placeScreen(); },
+      onUpdate: function (self) { targetY = self.progress * filmRange; kick(); },
       onRefresh: function () { measure(); lastIndex = -1; frame(); }
     });
     frame();
   } else {
     measure();
-    var ticking = false;
-    var onScroll = function () {
-      if (!ticking) { ticking = true; requestAnimationFrame(function () { ticking = false; frame(); }); }
-    };
+    var onScroll = function () { targetY = window.scrollY - filmTop; kick(); };
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", function () { measure(); lastIndex = -1; frame(); }, { passive: true });
     frame();
@@ -468,16 +544,24 @@
   // -------------------------------------------------------------------
   // 8. NAV
   // -------------------------------------------------------------------
+  var barFill = document.getElementById("lc-bar-fill");
   var navTick = false;
+  function navFrame() {
+    navTick = false;
+    var y = window.scrollY;
+    if (nav) nav.classList.toggle("is-stuck", y > 24);
+    if (progress) progress.classList.toggle("is-on", y > window.innerHeight * 0.6);
+    if (barFill) {
+      var max = document.documentElement.scrollHeight - window.innerHeight;
+      barFill.style.transform = "scaleX(" + (max > 0 ? Math.min(1, y / max) : 0).toFixed(4) + ")";
+    }
+  }
   window.addEventListener("scroll", function () {
     if (navTick) return;
     navTick = true;
-    requestAnimationFrame(function () {
-      navTick = false;
-      if (nav) nav.classList.toggle("is-stuck", window.scrollY > 24);
-      if (progress) progress.classList.toggle("is-on", window.scrollY > window.innerHeight * 0.6);
-    });
+    requestAnimationFrame(navFrame);
   }, { passive: true });
+  navFrame();
 
   // -------------------------------------------------------------------
   // 9. TARIFS — donnees partagees avec le SaaS (pricing.js), en lecture

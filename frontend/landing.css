@@ -55,6 +55,13 @@
   background: var(--lc-white); color: var(--lc-ink); padding: 12px 20px; border-radius: 999px; font-weight: 600;
 }
 .lc-skip:focus { left: 16px; }
+
+/* Fil de progression de la visite */
+.lc-bar { position: fixed; inset: 0 0 auto 0; height: 2px; z-index: 120; background: rgba(247, 243, 236, .08); }
+.lc-bar span {
+  display: block; height: 100%; transform-origin: 0 50%; transform: scaleX(0);
+  background: linear-gradient(90deg, var(--lc-champagne), #e8d3ab);
+}
 .lc-anchor { position: absolute; top: -80px; }
 
 /* ============================ BOUTONS ============================ */
@@ -65,8 +72,17 @@
   cursor: pointer; white-space: nowrap;
   transition: transform .25s var(--lc-ease), background-color .25s, border-color .25s, color .25s;
 }
-.lc-btn-primary { background: var(--lc-white); color: var(--lc-ink); }
+.lc-btn-primary { background: var(--lc-white); color: var(--lc-ink); position: relative; overflow: hidden; }
 .lc-btn-primary:hover { transform: translateY(-2px); background: #fff; }
+/* Balayage de lumiere au survol : le geste habituel des boutons "metal". */
+@media (prefers-reduced-motion: no-preference) {
+  .lc-btn-primary::after {
+    content: ""; position: absolute; top: 0; bottom: 0; left: -60%; width: 45%;
+    background: linear-gradient(100deg, transparent, rgba(200, 168, 122, .55), transparent);
+    transform: skewX(-18deg); transition: left .65s var(--lc-ease);
+  }
+  .lc-btn-primary:hover::after { left: 125%; }
+}
 .lc-btn-ghost { border-color: rgba(247, 243, 236, .34); color: var(--lc-white); backdrop-filter: blur(6px); }
 .lc-btn-ghost:hover { transform: translateY(-2px); border-color: var(--lc-white); background: rgba(247, 243, 236, .08); }
 .lc-btn-sm { padding: 9px 18px; font-size: .86rem; }
@@ -92,8 +108,17 @@
   font-family: var(--lc-display); font-weight: 600; font-size: 1.06rem; letter-spacing: -.01em;
 }
 .lc-logo-mark {
-  width: 17px; height: 17px; border-radius: 5px; flex-shrink: 0;
-  background: var(--lc-champagne); box-shadow: inset 0 0 0 3px rgba(17, 17, 15, .85);
+  width: 32px; height: 32px; flex-shrink: 0;
+  transition: transform .5s var(--lc-ease);
+}
+.lc-logo:hover .lc-logo-mark { transform: rotate(-8deg) scale(1.06); }
+@media (prefers-reduced-motion: no-preference) {
+  /* Le logo s'installe a l'arrivee plutot que d'apparaitre sec. */
+  .lc-logo-mark { animation: lc-logo-in .9s var(--lc-ease) both; }
+}
+@keyframes lc-logo-in {
+  from { opacity: 0; transform: rotate(-25deg) scale(.7); }
+  to { opacity: 1; transform: none; }
 }
 .lc-nav-links { display: flex; gap: 30px; }
 .lc-nav-links a { font-size: .9rem; color: var(--lc-muted); transition: color .25s; }
@@ -167,19 +192,25 @@
    reellement allumee dans la piece. Son opacite suit celle de la frame R
    (posee par landing.js), sinon elle flotterait sur les autres plans. */
 .lc-screen {
-  position: absolute; z-index: 2; opacity: 0;
-  display: grid; place-content: center; justify-items: center; gap: .62em;
+  position: absolute; z-index: 90; opacity: 0;
+  display: grid; place-content: center; justify-items: center; gap: .34em;
   background: linear-gradient(158deg, #23211c 0%, #14130f 62%, #0d0c0a 100%);
   box-shadow: inset 0 0 2.4em rgba(0, 0, 0, .55), inset 0 .08em 0 rgba(247, 243, 236, .07);
   overflow: hidden;
 }
-.lc-screen-mark {
-  width: 1.5em; height: 1.5em; border-radius: .42em;
-  background: var(--lc-champagne); box-shadow: inset 0 0 0 .26em #14130f;
+/* Reflet diagonal fige : sans lui la dalle parait peinte, pas allumee. */
+.lc-screen::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(122deg, rgba(247, 243, 236, .10) 0%, rgba(247, 243, 236, .02) 34%, transparent 58%);
 }
+.lc-screen-logo { width: 2.5em; height: 2.5em; }
+.lc-screen-rule { width: 1.6em; height: 1px; background: rgba(200, 168, 122, .55); margin: .18em 0 .1em; }
+/* Capitales tres espacees en serif : la signature "artisan haut de gamme",
+   plutot qu'un logotype de start-up. */
 .lc-screen-word {
-  font-family: var(--lc-display); font-weight: 600; font-size: .92em;
-  letter-spacing: .01em; color: var(--lc-white); white-space: nowrap;
+  font-family: var(--lc-display); font-weight: 500; font-size: .58em;
+  text-transform: uppercase; letter-spacing: .34em; text-indent: .34em;
+  color: var(--lc-white); white-space: nowrap;
 }
 
 /* ================= CALQUE DE CONTENU — SCENES 1 A 6 =================
@@ -207,11 +238,24 @@
 
 /* 700px (et non 620) : en dessous, un titre comme "Chaque intervention
    reste reliee" passe sur deux lignes et le H2 en occupe quatre. */
-.lc-block {
-  max-width: 700px;
-  transform: translateY(22px); transition: transform .9s var(--lc-ease);
+.lc-block { max-width: 700px; }
+/* Revelation en cascade : chaque element du bloc monte l'un apres
+   l'autre. Un bloc entier qui apparait d'un coup fait "diapositive" ;
+   decale, ca se lit comme un plan qui se compose. */
+@media (prefers-reduced-motion: no-preference) {
+  .lc-block > *, .lc-scrollcue {
+    opacity: 0; transform: translateY(20px);
+    transition: opacity .85s var(--lc-ease), transform .85s var(--lc-ease);
+  }
+  .lc-scene.is-on .lc-block > *, .lc-scene.is-on .lc-scrollcue { opacity: 1; transform: none; }
+  .lc-scene.is-on .lc-block > *:nth-child(1) { transition-delay: .06s; }
+  .lc-scene.is-on .lc-block > *:nth-child(2) { transition-delay: .14s; }
+  .lc-scene.is-on .lc-block > *:nth-child(3) { transition-delay: .22s; }
+  .lc-scene.is-on .lc-block > *:nth-child(4) { transition-delay: .30s; }
+  .lc-scene.is-on .lc-block > *:nth-child(5) { transition-delay: .38s; }
+  .lc-scene.is-on .lc-block > *:nth-child(6) { transition-delay: .46s; }
+  .lc-scene.is-on .lc-scrollcue { transition-delay: .55s; }
 }
-.lc-scene.is-on .lc-block { transform: none; }
 .lc-block-center { max-width: 760px; margin: 0 auto; text-align: center; }
 .lc-block-right { margin-left: auto; }
 /* Le bloc marge n'entre qu'une fois la piece terminee revelee par le
@@ -259,7 +303,24 @@
   display: flex; align-items: center; gap: 14px;
   font-size: .76rem; letter-spacing: .16em; text-transform: uppercase; color: var(--lc-faint);
 }
-.lc-scrollcue-line { width: 46px; height: 1px; background: linear-gradient(90deg, var(--lc-champagne), transparent); }
+.lc-scrollcue-line {
+  width: 46px; height: 1px; overflow: hidden;
+  background: linear-gradient(90deg, var(--lc-champagne), transparent);
+}
+@media (prefers-reduced-motion: no-preference) {
+  /* Un point de lumiere descend le long du trait : invite a scroller
+     sans agiter une fleche. */
+  .lc-scrollcue-line { position: relative; }
+  .lc-scrollcue-line::after {
+    content: ""; position: absolute; inset: 0; width: 14px;
+    background: var(--lc-white); animation: lc-cue 2.6s var(--lc-ease) infinite;
+  }
+}
+@keyframes lc-cue {
+  0% { transform: translateX(-16px); opacity: 0; }
+  35% { opacity: 1; }
+  100% { transform: translateX(48px); opacity: 0; }
+}
 
 /* ---------- Chips / tags / points ---------- */
 .lc-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 34px; }

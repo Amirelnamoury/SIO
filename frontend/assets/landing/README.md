@@ -1,5 +1,28 @@
 # Assets — landing page publique
 
+## `logo.webp` / `logo-64.png` — la marque
+
+Le logo fourni était un PNG doré **sur fond noir opaque**, inutilisable
+tel quel sur une photo. Il a été détouré sans masque manuel : le logo
+étant clair sur un fond quasi noir, la **luminance de l'image est déjà
+une bonne approximation du masque**. On l'extrait, on écrase le résidu de
+fond avec une rampe linéaire (`linear(1.55, -26)`), puis on la rebranche
+comme canal alpha sur les couleurs d'origine — la texture brossée de l'or
+est donc conservée intacte.
+
+- `logo.webp` — 320 px, transparent, **48 Ko**. En PNG le même rendu
+  pesait 481 Ko : l'or est une texture photographique, le PNG y est très
+  mauvais. Le logo ne dépasse jamais ~60 px à l'écran.
+- `logo-64.png` — 64 px, favicon (3,4 Ko).
+
+Il sert à trois endroits : la navigation, le pied de page, et **l'écran
+du moniteur dans la frame R**, où il est accompagné de « SUITE ARTISAN »
+en capitales espacées.
+
+Pour régénérer après un changement de logo, voir la méthode ci-dessus ;
+le recadrage (`CROP`) doit être ajusté au nouveau fichier.
+
+
 ## `frames/` — les 20 photographies de la visite
 
 La landing (`frontend/landing.html`) est une visite photographique pilotée

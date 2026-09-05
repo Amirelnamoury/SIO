@@ -9,7 +9,7 @@
 <meta property="og:description" content="Clients, devis, factures, chantiers et planning au même endroit. Le logiciel de gestion pensé pour les artisans du bâtiment.">
 <meta property="og:type" content="website">
 <meta name="theme-color" content="#11110f">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%23c8a87a'/%3E%3Crect x='7' y='7' width='18' height='18' rx='5' fill='none' stroke='%2311110f' stroke-width='4'/%3E%3C/svg%3E">
+<link rel="icon" type="image/png" href="assets/landing/logo-64.png">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,16 +19,19 @@
      progressivement par landing.js a mesure que le visiteur descend. -->
 <link rel="preload" as="image" href="assets/landing/frames/frame-a.webp" imagesrcset="assets/landing/frames/frame-a-sm.webp 1100w, assets/landing/frames/frame-a.webp 1920w" imagesizes="100vw" fetchpriority="high">
 
-<link rel="stylesheet" href="landing.css?v=8">
+<link rel="stylesheet" href="landing.css?v=9">
 </head>
 <body class="lc">
 
 <a class="lc-skip" href="#contenu">Aller au contenu principal</a>
 
+<!-- Fil de progression de la visite, en haut de page -->
+<div class="lc-bar" aria-hidden="true"><span id="lc-bar-fill"></span></div>
+
 <header class="lc-nav" id="lc-nav">
   <div class="lc-nav-in">
     <a class="lc-logo" href="landing.html">
-      <span class="lc-logo-mark" aria-hidden="true"></span>
+      <img class="lc-logo-mark" src="assets/landing/logo.webp" alt="" width="320" height="320" decoding="async">
       Suite&nbsp;Artisan
     </a>
     <nav class="lc-nav-links" aria-label="Navigation principale">
@@ -168,10 +171,10 @@
             <p class="lc-eyebrow">Rentabilité</p>
             <h2 class="lc-h2">Gardez la maîtrise<br>de votre marge.</h2>
             <dl class="lc-figures">
-              <div><dt>Budget</dt><dd>8 400 €</dd></div>
-              <div><dt>Dépenses</dt><dd>6 265 €</dd></div>
-              <div><dt>Avancement</dt><dd>100 %</dd></div>
-              <div class="lc-figure-hero"><dt>Marge réelle</dt><dd>+ 2 135 €</dd></div>
+              <div><dt>Budget</dt><dd data-count="8400" data-suffix=" €">8 400 €</dd></div>
+              <div><dt>Dépenses</dt><dd data-count="6265" data-suffix=" €">6 265 €</dd></div>
+              <div><dt>Avancement</dt><dd data-count="100" data-suffix=" %">100 %</dd></div>
+              <div class="lc-figure-hero"><dt>Marge réelle</dt><dd data-count="2135" data-prefix="+ " data-suffix=" €">+ 2 135 €</dd></div>
             </dl>
             <p class="lc-figures-note">Exemple illustratif — vos chiffres réels s'affichent à la place.</p>
             <a href="index.html?tab=register" class="lc-cta-inline">Calculer la marge de mes chantiers</a>
@@ -324,7 +327,7 @@
   <div class="lc-footer-in">
     <div class="lc-footer-brand">
       <a class="lc-logo" href="landing.html">
-        <span class="lc-logo-mark" aria-hidden="true"></span>
+        <img class="lc-logo-mark" src="assets/landing/logo.webp" alt="" width="320" height="320" decoding="async">
         Suite&nbsp;Artisan
       </a>
       <p class="lc-footer-baseline">
@@ -376,6 +379,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script src="pricing.js"></script>
-<script src="landing.js?v=6"></script>
+<script src="landing.js?v=8"></script>
 </body>
 </html>
