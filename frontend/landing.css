@@ -203,14 +203,20 @@
   content: ""; position: absolute; inset: 0; pointer-events: none;
   background: linear-gradient(122deg, rgba(247, 243, 236, .10) 0%, rgba(247, 243, 236, .02) 34%, transparent 58%);
 }
-.lc-screen-logo { width: 2.5em; height: 2.5em; }
-.lc-screen-rule { width: 1.6em; height: 1px; background: rgba(200, 168, 122, .55); margin: .18em 0 .1em; }
+/* 2.2em (et non 2.5) : la dalle mesure 13,6 % de hauteur d'image, le bloc
+   doit y respirer sans toucher les bords. */
+.lc-screen-logo { width: 2.2em; height: 2.2em; }
+.lc-screen-rule { width: 1.5em; height: 1px; background: rgba(200, 168, 122, .55); margin: .14em 0 .08em; }
 /* Capitales tres espacees en serif : la signature "artisan haut de gamme",
    plutot qu'un logotype de start-up. */
 .lc-screen-word {
   font-family: var(--lc-display); font-weight: 500; font-size: .58em;
   text-transform: uppercase; letter-spacing: .34em; text-indent: .34em;
   color: var(--lc-white); white-space: nowrap;
+  /* line-height: 1 — le libelle est tout en capitales : l'interligne par
+     defaut ajoute sous les lettres un vide qui n'existe pas au-dessus, et
+     le bloc parait alors remonte dans la dalle. */
+  line-height: 1;
 }
 
 /* ================= CALQUE DE CONTENU — SCENES 1 A 6 =================

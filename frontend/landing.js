@@ -85,10 +85,16 @@
   // (mesure sur la photo d'origine). On y affiche la marque, pas une
   // capture du SaaS : l'application est en refonte, et y incruster une
   // vieille capture donnerait une fausse idee du produit.
+  // Valeurs mesurees sur la photo (detection de la zone claire et
+  // desaturee de la dalle), et non estimees a l'oeil : la dalle occupe
+  // (947, 494) -> (1211, 640) dans une image de 1920x1072, soit un 16:9
+  // franc. Une premiere estimation donnait 16,4 % de hauteur : le calque
+  // debordait alors sous l'ecran, sur le cadre du moniteur.
   var PRODUCT_SCREEN = {
     enabled: true,
-    left: 48.9, top: 45.4, width: 13.9, height: 16.4
+    left: 49.32, top: 46.08, width: 13.75, height: 13.62
   };
+  var FRAME_AR = 1920 / 1072;
 
   var film = document.getElementById("lc-film");
   var layers = document.getElementById("lc-layers");
@@ -109,7 +115,7 @@
       img.className = "lc-frame";
       img.alt = "";
       img.width = 1920;
-      img.height = 1071;
+      img.height = 1072;
       img.decoding = "async";
       img.dataset.frame = f.id;
       layers.appendChild(img);
@@ -398,7 +404,7 @@
 
   function placeScreen() {
     if (!screenSlot) return;
-    var W = window.innerWidth, H = window.innerHeight, ar = 1920 / 1071;
+    var W = window.innerWidth, H = window.innerHeight, ar = FRAME_AR;
     var w = W, h = W / ar;
     if (h < H) { h = H; w = H * ar; }
     var offX = (W - w) / 2, offY = (H - h) / 2;
