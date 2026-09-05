@@ -438,7 +438,7 @@ input[readonly] { background: var(--sa-surface-2); }
 #view-devis .view-header-actions .btn-primary { order: -1; }
 #view-devis #devis-kpi-band .kpi-card { height: 106px; min-height: 106px; padding: 14px 16px; }
 #view-devis #devis-kpi-band > .kpi-band { margin-bottom: 40px; }
-#view-devis .list-toolbar { flex-wrap: nowrap; gap: 10px; }
+#view-devis .list-toolbar { flex-wrap: nowrap; gap: 10px; margin-bottom: var(--sa-space-4); }
 #view-devis .list-toolbar .list-search { flex: 0 1 460px; width: 460px; max-width: 460px; margin-right: auto; }
 #view-devis .list-toolbar select { flex-shrink: 0; min-width: 0; margin-bottom: 0; }
 #view-devis #devis-statut-filtre { width: 88px; }
@@ -1234,7 +1234,7 @@ input[readonly] { background: var(--sa-surface-2); }
 #view-factures .view-header-actions .btn-archives { border: 1px solid var(--sa-border-strong); padding: 8px 14px; border-radius: var(--sa-radius-sm); color: var(--sa-accent); }
 #view-factures #factures-tresorerie .kpi-card { height: 108px; min-height: 108px; padding-top: 18px; padding-bottom: 18px; }
 #view-factures #facture-filters { margin-bottom: 0; }
-#view-factures .list-toolbar { flex-wrap: nowrap; gap: 10px; }
+#view-factures .list-toolbar { flex-wrap: nowrap; gap: 10px; margin-bottom: var(--sa-space-4); }
 #view-factures .list-toolbar .list-search { flex: 0 1 260px; width: 260px; max-width: 260px; margin-right: auto; }
 #view-factures .list-toolbar select { flex-shrink: 0; min-width: 0; margin-bottom: 0; }
 #view-factures #factures-statut-filtre { width: 108px; }
