@@ -200,14 +200,14 @@
      coin haut-gauche de l'element. */
   position: absolute; opacity: 0; transform-origin: 0 0;
   display: grid; place-content: center; justify-items: center; gap: .34em;
-  background: linear-gradient(158deg, #23211c 0%, #14130f 62%, #0d0c0a 100%);
-  box-shadow: inset 0 0 2.4em rgba(0, 0, 0, .55), inset 0 .08em 0 rgba(247, 243, 236, .07);
+  /* Fond quasi uniforme. Le degrade precedent (#23211c -> #0d0c0a) double
+     par un reflet blanc a 10 % depuis le coin haut-gauche faisait passer la
+     luminance de 34 a gauche a 16 a droite : sur un panneau de cette taille
+     ca ne se lit pas comme un reflet mais comme une salissure grise d'un
+     seul cote. */
+  background: linear-gradient(158deg, #16150f 0%, #100f0a 100%);
+  box-shadow: inset 0 0 2.4em rgba(0, 0, 0, .5), inset 0 .08em 0 rgba(247, 243, 236, .06);
   overflow: hidden;
-}
-/* Reflet diagonal fige : sans lui la dalle parait peinte, pas allumee. */
-.lc-screen::after {
-  content: ""; position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(122deg, rgba(247, 243, 236, .10) 0%, rgba(247, 243, 236, .02) 34%, transparent 58%);
 }
 /* 2.2em (et non 2.5) : la dalle mesure 13,6 % de hauteur d'image, le bloc
    doit y respirer sans toucher les bords. */
