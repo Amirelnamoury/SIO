@@ -272,10 +272,12 @@
       }
       if (i === idx) {
         var scale = fr.from + (fr.to - fr.from) * p;
+        if (i === rIndex) rScale = scale;
         node.style.opacity = "1";
         node.style.transform = "scale(" + scale.toFixed(4) + ")";
         node.style.clipPath = "none";
       } else {
+        if (i === rIndex) rScale = fr.from;
         // Frame suivante : elle entre en fondu, SAUF si la frame
         // courante demande un volet (avant/apres du chantier).
         if (f.reveal) {
@@ -315,6 +317,13 @@
     if (screenSlot) {
       var so = idx === rIndex ? 1 - tp : (idx === rIndex - 1 ? tp : 0);
       screenSlot.style.opacity = so.toFixed(3);
+      // ... et surtout son ECHELLE. La frame R est agrandie de 1.00 a
+      // 1.04 par le Ken Burns : sans reporter ce zoom, le moniteur grandit
+      // et s'ecarte pendant que le calque reste fige, et le noir finit par
+      // mordre sur le cadre. Le decalage n'apparait donc qu'a mesure qu'on
+      // avance dans le plan — ce qui le rendait invisible sur une capture
+      // prise en debut de plan.
+      screenWrap.style.transform = "scale(" + rScale.toFixed(4) + ")";
     }
 
     // Le calque des scenes 1-6 s'eteint AVANT que le contenu du chapitre 7
@@ -364,6 +373,8 @@
   var finalEl = document.querySelector(".lc-chapter-final");
   var rIndex = 0;
   FRAMES.forEach(function (f, i) { if (f.id === "r") rIndex = i; });
+  var rScale = 1;
+  var screenWrap = null;
 
   // Compteurs des chiffres de marge : ils montent une seule fois, quand
   // la piece terminee vient d'etre revelee.
@@ -416,10 +427,18 @@
     screenSlot.innerHTML = '<img class="lc-screen-logo" src="' + BASE.replace("frames/", "") + 'logo.webp" alt="" decoding="async">'
       + '<span class="lc-screen-rule"></span>'
       + '<span class="lc-screen-word">Suite Artisan</span>';
+    // Un conteneur qui rejoue exactement le zoom Ken Burns de la frame R
+    // (meme origine 50% 50%, meme boite que les photos). Le calque garde
+    // ainsi sa propre matrice de perspective, sans avoir a la combiner
+    // avec l'echelle a la main.
+    screenWrap = document.createElement("div");
+    screenWrap.className = "lc-screen-wrap";
+    screenWrap.setAttribute("aria-hidden", "true");
+    screenWrap.appendChild(screenSlot);
     // Dans .lc-layers et non dans .lc-stage : l'ecran doit subir la meme
     // parallaxe au curseur que la photo, sinon il glisse a cote du
     // moniteur des que la souris bouge.
-    layers.appendChild(screenSlot);
+    layers.appendChild(screenWrap);
   }
 
   function placeScreen() {
