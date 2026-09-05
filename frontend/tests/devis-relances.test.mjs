@@ -27,6 +27,7 @@ const context = {
   },
   devisDueIds: new Set(),
   escapeHtml: (value) => String(value ?? ""),
+  monogram: (value) => String(value || "?").slice(0, 2).toUpperCase(),
   fmtEuro: (value) => value == null ? null : `${value} €`,
   fmtDate: () => "29/08/2026",
   hasPlan: (minimum) => plans.indexOf(plan) >= plans.indexOf(minimum),

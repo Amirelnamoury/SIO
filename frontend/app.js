@@ -532,12 +532,16 @@ function switchView(view) {
   // de #dashboard-screen dans le DOM. Meme mecanisme que .active sur les
   // liens de nav ci-dessous.
   document.body.classList.toggle("is-view-dashboard", view === "dashboard");
+  document.body.dataset.view = view;
   document.querySelectorAll(".nav-link").forEach((btn) => btn.classList.toggle("active", btn.dataset.view === view));
+  document.querySelectorAll(".devis-modulebar [data-view]").forEach((btn) => btn.classList.toggle("active", btn.dataset.view === view));
   // Sur mobile, la nav devient une rangee horizontale scrollable : sans ca,
   // l'onglet actif peut rester hors champ apres un changement de vue
   // programmatique (recherche globale, palette de commandes...).
   const activeLink = document.querySelector(`.nav-link[data-view="${view}"]`);
-  if (activeLink) activeLink.scrollIntoView({ inline: "center", block: "nearest" });
+  if (activeLink && window.matchMedia("(max-width: 900px)").matches) {
+    activeLink.scrollIntoView({ inline: "center", block: "nearest" });
+  }
   document.querySelectorAll(".view").forEach((section) => {
     section.hidden = section.id !== `view-${view}`;
   });
@@ -708,15 +712,36 @@ function setupEntrepriseTabs() {
   afficherOngletEntreprise(ongletParDefaut);
 }
 
+function refreshEntrepriseProfileSummary() {
+  const valeurs = [
+    currentArtisan.nom_entreprise, currentArtisan.metier, currentArtisan.email,
+    currentArtisan.telephone, currentArtisan.ville, currentArtisan.code_postal,
+    currentArtisan.adresse, currentArtisan.siret, currentArtisan.assurance_decennale_nom,
+  ];
+  const renseignees = valeurs.filter((valeur) => String(valeur || "").trim()).length;
+  const manquantes = valeurs.length - renseignees;
+  const progression = Math.round((renseignees / valeurs.length) * 100);
+  document.getElementById("enterprise-profile-monogram").textContent = monogram(currentArtisan.nom_entreprise || "SA");
+  document.getElementById("enterprise-profile-name").textContent = currentArtisan.nom_entreprise || "Entreprise";
+  document.getElementById("enterprise-profile-trade").textContent = METIER_LABELS[currentArtisan.metier] || currentArtisan.metier || "";
+  document.getElementById("enterprise-profile-completion-label").textContent = `Profil complété à ${progression}%`;
+  document.getElementById("enterprise-profile-progress").style.width = `${progression}%`;
+  document.getElementById("enterprise-profile-missing").textContent = manquantes
+    ? `${manquantes} information${manquantes > 1 ? "s" : ""} manquante${manquantes > 1 ? "s" : ""}`
+    : "Profil complet";
+}
+
 function loadEntrepriseForm() {
   document.getElementById("ent-nom-entreprise").value = currentArtisan.nom_entreprise || "";
   document.getElementById("ent-metier").value = currentArtisan.metier || "general";
   document.getElementById("ent-telephone").value = currentArtisan.telephone || "";
+  document.getElementById("ent-email").value = currentArtisan.email || "";
   document.getElementById("ent-ville").value = currentArtisan.ville || "";
   document.getElementById("ent-code-postal").value = currentArtisan.code_postal || "";
   document.getElementById("ent-adresse").value = currentArtisan.adresse || "";
   document.getElementById("ent-siret").value = currentArtisan.siret || "";
   document.getElementById("ent-assurance").value = currentArtisan.assurance_decennale_nom || "";
+  refreshEntrepriseProfileSummary();
   loadSiteMedia().catch(showSiteMediaError);
 
   const automationBox = document.getElementById("automatisation-form-box");
@@ -757,6 +782,7 @@ function setupEntrepriseForm() {
         siret: emptyToNull(document.getElementById("ent-siret").value),
         assurance_decennale_nom: emptyToNull(document.getElementById("ent-assurance").value),
       });
+      refreshEntrepriseProfileSummary();
       showToast("Informations enregistrees.");
     } catch (err) {
       errorBox.hidden = false;
@@ -764,6 +790,10 @@ function setupEntrepriseForm() {
     } finally {
       submitBtn.disabled = false;
     }
+  });
+  document.getElementById("entreprise-form-cancel").addEventListener("click", () => {
+    loadEntrepriseForm();
+    document.getElementById("entreprise-form-error").hidden = true;
   });
 }
 
@@ -1286,71 +1316,86 @@ async function loadStatistiques() {
         }).join("")
       : '<div class="dash-empty">Pas encore de contact enregistré.</div>';
 
-    const nbEtapesFunnel = a.funnel_site.length;
-    const funnelHtml = nbEtapesFunnel
-      ? `<div class="stats-funnel">${a.funnel_site.map((e, i) => {
-          const t = nbEtapesFunnel > 1 ? i / (nbEtapesFunnel - 1) : 0;
-          const bg = mixHexColors("#f1ece0", "#c9a06a", t);
-          // Taux de conversion d'une etape a l'autre (etape precedente = 100%),
-          // pas de nouvelle donnee : simple ratio entre deux valeurs deja recues.
-          const precedent = i > 0 ? a.funnel_site[i - 1].nb : 0;
-          const conversion = i > 0 && precedent ? Math.round((e.nb / precedent) * 100) : null;
-          return `${i > 0 ? '<div class="stats-funnel-arrow"><span class="stats-funnel-arrow-glyph">&rarr;</span></div>' : ""}
-          <div class="stats-funnel-step" style="background:${bg};">
-            <div class="stats-funnel-label">${escapeHtml(e.etape)}</div>
-            <div class="stats-funnel-value">${e.nb}${conversion !== null ? ` (${conversion}%)` : ""}</div>
-          </div>`;
-        }).join("")}</div>`
-      : "";
+    const commercialSteps = [
+      { label: "Devis envoyés", nb: a.nb_devis_total },
+      { label: "Devis signés", nb: a.nb_devis_signes },
+      { label: "Clients acquis", nb: a.nb_clients_acquis },
+    ];
+    const commercialFunnelHtml = commercialSteps.map((etape, i) => {
+      const precedent = i > 0 ? commercialSteps[i - 1].nb : 0;
+      const conversion = i > 0 && precedent && etape.nb <= precedent
+        ? Math.round((etape.nb / precedent) * 100)
+        : null;
+      const bg = mixHexColors("#f1ece0", "#c9a06a", i / Math.max(1, commercialSteps.length - 1));
+      return `${i ? '<span class="stats-commercial-arrow" aria-hidden="true">&rarr;</span>' : ""}
+        <div class="stats-commercial-step" style="background:${bg};">
+          <span>${escapeHtml(etape.label)}</span>
+          <strong>${etape.nb}${conversion !== null ? ` (${conversion}%)` : ""}</strong>
+        </div>`;
+    }).join("");
+
+    const recurrentPct = a.nb_clients_acquis
+      ? Math.round((a.nb_clients_recurrents / a.nb_clients_acquis) * 100)
+      : 0;
+    const topSource = a.sources_acquisition.slice().sort((x, y) => y.nb_gagnes - x.nb_gagnes || y.ca - x.ca)[0] || null;
+    const pointsCles = [
+      deltaPct === null
+        ? "Le suivi mensuel sera comparable après deux mois de paiements."
+        : `Le chiffre d'affaires du dernier mois ${deltaPct >= 0 ? "progresse" : "recule"} de ${Math.abs(deltaPct)}% par rapport au mois précédent.`,
+      topSource
+        ? `${CLIENT_SOURCE_LABELS[topSource.source] || topSource.source} est la première source d'acquisition avec ${topSource.nb_gagnes} client${topSource.nb_gagnes > 1 ? "s" : ""} gagné${topSource.nb_gagnes > 1 ? "s" : ""}.`
+        : "Aucune source d'acquisition n'est encore mesurable.",
+      a.montant_impayes > 0
+        ? `${fmtEuro(a.montant_impayes)} restent à encaisser sur les factures ouvertes.`
+        : "Aucun montant impayé sur les factures ouvertes.",
+    ];
 
     container.innerHTML = `
       <div class="stats-ca-panel">
-        <div class="stats-ca-head">
-          <div>
-            <div class="kpi-card-label">Chiffre d'affaires (12 derniers mois)</div>
-            <div class="stats-ca-value">${fmtEuro(caTotal)}</div>
-            ${deltaPct !== null ? `<div class="kpi-card-sub${deltaPct >= 0 ? " is-positive" : " is-alert"}">${deltaPct >= 0 ? "+" : ""}${deltaPct}% vs mois précédent</div>` : ""}
+        <div class="stats-ca-summary">
+          <div class="kpi-card-label">Chiffre d'affaires</div>
+          <div class="stats-ca-value">${fmtEuro(caTotal)}</div>
+          ${deltaPct !== null ? `<div class="kpi-card-sub${deltaPct >= 0 ? " is-positive" : " is-alert"}">${deltaPct >= 0 ? "+" : ""}${deltaPct}% vs mois précédent</div>` : ""}
+        </div>
+        <div class="stats-chart-wrap">${chartHtml}</div>
+        <div class="stats-ca-legend">
+          <span><strong>Encaissé : ${fmtEuro(caTotal)}</strong></span>
+          <span><strong>Pipeline : ${fmtEuro(a.valeur_pipeline)}</strong></span>
+          <span>Encore à encaisser : <strong>${fmtEuro(a.montant_impayes)}</strong></span>
+        </div>
+      </div>
+
+      <div class="stats-panel stats-performance-panel">
+        <h4>Performance commerciale</h4>
+        <div class="stats-performance-grid">
+          <div class="stats-commercial-funnel">${commercialFunnelHtml}</div>
+          <div class="stats-metric-list">
+            <div><span>Taux de signature</span><strong>${a.taux_acceptation}%</strong></div>
+            <div><span>Panier moyen</span><strong>${fmtEuro(a.panier_moyen)}</strong></div>
+            <div><span>Valeur du pipeline</span><strong>${fmtEuro(a.valeur_pipeline)}</strong></div>
           </div>
         </div>
-        ${chartHtml}
       </div>
 
-      <div class="kpi-band">
-        <div class="kpi-card">
-          <div class="kpi-card-label">Taux d'acceptation</div>
-          <div class="kpi-card-value">${a.taux_acceptation}%</div>
-          <div class="kpi-card-sub">${a.nb_devis_signes} signés / ${a.nb_devis_total} envoyés</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-card-label">Panier moyen</div>
-          <div class="kpi-card-value">${fmtEuro(a.panier_moyen)}</div>
-          <div class="kpi-card-sub">Sur devis signés</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-card-label">Valeur du pipeline</div>
-          <div class="kpi-card-value">${fmtEuro(a.valeur_pipeline)}</div>
-          <div class="kpi-card-sub">Prospects actifs</div>
-        </div>
-        <div class="kpi-card${a.montant_impayes > 0 ? " is-highlight" : ""}">
-          <div class="kpi-card-label">Impayés</div>
-          <div class="kpi-card-value${a.montant_impayes > 0 ? " is-alert" : ""}">${fmtEuro(a.montant_impayes)}</div>
-          <div class="kpi-card-sub">Délai moyen : ${a.delai_moyen_paiement_jours !== null ? a.delai_moyen_paiement_jours + " j" : "—"}</div>
-        </div>
-      </div>
-
-      <div class="dash-glance">
-        <div class="dash-glance-col">
+      <div class="stats-lower-grid">
+        <div class="stats-panel">
           <h4>Acquisition clients</h4>
           <div class="acq-source-list">${sourcesHtml}</div>
         </div>
-        <div class="dash-glance-col">
-          <h4>Clients</h4>
-          <div class="dash-row"><span>Clients acquis</span><strong>${a.nb_clients_acquis}</strong></div>
-          <div class="dash-row"><span>Clients récurrents</span><strong>${a.nb_clients_recurrents}</strong></div>
+        <div class="stats-panel">
+          <h4>Clients & paiements</h4>
+          <div class="stats-metric-list stats-client-metrics">
+            <div><span>Clients récurrents</span><strong>${recurrentPct}%</strong></div>
+            <div><span>Délai moyen de paiement</span><strong>${a.delai_moyen_paiement_jours !== null ? a.delai_moyen_paiement_jours + " j" : "—"}</strong></div>
+            <div><span>Montant impayé</span><strong>${fmtEuro(a.montant_impayes)}</strong></div>
+          </div>
         </div>
       </div>
 
-      ${funnelHtml ? `<div class="dash-section"><h3>Entonnoir d'acquisition du site vitrine</h3>${funnelHtml}</div>` : ""}
+      <div class="stats-panel stats-insights-panel">
+        <h4>Points clés</h4>
+        <div class="stats-insights">${pointsCles.map((point) => `<p><span aria-hidden="true">↗</span>${escapeHtml(point)}</p>`).join("")}</div>
+      </div>
     `;
   } catch (err) {
     container.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
@@ -1384,7 +1429,7 @@ function avisResumeHtml(avis, clients) {
   // enregistre - simple difference d'ensembles sur des donnees deja
   // chargees (clientsCache + avis), aucun nouvel appel, aucune invention.
   const idsAvecAvis = new Set(avis.map((a) => a.client_id).filter(Boolean));
-  const aDemander = (clients || []).filter((c) => c.statut === "gagne" && !idsAvecAvis.has(c.id)).slice(0, 4);
+  const aDemander = (clients || []).filter((c) => c.statut === "gagne" && !idsAvecAvis.has(c.id)).slice(0, 2);
 
   const moyenne = avis.length ? avis.reduce((s, a) => s + a.note, 0) / avis.length : null;
   const gaucheHtml = `
@@ -1477,6 +1522,40 @@ function renderAvisCard(a) {
   </div>`;
 }
 
+async function showAvisRequestForm() {
+  const container = document.getElementById("avis-form-container");
+  const clients = (await ensureClientsCache()).filter((client) => client.statut === "gagne");
+  container.innerHTML = `
+    <div class="form-box avis-request-form-box">
+      <h3>Demander un avis</h3>
+      ${clients.length ? `
+        <form id="avis-request-form">
+          <label for="avis-request-client">Client</label>
+          <select id="avis-request-client" required>
+            <option value="">Choisir un client</option>
+            ${clients.map((client) => `<option value="${client.id}">${escapeHtml(client.nom)}</option>`).join("")}
+          </select>
+          <p class="section-hint">Le lien d'avis sera copié pour pouvoir être envoyé au client.</p>
+          <div class="form-actions">
+            <button type="submit" class="btn-sm btn-sm-primary">Copier le lien</button>
+            <button type="button" class="btn-sm" data-action="cancel-avis-form">Annuler</button>
+          </div>
+        </form>`
+        : '<p class="section-hint">Aucun client gagné n’est disponible pour une demande d’avis.</p>'}
+    </div>`;
+  container.hidden = false;
+  container.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  document.getElementById("avis-request-form")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const clientId = parseInt(document.getElementById("avis-request-client").value, 10);
+    if (!clientId) return;
+    await demanderAvisEtCopierLien(clientId);
+    container.hidden = true;
+    container.innerHTML = "";
+  });
+}
+
 function showAvisForm() {
   const container = document.getElementById("avis-form-container");
   container.innerHTML = `
@@ -1534,6 +1613,7 @@ function showAvisForm() {
 
 function setupAvisView() {
   document.querySelector('[data-action="show-avis-form"]').addEventListener("click", showAvisForm);
+  document.querySelector('[data-action="show-avis-request-form"]').addEventListener("click", showAvisRequestForm);
   document.getElementById("avis-filters").addEventListener("click", (e) => {
     const chip = e.target.closest(".filter-chip");
     if (!chip) return;
@@ -1587,6 +1667,7 @@ const NOTIFICATION_TYPE_LABELS = {
 // l'ancienne pastille rouge, seul le regroupement change. Ligne dense
 // plutot qu'un item-card par notification.
 let notificationsCache = [];
+let currentNotificationModule = "";
 
 async function loadNotifications() {
   const list = document.getElementById("notifications-list");
@@ -1616,29 +1697,72 @@ function renderNotificationsFiltered() {
   const base = currentNotificationsFilter === "non-lues" ? notificationsCache.filter((n) => !n.lu)
     : currentNotificationsFilter === "importantes" ? notificationsCache.filter((n) => n.urgent)
     : notificationsCache;
-  if (base.length === 0) {
+  const moduleTypes = {
+    commercial: new Set(["devis_relance", "nouvelle_demande_devis", "message_client"]),
+    gestion: new Set(["facture_relance"]),
+    entreprise: new Set(["conformite"]),
+  };
+  const filtrees = currentNotificationModule
+    ? base.filter((n) => moduleTypes[currentNotificationModule]?.has(n.type))
+    : base;
+  if (filtrees.length === 0) {
     list.innerHTML = '<div class="empty-state">Aucune notification dans cet onglet.</div>';
     return;
   }
-  const importantes = base.filter((n) => n.urgent);
-  const normales = base.filter((n) => !n.urgent);
-  list.innerHTML = `
-    ${importantes.length ? `<div class="notif-group"><p class="notif-group-title">Important</p>${importantes.map(notificationRowHtml).join("")}</div>` : ""}
-    ${normales.length ? `<div class="notif-group"><p class="notif-group-title">À faire</p>${normales.map(notificationRowHtml).join("")}</div>` : ""}
-  `;
+  const aujourdHui = new Date();
+  const hier = new Date(aujourdHui);
+  hier.setDate(hier.getDate() - 1);
+  const memeJour = (iso, date) => {
+    const valeur = new Date(iso);
+    return valeur.getFullYear() === date.getFullYear() && valeur.getMonth() === date.getMonth() && valeur.getDate() === date.getDate();
+  };
+  const groupes = [
+    { label: "À traiter", items: filtrees.filter((n) => n.urgent) },
+    { label: "Aujourd'hui", items: filtrees.filter((n) => !n.urgent && memeJour(n.date, aujourdHui)) },
+    { label: "Hier", items: filtrees.filter((n) => !n.urgent && memeJour(n.date, hier)) },
+    { label: "Plus tôt", items: filtrees.filter((n) => !n.urgent && !memeJour(n.date, aujourdHui) && !memeJour(n.date, hier)) },
+  ];
+  list.innerHTML = groupes.filter((groupe) => groupe.items.length).map((groupe) => `
+    <div class="notif-group">
+      <p class="notif-group-title">${groupe.label} <span>(${groupe.items.length})</span></p>
+      <div class="notif-group-rows">${groupe.items.map(notificationRowHtml).join("")}</div>
+    </div>`).join("");
+}
+
+function fmtNotificationDate(iso) {
+  const valeur = new Date(iso);
+  const maintenant = new Date();
+  const hier = new Date(maintenant);
+  hier.setDate(hier.getDate() - 1);
+  const memeJour = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  const heure = valeur.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  if (memeJour(valeur, maintenant)) return `Aujourd'hui · ${heure}`;
+  if (memeJour(valeur, hier)) return `Hier · ${heure}`;
+  return fmtDate(iso);
 }
 
 function notificationRowHtml(n) {
+  const actionLabels = {
+    devis: "Voir le devis", factures: "Voir la facture", chantiers: "Voir le chantier",
+    entreprise: "Mettre à jour", prospects: n.type === "message_client" ? "Voir le message" : "Voir le prospect",
+  };
   return `
   <div class="notif-row ${n.urgent ? "is-urgent" : ""}">
     <span class="notif-dot"></span>
+    <span class="notif-icon notif-icon-${escapeHtml(n.type)}" aria-hidden="true"><svg viewBox="0 0 24 24" class="nav-icon"><path d="M7 3h10v18H7z"/><path d="M10 8h4M10 12h4M10 16h3"/></svg></span>
     <div class="notif-main">
       <span class="notif-title">${escapeHtml(n.titre)}</span>
       ${n.sous_titre ? `<span class="notif-sub">${escapeHtml(n.sous_titre)}</span>` : ""}
     </div>
-    <span class="badge ${n.urgent ? "badge-red" : "badge-gray"}">${NOTIFICATION_TYPE_LABELS[n.type] || n.type}</span>
+    <time class="notif-date" datetime="${escapeHtml(n.date)}">${fmtNotificationDate(n.date)}</time>
     <button type="button" class="btn-sm" data-action="voir-notification" data-view="${n.view}"
-      data-notification-id="${n.notification_id || ""}" data-client-id="${n.client_id || ""}">Voir</button>
+      data-notification-type="${escapeHtml(n.type)}" data-notification-id="${n.notification_id || ""}" data-client-id="${n.client_id || ""}">${actionLabels[n.view] || "Ouvrir"}</button>
+    <div class="action-menu">
+      <button type="button" class="action-menu-trigger" data-action="toggle-action-menu" aria-haspopup="true" aria-expanded="false" aria-label="Plus d'actions sur cette notification">
+        <svg viewBox="0 0 24 24" class="nav-icon"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg>
+      </button>
+      <div class="action-menu-panel" role="menu"><button type="button" data-action="voir-notification" data-view="${n.view}" data-notification-type="${escapeHtml(n.type)}" data-notification-id="${n.notification_id || ""}" data-client-id="${n.client_id || ""}">Ouvrir</button></div>
+    </div>
   </div>`;
 }
 
@@ -1804,6 +1928,10 @@ function setupNotificationsView() {
     currentNotificationsFilter = chip.dataset.mode;
     renderNotificationsFiltered();
   });
+  document.getElementById("notifications-module-filter").addEventListener("change", (e) => {
+    currentNotificationModule = e.target.value;
+    renderNotificationsFiltered();
+  });
   document.getElementById("notifications-list").addEventListener("click", async (e) => {
     const btn = e.target.closest('[data-action="voir-notification"]');
     if (!btn) return;
@@ -1811,6 +1939,10 @@ function setupNotificationsView() {
       const notificationId = parseInt(btn.dataset.notificationId, 10);
       const clientId = parseInt(btn.dataset.clientId, 10);
       switchView(btn.dataset.view);
+      if (btn.dataset.notificationType === "conformite") {
+        const tab = document.querySelector('#entreprise-tabs [data-tab="conformite"]');
+        if (tab) tab.click();
+      }
       if (btn.dataset.view === "prospects" && Number.isInteger(clientId)) {
         await loadClients();
         await showTimeline(clientId);
@@ -1994,6 +2126,9 @@ function setupGlobalSearch() {
 
 function setupTabs() {
   document.querySelectorAll(".nav-link").forEach((btn) => {
+    btn.addEventListener("click", () => switchView(btn.dataset.view));
+  });
+  document.querySelectorAll(".devis-modulebar [data-view]").forEach((btn) => {
     btn.addEventListener("click", () => switchView(btn.dataset.view));
   });
 }
@@ -2196,7 +2331,7 @@ function dashTaskGroupsHtml(groupes) {
     .map((g) => `
       <div class="task-group">
         <p class="task-group-label">${g.label}</p>
-        <div class="task-feed">${g.items.map(taskRowHtml).join("")}</div>
+        <div class="task-feed">${g.items.slice(0, 2).map(taskRowHtml).join("")}</div>
       </div>`)
     .join("");
 }
@@ -2877,6 +3012,23 @@ function setupClientsView() {
     const btn = e.target.closest('[data-action="voir-timeline"]');
     if (btn) showTimeline(parseInt(btn.dataset.id, 10));
   });
+
+  document.getElementById("btn-new-client")?.addEventListener("click", () => {
+    switchView("prospects");
+    showClientForm();
+  });
+  ["clients-statut-filtre", "clients-projet-filtre", "clients-tri"].forEach((id) => {
+    document.getElementById(id)?.addEventListener("change", () => {
+      currentClientsPage = 1;
+      renderClientsDirectoryPage();
+    });
+  });
+  document.getElementById("clients-pagination")?.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-clients-page]");
+    if (!btn) return;
+    currentClientsPage = parseInt(btn.dataset.clientsPage, 10) || 1;
+    renderClientsDirectoryPage();
+  });
 }
 
 // ===================== Archives (clients/devis/factures/chantiers/documents) =====================
@@ -3028,6 +3180,61 @@ function clientsKpiBandHtml(clients, chantiers) {
   </div>`;
 }
 
+const CLIENTS_PAGE_SIZE = 4;
+let clientsDirectoryCache = { clients: [], chantiers: [], factures: [], devis: [] };
+let currentClientsPage = 1;
+
+function filteredClientsDirectory() {
+  const { clients, chantiers, factures } = clientsDirectoryCache;
+  const statut = document.getElementById("clients-statut-filtre")?.value || "";
+  const projet = document.getElementById("clients-projet-filtre")?.value || "";
+  const tri = document.getElementById("clients-tri")?.value || "recent";
+  const clientChantiers = (id) => chantiers.filter((ch) => ch.client_id === id);
+  const estTermine = (ch) => ["termine", "facture", "paye"].includes(ch.statut);
+
+  const resultat = clients.filter((client) => {
+    const projets = clientChantiers(client.id);
+    const aProjetActif = projets.some((ch) => !estTermine(ch));
+    if (statut === "actif" && !aProjetActif) return false;
+    if (statut === "inactif" && aProjetActif) return false;
+    if (projet === "en_cours" && !aProjetActif) return false;
+    if (projet === "termine" && !projets.some(estTermine)) return false;
+    if (projet === "sans" && projets.length) return false;
+    return true;
+  });
+
+  if (tri === "nom") resultat.sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
+  else if (tri === "ca") resultat.sort((a, b) => {
+    const ca = (id) => factures.filter((f) => f.client_id === id).reduce((s, f) => s + (f.montant_paye || 0), 0);
+    return ca(b.id) - ca(a.id);
+  });
+  else resultat.sort((a, b) => (b.id || 0) - (a.id || 0));
+  return resultat;
+}
+
+function renderClientsDirectoryPage() {
+  const container = document.getElementById("clients-directory");
+  const pagination = document.getElementById("clients-pagination");
+  const { chantiers, factures, devis } = clientsDirectoryCache;
+  const clients = filteredClientsDirectory();
+  const pageCount = Math.max(1, Math.ceil(clients.length / CLIENTS_PAGE_SIZE));
+  currentClientsPage = Math.min(Math.max(1, currentClientsPage), pageCount);
+  const debut = (currentClientsPage - 1) * CLIENTS_PAGE_SIZE;
+  const page = clients.slice(debut, debut + CLIENTS_PAGE_SIZE);
+
+  container.innerHTML = page.length
+    ? page.map((c) => renderClientDirectoryRow(c, chantiers, factures, devis)).join("")
+    : '<div class="empty-state">Aucun client ne correspond à ces filtres.</div>';
+  pagination.innerHTML = clients.length > CLIENTS_PAGE_SIZE
+    ? `<button type="button" class="btn-icon-sm" data-clients-page="1" aria-label="Première page">«</button>
+       <button type="button" class="btn-icon-sm" data-clients-page="${Math.max(1, currentClientsPage - 1)}" aria-label="Page précédente">‹</button>
+       <span>Page ${currentClientsPage} sur ${pageCount}</span>
+       <button type="button" class="btn-icon-sm" data-clients-page="${Math.min(pageCount, currentClientsPage + 1)}" aria-label="Page suivante">›</button>
+       <button type="button" class="btn-icon-sm" data-clients-page="${pageCount}" aria-label="Dernière page">»</button>`
+    : "";
+  reapplyListSearch("clients-search", "#clients-directory .crm-row");
+}
+
 async function loadClientsDirectory() {
   const container = document.getElementById("clients-directory");
   const kpiBand = document.getElementById("clients-kpi-band");
@@ -3048,7 +3255,9 @@ async function loadClientsDirectory() {
       return;
     }
     kpiBand.innerHTML = clientsKpiBandHtml(clients, chantiers);
-    container.innerHTML = clients.map((c) => renderClientDirectoryRow(c, chantiers, factures, devis)).join("");
+    clientsDirectoryCache = { clients, chantiers, factures, devis };
+    currentClientsPage = 1;
+    renderClientsDirectoryPage();
   } catch (err) {
     container.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
   }
@@ -3402,8 +3611,11 @@ function renderDevisCard(d) {
   return `
   <div class="list-row list-row-devis ${isDue ? "is-due" : ""}">
     <div class="list-row-primary">
-      <div class="list-row-title">${escapeHtml(d.client_nom)}</div>
-      <div class="list-row-sub">${escapeHtml(d.titre || d.description || "Sans titre")}</div>
+      <span class="crm-avatar">${escapeHtml(monogram(d.client_nom))}</span>
+      <div class="list-row-primary-copy">
+        <div class="list-row-title">${escapeHtml(d.client_nom)}</div>
+        <div class="list-row-sub">${escapeHtml(d.titre || d.description || "Sans titre")}</div>
+      </div>
     </div>
     <div class="list-row-status"><span class="badge ${meta.badge}">${meta.label}</span></div>
     <div class="list-row-amount">${montantTxt}${d.montant_ttc !== null && d.montant_ttc !== undefined ? '<span class="list-row-amount-sub">TTC</span>' : ""}</div>
@@ -3927,8 +4139,11 @@ function renderFactureCard(f) {
   return `
   <div class="list-row list-row-facture ${f.est_en_retard ? "is-due" : ""}">
     <div class="list-row-primary">
-      <div class="list-row-title">${escapeHtml(f.client_nom)}</div>
-      <div class="list-row-sub">${FACTURE_TYPE_LABELS[f.type] || f.type}</div>
+      <span class="crm-avatar">${escapeHtml(monogram(f.client_nom))}</span>
+      <div class="list-row-primary-copy">
+        <div class="list-row-title">${escapeHtml(f.client_nom)}</div>
+        <div class="list-row-sub">${FACTURE_TYPE_LABELS[f.type] || f.type}</div>
+      </div>
     </div>
     <div class="list-row-numero">${escapeHtml(f.numero)}</div>
     <div class="list-row-status"><span class="badge ${meta.badge}">${meta.label}</span></div>
@@ -4450,6 +4665,9 @@ function chantierMatchesFilter(c, filtre) {
 }
 
 let currentChantierSort = "date_debut_desc";
+let currentChantierAvancement = "";
+let currentChantierClient = "";
+let currentChantierPriorite = "";
 
 // Tri purement client sur des champs deja recus (c.date_debut, c.budget,
 // c.titre) - aucune donnee nouvelle, juste un reordonnancement de
@@ -4458,8 +4676,11 @@ let currentChantierSort = "date_debut_desc";
 // le meme chantiersCache juste avant).
 function chantierSort(chantiers) {
   const c = chantiers.slice();
+  if (currentChantierPriorite === "risque") return c.sort((a, b) => Number(chantierEstASurveiller(b)) - Number(chantierEstASurveiller(a)));
+  if (currentChantierPriorite === "progression") return c.sort((a, b) => (b.progression || 0) - (a.progression || 0));
   if (currentChantierSort === "budget_desc") return c.sort((a, b) => (b.budget || 0) - (a.budget || 0));
   if (currentChantierSort === "titre_asc") return c.sort((a, b) => a.titre.localeCompare(b.titre, "fr"));
+  if (currentChantierSort === "date_debut_asc") return c.sort((a, b) => (a.date_debut || "").localeCompare(b.date_debut || ""));
   return c.sort((a, b) => (b.date_debut || "").localeCompare(a.date_debut || "")); // date_debut_desc, par defaut
 }
 
@@ -4469,7 +4690,15 @@ function renderChantiersListFiltered() {
     const el = document.querySelector(`#chantier-filters [data-statut="${f}"] .filter-chip-count`);
     if (el) el.textContent = `(${chantiersCache.filter((c) => chantierMatchesFilter(c, f)).length})`;
   });
-  const filtres = chantierSort(chantiersCache.filter((c) => chantierMatchesFilter(c, currentChantierFilter)));
+  const filtres = chantierSort(chantiersCache.filter((c) => {
+    if (!chantierMatchesFilter(c, currentChantierFilter)) return false;
+    const progression = Number(c.progression) || 0;
+    if (currentChantierAvancement === "debut" && progression > 25) return false;
+    if (currentChantierAvancement === "milieu" && (progression <= 25 || progression > 75)) return false;
+    if (currentChantierAvancement === "fin" && progression <= 75) return false;
+    if (currentChantierClient && String(c.client_id) !== currentChantierClient) return false;
+    return true;
+  }));
   list.innerHTML = filtres.length ? filtres.map(renderChantierCard).join("") : '<div class="empty-state">Aucun chantier dans cet onglet.</div>';
   focusChantierCard();
   reapplyListSearch("chantiers-search", "#chantiers-list .chantier-card");
@@ -4498,6 +4727,12 @@ async function loadChantiers() {
   try {
     const chantiers = await Api.listChantiers();
     chantiersCache = chantiers;
+    const clientSelect = document.getElementById("chantiers-client-filtre");
+    if (clientSelect) {
+      const clients = [...new Map(chantiers.filter((c) => c.client_id).map((c) => [c.client_id, c.client_nom || `Client ${c.client_id}`])).entries()];
+      clientSelect.innerHTML = '<option value="">Client</option>' + clients.map(([id, nom]) => `<option value="${id}">${escapeHtml(nom)}</option>`).join("");
+      clientSelect.value = currentChantierClient;
+    }
     if (kpiBand) kpiBand.innerHTML = chantiers.length ? chantiersKpiBandHtml(chantiers) : "";
     if (chantiers.length === 0) {
       list.innerHTML = '<div class="empty-state">Aucun chantier pour le moment.</div>';
@@ -4751,12 +4986,8 @@ function chantierActionsHtml(c) {
   items.push({ divider: true });
   items.push({ attrs: `data-action="delete-chantier" data-id="${c.id}"`, label: "Archiver", danger: true });
 
-  const primaireIdx = items.findIndex((it) => it.primaire);
-  const primaireHtml = primaireIdx !== -1
-    ? `<button type="button" class="btn-sm btn-sm-primary" ${items[primaireIdx].attrs}>${items[primaireIdx].label}</button>`
-    : "";
+  const primaireHtml = `<button type="button" class="btn-sm btn-sm-primary" data-action="toggle-chantier-details" data-id="${c.id}" aria-expanded="false">Voir le chantier</button>`;
   const menuHtml = items
-    .filter((it, i) => i !== primaireIdx)
     .map((it) => it.divider
       ? '<div class="action-menu-divider"></div>'
       : `<button type="button"${it.danger ? ' class="is-danger"' : ""} ${it.attrs}>${it.label}</button>`)
@@ -4798,38 +5029,62 @@ function renderChantierCard(c) {
     </div>`)
     .join("");
 
+  const progression = Math.max(0, Math.min(100, Number(c.progression) || 0));
+  const budgetPct = c.budget ? Math.round(((c.total_depenses || 0) / c.budget) * 100) : null;
+  const marge = c.marge_reelle !== null && c.marge_reelle !== undefined ? c.marge_reelle : c.marge_estimee;
+  const estTermine = ["termine", "facture", "paye"].includes(c.statut);
+  const estASurveiller = chantierEstASurveiller(c);
+  const prochaineAction = c.prochaine_action
+    || (c.statut === "a_preparer" && c.date_debut ? `Démarrage ${fmtDate(c.date_debut)}` : "Aucune action planifiée");
+  const rowClass = estASurveiller ? " is-warning" : estTermine ? " is-complete" : "";
+  const statutMeta = CHANTIER_STATUT_META[c.statut] || { badge: "badge-gray", label: c.statut };
+
   return `
-  <div class="item-card chantier-card" data-chantier-id="${c.id}">
-    <div class="item-card-top">
-      <div>
-        <div class="item-title">${escapeHtml(c.titre)}</div>
-        <div class="item-sub">${escapeHtml(c.client_nom || "")}${c.adresse ? " · " + escapeHtml(c.adresse) : ""}</div>
+  <div class="chantier-card chantier-row${rowClass}" data-chantier-id="${c.id}">
+    <div class="chantier-row-identity">
+      <div class="crm-avatar">${escapeHtml(monogram(c.client_nom || c.titre))}</div>
+      <div class="chantier-row-identity-text">
+        <div class="chantier-row-client">${escapeHtml(c.client_nom || "Client non renseigné")}</div>
+        <div class="chantier-row-title">${escapeHtml(c.titre)}</div>
+        <span class="badge ${statutMeta.badge}">${escapeHtml(statutMeta.label)}</span>
       </div>
-      <span class="badge ${(CHANTIER_STATUT_META[c.statut] || {}).badge || "badge-gray"}">${(CHANTIER_STATUT_META[c.statut] || {}).label || c.statut}</span>
     </div>
-    ${c.statut === "termine" ? `<div class="moment-banner"><span>Chantier terminé ! Clôturez-le pour générer la facture finale, demander un avis client et archiver le dossier.</span></div>` : ""}
-    ${aujourdhuiChantierHtml(c)}
-    <div class="item-meta">
-      Début : ${fmtDate(c.date_debut)}
-      ${c.budget !== null ? ` · Budget : ${fmtEuro(c.budget)}` : ""}
-      ${c.marge_estimee !== null ? ` · Marge estimée : ${fmtEuro(c.marge_estimee)}` : ""}
+    <div class="chantier-row-progress-block">
+      <div class="chantier-row-label">Avancement <strong>${progression}%</strong></div>
+      <div class="sante-barre"><div class="remplissage niveau-${progression >= 70 ? "haut" : progression >= 40 ? "moyen" : "bas"}" style="width:${progression}%;"></div></div>
     </div>
-    ${budgetConsommeHtml(c)}
-    ${progressionHtml(c)}
-    ${checklistHtml(c)}
-    ${rentabiliteHtml(c)}
-    ${c.finances_verrouillees ? '<div class="moment-banner"><span>Les données financières sont verrouillées depuis la création de la facture finale.</span></div>' : ""}
-    ${depensesHtml ? `<div class="item-meta">${depensesHtml}</div>` : ""}
-    ${heuresHtml(c)}
-    <div class="notes-list">${notesHtml || '<div class="item-sub">Aucune note pour le moment.</div>'}</div>
-    ${receptionHtml(c)}
-    ${chantierActionsHtml(c)}
-    <div id="chantier-edit-form-${c.id}"></div>
-    <div id="note-form-${c.id}"></div>
-    <div id="depense-form-${c.id}"></div>
-    <div id="heures-form-${c.id}"></div>
-    <div id="reception-form-${c.id}"></div>
-    <div id="cloturer-form-${c.id}"></div>
+    <div class="chantier-row-metric">
+      <span>Budget consommé</span>
+      <strong>${budgetPct === null ? "—" : `${budgetPct}%`}</strong>
+      <small>${c.budget !== null ? `${fmtEuro(c.total_depenses || 0)} sur ${fmtEuro(c.budget)}` : "Budget non renseigné"}</small>
+    </div>
+    <div class="chantier-row-metric chantier-row-margin">
+      <span>${estTermine ? "Marge réelle" : "Marge estimée"}</span>
+      <strong>${marge === null || marge === undefined ? "—" : fmtEuro(marge)}</strong>
+    </div>
+    <div class="chantier-row-next">
+      <span>Prochaine action</span>
+      <strong>${escapeHtml(prochaineAction)}</strong>
+    </div>
+    <div class="chantier-row-actions">${chantierActionsHtml(c)}</div>
+    <div class="chantier-details" id="chantier-details-${c.id}" hidden>
+      ${c.statut === "termine" ? `<div class="moment-banner"><span>Chantier terminé ! Clôturez-le pour générer la facture finale, demander un avis client et archiver le dossier.</span></div>` : ""}
+      ${aujourdhuiChantierHtml(c)}
+      <div class="item-meta">Début : ${fmtDate(c.date_debut)}${c.adresse ? ` · ${escapeHtml(c.adresse)}` : ""}</div>
+      ${checklistHtml(c)}
+      ${rentabiliteHtml(c)}
+      ${c.finances_verrouillees ? '<div class="moment-banner"><span>Les données financières sont verrouillées depuis la création de la facture finale.</span></div>' : ""}
+      ${depensesHtml ? `<div class="item-meta">${depensesHtml}</div>` : ""}
+      ${heuresHtml(c)}
+      <div class="notes-list">${notesHtml || '<div class="item-sub">Aucune note pour le moment.</div>'}</div>
+      ${receptionHtml(c)}
+      <div id="chantier-edit-form-${c.id}"></div>
+      <div id="note-form-${c.id}"></div>
+      <div id="depense-form-${c.id}"></div>
+      <div id="heures-form-${c.id}"></div>
+      <div id="reception-form-${c.id}"></div>
+      <div id="cloturer-form-${c.id}"></div>
+    </div>
   </div>`;
 }
 
@@ -4889,11 +5144,29 @@ function setupChantiersView() {
     document.querySelectorAll("#chantier-filters .filter-chip").forEach((c) => c.classList.remove("active"));
     chip.classList.add("active");
     currentChantierFilter = chip.dataset.statut;
+    document.getElementById("chantiers-statut-filtre").value = currentChantierFilter;
     renderChantiersListFiltered();
   });
 
   document.getElementById("chantiers-sort").addEventListener("change", (e) => {
     currentChantierSort = e.target.value;
+    renderChantiersListFiltered();
+  });
+  document.getElementById("chantiers-statut-filtre").addEventListener("change", (e) => {
+    currentChantierFilter = e.target.value;
+    document.querySelectorAll("#chantier-filters .filter-chip").forEach((chip) => chip.classList.toggle("active", chip.dataset.statut === currentChantierFilter));
+    renderChantiersListFiltered();
+  });
+  document.getElementById("chantiers-avancement-filtre").addEventListener("change", (e) => {
+    currentChantierAvancement = e.target.value;
+    renderChantiersListFiltered();
+  });
+  document.getElementById("chantiers-client-filtre").addEventListener("change", (e) => {
+    currentChantierClient = e.target.value;
+    renderChantiersListFiltered();
+  });
+  document.getElementById("chantiers-priorite-tri").addEventListener("change", (e) => {
+    currentChantierPriorite = e.target.value;
     renderChantiersListFiltered();
   });
 
@@ -4989,7 +5262,13 @@ function setupChantiersView() {
 
     const id = parseInt(btn.dataset.id, 10);
 
-    if (btn.dataset.action === "edit-chantier") {
+    if (btn.dataset.action === "toggle-chantier-details") {
+      const details = document.getElementById(`chantier-details-${id}`);
+      if (!details) return;
+      details.hidden = !details.hidden;
+      btn.setAttribute("aria-expanded", String(!details.hidden));
+      btn.textContent = details.hidden ? "Voir le chantier" : "Masquer le détail";
+    } else if (btn.dataset.action === "edit-chantier") {
       const chantier = chantiersCache.find((c) => c.id === id);
       if (chantier) await showChantierEditForm(chantier);
     } else if (btn.dataset.action === "cancel-chantier-edit") {
@@ -5246,6 +5525,13 @@ function tacheEcheanceMeta(t) {
 
 let tachesCache = [];
 let currentTacheSousFiltre = ""; // "" | en_retard | aujourdhui | cette_semaine (voir tacheGroupe)
+let tachesPrioriteFirst = false;
+
+function sortTachesForDisplay(taches) {
+  if (!tachesPrioriteFirst) return taches;
+  const poids = { urgente: 4, haute: 3, normale: 2, basse: 1 };
+  return taches.slice().sort((a, b) => (poids[b.priorite] || 0) - (poids[a.priorite] || 0));
+}
 
 function renderTachesFiltered() {
   const list = document.getElementById("taches-list");
@@ -5254,7 +5540,7 @@ function renderTachesFiltered() {
     return;
   }
   if (currentTacheFilter !== "a_faire") {
-    list.innerHTML = tachesCache.map(renderTacheRow).join("");
+    list.innerHTML = sortTachesForDisplay(tachesCache).map(renderTacheRow).join("");
     reapplyListSearch("taches-search", "#taches-list .tache-row");
     return;
   }
@@ -5265,7 +5551,7 @@ function renderTachesFiltered() {
     .filter((g) => parGroupe[g] && parGroupe[g].length)
     .map((g) => `
       <div class="tache-groupe-label">${TACHE_GROUPE_LABELS[g]}</div>
-      ${parGroupe[g].map(renderTacheRow).join("")}
+      ${sortTachesForDisplay(parGroupe[g]).map(renderTacheRow).join("")}
     `).join("");
   list.innerHTML = html || '<div class="empty-state">Aucune tâche dans ce filtre.</div>';
   reapplyListSearch("taches-search", "#taches-list .tache-row");
@@ -5379,6 +5665,15 @@ function setupTachesView() {
   });
 
   document.querySelector('[data-action="show-tache-form"]').addEventListener("click", showTacheForm);
+  document.getElementById("taches-focus-filters").addEventListener("click", () => {
+    document.querySelector("#tache-subfilters .subfilter-link")?.focus();
+  });
+  document.getElementById("taches-sort-priority").addEventListener("click", (e) => {
+    tachesPrioriteFirst = !tachesPrioriteFirst;
+    e.currentTarget.classList.toggle("active", tachesPrioriteFirst);
+    e.currentTarget.setAttribute("aria-pressed", String(tachesPrioriteFirst));
+    renderTachesFiltered();
+  });
   document.getElementById("tache-form-container").addEventListener("click", (e) => {
     if (e.target.closest('[data-action="cancel-tache-form"]')) {
       const container = document.getElementById("tache-form-container");
@@ -5434,17 +5729,37 @@ function fmtTaille(octets) {
 }
 
 let documentsCache = [];
+let documentsChantiersCache = [];
 let currentDocumentSort = "date_desc";
+let currentDocumentClient = "";
+let currentDocumentChantier = "";
+let currentDocumentDate = "";
 
 function documentSort(documents) {
   const d = documents.slice();
   if (currentDocumentSort === "nom_asc") return d.sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
+  if (currentDocumentSort === "date_asc") return d.sort((a, b) => a.created_at.localeCompare(b.created_at));
   return d.sort((a, b) => b.created_at.localeCompare(a.created_at)); // date_desc, par defaut
 }
 
 function renderDocumentsListFiltered() {
   const list = document.getElementById("documents-list");
-  const affichees = documentSort(currentDocumentFilter ? documentsCache.filter((d) => d.type === currentDocumentFilter) : documentsCache);
+  const maintenant = new Date();
+  const affichees = documentSort(documentsCache.filter((d) => {
+    if (currentDocumentFilter && d.type !== currentDocumentFilter) return false;
+    if (currentDocumentClient && String(d.client_id || "") !== currentDocumentClient) return false;
+    if (currentDocumentChantier && String(d.chantier_id || "") !== currentDocumentChantier) return false;
+    if (currentDocumentDate) {
+      const dateDocument = new Date(d.created_at);
+      if (currentDocumentDate === "year" && dateDocument.getFullYear() !== maintenant.getFullYear()) return false;
+      if (/^\d+$/.test(currentDocumentDate)) {
+        const limite = new Date(maintenant);
+        limite.setDate(limite.getDate() - Number(currentDocumentDate));
+        if (dateDocument < limite) return false;
+      }
+    }
+    return true;
+  }));
   if (affichees.length === 0) {
     list.innerHTML = '<div class="empty-state">Aucun document dans cet onglet.</div>';
     return;
@@ -5462,12 +5777,20 @@ async function loadDocuments() {
     // (ConformiteOut.alerte/.jours_restants, voir backend/app/schemas.py) -
     // Document lui-meme n'en a aucune. Recuperee ici uniquement pour ce
     // deuxieme compteur, pas pour en faire une echeance "par document".
-    const [documents, , conformite] = await Promise.all([
+    const [documents, clients, chantiers, conformite] = await Promise.all([
       Api.listDocuments(),
       ensureClientsCache(),
+      Api.listChantiers().catch(() => []),
       Api.listConformite().catch(() => []),
     ]);
     documentsCache = documents;
+    documentsChantiersCache = chantiers;
+    const clientSelect = document.getElementById("documents-client-filter");
+    const chantierSelect = document.getElementById("documents-chantier-filter");
+    clientSelect.innerHTML = `<option value="">Client</option>${clients.map((c) => `<option value="${c.id}">${escapeHtml(c.nom)}</option>`).join("")}`;
+    chantierSelect.innerHTML = `<option value="">Chantier</option>${chantiers.map((c) => `<option value="${c.id}">${escapeHtml(c.titre)}</option>`).join("")}`;
+    clientSelect.value = currentDocumentClient;
+    chantierSelect.value = currentDocumentChantier;
     const echeances = conformite.filter((c) => c.alerte).length;
     if (compteur) {
       compteur.innerHTML = documents.length
@@ -5488,7 +5811,8 @@ async function loadDocuments() {
 
 function renderDocumentCard(d) {
   const client = d.client_id ? clientsCache.find((c) => c.id === d.client_id) : null;
-  const lienTxt = client ? `Client : ${escapeHtml(client.nom)}` : "";
+  const chantier = d.chantier_id ? documentsChantiersCache.find((c) => c.id === d.chantier_id) : null;
+  const lienTxt = [client ? escapeHtml(client.nom) : "", chantier ? escapeHtml(chantier.titre) : ""].filter(Boolean).join(" · ");
   const meta = [d.taille_octets ? fmtTaille(d.taille_octets) : null, `Ajouté le ${fmtDate(d.created_at)}`].filter(Boolean).join(" · ");
   const estFichier = !!d.nom_original;
   return `
@@ -5496,9 +5820,10 @@ function renderDocumentCard(d) {
     <span class="doc-row-icon"><svg viewBox="0 0 24 24" class="nav-icon"><path d="M7 2h7l5 5v15H7z"/><path d="M14 2v5h5"/></svg></span>
     <div class="doc-row-body">
       <div class="doc-row-title">${escapeHtml(d.nom)}</div>
-      <div class="doc-row-sub">${lienTxt ? lienTxt + " · " : ""}${meta}</div>
+      <div class="doc-row-sub">${lienTxt || "Sans rattachement"}</div>
     </div>
     <span class="pill ${DOCUMENT_TYPE_PILL[d.type] || "pill-gray"}">${DOCUMENT_TYPE_LABELS[d.type] || d.type}</span>
+    <div class="doc-row-meta">${meta}</div>
     <div class="doc-row-action">
       ${estFichier
         ? `<button type="button" class="btn-sm" data-action="telecharger-document" data-id="${d.id}" data-nom="${escapeHtml(d.nom_original)}">Télécharger</button>`
@@ -5596,6 +5921,28 @@ function setupDocumentsView() {
     document.querySelectorAll("#document-filters .filter-chip").forEach((c) => c.classList.remove("active"));
     chip.classList.add("active");
     currentDocumentFilter = chip.dataset.type;
+    document.getElementById("documents-type-filter").value = currentDocumentFilter;
+    renderDocumentsListFiltered();
+  });
+
+  document.getElementById("documents-type-filter").addEventListener("change", (e) => {
+    currentDocumentFilter = e.target.value;
+    document.querySelectorAll("#document-filters .filter-chip").forEach((chip) => chip.classList.toggle("active", chip.dataset.type === currentDocumentFilter));
+    renderDocumentsListFiltered();
+  });
+
+  document.getElementById("documents-client-filter").addEventListener("change", (e) => {
+    currentDocumentClient = e.target.value;
+    renderDocumentsListFiltered();
+  });
+
+  document.getElementById("documents-chantier-filter").addEventListener("change", (e) => {
+    currentDocumentChantier = e.target.value;
+    renderDocumentsListFiltered();
+  });
+
+  document.getElementById("documents-date-filter").addEventListener("change", (e) => {
+    currentDocumentDate = e.target.value;
     renderDocumentsListFiltered();
   });
 
@@ -5799,7 +6146,7 @@ function planningItemChip(item, compact) {
 // pour les items agreges (evenements + taches + debut de chantier).
 const PLANNING_HOUR_START = 7;
 const PLANNING_HOUR_END = 20; // 13h affichees ; les items hors plage restent visibles, ancres au bord.
-const PLANNING_ROW_H = 44; // px par heure - garder synchronise avec --sa-plan-row-h en CSS.
+const PLANNING_ROW_H = 41; // px par heure - garder synchronise avec les hauteurs CSS.
 
 function planningTimeMinutes(dateVal) {
   const { heure } = planningDateHeureLocale(dateVal);

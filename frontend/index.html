@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260904-reference24">
+<link rel="stylesheet" href="style.css?v=20260905-reference33">
 </head>
 <body>
 
@@ -331,18 +331,47 @@
           <h2>Clients</h2>
           <p class="view-header-desc">L'annuaire de vos affaires gagnées et leur historique.</p>
         </div>
-        <button type="button" class="btn-archives" data-action="voir-archives" data-entite="client">Archives</button>
+        <div class="view-header-actions clients-header-actions">
+          <button type="button" class="btn-archives" data-action="voir-archives" data-entite="client">Archives</button>
+          <button type="button" class="btn-primary" id="btn-new-client">+ Nouveau client</button>
+        </div>
       </div>
       <div id="clients-kpi-band"></div>
-      <div class="list-search">
-        <svg viewBox="0 0 24 24" class="nav-icon list-search-icon"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-        <input type="text" id="clients-search" placeholder="Rechercher un client...">
+      <div class="list-toolbar clients-toolbar">
+        <div class="list-search">
+          <svg viewBox="0 0 24 24" class="nav-icon list-search-icon"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input type="text" id="clients-search" placeholder="Rechercher un client, un chantier...">
+        </div>
+        <select id="clients-statut-filtre" aria-label="Filtrer les clients par activité">
+          <option value="">Statut (Tous)</option>
+          <option value="actif">Actifs</option>
+          <option value="inactif">Sans activité</option>
+        </select>
+        <select id="clients-projet-filtre" aria-label="Filtrer les clients par projet">
+          <option value="">Projets (Tous)</option>
+          <option value="en_cours">Chantier en cours</option>
+          <option value="termine">Chantier terminé</option>
+          <option value="sans">Sans chantier</option>
+        </select>
+        <select id="clients-tri" aria-label="Trier les clients">
+          <option value="recent">Trier par (Récence)</option>
+          <option value="nom">Nom</option>
+          <option value="ca">CA généré</option>
+        </select>
       </div>
       <div id="clients-directory" class="list"></div>
+      <div id="clients-pagination" class="clients-pagination" aria-label="Pagination des clients"></div>
     </section>
 
     <!-- ---------- Section Devis & relances ---------- -->
     <section id="view-devis" class="view" hidden>
+      <nav class="devis-modulebar" aria-label="Navigation commerciale">
+        <span>Devis &amp; devis</span>
+        <button type="button" class="active" data-view="devis">Devis &amp; relances</button>
+        <button type="button" data-view="clients">Clients</button>
+        <span>Commerciaux</span>
+        <span>Contact</span>
+      </nav>
       <div class="view-header">
         <div class="view-header-text">
           <p class="view-header-eyebrow">Commercial</p>
@@ -395,7 +424,7 @@
           <option value="pas_de_relance">Pas de relance due</option>
         </select>
         <select id="devis-sort" aria-label="Trier les devis">
-          <option value="date_desc">Trier par : Date (récent)</option>
+          <option value="date_desc">Trier par</option>
           <option value="montant_desc">Trier par : Montant</option>
           <option value="client_asc">Trier par : Client</option>
         </select>
@@ -519,10 +548,32 @@
           <svg viewBox="0 0 24 24" class="nav-icon list-search-icon"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
           <input type="text" id="chantiers-search" placeholder="Rechercher un chantier, un client...">
         </div>
+        <select id="chantiers-statut-filtre" aria-label="Filtrer par statut">
+          <option value="">Statut</option>
+          <option value="a_preparer">À préparer</option>
+          <option value="en_cours">En cours</option>
+          <option value="a_surveiller">À surveiller</option>
+          <option value="termine">Terminés</option>
+        </select>
+        <select id="chantiers-avancement-filtre" aria-label="Filtrer par avancement">
+          <option value="">Avancement</option>
+          <option value="debut">0 à 25 %</option>
+          <option value="milieu">26 à 75 %</option>
+          <option value="fin">76 à 100 %</option>
+        </select>
+        <select id="chantiers-client-filtre" aria-label="Filtrer par client">
+          <option value="">Client</option>
+        </select>
         <select id="chantiers-sort" aria-label="Trier les chantiers">
           <option value="date_debut_desc">Date de début</option>
+          <option value="date_debut_asc">Date croissante</option>
           <option value="budget_desc">Budget</option>
           <option value="titre_asc">Nom</option>
+        </select>
+        <select id="chantiers-priorite-tri" aria-label="Trier par priorité">
+          <option value="">Trier par Priorité</option>
+          <option value="risque">À surveiller d'abord</option>
+          <option value="progression">Avancement décroissant</option>
         </select>
       </div>
 
@@ -570,9 +621,17 @@
         <button type="button" class="subfilter-link" data-groupe="cette_semaine">Cette semaine</button>
       </div>
 
-      <div class="list-search">
-        <svg viewBox="0 0 24 24" class="nav-icon list-search-icon"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-        <input type="text" id="taches-search" placeholder="Rechercher une tâche, un client...">
+      <div class="taches-search-tools">
+        <div class="list-search">
+          <svg viewBox="0 0 24 24" class="nav-icon list-search-icon"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input type="text" id="taches-search" placeholder="Rechercher une tâche, un client...">
+        </div>
+        <button type="button" class="task-tool-button" id="taches-focus-filters" aria-label="Afficher les filtres" title="Filtres">
+          <svg viewBox="0 0 24 24" class="nav-icon"><path d="M4 5h16l-6 7v5l-4 2v-7z"/></svg>
+        </button>
+        <button type="button" class="task-tool-button" id="taches-sort-priority" aria-pressed="false" aria-label="Trier par priorité" title="Trier par priorité">
+          <svg viewBox="0 0 24 24" class="nav-icon"><path d="M4 7h10M4 12h7M4 17h4"/><path d="M17 6v12m0 0-3-3m3 3 3-3"/></svg>
+        </button>
       </div>
 
       <div id="taches-list" class="list"></div>
@@ -587,8 +646,8 @@
           <p class="view-header-desc">Centralisez et retrouvez tous vos documents professionnels.</p>
         </div>
         <div class="view-header-actions">
-          <button type="button" class="btn-archives" data-action="voir-archives" data-entite="document">Archives</button>
           <button type="button" class="btn-primary" data-action="show-document-form">+ Ajouter un document</button>
+          <button type="button" class="btn-archives" data-action="voir-archives" data-entite="document">Archives</button>
         </div>
       </div>
 
@@ -608,11 +667,30 @@
       <div class="list-toolbar">
         <div class="list-search">
           <svg viewBox="0 0 24 24" class="nav-icon list-search-icon"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-          <input type="text" id="documents-search" placeholder="Rechercher un document, un client...">
+          <input type="text" id="documents-search" placeholder="Rechercher un document, un client, un chantier...">
         </div>
+        <select id="documents-type-filter" aria-label="Filtrer par type">
+          <option value="">Type</option>
+          <option value="contrat">Contrat</option>
+          <option value="attestation">Attestation</option>
+          <option value="assurance">Assurance</option>
+          <option value="photo">Photo</option>
+          <option value="plan">Plan</option>
+          <option value="administratif">Administratif</option>
+          <option value="autre">Autre</option>
+        </select>
+        <select id="documents-client-filter" aria-label="Filtrer par client"><option value="">Client</option></select>
+        <select id="documents-chantier-filter" aria-label="Filtrer par chantier"><option value="">Chantier</option></select>
+        <select id="documents-date-filter" aria-label="Filtrer par date">
+          <option value="">Date</option>
+          <option value="30">30 derniers jours</option>
+          <option value="90">90 derniers jours</option>
+          <option value="year">Cette année</option>
+        </select>
         <select id="documents-sort" aria-label="Trier les documents">
-          <option value="date_desc">Date (récent)</option>
-          <option value="nom_asc">Nom</option>
+          <option value="date_desc">Trier par</option>
+          <option value="date_asc">Trier par : ancien</option>
+          <option value="nom_asc">Trier par : nom</option>
         </select>
       </div>
 
@@ -629,6 +707,7 @@
           <h2>Statistiques</h2>
           <p class="view-header-desc">Analysez les performances et l'évolution de votre activité.</p>
         </div>
+        <span class="stats-period-control" aria-label="Période analysée">12 derniers mois</span>
       </div>
       <div id="statistiques-content"></div>
     </section>
@@ -641,7 +720,15 @@
           <h2>Avis clients</h2>
           <p class="view-header-desc">Collectez, suivez et valorisez la satisfaction de vos clients.</p>
         </div>
-        <button type="button" class="btn-primary" data-action="show-avis-form">+ Saisir un avis</button>
+        <div class="view-header-actions avis-header-actions">
+          <button type="button" class="btn-primary" data-action="show-avis-request-form">+ Demander un avis</button>
+          <div class="action-menu">
+            <button type="button" class="action-menu-trigger" data-action="toggle-action-menu" aria-haspopup="true" aria-expanded="false" aria-label="Plus d'actions sur les avis">
+              <svg viewBox="0 0 24 24" class="nav-icon"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg>
+            </button>
+            <div class="action-menu-panel" role="menu"><button type="button" data-action="show-avis-form">Saisir un avis</button></div>
+          </div>
+        </div>
       </div>
       <p class="section-hint">Avis reçus par téléphone, Google, en personne... ou soumis directement par vos clients via un lien que vous leur envoyez depuis leur fiche.</p>
 
@@ -667,9 +754,9 @@
     <section id="view-entreprise" class="view" hidden>
       <div class="view-header">
         <div class="view-header-text">
-          <p class="view-header-eyebrow">Réglages</p>
+          <p class="view-header-eyebrow">Entreprise</p>
           <h2>Entreprise</h2>
-          <p class="view-header-desc">Informations légales, identité visuelle, équipe et conformité.</p>
+          <p class="view-header-desc">Configurez l'identité, le fonctionnement et la conformité de votre entreprise.</p>
         </div>
       </div>
 
@@ -685,7 +772,19 @@
       </div>
 
       <div class="form-box" id="entreprise-form-box" data-tab-panel="profil">
-        <h3>Mes informations</h3>
+        <div class="enterprise-card-label">Identité de l'entreprise</div>
+        <div class="enterprise-profile-summary">
+          <span class="enterprise-profile-monogram" id="enterprise-profile-monogram">SA</span>
+          <div class="enterprise-profile-identity">
+            <strong id="enterprise-profile-name">Suite Artisan</strong>
+            <span id="enterprise-profile-trade"></span>
+          </div>
+          <div class="enterprise-profile-completion">
+            <span id="enterprise-profile-completion-label">Profil complété</span>
+            <div class="enterprise-profile-progress"><span id="enterprise-profile-progress"></span></div>
+            <small id="enterprise-profile-missing"></small>
+          </div>
+        </div>
         <form id="entreprise-form">
           <div class="form-section">
             <div class="form-section-title">Identité</div>
@@ -706,9 +805,10 @@
             <div class="form-section-title">Coordonnées</div>
             <div class="form-grid">
               <div><label for="ent-telephone">Téléphone</label><input type="tel" id="ent-telephone"></div>
-              <div><label for="ent-ville">Ville</label><input type="text" id="ent-ville"></div>
+              <div><label for="ent-email">Email professionnel</label><input type="email" id="ent-email" readonly></div>
               <div><label for="ent-code-postal">Code postal</label><input type="text" id="ent-code-postal"></div>
-              <div><label for="ent-adresse">Adresse</label><input type="text" id="ent-adresse"></div>
+              <div class="enterprise-address-field"><label for="ent-adresse">Adresse</label><input type="text" id="ent-adresse"></div>
+              <div><label for="ent-ville">Ville</label><input type="text" id="ent-ville"></div>
             </div>
           </div>
           <div class="form-section">
@@ -720,6 +820,7 @@
           </div>
           <p class="field-error" id="entreprise-form-error" hidden></p>
           <div class="form-actions">
+            <button type="button" class="btn-sm" id="entreprise-form-cancel">Annuler</button>
             <button type="submit" class="btn-sm btn-sm-primary">Enregistrer</button>
           </div>
         </form>
@@ -846,15 +947,22 @@
           <p class="view-header-desc">Suivez les événements importants et les actions qui nécessitent votre attention.</p>
         </div>
       </div>
-      <p class="section-hint">Devis à relancer, factures impayées et échéances de conformité, regroupés ici.</p>
       <div class="filters" id="notifications-filters">
         <button type="button" class="filter-chip active" data-mode="toutes">Toutes <span class="filter-chip-count"></span></button>
         <button type="button" class="filter-chip" data-mode="non-lues">Non lues <span class="filter-chip-count"></span></button>
         <button type="button" class="filter-chip" data-mode="importantes">Importantes <span class="filter-chip-count"></span></button>
       </div>
-      <div class="list-search">
-        <svg viewBox="0 0 24 24" class="nav-icon list-search-icon"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-        <input type="text" id="notifications-search" placeholder="Rechercher une notification...">
+      <div class="notifications-tools">
+        <div class="list-search">
+          <svg viewBox="0 0 24 24" class="nav-icon list-search-icon"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input type="text" id="notifications-search" placeholder="Recherche">
+        </div>
+        <select id="notifications-module-filter" aria-label="Filtrer les notifications par module">
+          <option value="">Modules</option>
+          <option value="commercial">Commercial</option>
+          <option value="gestion">Gestion</option>
+          <option value="entreprise">Entreprise</option>
+        </select>
       </div>
       <div id="notifications-list" class="list"></div>
     </section>
@@ -934,7 +1042,7 @@
 <script src="env.js"></script>
 <script src="config.js"></script>
 <script src="pricing.js"></script>
-<script src="api.js?v=20260904-reference24"></script>
-<script src="app.js?v=20260904-reference24"></script>
+<script src="api.js?v=20260905-reference33"></script>
+<script src="app.js?v=20260905-reference33"></script>
 </body>
 </html>
