@@ -109,10 +109,19 @@
   // sens des moindres carres sur les quatre coins ; le rectangle est
   // retreci de 3 px (echelle native) pour absorber la perspective
   // residuelle et ne jamais mordre sur le cadre.
+  // Les QUATRE COINS de la dalle, en % de l'image (elargis de 1 px vers
+  // l'exterieur : mieux vaut mordre d'un pixel sur le cadre noir que
+  // laisser paraitre un pixel de gris sur du noir).
+  //
+  // Une transformation affine ne suffit pas ici : le bord gauche ne se
+  // decale que de 3 px sur la hauteur quand le droit se decale de 8 px.
+  // Une affine ne peut rendre qu'une seule pente et prend donc la
+  // moyenne — elle sur-incline a gauche et sous-incline a droite, d'ou le
+  // gris qui restait en bas a gauche. Il faut une homographie.
   var PRODUCT_SCREEN = {
     enabled: true,
-    left: 49.29, top: 46.24, width: 13.40, height: 13.28,
-    matrix: "matrix(1, -0.0122, 0.0443, 1, 0, 0)"
+    tl: [49.11, 46.16], tr: [62.55, 46.06],
+    br: [63.04, 59.41], bl: [49.28, 59.91]
   };
   var FRAME_AR = 1920 / 1072;
 
@@ -441,18 +450,57 @@
     layers.appendChild(screenWrap);
   }
 
+  // Homographie envoyant le rectangle (0,0)-(W0,H0) sur un quadrilatere
+  // quelconque. C'est la seule transformation capable de rendre deux
+  // bords verticaux de pentes differentes, donc la perspective du
+  // moniteur. Formule classique pour le carre unite, puis remise a
+  // l'echelle du rectangle source.
+  function homography(W0, H0, q) {
+    var x0 = q[0][0], y0 = q[0][1], x1 = q[1][0], y1 = q[1][1];
+    var x2 = q[2][0], y2 = q[2][1], x3 = q[3][0], y3 = q[3][1];
+    var dx1 = x1 - x2, dy1 = y1 - y2;
+    var dx2 = x3 - x2, dy2 = y3 - y2;
+    var sx = x0 - x1 + x2 - x3, sy = y0 - y1 + y2 - y3;
+    var den = dx1 * dy2 - dx2 * dy1;
+    var g = (sx * dy2 - dx2 * sy) / den;
+    var hh = (dx1 * sy - sx * dy1) / den;
+    var a = x1 - x0 + g * x1, b = x3 - x0 + hh * x3, c = x0;
+    var d = y1 - y0 + g * y1, e = y3 - y0 + hh * y3, f = y0;
+    // matrix3d est en colonnes ; on divise par W0/H0 pour partir du
+    // rectangle source plutot que du carre unite.
+    return "matrix3d("
+      + (a / W0) + "," + (d / W0) + ",0," + (g / W0) + ","
+      + (b / H0) + "," + (e / H0) + ",0," + (hh / H0) + ","
+      + "0,0,1,0," + c + "," + f + ",0,1)";
+  }
+
   function placeScreen() {
     if (!screenSlot) return;
     var W = window.innerWidth, H = window.innerHeight, ar = FRAME_AR;
     var w = W, h = W / ar;
     if (h < H) { h = H; w = H * ar; }
     var offX = (W - w) / 2, offY = (H - h) / 2;
-    var sw = w * PRODUCT_SCREEN.width / 100;
-    screenSlot.style.left = (offX + w * PRODUCT_SCREEN.left / 100) + "px";
-    screenSlot.style.top = (offY + h * PRODUCT_SCREEN.top / 100) + "px";
-    screenSlot.style.width = sw + "px";
-    screenSlot.style.height = (h * PRODUCT_SCREEN.height / 100) + "px";
-    screenSlot.style.transform = PRODUCT_SCREEN.matrix;
+    // Les quatre coins ramenes en pixels du viewport
+    var pt = function (p) { return [offX + w * p[0] / 100, offY + h * p[1] / 100]; };
+    var TL = pt(PRODUCT_SCREEN.tl), TR = pt(PRODUCT_SCREEN.tr);
+    var BR = pt(PRODUCT_SCREEN.br), BL = pt(PRODUCT_SCREEN.bl);
+    var hyp = function (a, b) { return Math.hypot(b[0] - a[0], b[1] - a[1]); };
+    // Boite source : les longueurs moyennes du quadrilatere, pour que le
+    // contenu soit mis en page a la bonne echelle avant deformation.
+    var W0 = (hyp(TL, TR) + hyp(BL, BR)) / 2;
+    var H0 = (hyp(TL, BL) + hyp(TR, BR)) / 2;
+    var sw = W0;
+    screenSlot.style.left = TL[0] + "px";
+    screenSlot.style.top = TL[1] + "px";
+    screenSlot.style.width = W0 + "px";
+    screenSlot.style.height = H0 + "px";
+    // Coins exprimes relativement au coin haut-gauche de l'element
+    screenSlot.style.transform = homography(W0, H0, [
+      [0, 0],
+      [TR[0] - TL[0], TR[1] - TL[1]],
+      [BR[0] - TL[0], BR[1] - TL[1]],
+      [BL[0] - TL[0], BL[1] - TL[1]]
+    ]);
     // Tout l'interieur est dimensionne en em : une seule valeur a poser
     // pour que la marque suive la taille reelle du moniteur a l'ecran.
     screenSlot.style.fontSize = (sw * 0.098).toFixed(2) + "px";

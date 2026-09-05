@@ -196,7 +196,9 @@
 .lc-screen-wrap { position: absolute; inset: 0; z-index: 90; transform-origin: 50% 50%; }
 
 .lc-screen {
-  position: absolute; opacity: 0;
+  /* transform-origin 0 0 : l'homographie posee par landing.js part du
+     coin haut-gauche de l'element. */
+  position: absolute; opacity: 0; transform-origin: 0 0;
   display: grid; place-content: center; justify-items: center; gap: .34em;
   background: linear-gradient(158deg, #23211c 0%, #14130f 62%, #0d0c0a 100%);
   box-shadow: inset 0 0 2.4em rgba(0, 0, 0, .55), inset 0 .08em 0 rgba(247, 243, 236, .07);
