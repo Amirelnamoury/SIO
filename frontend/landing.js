@@ -85,14 +85,34 @@
   // (mesure sur la photo d'origine). On y affiche la marque, pas une
   // capture du SaaS : l'application est en refonte, et y incruster une
   // vieille capture donnerait une fausse idee du produit.
-  // Valeurs mesurees sur la photo (detection de la zone claire et
-  // desaturee de la dalle), et non estimees a l'oeil : la dalle occupe
-  // (947, 494) -> (1211, 640) dans une image de 1920x1072, soit un 16:9
-  // franc. Une premiere estimation donnait 16,4 % de hauteur : le calque
-  // debordait alors sous l'ecran, sur le cadre du moniteur.
+  // Emplacement de la dalle, mesure sur la photo.
+  //
+  // Le moniteur n'est PAS d'aplomb : ses coins sont en
+  // (951,500) (1198,504) (1204,635) (953,638), soit un bord haut incline
+  // de 1,15deg et un bord gauche de 0,81deg. Prendre la boite englobante
+  // de ce quadrilatere — ce qui avait ete fait — donne forcement un
+  // rectangle plus grand que la dalle, qui deborde aux coins : c'est ce
+  // qu'on voyait en bas a gauche.
+  //
+  // On utilise donc le rectangle INSCRIT, plus la rotation du moniteur.
+  // Le leger retrait qui subsiste se lit comme la bordure noire de la
+  // dalle, ce qui est realiste.
+  // Coins releves sur la photo :
+  //   TL (943.7, 495.3)  TR (1200.0, 494.3)
+  //   BL (947.1, 641.7)  BR (1209.4, 636.4)
+  // Ce n'est ni un rectangle ni un simple rectangle tourne : le bord haut
+  // mesure 256 px et le bord bas 262 px. Le moniteur est vu en legere
+  // perspective, et les verticales penchent a droite en descendant.
+  //
+  // D'ou la matrice : un `rotate` seul laissait un liseré gris d'un cote
+  // et debordait de l'autre. Les coefficients sont l'ajustement affine au
+  // sens des moindres carres sur les quatre coins ; le rectangle est
+  // retreci de 3 px (echelle native) pour absorber la perspective
+  // residuelle et ne jamais mordre sur le cadre.
   var PRODUCT_SCREEN = {
     enabled: true,
-    left: 49.32, top: 46.08, width: 13.75, height: 13.62
+    left: 49.29, top: 46.24, width: 13.40, height: 13.28,
+    matrix: "matrix(1, -0.0122, 0.0443, 1, 0, 0)"
   };
   var FRAME_AR = 1920 / 1072;
 
@@ -413,6 +433,7 @@
     screenSlot.style.top = (offY + h * PRODUCT_SCREEN.top / 100) + "px";
     screenSlot.style.width = sw + "px";
     screenSlot.style.height = (h * PRODUCT_SCREEN.height / 100) + "px";
+    screenSlot.style.transform = PRODUCT_SCREEN.matrix;
     // Tout l'interieur est dimensionne en em : une seule valeur a poser
     // pour que la marque suive la taille reelle du moniteur a l'ecran.
     screenSlot.style.fontSize = (sw * 0.098).toFixed(2) + "px";
