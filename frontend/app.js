@@ -4857,7 +4857,10 @@ function renderFactureCard(f) {
 
   return `
   <div class="list-row list-row-facture ${f.est_en_retard ? "is-due" : ""}">
-    <div class="list-row-primary">
+    <!-- Le bloc d'identite ouvre la facture en LECTURE : ses lignes et son
+         historique de paiements n'etaient visibles nulle part. -->
+    <div class="list-row-primary est-cliquable" data-action="voir-facture" data-id="${f.id}"
+         role="button" tabindex="0" aria-label="Lire la facture ${escapeHtml(f.numero)} de ${escapeHtml(f.client_nom)}">
       <span class="crm-avatar">${escapeHtml(monogram(f.client_nom))}</span>
       <div class="list-row-primary-copy">
         <div class="list-row-title">${escapeHtml(f.client_nom)}</div>
@@ -4881,6 +4884,135 @@ function renderFactureCard(f) {
     ${historique.length ? `<div class="list-row-banner item-meta">${historique.join(" · ")}</div>` : ""}
     <div id="paiement-form-${f.id}" class="list-row-expand"></div>
   </div>`;
+}
+
+// ---------------------------------------------------------------------
+// DETAIL D'UNE FACTURE — « le reglement »
+// ---------------------------------------------------------------------
+// Meme constat que pour les devis avant qu'on leur donne un ecran de
+// lecture : on pouvait envoyer une facture, la relancer, y enregistrer un
+// paiement, telecharger son PDF - mais pas la LIRE. Ses lignes n'etaient
+// visibles nulle part, et son historique de paiements etait comprime en
+// une seule ligne de texte sous la ligne de liste.
+//
+// FactureOut porte `lignes` ET `paiements` depuis toujours : aucun appel
+// supplementaire n'est necessaire.
+//
+// Ce qui distingue cet ecran de celui d'un devis : un devis raconte une
+// negociation, une facture raconte un ENCAISSEMENT. Le bloc de reglement
+// passe donc avant le document.
+
+/** Le reglement : ce qui a ete encaisse, ce qui reste. C'est la seule
+ *  question qu'on se pose en ouvrant une facture. La barre montre la part
+ *  reglee ; le retard, quand il y en a, se compte en jours. */
+function factureReglementHtml(f) {
+  const paye = f.montant_paye || 0;
+  const restant = f.montant_restant || 0;
+  const pct = f.montant_ttc ? Math.min(100, Math.round((paye / f.montant_ttc) * 100)) : 0;
+  const retard = factureAnciennete(f);
+  const enRetard = retard !== null && retard > 0 && restant > 0;
+
+  return `
+  <div class="fact-reglement">
+    <div class="fact-reglement-tete">
+      <span class="fact-reglement-valeur${enRetard ? " est-retard" : ""}">${restant > 0 ? fmtEuro(restant) : fmtEuro(f.montant_ttc)}</span>
+      <span class="fact-reglement-label">${restant > 0 ? "restent à encaisser" : "encaissés en totalité"}</span>
+    </div>
+    <div class="fact-jauge" role="img" aria-label="${pct} % réglé">
+      <span class="fact-jauge-part" style="width:${pct}%"></span>
+    </div>
+    <p class="fact-reglement-note">
+      ${paye > 0 ? `${fmtEuro(paye)} réglés sur ${fmtEuro(f.montant_ttc)} · ` : `Aucun paiement enregistré · `}
+      ${f.date_echeance
+        ? (enRetard
+          ? `<strong class="est-retard">échéance dépassée de ${retard} j</strong>`
+          : `échéance le ${fmtDate(f.date_echeance)}`)
+        : "aucune échéance fixée"}
+    </p>
+  </div>`;
+}
+
+/** La vie de la facture. Comme pour un devis, les dates existantes
+ *  suffisent - et les paiements s'y intercalent a leur place, ce que la
+ *  ligne de liste ne pouvait pas montrer : on voit enfin qu'un acompte a
+ *  ete verse AVANT la relance, ou l'inverse. */
+function factureVieHtml(f) {
+  const etapes = [];
+  if (f.date_emission) etapes.push({ date: f.date_emission, label: "Facture émise" });
+  if (f.date_envoi) etapes.push({ date: f.date_envoi, label: "Envoyée au client" });
+  (f.paiements || []).forEach((p) => etapes.push({
+    date: p.date_paiement,
+    label: `Paiement de ${fmtEuro(p.montant)} · ${escapeHtml(p.moyen)}${p.reference ? ` · réf. ${escapeHtml(p.reference)}` : ""}`,
+    fort: true,
+  }));
+  if (f.date_derniere_relance) {
+    etapes.push({
+      date: f.date_derniere_relance,
+      label: f.nb_relances > 1 ? `Dernière relance (${f.nb_relances} au total)` : "Relance envoyée",
+    });
+  }
+  if (!etapes.length) return `<p class="fiche-vide">Cette facture vient d'être créée.</p>`;
+
+  etapes.sort((a, b) => new Date(a.date) - new Date(b.date));
+  return `<ol class="devis-vie">${etapes.map((e) => `
+    <li class="devis-vie-etape${e.fort ? " est-forte" : ""}">
+      <time>${fmtDate(e.date)}</time>
+      <span>${e.label}</span>
+    </li>`).join("")}</ol>`;
+}
+
+function factureActionsHtml(f) {
+  const actions = [];
+  if (f.statut === "brouillon") actions.push({ p: true, a: `data-action="envoyer-facture" data-id="${f.id}"`, l: "Marquer envoyée" });
+  if (f.montant_restant > 0 && f.statut !== "brouillon" && f.statut !== "annulee") {
+    actions.push({ p: true, a: `data-action="ajouter-paiement" data-id="${f.id}" data-restant="${f.montant_restant}"`, l: "+ Enregistrer un paiement" });
+  }
+  if (facturesDueIds.has(f.id)) actions.push({ a: `data-action="relancer-facture" data-id="${f.id}"`, l: "Relancer" });
+  if (f.token && f.statut !== "brouillon") actions.push({ a: `data-action="copier-lien-facture" data-token="${escapeHtml(f.token)}"`, l: "Copier le lien client" });
+  actions.push({ a: `data-action="pdf-facture" data-id="${f.id}"`, l: "Télécharger le PDF" });
+  return `<div class="fiche-actions">${actions
+    .map((x) => `<button type="button" class="btn-sm${x.p ? " btn-sm-primary" : ""}" ${x.a}>${x.l}</button>`)
+    .join("")}</div>`;
+}
+
+function showFactureDetail(factureId) {
+  const f = facturesCache.find((x) => x.id === factureId);
+  const panneau = document.getElementById("panel-facture");
+  if (!panneau || !f) return;
+
+  const meta = FACTURE_STATUT_META[f.statut] || { label: f.statut, badge: "badge-gray" };
+  document.getElementById("facture-detail-titre").textContent = f.numero || `Facture #${f.id}`;
+  document.getElementById("facture-detail-sous").textContent =
+    `${f.client_nom} · ${FACTURE_TYPE_LABELS[f.type] || f.type}`;
+
+  // Les lignes et les totaux sont ceux du document, dans la meme forme
+  // qu'un devis : on relit la piece telle que le client la recoit.
+  const lignes = f.lignes || [];
+  const totaux = lignes.length
+    ? devisTotaux(lignes, f.taux_tva, 0, 0)
+    : { brut: f.montant_ht, remise: 0, remisePct: 0, ht: f.montant_ht,
+        tva: Math.round((f.montant_ttc - f.montant_ht) * 100) / 100,
+        tauxTva: f.taux_tva, ttc: f.montant_ttc, acompte: 0, acomptePct: 0 };
+
+  document.getElementById("facture-detail-corps").innerHTML = `
+    <div class="devis-detail-etat">
+      <span class="badge ${meta.badge}">${escapeHtml(meta.label)}</span>
+      ${f.est_en_retard ? '<span class="devis-detail-suivi is-alerte">En retard</span>' : ""}
+    </div>
+
+    ${factureReglementHtml(f)}
+    ${factureActionsHtml(f)}
+    <div id="paiement-form-${f.id}"></div>
+
+    ${lignes.length ? ficheSection("Prestations facturées", devisLignesLectureHtml(lignes)) : ""}
+    <div class="devis-detail-totaux">${devisTotalisateurHtml(totaux)}</div>
+
+    ${f.notes ? ficheSection("Notes", `<p class="devis-detail-notes">${escapeHtml(f.notes)}</p>`) : ""}
+    ${ficheSection("La vie de cette facture", factureVieHtml(f))}
+  `;
+  panneau.hidden = false;
+  panneau.dataset.factureId = factureId;
+  panneau.querySelector(".side-panel-close").focus();
 }
 
 function showPaiementForm(factureId, soldeRestant) {
@@ -5047,10 +5179,18 @@ function setupFacturesView() {
     }
   });
 
-  document.getElementById("factures-list").addEventListener("click", async (e) => {
+  // Un seul gestionnaire pour la liste ET le panneau de lecture : les
+  // actions se comportent pareil des deux cotes, sans renommage.
+  const surActionFacture = async (e) => {
     const btn = e.target.closest("[data-action]");
     if (!btn) return;
     const id = parseInt(btn.dataset.id, 10);
+
+    if (btn.dataset.action === "voir-facture") { showFactureDetail(id); return; }
+    if (btn.dataset.action === "close-facture-detail") {
+      document.getElementById("panel-facture").hidden = true;
+      return;
+    }
 
     if (btn.dataset.action === "envoyer-facture") {
       await withErrorToast(async () => {
@@ -5107,6 +5247,22 @@ function setupFacturesView() {
         showToast(url, false);
       }
     }
+  };
+  document.getElementById("factures-list").addEventListener("click", surActionFacture);
+  const panneauFacture = document.getElementById("panel-facture");
+  panneauFacture.addEventListener("click", (e) => {
+    if (e.target === panneauFacture) { panneauFacture.hidden = true; return; }
+    surActionFacture(e);
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !panneauFacture.hidden) panneauFacture.hidden = true;
+  });
+  document.getElementById("factures-list").addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    const cible = e.target.closest('[data-action="voir-facture"]');
+    if (!cible) return;
+    e.preventDefault();
+    showFactureDetail(parseInt(cible.dataset.id, 10));
   });
 }
 

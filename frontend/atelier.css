@@ -1603,3 +1603,31 @@ label { color: var(--sa-text-muted); }
 .auth-form .btn-primary:hover { background: var(--sa-accent-strong); border-color: var(--sa-accent-strong); }
 .auth-form input, .auth-form select { border-radius: var(--sa-radius-sm); }
 .auth-tab.active { border-bottom-color: var(--sa-laiton); }
+
+/* =====================================================================
+   DETAIL D'UNE FACTURE — « le reglement »
+   ---------------------------------------------------------------------
+   Meme trou que pour les devis : on pouvait envoyer une facture, la
+   relancer, y enregistrer un paiement, telecharger son PDF - mais pas la
+   LIRE. Ses lignes n'etaient visibles nulle part et son historique de
+   paiements tenait en une ligne comprimee sous la ligne de liste.
+
+   Ce qui distingue cet ecran de celui d'un devis : un devis raconte une
+   negociation, une facture raconte un ENCAISSEMENT. Le bloc de reglement
+   passe donc avant le document.
+   ===================================================================== */
+.fact-reglement { padding: var(--sa-space-4) 0 var(--sa-space-5); }
+.fact-reglement-tete { display: flex; align-items: baseline; gap: var(--sa-space-3); flex-wrap: wrap; margin-bottom: 12px; }
+.fact-reglement-valeur {
+  font-family: var(--sa-font-display);
+  font-size: 2rem; font-weight: 500; line-height: 1;
+  color: var(--sa-text); font-variant-numeric: tabular-nums;
+}
+.fact-reglement-valeur.est-retard { color: var(--sa-danger); }
+.fact-reglement-label { font-size: var(--sa-text-sm); color: var(--sa-text-muted); }
+/* La part reglee, sur une piste : c'est la seule question qu'on se pose
+   en ouvrant une facture. */
+.fact-jauge { height: 8px; border-radius: 4px; background: var(--sa-surface-2); overflow: hidden; }
+.fact-jauge-part { display: block; height: 100%; background: var(--sa-success); border-radius: 4px; }
+.fact-reglement-note { margin: 10px 0 0; font-size: var(--sa-text-sm); color: var(--sa-text-muted); }
+.fact-reglement-note .est-retard { color: var(--sa-danger); font-weight: 600; }
