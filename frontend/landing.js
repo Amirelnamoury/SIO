@@ -476,7 +476,16 @@
 
   function placeScreen() {
     if (!screenSlot) return;
-    var W = window.innerWidth, H = window.innerHeight, ar = FRAME_AR;
+    // On mesure la BOITE DU CALQUE, pas la fenetre.
+    //
+    // `window.innerWidth` inclut la barre de defilement, alors que
+    // .lc-layers — la boite que la photo remplit en `object-fit: cover` —
+    // l'exclut. Utiliser innerWidth decalait donc l'ecran d'une demi-barre
+    // (~8 px) des qu'une barre de defilement etait affichee... c'est-a-dire
+    // en navigation normale, mais pas dans le mode responsive des
+    // DevTools, qui n'en affiche pas. offsetWidth/offsetHeight donnent les
+    // dimensions de mise en page, sans subir les transformations.
+    var W = layers.offsetWidth, H = layers.offsetHeight, ar = FRAME_AR;
     var w = W, h = W / ar;
     if (h < H) { h = H; w = H * ar; }
     var offX = (W - w) / 2, offY = (H - h) / 2;
