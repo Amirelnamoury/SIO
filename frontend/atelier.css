@@ -1041,3 +1041,61 @@ label { color: var(--sa-text-muted); }
   .devis-detail-totaux .totalisateur { min-width: 0; width: 100%; }
   .devis-lecture th:nth-child(3), .devis-lecture td:nth-child(3) { display: none; }
 }
+
+/* =====================================================================
+   FACTURES — « la balance agee »
+   ---------------------------------------------------------------------
+   Trois cartes disaient COMBIEN mais jamais DEPUIS QUAND, alors que c'est
+   la seule chose qui compte sur une creance. 1 840 € en retard de cinq
+   jours est un oubli ; les memes 1 840 € en retard de soixante-dix jours
+   sont un probleme de recouvrement. Les deux s'affichaient a l'identique.
+
+   L'encre s'assombrit avec l'anciennete - et chaque tranche porte son
+   libelle, parce qu'une teinte ne doit jamais porter seule une
+   information.
+   ===================================================================== */
+.balance {
+  display: grid;
+  grid-template-columns: minmax(170px, auto) minmax(0, 1fr);
+  gap: var(--sa-space-3) var(--sa-space-8);
+  padding: 22px 0 20px;
+  border-top: 1px solid var(--sa-border);
+  border-bottom: 1px solid var(--sa-border);
+  margin-bottom: var(--sa-space-6);
+}
+.balance-total { display: flex; flex-direction: column; gap: 4px; }
+.balance-total-valeur {
+  font-family: var(--sa-font-display);
+  font-size: 1.85rem; font-weight: 500; line-height: 1;
+  color: var(--sa-text); font-variant-numeric: tabular-nums;
+}
+.balance-total-label { font-size: var(--sa-text-xs); color: var(--sa-text-faint); }
+
+.balance-axe { min-width: 0; }
+.balance-barre { display: flex; gap: 2px; height: 8px; margin-bottom: 14px; }
+.balance-seg { border-radius: 1px; min-width: 4px; }
+/* Quatre valeurs d'une meme progression : de l'ardoise calme a la terre
+   cuite. Le retard se lit comme un assombrissement, pas comme quatre
+   couleurs sans rapport. */
+.balance-seg.est-a_venir, .balance-puce.est-a_venir { background: #9FB0A6; }
+.balance-seg.est-recent, .balance-puce.est-recent { background: #C79A4E; }
+.balance-seg.est-moyen, .balance-puce.est-moyen { background: #B96A45; }
+.balance-seg.est-ancien, .balance-puce.est-ancien { background: var(--sa-danger); }
+
+.balance-legende { display: flex; flex-wrap: wrap; gap: var(--sa-space-6); }
+.balance-tranche { display: grid; grid-template-columns: 8px auto; grid-template-rows: auto auto auto; gap: 1px var(--sa-space-2); align-items: baseline; }
+.balance-tranche.est-vide { opacity: 0.5; }
+.balance-puce { width: 8px; height: 8px; border-radius: 1px; grid-row: 1; align-self: center; }
+.balance-tranche-label { font-size: var(--sa-text-xs); color: var(--sa-text-muted); white-space: nowrap; }
+.balance-tranche-montant { grid-column: 2; font-family: var(--sa-font-display); font-size: var(--sa-text-md); font-weight: 500; color: var(--sa-text); font-variant-numeric: tabular-nums; }
+.balance-tranche-nb { grid-column: 2; font-size: var(--sa-text-2xs); color: var(--sa-text-faint); }
+
+.balance-verdict { grid-column: 1 / -1; margin: 4px 0 0; font-size: var(--sa-text-sm); color: var(--sa-text-muted); }
+.balance-verdict .est-retard { color: var(--sa-danger); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.list-row-echeance.is-alert { color: var(--sa-danger); font-weight: 500; }
+
+@media (max-width: 900px) {
+  .balance { grid-template-columns: 1fr; gap: var(--sa-space-4); }
+  .balance-legende { gap: var(--sa-space-4); }
+}

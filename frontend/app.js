@@ -4601,30 +4601,84 @@ function joursRetard(dateEcheance) {
   return diff > 0 ? diff : null;
 }
 
+// ---------------------------------------------------------------------
+// FACTURES — « la balance agee »
+// ---------------------------------------------------------------------
+// La page ouvrait sur trois cartes : a encaisser, en retard, factures en
+// cours. Elles disaient COMBIEN mais jamais DEPUIS QUAND, alors que c'est
+// la seule chose qui compte sur une creance. 1 840 € en retard de cinq
+// jours est un oubli ; les memes 1 840 € en retard de soixante-dix jours
+// sont un probleme de recouvrement. Les deux s'affichaient a l'identique.
+//
+// La balance agee est la vue que tout gestionnaire connait : le montant
+// du, reparti par anciennete. Elle tient en un objet, et l'encre
+// s'assombrit avec le retard - la couleur dit la gravite, le libelle la
+// nomme (une teinte ne porte jamais seule une information).
+
+const FACTURE_TRANCHES = [
+  { cle: "a_venir", label: "Pas encore échu", min: -Infinity, max: 0 },
+  { cle: "recent", label: "1 à 30 jours", min: 1, max: 30 },
+  { cle: "moyen", label: "31 à 60 jours", min: 31, max: 60 },
+  { cle: "ancien", label: "Plus de 60 jours", min: 61, max: Infinity },
+];
+
+/** Jours de retard d'une facture, negatif si l'echeance est a venir. */
+function factureAnciennete(f) {
+  if (!f.date_echeance) return null;
+  const d = new Date(String(f.date_echeance).slice(0, 10) + "T00:00:00");
+  if (isNaN(d)) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.round((today - d) / 86400000);
+}
+
 function tresorerieHeaderHtml(factures) {
+  // Meme perimetre qu'avant : ce qui reste a encaisser, hors brouillons,
+  // annulees et payees.
   const enCours = factures.filter((f) => !["brouillon", "annulee", "payee"].includes(f.statut));
   if (enCours.length === 0) return "";
-  const aEncaisser = enCours.reduce((s, f) => s + f.montant_restant, 0);
-  const facturesEnRetard = enCours.filter((f) => f.est_en_retard);
-  const enRetard = facturesEnRetard.reduce((s, f) => s + f.montant_restant, 0);
+
+  const total = enCours.reduce((s, f) => s + f.montant_restant, 0);
+  const tranches = FACTURE_TRANCHES.map((t) => {
+    const items = enCours.filter((f) => {
+      const j = factureAnciennete(f);
+      // Une facture sans echeance ne peut pas etre en retard : elle est
+      // rangee avec ce qui n'est pas encore du.
+      if (j === null) return t.cle === "a_venir";
+      return j >= t.min && j <= t.max;
+    });
+    return { ...t, nb: items.length, montant: items.reduce((s, f) => s + f.montant_restant, 0) };
+  });
+
+  const enRetard = tranches.filter((t) => t.cle !== "a_venir").reduce((s, t) => s + t.montant, 0);
+  const nbEnRetard = tranches.filter((t) => t.cle !== "a_venir").reduce((s, t) => s + t.nb, 0);
+
   return `
-  <div class="kpi-band kpi-band-3col">
-    <div class="kpi-card">
-      <div class="kpi-card-label">À encaisser</div>
-      <div class="kpi-card-value">${fmtEuro(aEncaisser)}</div>
-      <div class="kpi-card-sub">${enCours.length} facture${enCours.length > 1 ? "s" : ""}</div>
+  <section class="balance">
+    <div class="balance-total">
+      <span class="balance-total-valeur">${fmtEuro(total)}</span>
+      <span class="balance-total-label">à encaisser sur ${enCours.length} facture${enCours.length > 1 ? "s" : ""}</span>
     </div>
-    <div class="kpi-card${enRetard > 0 ? " is-highlight" : ""}">
-      <div class="kpi-card-label">En retard</div>
-      <div class="kpi-card-value${enRetard > 0 ? " is-alert" : ""}">${fmtEuro(enRetard)}</div>
-      <div class="kpi-card-sub${enRetard > 0 ? " is-alert" : ""}">${facturesEnRetard.length} facture${facturesEnRetard.length > 1 ? "s" : ""}</div>
+    <div class="balance-axe">
+      ${total ? `<div class="balance-barre">
+        ${tranches.filter((t) => t.montant > 0).map((t) => `
+          <span class="balance-seg est-${t.cle}" style="flex:${t.montant}"
+                title="${t.label} : ${fmtEuro(t.montant)}"></span>`).join("")}
+      </div>` : ""}
+      <div class="balance-legende">
+        ${tranches.map((t) => `
+          <span class="balance-tranche${t.nb ? "" : " est-vide"}">
+            <span class="balance-puce est-${t.cle}" aria-hidden="true"></span>
+            <span class="balance-tranche-label">${t.label}</span>
+            <span class="balance-tranche-montant">${t.montant ? fmtEuro(t.montant) : "—"}</span>
+            <span class="balance-tranche-nb">${t.nb ? `${t.nb} facture${t.nb > 1 ? "s" : ""}` : "aucune"}</span>
+          </span>`).join("")}
+      </div>
     </div>
-    <div class="kpi-card">
-      <div class="kpi-card-label">Factures en cours</div>
-      <div class="kpi-card-value">${enCours.length}</div>
-      <div class="kpi-card-sub">Hors brouillons et payées</div>
-    </div>
-  </div>`;
+    <p class="balance-verdict">${enRetard > 0
+      ? `<strong class="est-retard">${fmtEuro(enRetard)}</strong> en retard sur ${nbEnRetard} facture${nbEnRetard > 1 ? "s" : ""}.`
+      : "Aucune facture en retard."}</p>
+  </section>`;
 }
 
 let facturesCache = [];
