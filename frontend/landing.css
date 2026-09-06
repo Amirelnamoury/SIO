@@ -11,14 +11,14 @@
    ===================================================================== */
 
 :root {
-  --lc-ink: #11110f;
-  --lc-ink-2: #151411;
-  --lc-cream: #f2ede4;
+  --lc-ink: #121510;        /* identique a --sa-bg du SaaS */
+  --lc-ink-2: #181c16;      /* identique a --sa-sidebar */
+  --lc-cream: #f2ede3;
   --lc-white: #f7f3ec;
   --lc-muted: rgba(247, 243, 236, .66);
   --lc-faint: rgba(247, 243, 236, .42);
-  --lc-champagne: #c8a87a;
-  --lc-champagne-soft: rgba(200, 168, 122, .16);
+  --lc-champagne: #d6af68;  /* accent commun a toute la marque */
+  --lc-champagne-soft: rgba(214, 175, 104, .16);
   --lc-line: rgba(247, 243, 236, .16);
 
   --lc-display: "Fraunces", Georgia, "Times New Roman", serif;
@@ -78,7 +78,7 @@
 @media (prefers-reduced-motion: no-preference) {
   .lc-btn-primary::after {
     content: ""; position: absolute; top: 0; bottom: 0; left: -60%; width: 45%;
-    background: linear-gradient(100deg, transparent, rgba(200, 168, 122, .55), transparent);
+    background: linear-gradient(100deg, transparent, rgba(214, 175, 104, .55), transparent);
     transform: skewX(-18deg); transition: left .65s var(--lc-ease);
   }
   .lc-btn-primary:hover::after { left: 125%; }
@@ -94,10 +94,10 @@
    sur n'importe quelle photo, sans avoir a inverser les couleurs. */
 .lc-nav::before {
   content: ""; position: absolute; inset: 0 0 -40px 0; pointer-events: none;
-  background: linear-gradient(180deg, rgba(17, 17, 15, .72), rgba(17, 17, 15, 0));
+  background: linear-gradient(180deg, rgba(18, 21, 16, .72), rgba(18, 21, 16, 0));
   transition: opacity .4s;
 }
-.lc-nav.is-stuck { background: rgba(17, 17, 15, .78); backdrop-filter: blur(14px); }
+.lc-nav.is-stuck { background: rgba(18, 21, 16, .78); backdrop-filter: blur(14px); }
 .lc-nav.is-stuck::before { opacity: 0; }
 .lc-nav-in {
   position: relative; max-width: var(--lc-max); margin: 0 auto; padding: 18px 32px;
@@ -163,8 +163,8 @@
   position: absolute; inset: 0; z-index: 4; pointer-events: none;
   transition: opacity .6s var(--lc-ease), background .6s var(--lc-ease);
   background:
-    linear-gradient(180deg, rgba(17, 17, 15, .34) 0%, rgba(17, 17, 15, 0) 26%),
-    radial-gradient(120% 90% at 50% 50%, rgba(17, 17, 15, 0) 42%, rgba(17, 17, 15, .38) 100%);
+    linear-gradient(180deg, rgba(18, 21, 16, .34) 0%, rgba(18, 21, 16, 0) 26%),
+    radial-gradient(120% 90% at 50% 50%, rgba(18, 21, 16, 0) 42%, rgba(18, 21, 16, .38) 100%);
 }
 /* Le hero est le seul plan ou le texte tombe sur un ciel clair : le
    degre lateral y est plus soutenu, sinon le titre blanc disparait. */
@@ -212,7 +212,7 @@
 /* 2.2em (et non 2.5) : la dalle mesure 13,6 % de hauteur d'image, le bloc
    doit y respirer sans toucher les bords. */
 .lc-screen-logo { width: 2.2em; height: 2.2em; }
-.lc-screen-rule { width: 1.5em; height: 1px; background: rgba(200, 168, 122, .55); margin: .14em 0 .08em; }
+.lc-screen-rule { width: 1.5em; height: 1px; background: rgba(214, 175, 104, .55); margin: .14em 0 .08em; }
 /* Capitales tres espacees en serif : la signature "artisan haut de gamme",
    plutot qu'un logotype de start-up. */
 .lc-screen-word {
@@ -303,7 +303,7 @@
 .lc-cta-inline {
   display: inline-flex; align-items: center; gap: 10px; margin-top: 30px;
   font-size: .92rem; font-weight: 600; color: var(--lc-white);
-  padding-bottom: 6px; border-bottom: 1px solid rgba(200, 168, 122, .5);
+  padding-bottom: 6px; border-bottom: 1px solid rgba(214, 175, 104, .5);
   transition: border-color .3s, gap .3s var(--lc-ease);
 }
 .lc-cta-inline::after { content: "→"; color: var(--lc-champagne); transition: transform .3s var(--lc-ease); }
@@ -338,7 +338,7 @@
 .lc-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 34px; }
 .lc-chips li {
   padding: 8px 18px; border: 1px solid var(--lc-line); border-radius: 999px;
-  font-size: .84rem; color: var(--lc-white); background: rgba(17, 17, 15, .28); backdrop-filter: blur(4px);
+  font-size: .84rem; color: var(--lc-white); background: rgba(18, 21, 16, .28); backdrop-filter: blur(4px);
 }
 .lc-points { margin-top: 28px; display: grid; gap: 13px; }
 .lc-points li { position: relative; padding-left: 24px; color: var(--lc-muted); font-size: .98rem; }
@@ -350,7 +350,7 @@
 .lc-tags li {
   font-size: .74rem; letter-spacing: .09em; text-transform: uppercase;
   color: var(--lc-champagne); background: var(--lc-champagne-soft);
-  border: 1px solid rgba(200, 168, 122, .3); padding: 6px 13px; border-radius: 4px;
+  border: 1px solid rgba(214, 175, 104, .3); padding: 6px 13px; border-radius: 4px;
 }
 
 /* ---------- Avant / pendant / apres ---------- */
@@ -370,11 +370,11 @@
 .lc-figures { margin-top: 30px; display: grid; grid-template-columns: repeat(2, minmax(0, 190px)); gap: 12px; }
 .lc-figures > div {
   padding: 15px 18px; border: 1px solid var(--lc-line); border-radius: 10px;
-  background: rgba(17, 17, 15, .5); backdrop-filter: blur(8px);
+  background: rgba(18, 21, 16, .5); backdrop-filter: blur(8px);
 }
 .lc-figures dt { font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--lc-faint); }
 .lc-figures dd { margin: 5px 0 0; font-family: var(--lc-display); font-size: 1.5rem; font-variant-numeric: tabular-nums; }
-.lc-figure-hero { border-color: rgba(200, 168, 122, .42) !important; }
+.lc-figure-hero { border-color: rgba(214, 175, 104, .42) !important; }
 .lc-figure-hero dd { color: var(--lc-champagne); }
 .lc-figures-note { margin-top: 14px; font-size: .78rem; color: var(--lc-faint); font-style: italic; }
 
@@ -411,7 +411,7 @@
 
 .lc-trades { margin-top: 44px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--lc-line); border: 1px solid var(--lc-line); }
 .lc-trades li {
-  background: rgba(17, 17, 15, .55); padding: 26px 20px;
+  background: rgba(18, 21, 16, .55); padding: 26px 20px;
   font-family: var(--lc-display); font-size: 1.06rem;
 }
 
@@ -420,9 +420,9 @@
 .lc-plan {
   position: relative; display: flex; flex-direction: column;
   padding: 28px 24px; border: 1px solid var(--lc-line); border-radius: 14px;
-  background: rgba(17, 17, 15, .55); backdrop-filter: blur(8px);
+  background: rgba(18, 21, 16, .55); backdrop-filter: blur(8px);
 }
-.lc-plan.is-reco { border-color: rgba(200, 168, 122, .5); background: rgba(200, 168, 122, .07); }
+.lc-plan.is-reco { border-color: rgba(214, 175, 104, .5); background: rgba(214, 175, 104, .07); }
 .lc-plan-badge {
   position: absolute; top: -10px; left: 24px;
   font-size: .64rem; letter-spacing: .12em; text-transform: uppercase; font-weight: 600;
@@ -442,8 +442,8 @@
    palier de plus : encadre, sur un fond distinct des cartes de tarifs. */
 .lc-offer {
   margin-top: 42px; display: grid; grid-template-columns: 1.25fr .75fr; gap: 44px;
-  padding: 38px 40px; border: 1px solid rgba(200, 168, 122, .34); border-radius: 16px;
-  background: linear-gradient(140deg, rgba(200, 168, 122, .09), rgba(17, 17, 15, .6));
+  padding: 38px 40px; border: 1px solid rgba(214, 175, 104, .34); border-radius: 16px;
+  background: linear-gradient(140deg, rgba(214, 175, 104, .09), rgba(18, 21, 16, .6));
   backdrop-filter: blur(8px);
 }
 .lc-offer-main .lc-lead { margin-top: 0; }
@@ -454,17 +454,17 @@
 .lc-offer-price {
   position: relative; flex: 1 1 210px;
   padding: 16px 18px; border: 1px solid var(--lc-line); border-radius: 12px;
-  background: rgba(17, 17, 15, .4);
+  background: rgba(18, 21, 16, .4);
 }
 .lc-offer-price.is-option {
-  border-style: dashed; border-color: rgba(200, 168, 122, .5);
-  background: rgba(200, 168, 122, .06);
+  border-style: dashed; border-color: rgba(214, 175, 104, .5);
+  background: rgba(214, 175, 104, .06);
 }
 .lc-offer-flag {
   display: inline-block; margin-bottom: 8px;
   font-size: .64rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase;
   color: var(--lc-champagne); background: var(--lc-champagne-soft);
-  border: 1px solid rgba(200, 168, 122, .42); border-radius: 999px; padding: 3px 10px;
+  border: 1px solid rgba(214, 175, 104, .42); border-radius: 999px; padding: 3px 10px;
 }
 .lc-offer-amount { display: block; font-family: var(--lc-display); font-size: 2.1rem; font-weight: 500; line-height: 1.1; }
 .lc-offer-unit { display: block; margin-top: 5px; font-size: .84rem; color: var(--lc-muted); }
@@ -563,8 +563,8 @@
 /* Marqueur visible pour tout ce qui doit encore etre renseigne par
    l'editeur du site : impossible de le laisser passer en production. */
 .lc-todo {
-  display: inline-block; background: rgba(200, 168, 122, .16); color: var(--lc-champagne);
-  border: 1px dashed rgba(200, 168, 122, .5); border-radius: 4px;
+  display: inline-block; background: rgba(214, 175, 104, .16); color: var(--lc-champagne);
+  border: 1px dashed rgba(214, 175, 104, .5); border-radius: 4px;
   padding: 1px 8px; font-size: .86em; font-weight: 600;
 }
 .lc-legal-back { display: inline-flex; align-items: center; gap: 9px; margin-top: 56px; font-size: .9rem; }
@@ -618,7 +618,7 @@
 /* Le voile global etant desactive, chaque section porte le sien. */
 .lc-static .lc-scene::before {
   content: ""; position: absolute; inset: 0;
-  background: linear-gradient(90deg, rgba(17, 17, 15, .86) 0%, rgba(17, 17, 15, .55) 55%, rgba(17, 17, 15, .35) 100%);
+  background: linear-gradient(90deg, rgba(18, 21, 16, .86) 0%, rgba(18, 21, 16, .55) 55%, rgba(18, 21, 16, .35) 100%);
 }
 /* `height: 100%` dans un parent de hauteur auto ne vaut rien : sans
    min-height, `align-content: center` n'a rien a centrer et le texte se
@@ -626,7 +626,7 @@
 .lc-static .lc-scene-in { position: relative; z-index: 1; height: auto; min-height: 100vh; padding-block: 14vh; }
 .lc-static .lc-chapter-final { background-size: cover; background-position: center; background-attachment: local; }
 .lc-static .lc-chapter-final::before {
-  content: ""; position: absolute; inset: 0; background: rgba(17, 17, 15, .86);
+  content: ""; position: absolute; inset: 0; background: rgba(18, 21, 16, .86);
 }
 .lc-static .lc-final { position: relative; z-index: 1; }
 .lc-static .lc-phase span { position: static; opacity: 1; transform: none; display: inline; margin-right: .5em; }

@@ -21,12 +21,12 @@
 @import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap");
 
 .auth-screen {
-  --auth-ink: #11110f;
-  --auth-ink-2: #171612;
+  --auth-ink: #121510;   /* identique a --sa-bg */
+  --auth-ink-2: #181c16; /* identique a --sa-sidebar */
   --auth-white: #f7f3ec;
   --auth-muted: rgba(247, 243, 236, .66);
   --auth-faint: rgba(247, 243, 236, .42);
-  --auth-champagne: #c8a87a;
+  --auth-champagne: #d6af68;  /* accent commun a toute la marque */
   --auth-line: rgba(247, 243, 236, .14);
   --auth-line-strong: rgba(247, 243, 236, .28);
   --auth-display: "Fraunces", Georgia, serif;
@@ -69,8 +69,8 @@
 .auth-screen .auth-brand-panel::after {
   content: ""; position: absolute; inset: 0;
   background:
-    linear-gradient(180deg, rgba(17, 17, 15, .58) 0%, rgba(17, 17, 15, .18) 34%, rgba(17, 17, 15, .92) 100%),
-    linear-gradient(90deg, rgba(17, 17, 15, .55), rgba(17, 17, 15, .10));
+    linear-gradient(180deg, rgba(18, 21, 16, .58) 0%, rgba(18, 21, 16, .18) 34%, rgba(18, 21, 16, .92) 100%),
+    linear-gradient(90deg, rgba(18, 21, 16, .55), rgba(18, 21, 16, .10));
 }
 .auth-screen .auth-brand-content { position: relative; z-index: 1; max-width: 420px; }
 
@@ -166,12 +166,12 @@
 .auth-screen .auth-form select:focus {
   outline: none; border-color: var(--auth-champagne);
   background: rgba(247, 243, 236, .07);
-  box-shadow: 0 0 0 3px rgba(200, 168, 122, .16);
+  box-shadow: 0 0 0 3px rgba(214, 175, 104, .16);
 }
 /* La fleche native du select est noire sur fond sombre : on la remplace. */
 .auth-screen .auth-form select {
   appearance: none; -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23c8a87a' stroke-width='1.6'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23d6af68' stroke-width='1.6'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 14px center;
   padding-right: 38px;
 }
