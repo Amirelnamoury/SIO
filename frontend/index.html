@@ -8,6 +8,15 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css?v=20260905-reference36">
+<!-- Identite chromatique du SaaS. Charge APRES style.css, il ne fait que
+     redefinir les tokens de couleur : aucune regle de mise en page.
+     Retirer cette ligne rend l'interface a son etat precedent. -->
+<link rel="stylesheet" href="theme.css?v=1">
+<!-- Habillage de l'ecran connexion/inscription. Charge APRES style.css,
+     tous ses selecteurs sont ancres sous .auth-screen : rien ne fuit vers
+     le SaaS. Supprimer cette ligne rend l'ecran a son etat precedent. -->
+<link rel="stylesheet" href="auth.css?v=12">
+<link rel="icon" type="image/png" href="assets/landing/logo-64.png">
 </head>
 <body>
 

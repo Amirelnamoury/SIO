@@ -1,0 +1,299 @@
+/* =====================================================================
+   Suite Artisan — auth.css
+   ---------------------------------------------------------------------
+   Habillage de l'ECRAN DE CONNEXION / INSCRIPTION uniquement.
+
+   ISOLATION — deux regles que ce fichier ne transgresse jamais :
+
+   1. TOUS les selecteurs sont ancres sous `.auth-screen`. Des classes
+      comme `.btn-primary` ou `input` existent partout dans le SaaS : les
+      styler sans ancre repeindrait l'application entiere.
+
+   2. Aucune variable de style.css n'est utilisee. Ce fichier definit ses
+      propres `--auth-*`, pour qu'une refonte du SaaS menee en parallele
+      ne deplace pas ce rendu, et inversement.
+
+   Charge APRES style.css dans index.html, il se contente de surcharger.
+   Le supprimer (une ligne dans index.html) rend l'ecran a son etat
+   precedent, sans autre effet de bord.
+   ===================================================================== */
+
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap");
+
+.auth-screen {
+  --auth-ink: #121510;   /* identique a --sa-bg */
+  --auth-ink-2: #181c16; /* identique a --sa-sidebar */
+  --auth-white: #f7f3ec;
+  --auth-muted: rgba(247, 243, 236, .66);
+  --auth-faint: rgba(247, 243, 236, .42);
+  --auth-champagne: #d6af68;  /* accent commun a toute la marque */
+  --auth-line: rgba(247, 243, 236, .14);
+  --auth-line-strong: rgba(247, 243, 236, .28);
+  --auth-display: "Fraunces", Georgia, serif;
+  --auth-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --auth-ease: cubic-bezier(.22, 1, .36, 1);
+
+  background: var(--auth-ink);
+  color: var(--auth-white);
+  font-family: var(--auth-sans);
+  align-items: stretch;
+}
+
+/* ------------------------- PANNEAU MARQUE -------------------------
+   Deux visuels d'atelier propres a cet ecran, distincts des frames de la
+   visite : l'authentification a sa propre respiration, dans la meme
+   lumiere doree. Origine documentee dans assets/auth/README.md. */
+.auth-screen .auth-brand-panel {
+  /* Colle et haute d'un ecran, sans s'etirer. Le formulaire d'inscription
+     est long : sans cela le panneau s'allongeait avec lui et la photo,
+     recadree en `cover` sur une colonne tres haute, ne montrait plus qu'un
+     bout de mur. */
+  position: sticky; top: 0; height: 100vh; align-self: flex-start;
+  flex: 1 1 46%;
+  display: flex; align-items: flex-end;
+  padding: 56px;
+  background-image: url("assets/auth/connexion.webp");
+  /* Images au format portrait, comme le panneau : le recadrage `cover`
+     ne rogne donc presque rien. Legerement remonte pour garder l'artisan
+     et l'ouverture sur le paysage dans le champ. */
+  background-size: cover; background-position: 50% 42%;
+  overflow: hidden;
+  transition: background-image .4s ease;
+}
+/* Une photo par onglet. Le panneau est commun aux deux formulaires : on
+   detecte donc lequel est affiche via `:has()`, plutot que d'ajouter du
+   JavaScript ou de dupliquer le panneau dans index.html. */
+.auth-screen:has(#register-form:not([hidden])) .auth-brand-panel {
+  background-image: url("assets/auth/inscription.webp");
+}
+.auth-screen .auth-brand-panel::after {
+  content: ""; position: absolute; inset: 0;
+  background:
+    linear-gradient(180deg, rgba(18, 21, 16, .58) 0%, rgba(18, 21, 16, .18) 34%, rgba(18, 21, 16, .92) 100%),
+    linear-gradient(90deg, rgba(18, 21, 16, .55), rgba(18, 21, 16, .10));
+}
+.auth-screen .auth-brand-content { position: relative; z-index: 1; max-width: 420px; }
+
+/* Le logo est injecte en CSS : aucune balise a ajouter dans index.html,
+   donc aucun risque de conflit avec la refonte du SaaS en cours. */
+.auth-screen .auth-logo-on-brand {
+  display: flex; align-items: center; gap: 12px;
+  font-family: var(--auth-display); font-size: 1.15rem; font-weight: 600;
+  color: var(--auth-white); margin-bottom: 30px; letter-spacing: -.01em;
+}
+.auth-screen .auth-logo-on-brand::before {
+  content: ""; width: 38px; height: 38px; flex-shrink: 0;
+  background: url("assets/landing/logo.webp") center / contain no-repeat;
+}
+.auth-screen .auth-brand-tagline {
+  font-family: var(--auth-display); font-weight: 400;
+  font-size: clamp(1.6rem, 2.4vw, 2.25rem); line-height: 1.18; letter-spacing: -.015em;
+  color: var(--auth-white); margin-bottom: 30px;
+}
+.auth-screen .auth-brand-points { display: grid; gap: 14px; }
+.auth-screen .auth-brand-points li {
+  position: relative; padding-left: 26px;
+  font-size: .95rem; color: var(--auth-muted); line-height: 1.5;
+}
+.auth-screen .auth-brand-points li::before {
+  content: ""; position: absolute; left: 0; top: .62em;
+  width: 11px; height: 1px; border-radius: 0; background: var(--auth-champagne);
+}
+
+/* ------------------------ PANNEAU FORMULAIRE ------------------------ */
+.auth-screen .auth-form-panel {
+  flex: 1 1 54%;
+  background: var(--auth-ink);
+  padding: 48px 32px;
+  align-items: center; justify-content: center;
+}
+.auth-screen .auth-box { max-width: 420px; }
+
+.auth-screen .auth-back {
+  font-size: .84rem; font-weight: 500; color: var(--auth-faint);
+  margin-bottom: 30px; transition: color .25s, gap .25s var(--auth-ease);
+}
+.auth-screen .auth-back:hover { color: var(--auth-champagne); gap: 10px; }
+
+.auth-screen .auth-logo-on-form { display: none; }
+
+/* Onglets soulignes plutot qu'en pilules : plus sobre, et l'onglet actif
+   se lit immediatement. */
+.auth-screen .auth-tabs {
+  display: flex; gap: 30px; padding: 0; margin-bottom: 34px;
+  background: none; border-bottom: 1px solid var(--auth-line); border-radius: 0;
+}
+.auth-screen .auth-tab {
+  position: relative; flex: 0 0 auto;
+  background: none; border: 0; border-radius: 0;
+  padding: 0 0 14px; font-family: var(--auth-sans);
+  font-size: .96rem; font-weight: 500; color: var(--auth-faint);
+  cursor: pointer; transition: color .25s;
+}
+.auth-screen .auth-tab::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px;
+  background: var(--auth-champagne); transform: scaleX(0); transform-origin: 0 50%;
+  transition: transform .35s var(--auth-ease);
+}
+.auth-screen .auth-tab:hover { color: var(--auth-muted); }
+.auth-screen .auth-tab.active { color: var(--auth-white); background: none; }
+.auth-screen .auth-tab.active::after { transform: scaleX(1); }
+
+.auth-screen .auth-error {
+  background: rgba(190, 62, 46, .14); border: 1px solid rgba(190, 62, 46, .42);
+  color: #f0b9b0; border-radius: 8px; padding: 11px 14px;
+  font-size: .88rem; margin-bottom: 20px;
+}
+
+/* ---------------------------- CHAMPS ---------------------------- */
+.auth-screen .auth-form label {
+  font-family: var(--auth-sans); font-size: .8rem; font-weight: 500;
+  text-transform: none; letter-spacing: 0;
+  color: var(--auth-muted); margin: 18px 0 7px;
+}
+.auth-screen .auth-form input,
+.auth-screen .auth-form select {
+  padding: 12px 14px; border-radius: 9px;
+  background: rgba(247, 243, 236, .04);
+  border: 1px solid var(--auth-line);
+  color: var(--auth-white); font-family: var(--auth-sans); font-size: .95rem;
+  transition: border-color .2s, background-color .2s, box-shadow .2s;
+}
+.auth-screen .auth-form input::placeholder { color: var(--auth-faint); }
+.auth-screen .auth-form input:hover,
+.auth-screen .auth-form select:hover { border-color: var(--auth-line-strong); }
+.auth-screen .auth-form input:focus,
+.auth-screen .auth-form select:focus {
+  outline: none; border-color: var(--auth-champagne);
+  background: rgba(247, 243, 236, .07);
+  box-shadow: 0 0 0 3px rgba(214, 175, 104, .16);
+}
+/* La fleche native du select est noire sur fond sombre : on la remplace. */
+.auth-screen .auth-form select {
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23d6af68' stroke-width='1.6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 14px center;
+  padding-right: 38px;
+}
+.auth-screen .auth-form select option { background: var(--auth-ink-2); color: var(--auth-white); }
+
+.auth-screen .auth-form-group {
+  margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--auth-line);
+}
+/* style.css neutralise deja le premier groupe, mais avec la meme
+   specificite que la regle ci-dessus : charge apres, ce fichier gagnait et
+   reintroduisait un trait et un vide avant le premier libelle. On
+   re-neutralise explicitement. */
+.auth-screen .auth-form-group:first-of-type {
+  margin-top: 0; padding-top: 0; border-top: none;
+}
+
+/* ---- Inscription sur deux colonnes ----
+   Le formulaire compte 9 champs repartis en 4 groupes : en une colonne il
+   depassait la hauteur d'ecran et obligeait a faire defiler pour le
+   remplir.
+
+   Les libelles et les champs sont des freres (pas de conteneur par
+   champ), donc une grille classique les mettrait cote a cote au lieu de
+   les empiler. On fixe donc un NOMBRE DE LIGNES et on remplit en colonne :
+   la grille descend la premiere colonne (libelle, champ, libelle, champ)
+   avant de passer a la seconde, ce qui garde chaque champ sous son
+   libelle. Le titre du groupe occupe la premiere ligne sur toute la
+   largeur. */
+@media (min-width: 760px) {
+  .auth-screen:has(#register-form:not([hidden])) .auth-box { max-width: 640px; }
+
+  .auth-screen #register-form .auth-form-group {
+    display: grid; grid-auto-flow: column;
+    grid-template-columns: 1fr 1fr; column-gap: 22px;
+    align-content: start;
+    grid-template-rows: auto repeat(2, auto);   /* groupes a 2 champs */
+    /* Un simple filet et une marge : le `padding-top` en plus du
+       `margin-top` doublait l'ecart entre groupes pour rien. */
+    margin-top: 12px; padding-top: 10px;
+  }
+  /* "Coordonnees" a 3 champs courts (telephone, ville, code postal) : sur
+     TROIS colonnes, ils tiennent sur une seule ligne. C'est ce qui fait
+     passer le formulaire de 5 lignes de champs a 4, et le ramene sous la
+     hauteur d'ecran. */
+  .auth-screen #register-form .auth-form-group:nth-of-type(3) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .auth-screen #register-form .auth-form-group-label {
+    grid-column: 1 / -1; grid-row: 1; margin-bottom: 0; font-size: .64rem;
+  }
+  .auth-screen #register-form .auth-form label { margin: 8px 0 4px; font-size: .77rem; }
+  .auth-screen #register-form .auth-form input,
+  .auth-screen #register-form .auth-form select { padding: 8px 12px; font-size: .9rem; }
+  .auth-screen #register-form .btn-primary { margin-top: 16px; padding: 11px 24px; }
+
+  /* Rythme vertical resserre sur cet ecran uniquement */
+  .auth-screen:has(#register-form:not([hidden])) .auth-form-panel { padding-block: 14px; }
+  .auth-screen:has(#register-form:not([hidden])) .auth-back { margin-bottom: 10px; }
+  .auth-screen:has(#register-form:not([hidden])) .auth-tabs { margin-bottom: 14px; }
+  .auth-screen #register-form .auth-form input,
+  .auth-screen #register-form .auth-form select { padding: 7px 12px; }
+  .auth-screen #register-form .btn-primary { margin-top: 13px; }
+}
+/* Fenetres basses : on rend le rythme encore plus compact plutot que de
+   forcer un defilement. La cible est une fenetre de 1365x635, celle
+   signalee par l'utilisateur. */
+@media (min-width: 760px) and (max-height: 700px) {
+  .auth-screen #register-form .auth-form-group { margin-top: 8px; padding-top: 7px; }
+  .auth-screen #register-form .auth-form label { margin: 5px 0 3px; }
+  .auth-screen #register-form .btn-primary { margin-top: 10px; }
+  .auth-screen:has(#register-form:not([hidden])) .auth-form-panel { padding-block: 6px; }
+  .auth-screen:has(#register-form:not([hidden])) .auth-back { margin-bottom: 8px; }
+}
+.auth-screen .auth-form-group-label {
+  font-size: .68rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .14em; color: var(--auth-champagne); margin-bottom: 4px;
+}
+
+/* Bouton ancre sous .auth-screen : `.btn-primary` sert partout dans le
+   SaaS, le styler sans ancre repeindrait toute l'application. */
+.auth-screen .auth-form .btn-primary {
+  margin-top: 30px; width: 100%;
+  padding: 14px 24px; border: 0; border-radius: 999px;
+  background: var(--auth-white); color: var(--auth-ink);
+  font-family: var(--auth-sans); font-size: .96rem; font-weight: 600;
+  cursor: pointer; transition: transform .25s var(--auth-ease), background-color .25s;
+}
+.auth-screen .auth-form .btn-primary:hover { transform: translateY(-2px); background: #fff; }
+.auth-screen .auth-form .btn-primary:active { transform: none; }
+
+.auth-screen .auth-trust { color: var(--auth-faint); font-size: .82rem; margin-top: 22px; }
+.auth-screen :focus-visible { outline: 2px solid var(--auth-champagne); outline-offset: 3px; }
+
+/* ---------------------------- RESPONSIVE ---------------------------- */
+@media (max-width: 900px) {
+  .auth-screen { flex-direction: column; }
+  /* Le panneau marque devient une banniere : on garde la photo et le
+     logo, on retire les arguments qui repousseraient le formulaire. */
+  /* `height: auto` annule le 100vh de la regle de base, qui remplissait
+     tout l'ecran du telephone et repoussait le formulaire sous la ligne de
+     flottaison.
+     `relative` — et surtout PAS `static` : le voile de ce panneau est un
+     ::after en `position: absolute; inset: 0`. En static, le panneau cesse
+     d'etre son bloc conteneur et le voile s'etend alors sur la page
+     entiere, ternissant tout le formulaire. */
+  .auth-screen .auth-brand-panel {
+    position: relative; height: auto; min-height: 200px;
+    flex: 0 0 auto; padding: 26px 24px;
+    /* En banniere courte, on ne voit qu'une tranche horizontale d'une
+       image portrait : cadree a 42 % elle coupait l'artisan au torse.
+       On remonte pour garder le visage et le haut de la scene. */
+    background-position: 50% 24%;
+  }
+  .auth-screen .auth-brand-points { display: none; }
+  .auth-screen .auth-brand-tagline { font-size: 1.4rem; margin-bottom: 0; }
+  .auth-screen .auth-form-panel { padding: 34px 24px 52px; }
+}
+@media (max-width: 520px) {
+  .auth-screen .auth-brand-panel { min-height: 160px; }
+  .auth-screen .auth-tabs { gap: 22px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-screen * { transition: none !important; }
+}
