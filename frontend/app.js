@@ -4885,7 +4885,10 @@ function renderChantiersListFiltered() {
       : "Aucun chantier dans cet onglet."}</div>`;
     return;
   }
-  list.innerHTML = chantiersEnteteHtml() + filtres.map(renderChantierCard).join("");
+  // Grille, pas empilement : c'est ce qui fait tenir trente chantiers en
+  // une dizaine de rangees au lieu de trente. Les cartes se rangent
+  // d'elles-memes selon la largeur disponible (voir .chantier-grille).
+  list.innerHTML = `<div class="chantier-grille">${filtres.map(renderChantierCard).join("")}</div>`;
   focusChantierCard();
 }
 
@@ -5150,7 +5153,7 @@ async function showChantierEditForm(c) {
 // Une action principale visible + le reste dans le menu "•••" (meme systeme
 // que renderDevisCard) : memes data-action/data-id qu'avant, seule leur
 // repartition entre bouton primaire et menu change.
-function chantierActionsHtml(c) {
+function chantierActionsHtml(c, { menuSeul = false } = {}) {
   const items = [];
   items.push({ attrs: `data-action="edit-chantier" data-id="${c.id}"`, label: "Modifier le chantier" });
   items.push({ primaire: c.statut !== "termine", attrs: `data-action="toggle-note-form" data-id="${c.id}"`, label: "+ Ajouter une note" });
@@ -5173,7 +5176,14 @@ function chantierActionsHtml(c) {
   items.push({ divider: true });
   items.push({ attrs: `data-action="delete-chantier" data-id="${c.id}"`, label: "Archiver", danger: true });
 
-  const primaireHtml = `<button type="button" class="btn-sm btn-sm-primary" data-action="toggle-chantier-details" data-id="${c.id}" aria-expanded="false">Voir</button>`;
+  // Sur une carte, le bouton "Voir" ne sert a rien : la carte entiere est
+  // la zone cliquable qui deplie le dossier (voir .chantier-card-resume).
+  // Le supprimer libere une trentaine de pixels sur chaque carte - a trente
+  // chantiers c'est deux ecrans de defilement - et rend au libelle de la
+  // prochaine action la largeur qui lui manquait pour tenir en entier.
+  const primaireHtml = menuSeul
+    ? ""
+    : `<button type="button" class="btn-sm btn-sm-primary" data-action="toggle-chantier-details" data-id="${c.id}" aria-expanded="false">Voir</button>`;
   const menuHtml = items
     .map((it) => it.divider
       ? '<div class="action-menu-divider"></div>'
@@ -5190,25 +5200,6 @@ function chantierActionsHtml(c) {
         <div class="action-menu-panel" role="menu">${menuHtml}</div>
       </div>
     </div>`;
-}
-
-// En-tete de colonnes, collant en haut de la liste. Avec trente chantiers
-// on ne voit plus le debut de la liste au bout de deux ecrans : sans lui,
-// une colonne de pourcentages ne dit plus si elle parle d'avancement ou de
-// budget. `aria-hidden` : chaque cellule d'une ligne porte deja son propre
-// libelle accessible, l'en-tete est un repere visuel, pas une structure de
-// tableau (ce n'en est pas un au sens HTML).
-function chantiersEnteteHtml() {
-  return `
-  <div class="chantier-entete" aria-hidden="true">
-    <span>Chantier</span>
-    <span>Statut</span>
-    <span>Avancement</span>
-    <span>Budget</span>
-    <span>Prochaine action</span>
-    <span>Fin prévue</span>
-    <span></span>
-  </div>`;
 }
 
 function renderChantierCard(c) {
@@ -5251,32 +5242,52 @@ function renderChantierCard(c) {
   // signal, avec les seuils deja utilises par "A surveiller" (85 %).
   const niveauBudget = (pct) => (pct >= 85 ? "bas" : pct >= 60 ? "moyen" : "haut");
 
+  // Une jauge = un libelle, une barre, une valeur, sur une seule ligne.
+  // Empilees, deux jauges tiennent en 40 px et se comparent d'un coup
+  // d'oeil : c'est tout l'interet de les mettre l'une sous l'autre.
+  const jauge = (libelle, valeur, largeur, classe = "", note = "") => `
+    <div class="chantier-jauge">
+      <span class="chantier-jauge-label">${libelle}</span>
+      <span class="sante-barre"><span class="remplissage ${classe}" style="width:${largeur}%;"></span></span>
+      <span class="chantier-jauge-valeur">${valeur}</span>
+      ${note ? `<span class="chantier-jauge-note">${note}</span>` : ""}
+    </div>`;
+
   return `
-  <div class="chantier-card chantier-row${rowClass}" data-chantier-id="${c.id}">
-    <div class="chantier-col-nom">
-      <div class="chantier-row-title">${escapeHtml(c.titre)}</div>
-      <div class="chantier-row-client">${escapeHtml(c.client_nom || "Client non renseigné")}${c.adresse ? " · " + escapeHtml(c.adresse) : ""}</div>
+  <article class="chantier-card${rowClass}" data-chantier-id="${c.id}">
+    <!-- La zone de resume porte l'action de depliage, pas la carte
+         entiere : sinon un clic sur un champ du dossier ouvert -
+         qui est aussi un descendant de la carte - refermerait le
+         dossier sous les doigts de l'utilisateur. -->
+    <div class="chantier-card-resume" data-action="toggle-chantier-details" data-id="${c.id}"
+         role="button" tabindex="0" aria-expanded="false"
+         aria-controls="chantier-details-${c.id}"
+         aria-label="Ouvrir le dossier ${escapeHtml(c.titre)}">
+      <div class="chantier-card-tete">
+        <div class="chantier-card-identite">
+          <h3 class="chantier-card-titre">${escapeHtml(c.titre)}</h3>
+          <p class="chantier-card-client">${escapeHtml(c.client_nom || "Client non renseigné")}${c.adresse ? " · " + escapeHtml(c.adresse) : ""}</p>
+        </div>
+        <span class="badge ${statutMeta.badge}">${escapeHtml(statutMeta.label)}</span>
+        <div class="chantier-card-actions">${chantierActionsHtml(c, { menuSeul: true })}</div>
+      </div>
+
+      <div class="chantier-card-jauges">
+        ${jauge("Avancement", `${progression} %`, progression)}
+        ${budgetPct === null
+          ? jauge("Budget", "—", 0, "", "non renseigné")
+          : jauge("Budget", `${budgetPct} %`, Math.min(budgetPct, 100), `niveau-${niveauBudget(budgetPct)}`)}
+      </div>
+
+      <div class="chantier-card-pied">
+        <span class="chantier-action-fleche" aria-hidden="true">→</span>
+        <span class="chantier-action-texte${action.vide ? " is-vide" : ""}">${escapeHtml(action.texte)}</span>
+        ${action.quand ? `<span class="chantier-action-quand${action.enRetard ? " is-late" : ""}">${escapeHtml(action.quand)}</span>` : ""}
+        <span class="chantier-card-echeance${joursRetard > 0 ? " is-late" : ""}" title="Fin prévue">
+          ${c.date_fin_prevue ? fmtDate(c.date_fin_prevue) : "fin non fixée"}${joursRetard > 0 ? ` <strong>+${joursRetard} j</strong>` : ""}
+        </span>
+      </div>
     </div>
-    <div class="chantier-col-statut"><span class="badge ${statutMeta.badge}">${escapeHtml(statutMeta.label)}</span></div>
-    <div class="chantier-col-jauge est-avancement">
-      <div class="chantier-jauge-valeur">${progression} %</div>
-      <div class="sante-barre"><div class="remplissage" style="width:${progression}%;"></div></div>
-    </div>
-    <div class="chantier-col-jauge est-budget">
-      <div class="chantier-jauge-valeur">${budgetPct === null ? "—" : `${budgetPct} %`}</div>
-      ${budgetPct === null
-        ? '<div class="chantier-jauge-vide">non renseigné</div>'
-        : `<div class="sante-barre"><div class="remplissage niveau-${niveauBudget(budgetPct)}" style="width:${Math.min(budgetPct, 100)}%;"></div></div>`}
-    </div>
-    <div class="chantier-col-action${action.vide ? " is-vide" : ""}">
-      <span class="chantier-action-texte">${escapeHtml(action.texte)}</span>
-      ${action.quand ? `<span class="chantier-action-quand${action.enRetard ? " is-late" : ""}">${escapeHtml(action.quand)}</span>` : ""}
-    </div>
-    <div class="chantier-col-date${joursRetard > 0 ? " is-late" : ""}">
-      ${c.date_fin_prevue ? fmtDate(c.date_fin_prevue) : "—"}
-      ${joursRetard > 0 ? `<span class="chantier-retard">+${joursRetard} j</span>` : ""}
-    </div>
-    <div class="chantier-row-actions">${chantierActionsHtml(c)}</div>
     <div class="chantier-details" id="chantier-details-${c.id}" hidden>
       ${c.statut === "termine" ? `<div class="moment-banner"><span>Chantier terminé ! Clôturez-le pour générer la facture finale, demander un avis client et archiver le dossier.</span></div>` : ""}
       ${aujourdhuiChantierHtml(c)}
@@ -5295,7 +5306,7 @@ function renderChantierCard(c) {
       <div id="reception-form-${c.id}"></div>
       <div id="cloturer-form-${c.id}"></div>
     </div>
-  </div>`;
+  </article>`;
 }
 
 function showDepenseForm(chantierId, depense = null) {
@@ -5375,6 +5386,16 @@ function setupChantiersView() {
     currentChantierClient = e.target.value;
     renderChantiersListFiltered();
   });
+  // La carte se deplie au clavier comme au clic : c'est une zone
+  // cliquable, elle doit donc repondre a Entree et Espace comme un bouton.
+  document.getElementById("chantiers-list").addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    const resume = e.target.closest(".chantier-card-resume");
+    if (!resume || e.target.closest("button")) return;
+    e.preventDefault();
+    resume.click();
+  });
+
   // La recherche est traitee ici plutot que par setupListesSearch : ce
   // dernier masque les cartes dont le textContent ne contient pas la
   // requete, ce qui revenait a chercher aussi dans les libelles de
@@ -5483,7 +5504,15 @@ function setupChantiersView() {
       if (!details) return;
       details.hidden = !details.hidden;
       btn.setAttribute("aria-expanded", String(!details.hidden));
-      btn.textContent = details.hidden ? "Voir" : "Masquer";
+      // Le declencheur est un BOUTON ailleurs dans le produit, mais sur une
+      // carte c'est la zone de resume elle-meme : lui reecrire son
+      // textContent effacerait tout le contenu de la carte.
+      if (btn.tagName === "BUTTON") btn.textContent = details.hidden ? "Voir" : "Masquer";
+      // Une carte depliee prend toute la largeur de la grille : sinon le
+      // dossier complet s'entasserait dans une colonne de 340 px et
+      // etirerait toute sa rangee de voisines.
+      const carte = btn.closest(".chantier-card");
+      if (carte) carte.classList.toggle("is-open", !details.hidden);
     } else if (btn.dataset.action === "edit-chantier") {
       const chantier = chantiersCache.find((c) => c.id === id);
       if (chantier) await showChantierEditForm(chantier);

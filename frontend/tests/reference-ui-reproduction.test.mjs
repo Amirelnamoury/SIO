@@ -79,12 +79,15 @@ assert.match(styleSource, /#view-factures \.list-toolbar \{[^}]*margin-bottom: v
 assert.match(styleSource, /#view-factures #facture-filters \{ margin-bottom: var\(--sa-space-4\); \}/);
 assert.match(styleSource, /#view-factures #factures-statut-filtre \{ width: 108px; \}/);
 assert.doesNotMatch(styleSource, /\.list-row\.is-due \{[^}]*padding-left/);
-// La liste des chantiers est passee de la carte de 82 px a la ligne dense,
-// a la demande de l'utilisateur : a trente chantiers, les cartes faisaient
-// pres de 2 800 px a parcourir. La grammaire est celle, deja en place, des
-// listes Devis et Factures - filet de separation, pas de marge, une ligne.
-assert.match(styleSource, /\.chantier-row \{[\s\S]*?min-height: 53px/);
-assert.match(styleSource, /\.chantier-entete \{[\s\S]*?position: sticky/);
+// Les chantiers sont presentes en CARTES, a la demande explicite de
+// l'utilisateur ("je veux pas que les chantiers soit ligne par ligne je
+// veux que ca soit des cards"), et ces cartes sont disposees en GRILLE :
+// empilees, elles reproduiraient le defilement interminable qu'il
+// reprochait a la version precedente.
+assert.match(styleSource, /\.chantier-grille \{[\s\S]*?grid-template-columns: repeat\(auto-fill, minmax\(330px, 1fr\)\)/);
+assert.match(styleSource, /\.chantier-card \{/);
+assert.match(styleSource, /\.chantier-card\.is-open \{ grid-column: 1 \/ -1; \}/, "une carte dépliée doit prendre toute la rangée");
+assert.doesNotMatch(styleSource, /\.chantier-entete/, "l'en-tete de colonnes du tableau n'a plus lieu d'etre");
 assert.match(styleSource, /\.tache-row \{[\s\S]*?min-height: 63px/);
 assert.match(styleSource, /\.doc-row \{[\s\S]*?min-height: 63px/);
 assert.doesNotMatch(styleSource, /letter-spacing:\s*-/);
