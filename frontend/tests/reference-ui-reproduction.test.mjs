@@ -233,4 +233,22 @@ const appSansCommentaires = appSource
 assert.doesNotMatch(appSansCommentaires, /\w+\(s\)(?!\s*[{=])/,
   "pas de pluriel entre parentheses dans un texte visible");
 
+// ---------------------------------------------------------------------
+// LES PANNEAUX LATERAUX
+// ---------------------------------------------------------------------
+// Une date d'evenement commercial se lit a la minute. `toLocaleString()`
+// sans options ajoutait les SECONDES - « 06/09/2026 01:21:23 » - et donnait
+// a la chronologie du client comme a la vie d'un devis l'allure d'un
+// journal technique.
+assert.match(appSource, /function fmtDateTime[\s\S]{0,400}?minute: "2-digit"/,
+  "fmtDateTime doit s'arreter a la minute");
+assert.doesNotMatch(appSource, /toLocaleString\("fr-FR"\)\s*;/,
+  "pas de toLocaleString sans options : il rend les secondes");
+
+// Le panneau Profil enfermait son formulaire de mot de passe dans une boite,
+// elle-meme dans le panneau - et l'intitule de section se collait sous le
+// bouton des tarifs, se lisant comme sa legende.
+assert.match(styleSource, /#profil-content \.form-section \{[^}]*margin-top/);
+assert.match(styleSource, /#profil-content \.form-section \.form-box \{[^}]*border: 0/);
+
 console.log("OK - reference-ui-reproduction.test.mjs");

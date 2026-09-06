@@ -30,9 +30,17 @@ function fmtDate(iso) {
   if (!iso) return "-";
   return new Date(iso).toLocaleDateString("fr-FR");
 }
+// `toLocaleString("fr-FR")` sans options rend « 06/09/2026 01:21:23 » : les
+// SECONDES d'un evenement commercial. Personne ne se demande a quelle
+// seconde un devis a ete ouvert, et ces deux chiffres de trop donnaient a la
+// chronologie du client comme a la vie d'un devis l'allure d'un journal
+// technique. La minute suffit partout ou cette fonction est appelee, y
+// compris pour le dernier passage du moteur d'automatisation.
 function fmtDateTime(iso) {
   if (!iso) return "-";
-  return new Date(iso).toLocaleString("fr-FR");
+  return new Date(iso).toLocaleString("fr-FR", {
+    day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
+  });
 }
 function fmtDateCourte(iso) {
   if (!iso) return "-";
@@ -372,7 +380,7 @@ function planCardHtml(key, plan, currentPlan) {
   const priceHtml = `<div class="plan-price">${plan.prix}&nbsp;&euro; <span class="period">/ ${plan.periode}</span></div>`;
   return `
   <div class="plan-card ${isPro ? "plan-highlight" : ""} ${isCurrent ? "plan-current" : ""}" data-plan-key="${key}"${isCurrent ? ' data-current-plan="true" aria-current="true"' : ""}>
-    ${isPro ? '<span class="plan-badge">Recommande</span>' : ""}
+    ${isPro ? '<span class="plan-badge">Recommandé</span>' : ""}
     <div class="plan-name">${escapeHtml(plan.nom)}</div>
     <div class="plan-accroche">${escapeHtml(plan.accroche)}</div>
     ${priceHtml}

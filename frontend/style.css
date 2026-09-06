@@ -1457,7 +1457,14 @@ input[readonly] { background: var(--sa-surface-2); }
 .profil-identity-avatar-photo { padding: 0; object-fit: cover; }
 .profil-identity-name { font-size: 1.05rem; font-weight: var(--sa-weight-bold); letter-spacing: 0; }
 .profil-identity-sub { font-size: var(--sa-text-sm); color: var(--sa-text-muted); }
-.profil-upgrade-btn { width: 100%; }
+.profil-upgrade-btn { width: 100%; margin-top: var(--sa-space-4); }
+/* « Changer le mot de passe » venait se coller sous le bouton des tarifs,
+   sans un pixel d'ecart : l'intitule se lisait comme la legende du bouton
+   plutot que comme le titre de la section suivante. */
+#profil-content .form-section { margin-top: var(--sa-space-6); }
+/* Et le formulaire etait dans une boite, elle-meme dans le panneau. Une
+   boite dans une boite : le panneau delimite deja. */
+#profil-content .form-section .form-box { padding: 0; background: transparent; border: 0; border-radius: 0; }
 
 /* ---------- Timeline client ---------- */
 .timeline-entry { display: flex; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--sa-border); align-items: flex-start; }
@@ -2289,7 +2296,13 @@ label { color: var(--sa-text-muted); }
 }
 .fiche-sous { margin: 0 0 6px; font-size: var(--sa-text-sm); color: var(--sa-text-muted); }
 .fiche-coords { margin: 0; font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
-.fiche-coords a { color: var(--sa-accent); text-decoration: none; }
+/* Le telephone et l'email du client sont des liens `tel:` et `mailto:` de
+   15 px de haut. La regle WCAG 2.5.8 exempte les liens en pleine ligne de
+   texte, donc ceux-ci passent - mais appeler son client depuis le chantier
+   est l'un des gestes les plus probables de toute l'application, et viser
+   15 px avec un pouce ganté n'est pas un detail de conformite. Le padding
+   vertical les porte a 24 px sans casser le rythme de la ligne. */
+.fiche-coords a { display: inline-block; padding: 5px 0; color: var(--sa-accent); text-decoration: none; }
 .fiche-coords a:hover { text-decoration: underline; text-underline-offset: 3px; }
 
 .fiche-actions {

@@ -163,4 +163,25 @@ Api.automationStatus = async () => ({
   prochaine_execution_estimee: new Date(Date.now() + 42 * 60000).toISOString(),
 });
 Api.listSiteMedia = async () => ({ photos: [], logo_url: null });
+
+// ---------------------------------------------------------------------
+// LA FICHE CLIENT (panneau lateral). Sans ces trois entrees, le panneau
+// s'ouvrait sur « Impossible de contacter le serveur » : l'un des ecrans
+// les plus frequentes du produit n'avait jamais pu etre regarde.
+// ---------------------------------------------------------------------
+Api.clientResume = async () => ({
+  valeur_totale: 31000, nb_chantiers: 2, dernier_contact: tg(2),
+  impayes: 1840, date_dernier_devis: tg(12),
+});
+Api.clientTimeline = async () => [
+  { date: tg(1), type: "devis_consulte", label: "Devis DV-2026-089 consulté par le client", reference_id: 89 },
+  { date: tg(9), type: "devis_envoye", label: "Devis DV-2026-089 envoyé", reference_id: 89 },
+  { date: tg(40), type: "facture_envoyee", label: "Facture FA-2026-014 envoyée", reference_id: 14 },
+  { date: tg(70), type: "chantier_demarre", label: "Chantier « Villa Ducros » démarré", reference_id: 2 },
+  { date: tg(60), type: "client_cree", label: "Client créé", reference_id: null },
+];
+Api.listClientMessages = async () => [
+  { id: 1, expediteur: "client", texte: "Peut-on décaler la visite de mardi ?", lu: false, created_at: tg(6) },
+  { id: 2, expediteur: "artisan", texte: "Bien sûr, je vous propose jeudi 9h.", lu: true, created_at: tg(5) },
+];
 })();
