@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Facture</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="devis-public.css">
 </head>
@@ -50,7 +50,7 @@ const TYPE_LABELS = { standard: "Standard", acompte: "Acompte", situation: "Situ
 function lignesTableHtml(lignes) {
   return `
   <table class="devis-public-table">
-    <thead><tr><th>Description</th><th>Qte</th><th>Unité</th><th>PU HT</th><th>Total HT</th></tr></thead>
+    <thead><tr><th>Description</th><th>Qté</th><th>Unité</th><th>PU HT</th><th>Total HT</th></tr></thead>
     <tbody>
       ${lignes.map((l) => `<tr>
         <td>${escapeHtml(l.description)}</td>
@@ -94,7 +94,9 @@ function renderFacture(f) {
   if (f.statut === "payee") {
     statusBanner = `<div class="devis-public-banner is-success"><strong>Facture réglée</strong>. Merci !</div>`;
   } else if (f.est_en_retard) {
-    statusBanner = `<div class="devis-public-banner" style="background:#fdecea;color:#b3261e;"><strong>Échéance dépassée</strong>${f.date_echeance ? " (" + fmtDate(f.date_echeance) + ")" : ""}. Merci de régulariser dès que possible.</div>`;
+    // Les deux couleurs etaient ecrites en dur ici - #fdecea sur #b3261e,
+    // un rouge de l'identite abandonnee. Sur la page que le CLIENT recoit.
+    statusBanner = `<div class="devis-public-banner is-retard"><strong>Échéance dépassée</strong>${f.date_echeance ? " (" + fmtDate(f.date_echeance) + ")" : ""}. Merci de régulariser dès que possible.</div>`;
   }
 
   contentEl.innerHTML = `
@@ -129,15 +131,25 @@ async function load() {
     contentEl.innerHTML = '<div class="empty-state">Lien de facture invalide.</div>';
     return;
   }
+  let donnees;
   try {
     const res = await fetch(`${API_BASE}/pub/facture/${token}`);
     if (!res.ok) {
       contentEl.innerHTML = '<div class="empty-state">Cette facture est introuvable. Vérifiez le lien reçu.</div>';
       return;
     }
-    renderFacture(await res.json());
+    donnees = await res.json();
   } catch (err) {
     contentEl.innerHTML = '<div class="empty-state">Impossible de contacter le serveur. Vérifiez votre connexion.</div>';
+    return;
+  }
+  // Le rendu est HORS du try reseau : une erreur d'affichage n'est pas une
+  // panne de connexion, et l'annoncer comme telle envoie le client verifier
+  // son wifi alors que la facture est bien arrivee.
+  try {
+    renderFacture(donnees);
+  } catch (err) {
+    contentEl.innerHTML = '<div class="empty-state">Cette facture n\'a pas pu s\'afficher. Prévenez votre artisan, il pourra vous la renvoyer.</div>';
   }
 }
 

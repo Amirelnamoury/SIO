@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Espace client</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="devis-public.css">
 <link rel="stylesheet" href="portail-client.css">
@@ -169,15 +169,25 @@ async function load() {
     contentEl.innerHTML = '<div class="empty-state">Lien d\'espace client invalide.</div>';
     return;
   }
+  let donnees;
   try {
     const res = await fetch(`${API_BASE}/pub/portail/${token}`);
     if (!res.ok) {
       contentEl.innerHTML = '<div class="empty-state">Cet espace est introuvable ou le lien a expiré. Demandez un nouveau lien à votre artisan.</div>';
       return;
     }
-    render(await res.json());
+    donnees = await res.json();
   } catch (err) {
     contentEl.innerHTML = '<div class="empty-state">Impossible de contacter le serveur. Vérifiez votre connexion.</div>';
+    return;
+  }
+  // Le rendu est HORS du try reseau : une erreur d'affichage n'est pas une
+  // panne de connexion, et l'annoncer comme telle envoie le client verifier
+  // son wifi alors que son espace est bien arrive.
+  try {
+    render(donnees);
+  } catch (err) {
+    contentEl.innerHTML = '<div class="empty-state">Cet espace n\'a pas pu s\'afficher. Prévenez votre artisan.</div>';
   }
 }
 

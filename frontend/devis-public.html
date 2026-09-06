@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Devis</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="devis-public.css">
 </head>
@@ -50,7 +50,7 @@ const STATUT_LABELS = {
 function lignesTableHtml(lignes) {
   return `
   <table class="devis-public-table">
-    <thead><tr><th>Description</th><th>Qte</th><th>Unité</th><th>PU HT</th><th>Total HT</th></tr></thead>
+    <thead><tr><th>Description</th><th>Qté</th><th>Unité</th><th>PU HT</th><th>Total HT</th></tr></thead>
     <tbody>
       ${lignes.map((l) => `<tr>
         <td>${escapeHtml(l.description)}</td>
@@ -72,7 +72,13 @@ function totauxHtml(d) {
   rows.push(["Total HT", fmtEuro(d.montant_ht)]);
   rows.push([`TVA (${d.taux_tva}%)`, fmtEuro((d.montant_ttc || 0) - (d.montant_ht || 0))]);
   rows.push(["Total TTC", fmtEuro(d.montant_ttc)]);
-  rows.push([`Acompte à la commande (${d.acompte_pourcentage}%)`, fmtEuro((d.montant_ttc || 0) * d.acompte_pourcentage / 100)]);
+  // Le montant est bien celui que le client paiera : la facture d'acompte que
+  // l'artisan generera porte `montant_ht x pct` plus sa TVA, ce qui revient au
+  // meme resultat. Mais rien ne disait qu'il s'agissait d'un TTC, tandis que
+  // l'application affichait le HT de son cote sans le dire non plus : le meme
+  // acompte du meme devis apparaissait sous deux montants differents, l'un
+  // chez l'artisan, l'autre chez son client. La mention leve l'ambiguite.
+  rows.push([`Acompte à la commande (${d.acompte_pourcentage}%), TTC`, fmtEuro((d.montant_ttc || 0) * d.acompte_pourcentage / 100)]);
   return `<div class="devis-public-totaux">
     ${rows.map(([l, v], i) => `<div class="devis-public-total-row ${i === rows.length - 2 ? "is-total" : ""}"><span>${l}</span><strong>${v}</strong></div>`).join("")}
   </div>`;
@@ -166,15 +172,26 @@ async function load() {
     contentEl.innerHTML = '<div class="empty-state">Lien de devis invalide.</div>';
     return;
   }
+  let donnees;
   try {
     const res = await fetch(`${API_BASE}/pub/devis/${token}`);
     if (!res.ok) {
       contentEl.innerHTML = '<div class="empty-state">Ce devis est introuvable. Vérifiez le lien reçu.</div>';
       return;
     }
-    renderDevis(await res.json());
+    donnees = await res.json();
   } catch (err) {
     contentEl.innerHTML = '<div class="empty-state">Impossible de contacter le serveur. Vérifiez votre connexion.</div>';
+    return;
+  }
+  // Le rendu est HORS du try reseau. Il etait dedans : la moindre erreur
+  // d'affichage - un champ absent, une valeur inattendue - etait annoncee au
+  // client de l'artisan comme une panne de sa connexion. Il verifiait son
+  // wifi pendant que le devis, lui, etait bien arrive.
+  try {
+    renderDevis(donnees);
+  } catch (err) {
+    contentEl.innerHTML = '<div class="empty-state">Ce devis n\'a pas pu s\'afficher. Prévenez votre artisan, il pourra vous le renvoyer.</div>';
   }
 }
 

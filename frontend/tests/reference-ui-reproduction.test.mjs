@@ -271,4 +271,25 @@ assert.doesNotMatch(styleSource, /body\[data-view="[a-z]+"\][^{]*\.topbar-search
 assert.match(styleSource, /\.tache-row-check \{[^}]*width: 24px[^}]*height: 24px/,
   "la case a cocher d'une tache fait 24 px partout, pas seulement sur mobile");
 
+// ---------------------------------------------------------------------
+// LES PAGES PUBLIQUES PORTENT LA MEME MARQUE
+// ---------------------------------------------------------------------
+// Ce sont les seules pages que les CLIENTS de l'artisan voient. Elles ne
+// chargeaient qu'Inter : leurs titres tombaient sur Georgia, la solution de
+// repli de Fraunces. Deux serifs pour une seule marque - exactement ce que
+// la direction artistique reproche a l'ancien couple Archivo / Public Sans.
+for (const page of ["devis-public.html", "facture-public.html", "portail-client.html", "avis-public.html"]) {
+  const source = fs.readFileSync(path.join(frontendDir, page), "utf8");
+  assert.match(source, /family=Fraunces/, `${page} doit charger Fraunces comme le reste du produit`);
+  // Et aucune couleur ecrite en dur : la facture publique peignait sa
+  // banniere de retard avec deux hexadecimaux de l'identite abandonnee.
+  assert.doesNotMatch(source, /style="[^"]*#[0-9a-fA-F]{3,6}/, `${page} ne doit pas peindre en dur`);
+  // Le rendu doit etre sorti du try qui entoure l'appel reseau : une erreur
+  // d'affichage annoncee comme une panne de connexion envoie le client
+  // verifier son wifi alors que le document est bien arrive.
+  if (page !== "avis-public.html") {
+    assert.match(source, /let donnees;/, `${page} doit separer l'erreur reseau de l'erreur de rendu`);
+  }
+}
+
 console.log("OK - reference-ui-reproduction.test.mjs");

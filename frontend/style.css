@@ -2568,6 +2568,10 @@ label { color: var(--sa-text-muted); }
   font-size: var(--sa-text-xs);
 }
 .totalisateur-ligne.est-acompte span:last-child { color: var(--sa-laiton); font-size: var(--sa-text-sm); }
+/* Le montant HT sous l'acompte : c'est celui de la facture d'acompte que le
+   produit generera. La ligne au-dessus donne le TTC, celui que le client
+   voit sur la page qu'il signe. */
+.totalisateur-note { margin-top: -2px; font-size: var(--sa-text-2xs); color: var(--sa-text-faint); text-align: right; }
 
 @media (max-width: 900px) {
   .doc-pied { grid-template-columns: 1fr; gap: var(--sa-space-6); }

@@ -122,4 +122,28 @@ assert.equal(devisTotaux([], 20, 0, 30), null, "sans ligne, aucun total ne doit 
   assert.equal(t.ttc, 1034);
 }
 
+// ---------------------------------------------------------------------
+// L'ARTISAN ET SON CLIENT LISENT LE MEME ACOMPTE
+// ---------------------------------------------------------------------
+// L'application affichait l'acompte en HT (le montant de la facture
+// d'acompte que le serveur genere) et la page publique que le client signe
+// l'affichait en TTC (ce qu'il paiera). Les deux etaient justes, aucune ne
+// disait laquelle : pour le meme devis, l'artisan lisait 311,22 € et son
+// client 342,34 €. De quoi se contredire au telephone sur un document qui
+// porte « bon pour accord ».
+{
+  const t = devisTotaux([{ quantite: 24, prix_unitaire_ht: 45.5 }], 10, 5, 30);
+  assert.equal(t.acompte, 311.22, "l'acompte HT reste celui du serveur");
+  assert.equal(t.acompteTtc, 342.34, "l'acompte TTC est celui que le client voit");
+  // Ce que la page publique calcule : ttc x pct / 100. Les deux chemins
+  // doivent tomber sur le meme centime.
+  assert.equal(Math.round(t.ttc * 30) / 100, t.acompteTtc,
+    "les deux faces du produit doivent annoncer le meme acompte");
+}
+{
+  const source = fs.readFileSync(path.join(path.dirname(appPath), "devis-public.html"), "utf8");
+  assert.match(source, /Acompte à la commande \(\$\{d\.acompte_pourcentage\}%\), TTC/,
+    "la page publique doit dire que son acompte est un TTC");
+}
+
 console.log("OK - devis-totaux.test.mjs");

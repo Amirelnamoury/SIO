@@ -3978,8 +3978,16 @@ function devisTotaux(lignes, tauxTva, remisePct, acomptePct) {
   const ht = arrondi2(brut - remise);
   const tva = arrondi2(ht * (Number(tauxTva) || 0) / 100);
   const ttc = arrondi2(ht * (1 + (Number(tauxTva) || 0) / 100));
+  // L'acompte se calcule sur le HT, comme le serveur (routers/chantiers.py :
+  // la facture d'acompte porte `montant_ht = ht x pct / 100`). Mais ce que le
+  // client PAIE, c'est cette facture TTC - et c'est ce montant-la qui figure
+  // sur la page publique qu'il signe. Les deux existaient donc cote a cote
+  // sans que rien ne dise lequel etait lequel : l'artisan lisait 311,22 € et
+  // son client 342,34 € pour le meme acompte du meme devis. On calcule les
+  // deux, et on les libelle.
   const acompte = acomptePct ? arrondi2((ht * acomptePct) / 100) : 0;
-  return { brut, remise, remisePct, ht, tva, tauxTva, ttc, acompte, acomptePct };
+  const acompteTtc = acomptePct ? arrondi2(acompte * (1 + (Number(tauxTva) || 0) / 100)) : 0;
+  return { brut, remise, remisePct, ht, tva, tauxTva, ttc, acompte, acompteTtc, acomptePct };
 }
 
 /** Le bloc de totaux, aligne a droite comme sur un devis imprime : les
@@ -4001,7 +4009,8 @@ function devisTotalisateurHtml(t) {
     ${t.remise ? ligne("Net HT", t.ht) : ""}
     ${ligne(`TVA ${t.tauxTva} %`, t.tva)}
     ${ligne("Total TTC", t.ttc, "est-total")}
-    ${t.acompte ? ligne(`Acompte ${t.acomptePct} % à la signature`, t.acompte, "est-acompte") : ""}
+    ${t.acompte ? ligne(`Acompte ${t.acomptePct} % à la signature`, t.acompteTtc, "est-acompte") : ""}
+    ${t.acompte ? `<div class="totalisateur-note">soit ${fmtEuro(t.acompte)} HT, le montant de la facture d'acompte</div>` : ""}
   </div>`;
 }
 
