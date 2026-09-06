@@ -1,8 +1,8 @@
 # Suite Artisan — direction artistique « Atelier »
 
 Ce document fixe la direction visuelle du produit. Il n'est pas décoratif :
-chaque règle ci-dessous se retrouve dans `atelier.css`, et toute nouvelle
-page doit s'y conformer ou justifier son écart.
+chaque règle ci-dessous se retrouve dans `style.css` — la feuille unique du
+produit — et toute nouvelle page doit s'y conformer ou justifier son écart.
 
 ---
 
@@ -115,6 +115,16 @@ raison. L'application adopte celles du site : une marque, une voix.
 Les chiffres sont **toujours en chasse fixe** (`font-variant-numeric:
 tabular-nums`). Sans cela, deux montants voisins ne se comparent pas à
 l'œil, et c'est le premier signe qu'une interface n'a pas été composée.
+
+**L'approche des titres reste presque nulle : `-0.005em`, pas davantage.**
+Fraunces est une fonte à taille optique ; on lui laisse son dessin et on se
+contente de reprendre le demi-point que le rendu écran ajoute aux grandes
+tailles — sur un titre de trente signes en 37 px, cela représente six pixels
+sur cinq cents, soit un peu plus d'un pour cent. Le resserrement marqué
+(`-0.02em` et au-delà) est proscrit : c'est le tic typographique du SaaS
+générique, et il rendrait un serif à contraste illisible en petit corps. Un
+test le vérifie, pour que la dérive ne s'installe pas déclaration par
+déclaration.
 
 ## 5. Les quatre gestes de composition
 

@@ -107,12 +107,37 @@ assert.doesNotMatch(styleSource, /\.list-row\.is-due \{[^}]*padding-left/);
 // veux que ca soit des cards"), et ces cartes sont disposees en GRILLE :
 // empilees, elles reproduiraient le defilement interminable qu'il
 // reprochait a la version precedente.
-assert.match(styleSource, /\.chantier-grille \{[\s\S]*?grid-template-columns: repeat\(auto-fill, minmax\(330px, 1fr\)\)/);
+//
+// L'assertion porte sur `auto-fill` et non sur l'expression exacte de la
+// piste. Elle epinglait `minmax(330px, 1fr)` - c'est-a-dire la valeur que
+// la couche de correction ecrasait deja : le test etait vert en lisant une
+// declaration morte, et la fusion des deux feuilles, en la retirant, l'a
+// fait echouer. Ce qui doit etre garanti ici est l'INTENTION (des cartes
+// qui se rangent en colonnes, pas une pile), pas la syntaxe du jour.
+assert.match(styleSource, /\.chantier-grille \{[\s\S]*?grid-template-columns: repeat\(auto-fill,/);
+// Le `min(330px, 100%)` n'est pas cosmetique : `minmax(330px, 1fr)` seul
+// impose une piste de 330px meme dans un conteneur de 343px moins ses
+// marges, et la vue debordait horizontalement sur mobile.
+assert.match(styleSource, /\.chantier-grille \{[\s\S]*?minmax\(min\(330px, 100%\), 1fr\)/,
+  "la piste doit ceder sous 330px, sinon la grille deborde sur mobile");
 assert.match(styleSource, /\.chantier-card \{/);
 assert.match(styleSource, /\.chantier-card\.is-open \{ grid-column: 1 \/ -1; \}/, "une carte dépliée doit prendre toute la rangée");
 assert.doesNotMatch(styleSource, /\.chantier-entete/, "l'en-tete de colonnes du tableau n'a plus lieu d'etre");
 assert.match(styleSource, /\.tache-row \{[\s\S]*?min-height: 63px/);
 assert.match(styleSource, /\.doc-row \{[\s\S]*?min-height: 63px/);
-assert.doesNotMatch(styleSource, /letter-spacing:\s*-/);
+// L'approche negative etait interdite tout court a l'epoque ou cette suite
+// reproduisait une reference. Cette interdiction absolue n'a jamais ete
+// verifiee sur le produit entier : le test ne lisait que style.css, et le
+// -0.005em des titres vivait dans la feuille de correction posee par-dessus.
+// La fusion des deux feuilles a rendu la lecture complete - et l'assertion
+// fausse.
+//
+// Ce qui reste vrai, et que la direction artistique enonce, c'est que le
+// resserrement MARQUE est proscrit : c'est le tic du SaaS generique, et il
+// abime un serif a contraste. On garde donc un seuil plutot qu'un interdit.
+for (const [, valeur] of styleSource.matchAll(/letter-spacing:\s*(-[\d.]+)em/g)) {
+  assert.ok(Number(valeur) >= -0.01,
+    `approche trop serree (${valeur}em) : au-dela de -0.01em on retombe dans le SaaS generique`);
+}
 
 console.log("OK - reference-ui-reproduction.test.mjs");

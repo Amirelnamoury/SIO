@@ -21,6 +21,14 @@
    ===================================================================== */
 // Jeu d'essai global : de quoi peupler chaque vue pour un audit mobile
 // reel. Sans donnees, une vue vide ne deborde jamais - et ne prouve rien.
+//
+// La fonction enveloppante n'est pas de la coquetterie : au premier jet, ce
+// fichier declarait ses aides avec `const` au niveau global. Le recharger
+// dans une page deja ouverte - le reflexe meme d'un audit - levait alors une
+// SyntaxError de redeclaration qui tuait TOUT le script, sans rien afficher,
+// et l'audit continuait sur les anciennes donnees en croyant les avoir
+// remplacees. Ici, un second chargement se contente d'ecraser Api a nouveau.
+(function () {
 const jg = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
 const tg = (n) => new Date(Date.now() - n * 86400e3).toISOString();
 Api.listClients = async () => [
@@ -51,6 +59,14 @@ Api.listAvis = async () => [{ id: 1, client_nom: "Bertrand", note: 5, commentair
 Api.listNotifications = async () => [{ id: 1, type: "facture_retard", titre: "Facture FA-2026-014 en retard", message: "1 840 € restent à encaisser.", lue: false, created_at: tg(1) }];
 Api.dashboard = async () => ({ finances: { ca_mois: 18420, a_encaisser: 1840, paiements_recents: [{ date_paiement: jg(-2), moyen: "Virement", montant: 4200 }] }, commercial: { devis_en_attente: 7, valeur_pipeline: 42100 }, aujourdhui: { factures_en_retard: [{ id: 14, numero: "FA-2026-014", client_nom: "Bertrand", montant_restant: 1840 }], devis_a_relancer: [], taches: [{ id: 1, titre: "Commander le carrelage" }], chantiers_a_venir: [], evenements: [{ id: 1, titre: "Métré chez Mme Roussel", date_debut: new Date().toISOString() }] }, alertes_conformite: [], presence_site: { statut: "en_ligne", url: "https://exemple.fr" } });
 Api.dashboardRecommandations = async () => [{ message: "Trois devis de plus de 30 jours n'ont jamais été relancés.", urgence: "haute" }];
-Api.dashboardSante = async () => ({ score: 72, commercial: { label: "Commercial", score: 68 }, tresorerie: { label: "Trésorerie", score: 61 }, chantiers: { label: "Chantiers", score: 80 }, conformite: { label: "Conformité", score: 90 }, organisation: { label: "Organisation", score: 62 } });
+// Le contrat serveur est SanteEntrepriseOut / SousScoreOut : la valeur du
+// sous-score s'appelle `valeur`, pas `score`, et peut etre nulle quand il n'y
+// a pas de quoi juger. Le jeu d'essai disait `score` : chaque sous-score
+// tombait donc dans la branche « pas assez de donnees » et les barres
+// n'etaient jamais rendues - une zone de l'ecran que l'audit croyait couvrir
+// et qu'il ne voyait pas. Les cinq valeurs ci-dessous traversent les trois
+// seuils de couleur (>=70, >=40, <40) et le cas nul.
+Api.dashboardSante = async () => ({ score_global: 72, raison_absence_globale: null, commercial: { label: "Commercial", valeur: 68 }, tresorerie: { label: "Trésorerie", valeur: 31 }, chantiers: { label: "Chantiers", valeur: 80 }, conformite: { label: "Conformité", valeur: null, raison_absence: "Aucune information de conformité enregistrée" }, organisation: { label: "Organisation", valeur: 42 } });
 Api.dashboardActivation = async () => ({ entierement_active: true, entreprise_configuree: true, premier_client: true, premier_devis: true, premiere_facture: true });
 window.hasPlan = () => true;
+})();

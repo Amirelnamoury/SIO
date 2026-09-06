@@ -2462,10 +2462,14 @@ function sousScoreHtml(s) {
       <div class="raison">${escapeHtml(s.raison_absence || "Pas encore assez de données.")}</div>
     </div>`;
   }
-  // Tons dedies a la scene sombre du dashboard (seul appelant de cette
-  // fonction) : --success/--warning/--danger sont calibres pour le papier
-  // clair et seraient peu lisibles sur les surfaces --v5-*.
-  const couleur = s.valeur >= 70 ? "var(--v5-green-bright)" : s.valeur >= 40 ? "var(--v5-warning)" : "var(--v5-danger)";
+  // Reference morte trouvee lors de la fusion des feuilles de style : les
+  // tokens --v5-* n'existaient dans AUCUNE des deux, et ce depuis
+  // longtemps - la barre etait donc peinte avec une couleur invalide,
+  // c'est-a-dire pas peinte du tout. Le commentaire d'origine parlait
+  // d'une « scene sombre du dashboard » qui n'existe plus.
+  // Les tokens semantiques conviennent : ils sont calibres sur le papier,
+  // qui est justement le fond de cette barre.
+  const couleur = s.valeur >= 70 ? "var(--sa-success)" : s.valeur >= 40 ? "var(--sa-warning)" : "var(--sa-danger)";
   return `<div class="sante-sous-score">
     <div class="ligne"><span>${s.label}</span><span class="valeur">${s.valeur}/100</span></div>
     <div class="sante-barre"><div class="remplissage" style="width:${s.valeur}%;background:${couleur};"></div></div>

@@ -28,7 +28,7 @@
   --auth-faint: rgba(247, 243, 236, .42);
   /* Le laiton de la direction « Atelier », version fond sombre : le
      #d6af68 precedent venait de l identite abandonnee. Voir
-     --sa-laiton-sur-sombre dans atelier.css (5.96:1 sur cette encre). */
+     --sa-laiton-sur-sombre dans style.css (5.96:1 sur cette encre). */
   --auth-champagne: #C79A4E;
   --auth-line: rgba(247, 243, 236, .14);
   --auth-line-strong: rgba(247, 243, 236, .28);
