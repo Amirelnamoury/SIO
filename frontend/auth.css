@@ -26,7 +26,10 @@
   --auth-white: #f7f3ec;
   --auth-muted: rgba(247, 243, 236, .66);
   --auth-faint: rgba(247, 243, 236, .42);
-  --auth-champagne: #d6af68;  /* accent commun a toute la marque */
+  /* Le laiton de la direction « Atelier », version fond sombre : le
+     #d6af68 precedent venait de l identite abandonnee. Voir
+     --sa-laiton-sur-sombre dans atelier.css (5.96:1 sur cette encre). */
+  --auth-champagne: #C79A4E;
   --auth-line: rgba(247, 243, 236, .14);
   --auth-line-strong: rgba(247, 243, 236, .28);
   --auth-display: "Fraunces", Georgia, serif;
@@ -254,12 +257,17 @@
    SaaS, le styler sans ancre repeindrait toute l'application. */
 .auth-screen .auth-form .btn-primary {
   margin-top: 30px; width: 100%;
-  padding: 14px 24px; border: 0; border-radius: 999px;
-  background: var(--auth-white); color: var(--auth-ink);
+  /* Angle vif, comme partout ailleurs : la pilule etait le seul bouton
+     arrondi du produit et contredisait la direction artistique, qui
+     reserve 2 px a ce qu'on manipule. Vert-de-gris plutot que creme :
+     c'est la couleur d'action du SaaS, et l'entree doit annoncer ce
+     qu'on va trouver derriere. Blanc casse sur ce fond : 7.4:1. */
+  padding: 14px 24px; border: 0; border-radius: 2px;
+  background: #3E5C4B; color: #F4F1EA;
   font-family: var(--auth-sans); font-size: .96rem; font-weight: 600;
   cursor: pointer; transition: transform .25s var(--auth-ease), background-color .25s;
 }
-.auth-screen .auth-form .btn-primary:hover { transform: translateY(-2px); background: #fff; }
+.auth-screen .auth-form .btn-primary:hover { transform: translateY(-2px); background: #4A6C58; }
 .auth-screen .auth-form .btn-primary:active { transform: none; }
 
 .auth-screen .auth-trust { color: var(--auth-faint); font-size: .82rem; margin-top: 22px; }
