@@ -852,3 +852,108 @@ label { color: var(--sa-text-muted); }
 .devis-modulebar { border-bottom-color: var(--sa-border); color: var(--sa-text-muted); }
 .devis-modulebar button.active { color: var(--sa-text); border-bottom-color: var(--sa-laiton); }
 .devis-modulebar span { color: var(--sa-text-faint); }
+
+/* =====================================================================
+   CREATION / MODIFICATION D'UN DEVIS — « le document »
+   ---------------------------------------------------------------------
+   C'est l'ecran le plus important du produit, et on y construisait un
+   devis EN AVEUGLE : aucun total n'etait affiche pendant la saisie. On
+   entrait des lignes, des quantites, des prix, un pourcentage de remise
+   et un pourcentage d'acompte, et on decouvrait le montant apres avoir
+   enregistre.
+
+   La forme adoptee est celle du devis imprime : le tableau des
+   prestations numerote, puis le pied du document - conditions a gauche,
+   totaux alignes a droite. C'est la forme que l'artisan connait deja.
+   ===================================================================== */
+.form-box { background: var(--sa-surface); border: 1px solid var(--sa-border-strong); border-radius: var(--sa-radius-lg); }
+.form-section-title {
+  font-size: 0.6875rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--sa-text-faint);
+  padding-bottom: 8px; margin-bottom: var(--sa-space-4);
+  border-bottom: 1px solid var(--sa-border);
+}
+
+/* ---------- Le tableau des prestations ---------- */
+.lignes-editor { --ligne-cols: minmax(0, 1fr) 74px 92px 104px 104px 34px; }
+.ligne-row { display: grid; grid-template-columns: var(--ligne-cols); gap: var(--sa-space-2); align-items: center; }
+.ligne-row-header {
+  font-size: var(--sa-text-2xs); font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.05em; color: var(--sa-text-faint);
+  padding-bottom: 6px; border-bottom: 1px solid var(--sa-border-strong); margin-bottom: 8px;
+}
+.ligne-row-header span:nth-child(2),
+.ligne-row-header span:nth-child(4),
+.ligne-row-header span:nth-child(5) { text-align: right; }
+.ligne-quantite, .ligne-prix { text-align: right; }
+/* Le total de la ligne : en Fraunces, aligne d'une ligne a l'autre.
+   C'est la qu'une erreur de quantite ou de prix se voit. */
+.ligne-total {
+  text-align: right;
+  font-family: var(--sa-font-display); font-size: var(--sa-text-sm); font-weight: 500;
+  color: var(--sa-text); font-variant-numeric: tabular-nums;
+  padding-right: 2px;
+}
+
+/* ---------- Le pied du document ---------- */
+.devis-pied {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+  gap: var(--sa-space-8);
+  margin-top: var(--sa-space-8);
+  padding-top: var(--sa-space-6);
+  border-top: 1px solid var(--sa-border-strong);
+}
+.devis-pied-conditions { min-width: 0; }
+.devis-pied-conditions textarea { width: 100%; min-height: 74px; }
+
+/* ---------- Le totalisateur ----------
+   Aligne a droite, libelles a gauche, montants en colonne, filet fort
+   avant le total a payer. Il reproduit le calcul du serveur au centime
+   pres, arrondi intermediaire compris (voir devisTotaux) : un total
+   affiche qui differerait de celui enregistre serait pire que pas de
+   total du tout. */
+.totalisateur { font-variant-numeric: tabular-nums; }
+.totalisateur.est-vide {
+  padding: var(--sa-space-5);
+  border: 1px dashed var(--sa-border-strong); border-radius: var(--sa-radius-lg);
+}
+.totalisateur.est-vide p { margin: 0; font-size: var(--sa-text-sm); color: var(--sa-text-muted); }
+.totalisateur-ligne {
+  display: flex; justify-content: space-between; align-items: baseline; gap: var(--sa-space-4);
+  padding: 7px 0;
+  font-size: var(--sa-text-sm); color: var(--sa-text-muted);
+}
+.totalisateur-ligne span:last-child { font-family: var(--sa-font-display); color: var(--sa-text); white-space: nowrap; }
+.totalisateur-ligne.est-remise span:last-child { color: var(--sa-danger); }
+/* Le total TTC : le seul chiffre du bloc qui compte vraiment. Filet fort
+   au-dessus, corps plus grand — le geste du total souligne. */
+.totalisateur-ligne.est-total {
+  margin-top: 4px; padding-top: 12px;
+  border-top: 2px solid var(--sa-text);
+  color: var(--sa-text); font-weight: 600;
+}
+.totalisateur-ligne.est-total span:last-child { font-size: 1.32rem; font-weight: 600; }
+/* L'acompte est calcule sur le HT, pas sur le TTC (voir la creation de la
+   facture d'acompte cote serveur) : il est libelle en consequence et
+   detache du total pour ne pas etre lu comme un montant a encaisser. */
+.totalisateur-ligne.est-acompte {
+  margin-top: 8px; padding-top: 10px;
+  border-top: 1px solid var(--sa-border);
+  font-size: var(--sa-text-xs);
+}
+.totalisateur-ligne.est-acompte span:last-child { color: var(--sa-laiton); font-size: var(--sa-text-sm); }
+
+@media (max-width: 900px) {
+  .devis-pied { grid-template-columns: 1fr; gap: var(--sa-space-6); }
+  .lignes-editor { --ligne-cols: minmax(0, 1fr) 62px 76px 88px 88px 34px; }
+}
+@media (max-width: 700px) {
+  /* En mobile la ligne se replie : la designation prend toute la largeur,
+     les trois champs chiffres se partagent la suivante, et le total de la
+     ligne se cale a droite en face de la corbeille. */
+  .ligne-row { grid-template-columns: repeat(3, minmax(0, 1fr)) 34px; gap: 6px; padding-bottom: 12px; border-bottom: 1px solid var(--sa-border); margin-bottom: 12px; }
+  .ligne-row-header { display: none; }
+  .ligne-description { grid-column: 1 / -1; }
+  .ligne-total { grid-column: 1 / 4; text-align: left; }
+}

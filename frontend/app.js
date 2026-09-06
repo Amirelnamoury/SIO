@@ -3846,10 +3846,105 @@ function ligneRowHtml(ligne) {
     <input type="number" step="0.01" min="0" class="ligne-quantite" placeholder="Qté" aria-label="Quantité" value="${l.quantite ?? 1}">
     <input type="text" class="ligne-unite" placeholder="Unité" aria-label="Unité" value="${escapeHtml(l.unite || "forfait")}">
     <input type="number" step="0.01" min="0" class="ligne-prix" placeholder="Prix HT" aria-label="Prix unitaire HT" value="${l.prix_unitaire_ht !== undefined && l.prix_unitaire_ht !== null ? l.prix_unitaire_ht : ""}">
+    <!-- Le total de la ligne. C'est la qu'une erreur de quantite ou de
+         prix se voit, bien avant le total general. -->
+    <span class="ligne-total" aria-live="polite"></span>
     <button type="button" class="icon-btn ligne-remove" data-action="remove-ligne" title="Retirer" aria-label="Retirer cette ligne">
       <svg viewBox="0 0 24 24" class="nav-icon"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>
     </button>
   </div>`;
+}
+
+// ---------------------------------------------------------------------
+// LE TOTALISATEUR — le bloc de totaux d'un devis, calcule en direct
+// ---------------------------------------------------------------------
+// L'ecran de creation ne montrait AUCUN total. On saisissait des lignes,
+// des quantites, des prix, un pourcentage de remise et un pourcentage
+// d'acompte, et on decouvrait le montant apres avoir enregistre. On
+// construisait un devis en aveugle.
+//
+// LA REGLE ABSOLUE ICI : ce calcul doit reproduire celui du serveur au
+// centime pres, ARRONDI INTERMEDIAIRE COMPRIS (voir les proprietes du
+// modele Devis dans backend/app/models.py). Un total affiche qui differe
+// de celui qui sera enregistre serait pire que pas de total du tout.
+//
+//   montant_ht_brut = round(somme(quantite x prix_unitaire_ht), 2)
+//   remise_montant  = round(brut x remise% / 100, 2)
+//   montant_ht      = round(brut - remise, 2)
+//   montant_ttc     = round(montant_ht x (1 + tva/100), 2)
+//
+// L'acompte se calcule sur le HT et non sur le TTC (voir
+// routers/chantiers.py, creation de la facture d'acompte) : il est donc
+// libelle « HT » pour ne pas laisser croire a un montant a encaisser.
+const arrondi2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
+
+function devisTotaux(lignes, tauxTva, remisePct, acomptePct) {
+  const brut = lignes.length
+    ? arrondi2(lignes.reduce((s, l) => s + (Number(l.quantite) || 0) * (Number(l.prix_unitaire_ht) || 0), 0))
+    : null;
+  if (brut === null) return null;
+  const remise = remisePct ? arrondi2((brut * remisePct) / 100) : 0;
+  const ht = arrondi2(brut - remise);
+  const tva = arrondi2(ht * (Number(tauxTva) || 0) / 100);
+  const ttc = arrondi2(ht * (1 + (Number(tauxTva) || 0) / 100));
+  const acompte = acomptePct ? arrondi2((ht * acomptePct) / 100) : 0;
+  return { brut, remise, remisePct, ht, tva, tauxTva, ttc, acompte, acomptePct };
+}
+
+/** Le bloc de totaux, aligne a droite comme sur un devis imprime : les
+ *  libelles a gauche, les montants en colonne, un filet fort avant le
+ *  total a payer. C'est la forme que l'artisan connait deja. */
+function devisTotalisateurHtml(t) {
+  if (!t) {
+    return `<div class="totalisateur est-vide">
+      <p>Ajoutez une prestation pour voir le total se calculer.</p>
+    </div>`;
+  }
+  const ligne = (label, montant, classe = "") =>
+    `<div class="totalisateur-ligne ${classe}"><span>${label}</span><span>${fmtEuro(montant)}</span></div>`;
+
+  return `
+  <div class="totalisateur">
+    ${ligne("Total HT", t.brut)}
+    ${t.remise ? ligne(`Remise ${t.remisePct} %`, -t.remise, "est-remise") : ""}
+    ${t.remise ? ligne("Net HT", t.ht) : ""}
+    ${ligne(`TVA ${t.tauxTva} %`, t.tva)}
+    ${ligne("Total TTC", t.ttc, "est-total")}
+    ${t.acompte ? ligne(`Acompte ${t.acomptePct} % à la signature`, t.acompte, "est-acompte") : ""}
+  </div>`;
+}
+
+/** Recalcule le bloc a chaque frappe. Branche sur `input` ET `change` :
+ *  le premier couvre la saisie au clavier, le second les listes
+ *  deroulantes (TVA) et les fleches d'un champ nombre. */
+function brancherTotalisateur(formEl, containerId) {
+  const cible = formEl.querySelector(".totalisateur-hote");
+  if (!cible) return;
+  const recalculer = () => {
+    const t = devisTotaux(
+      lireLignes(containerId),
+      parseFloat(formEl.querySelector("#df-taux-tva")?.value) || 0,
+      parseFloat(formEl.querySelector("#df-remise")?.value) || 0,
+      parseFloat(formEl.querySelector("#df-acompte")?.value) || 0,
+    );
+    cible.innerHTML = devisTotalisateurHtml(t);
+    // Chaque ligne affiche aussi son propre total : c'est la ou une erreur
+    // de quantite ou de prix se voit, bien avant le total general.
+    formEl.querySelectorAll(`#${containerId} .ligne-row`).forEach((row) => {
+      const q = parseFloat(row.querySelector(".ligne-quantite")?.value) || 0;
+      const p = parseFloat(row.querySelector(".ligne-prix")?.value) || 0;
+      const cellule = row.querySelector(".ligne-total");
+      if (cellule) cellule.textContent = q && p ? fmtEuro(arrondi2(q * p)) : "";
+    });
+  };
+  formEl.addEventListener("input", recalculer);
+  formEl.addEventListener("change", recalculer);
+  formEl.addEventListener("click", (e) => {
+    // Ajout ou suppression d'une ligne : le recalcul doit suivre le DOM,
+    // donc apres que le gestionnaire de l'editeur a fait son travail.
+    if (e.target.closest('[data-action="add-ligne"], [data-action="remove-ligne"]')) setTimeout(recalculer, 0);
+  });
+  recalculer();
 }
 
 function lignesEditorHtml(containerId, lignes) {
@@ -3857,7 +3952,7 @@ function lignesEditorHtml(containerId, lignes) {
   return `
   <div class="lignes-editor">
     <div class="ligne-row ligne-row-header" aria-hidden="true">
-      <span>Désignation</span><span>Qté</span><span>Unité</span><span>Prix HT</span><span></span>
+      <span>Désignation</span><span>Qté</span><span>Unité</span><span>Prix HT</span><span>Total HT</span><span></span>
     </div>
     <div id="${containerId}">${rows}</div>
     <button type="button" class="btn-sm" data-action="add-ligne" data-target="${containerId}">+ Ajouter une ligne</button>
@@ -4080,24 +4175,29 @@ async function showDevisForm(devis, preselectClientId) {
           ${lignesEditorHtml("df-lignes", isEdit ? devis.lignes : null)}
         </div>
 
-        <div class="form-section">
-          <div class="form-section-title">Conditions financières</div>
-          <div class="form-grid">
-            <div>
-              <label for="df-acompte">Acompte à la signature (%)</label>
-              <input type="number" step="1" min="0" max="100" id="df-acompte" value="${isEdit ? devis.acompte_pourcentage : 30}">
+        <!-- Le pied du document : conditions a gauche, totaux a droite,
+             exactement comme sur le devis imprime. Les pourcentages
+             d'acompte et de remise cessent d'etre abstraits - leur montant
+             en euros s'affiche en face, et se recalcule a chaque frappe.
+             L'ecran ne montrait AUCUN total : on construisait un devis en
+             aveugle et on decouvrait le montant apres enregistrement. -->
+        <div class="devis-pied">
+          <div class="devis-pied-conditions">
+            <div class="form-section-title">Conditions</div>
+            <div class="form-grid">
+              <div>
+                <label for="df-acompte">Acompte à la signature (%)</label>
+                <input type="number" step="1" min="0" max="100" id="df-acompte" value="${isEdit ? devis.acompte_pourcentage : 30}">
+              </div>
+              <div>
+                <label for="df-remise">Remise (%, optionnel)</label>
+                <input type="number" step="1" min="0" max="100" id="df-remise" placeholder="0" value="${isEdit && devis.remise_pourcentage ? devis.remise_pourcentage : ""}">
+              </div>
             </div>
-            <div>
-              <label for="df-remise">Remise (%, optionnel)</label>
-              <input type="number" step="1" min="0" max="100" id="df-remise" placeholder="0" value="${isEdit && devis.remise_pourcentage ? devis.remise_pourcentage : ""}">
-            </div>
+            <label for="df-description" style="margin-top:14px;">Notes au client</label>
+            <textarea id="df-description" placeholder="Conditions particulières, délais, précisions…">${isEdit ? escapeHtml(devis.description || "") : ""}</textarea>
           </div>
-        </div>
-
-        <div class="form-section">
-          <div class="form-section-title">Notes</div>
-          <label for="df-description">Description / notes</label>
-          <textarea id="df-description">${isEdit ? escapeHtml(devis.description || "") : ""}</textarea>
+          <div class="totalisateur-hote" aria-live="polite" aria-label="Totaux du devis"></div>
         </div>
 
         <p class="field-error" id="devis-form-error" hidden></p>
@@ -4112,6 +4212,7 @@ async function showDevisForm(devis, preselectClientId) {
 
   const formEl = document.getElementById("devis-form");
   attacherEditeurLignes(formEl);
+  brancherTotalisateur(formEl, "df-lignes");
 
   if (!isEdit) {
     const btnExistant = document.getElementById("df-client-existant");
