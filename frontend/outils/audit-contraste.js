@@ -70,6 +70,13 @@
     return b.width > 0 && b.height > 0 && el.offsetParent !== null;
   };
 
+  /** Un glyphe purement decoratif — une fleche de separation, un chevron —
+   *  est marque `aria-hidden` : il ne porte aucune information, et le seuil
+   *  de 4.5:1 des textes ne s'y applique pas. Le durcir jusqu'a ce seuil
+   *  reviendrait a le rendre PLUS visible que les libelles qu'il separe,
+   *  ce qui serait un defaut de composition, pas une amelioration. */
+  const estDecoratif = (el) => el.closest('[aria-hidden="true"]') !== null;
+
   window.auditContraste = function (racine = ".app-shell") {
     const hote = document.querySelector(racine);
     if (!hote) return `Racine introuvable : ${racine}`;
@@ -83,7 +90,7 @@
         .filter((n) => n.nodeType === 3 && n.textContent.trim())
         .map((n) => n.textContent.trim())
         .join(" ");
-      if (!texte || !estVisible(el)) continue;
+      if (!texte || !estVisible(el) || estDecoratif(el)) continue;
       audites++;
 
       const s = getComputedStyle(el);

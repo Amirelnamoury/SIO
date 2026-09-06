@@ -1431,11 +1431,15 @@ async function loadStatistiques() {
       const conversion = i > 0 && precedent && etape.nb <= precedent
         ? Math.round((etape.nb / precedent) * 100)
         : null;
-      const bg = mixHexColors("#f1ece0", "#c9a06a", i / Math.max(1, commercialSteps.length - 1));
+      // Le degrade etait calcule en inline sur des valeurs de l'ancienne
+      // identite sombre : sur du papier, le texte y tombait jusqu'a
+      // 3.01:1. L'etape porte desormais son rang en classe, et c'est la
+      // feuille de style qui decide - la densite se lit sur le FILET du
+      // bas, pas sur un aplat derriere le texte.
       return `${i ? '<span class="stats-commercial-arrow" aria-hidden="true">&rarr;</span>' : ""}
-        <div class="stats-commercial-step" style="background:${bg};">
+        <div class="stats-commercial-step est-etape-${i + 1}">
           <span>${escapeHtml(etape.label)}</span>
-          <strong>${etape.nb}${conversion !== null ? ` (${conversion}%)` : ""}</strong>
+          <strong>${etape.nb}${conversion !== null ? ` (${conversion} %)` : ""}</strong>
         </div>`;
     }).join("");
 
@@ -1455,52 +1459,48 @@ async function loadStatistiques() {
         : "Aucun montant impayé sur les factures ouvertes.",
     ];
 
+    // Un rapport mene avec ses conclusions, pas avec ses preuves. Les
+    // « points cles » etaient en bas de page, apres quatre panneaux de
+    // chiffres : personne ne lisait la lecture. Ils ouvrent desormais.
+    //
+    // La page adopte la gouttiere des pages COMPOSEES (voir
+    // DIRECTION-ARTISTIQUE.md) : les intitules vivent dans la marge, le
+    // contenu a droite. C'est la forme d'un rapport, et Statistiques en
+    // est un - contrairement aux listes, qui ont besoin de leur largeur.
     container.innerHTML = `
-      <div class="stats-ca-panel">
-        <div class="stats-ca-summary">
-          <div class="kpi-card-label">Chiffre d'affaires</div>
-          <div class="stats-ca-value">${fmtEuro(caTotal)}</div>
-          ${deltaPct !== null ? `<div class="kpi-card-sub${deltaPct >= 0 ? " is-positive" : " is-alert"}">${deltaPct >= 0 ? "+" : ""}${deltaPct}% vs mois précédent</div>` : ""}
-        </div>
-        <div class="stats-chart-wrap">${chartHtml}</div>
-        <div class="stats-ca-legend">
-          <span><strong>Encaissé : ${fmtEuro(caTotal)}</strong></span>
-          <span><strong>Pipeline : ${fmtEuro(a.valeur_pipeline)}</strong></span>
-          <span>Encore à encaisser : <strong>${fmtEuro(a.montant_impayes)}</strong></span>
-        </div>
-      </div>
+      ${saSection("Ce qu'il faut retenir",
+        `<div class="stats-lecture">${pointsCles.map((p) => `<p>${escapeHtml(p)}</p>`).join("")}</div>`)}
 
-      <div class="stats-panel stats-performance-panel">
-        <h4>Performance commerciale</h4>
-        <div class="stats-performance-grid">
-          <div class="stats-commercial-funnel">${commercialFunnelHtml}</div>
-          <div class="stats-metric-list">
-            <div><span>Taux de signature</span><strong>${a.taux_acceptation}%</strong></div>
-            <div><span>Panier moyen</span><strong>${fmtEuro(a.panier_moyen)}</strong></div>
-            <div><span>Valeur du pipeline</span><strong>${fmtEuro(a.valeur_pipeline)}</strong></div>
+      ${saSection("Chiffre d'affaires", `
+        <div class="stats-ca">
+          <div class="stats-ca-tete">
+            <span class="stats-ca-valeur">${fmtEuro(caTotal)}</span>
+            <span class="stats-ca-note">encaissé${deltaPct !== null ? ` · <span class="${deltaPct >= 0 ? "est-hausse" : "est-baisse"}">${deltaPct >= 0 ? "+" : ""}${deltaPct} % sur le dernier mois</span>` : ""}</span>
           </div>
-        </div>
-      </div>
-
-      <div class="stats-lower-grid">
-        <div class="stats-panel">
-          <h4>Acquisition clients</h4>
-          <div class="acq-source-list">${sourcesHtml}</div>
-        </div>
-        <div class="stats-panel">
-          <h4>Clients & paiements</h4>
-          <div class="stats-metric-list stats-client-metrics">
-            <div><span>Clients récurrents</span><strong>${recurrentPct}%</strong></div>
-            <div><span>Délai moyen de paiement</span><strong>${a.delai_moyen_paiement_jours !== null ? a.delai_moyen_paiement_jours + " j" : "—"}</strong></div>
-            <div><span>Montant impayé</span><strong>${fmtEuro(a.montant_impayes)}</strong></div>
+          <div class="stats-chart-wrap">${chartHtml}</div>
+          <div class="stats-ca-legende">
+            <span>Pipeline <strong>${fmtEuro(a.valeur_pipeline)}</strong></span>
+            <span>Encore à encaisser <strong>${fmtEuro(a.montant_impayes)}</strong></span>
           </div>
-        </div>
-      </div>
+        </div>`, "douze derniers mois")}
 
-      <div class="stats-panel stats-insights-panel">
-        <h4>Points clés</h4>
-        <div class="stats-insights">${pointsCles.map((point) => `<p><span aria-hidden="true">↗</span>${escapeHtml(point)}</p>`).join("")}</div>
-      </div>
+      ${saSection("Performance commerciale", `
+        <div class="stats-commercial-funnel">${commercialFunnelHtml}</div>
+        <div class="stats-metric-list">
+          <div><span>Taux de signature</span><strong>${a.taux_acceptation} %</strong></div>
+          <div><span>Panier moyen</span><strong>${fmtEuro(a.panier_moyen)}</strong></div>
+          <div><span>Valeur du pipeline</span><strong>${fmtEuro(a.valeur_pipeline)}</strong></div>
+        </div>`)}
+
+      ${saSection("Acquisition", `<div class="acq-source-list">${sourcesHtml}</div>`,
+        "d'où viennent vos clients")}
+
+      ${saSection("Clients et paiements", `
+        <div class="stats-metric-list">
+          <div><span>Clients récurrents</span><strong>${recurrentPct} %</strong></div>
+          <div><span>Délai moyen de paiement</span><strong>${a.delai_moyen_paiement_jours !== null ? a.delai_moyen_paiement_jours + " j" : "—"}</strong></div>
+          <div><span>Montant impayé</span><strong>${fmtEuro(a.montant_impayes)}</strong></div>
+        </div>`)}
     `;
   } catch (err) {
     container.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;

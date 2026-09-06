@@ -1267,3 +1267,105 @@ label { color: var(--sa-text-muted); }
 .planning-modes { background: var(--sa-surface-2); border-radius: var(--sa-radius-sm); }
 .planning-modes .btn-sm-primary { background: var(--sa-accent); color: var(--sa-text-on-accent); border-color: var(--sa-accent); }
 .planning-label { font-family: var(--sa-font-display); font-weight: 600; letter-spacing: 0.02em; color: var(--sa-text); }
+
+/* =====================================================================
+   STATISTIQUES — un rapport, pas un tableau de bord
+   ---------------------------------------------------------------------
+   Les « points cles » etaient en bas de page, apres quatre panneaux de
+   chiffres : personne ne lisait la lecture. Un rapport mene avec ses
+   conclusions, pas avec ses preuves. Ils ouvrent desormais la page.
+
+   Statistiques adopte la gouttiere des pages COMPOSEES : les intitules
+   vivent dans la marge, le contenu a droite. C'est la forme d'un
+   rapport - contrairement aux listes, qui ont besoin de leur largeur.
+   ===================================================================== */
+.stats-lecture p {
+  margin: 0 0 var(--sa-space-4);
+  padding-left: 16px;
+  border-left: 2px solid var(--sa-laiton);
+  font-family: var(--sa-font-display);
+  font-size: var(--sa-text-lg);
+  font-weight: 400; line-height: 1.45;
+  color: var(--sa-text);
+  max-width: 58ch;
+}
+.stats-lecture p:last-child { margin-bottom: 0; }
+
+.stats-ca-tete { display: flex; align-items: baseline; gap: var(--sa-space-3); flex-wrap: wrap; margin-bottom: var(--sa-space-5); }
+.stats-ca-valeur {
+  font-family: var(--sa-font-display);
+  font-size: 2rem; font-weight: 500; line-height: 1;
+  color: var(--sa-text); font-variant-numeric: tabular-nums;
+}
+.stats-ca-note { font-size: var(--sa-text-sm); color: var(--sa-text-muted); }
+.stats-ca-note .est-hausse { color: var(--sa-success); font-weight: 500; }
+.stats-ca-note .est-baisse { color: var(--sa-danger); font-weight: 500; }
+.stats-ca-legende {
+  display: flex; gap: var(--sa-space-6); flex-wrap: wrap;
+  margin-top: var(--sa-space-4); padding-top: 12px;
+  border-top: 1px solid var(--sa-border);
+  font-size: var(--sa-text-sm); color: var(--sa-text-muted);
+}
+.stats-ca-legende strong { color: var(--sa-text); font-family: var(--sa-font-display); font-weight: 500; font-variant-numeric: tabular-nums; }
+
+/* Le graphique : une courbe a l'encre sur du papier reglé. Les reglures
+   sont sous le seuil de contraste - elles reperent, elles ne structurent
+   pas ; c'est la courbe qui porte la lecture. */
+.chart-gridline { stroke: var(--sa-border); stroke-width: 1; }
+.chart-axis-label { fill: var(--sa-text-faint); font-size: 10px; font-family: var(--sa-font); }
+.chart-line { stroke: var(--sa-accent); stroke-width: 2; fill: none; }
+.chart-area { fill: url(#chartFade); }
+.chart-point { fill: var(--sa-accent); }
+
+/* L'entonnoir commercial : trois etapes, de l'encre claire a l'encre
+   pleine. La conversion se lit comme une densite, pas comme trois
+   couleurs. */
+.stats-commercial-funnel { display: flex; align-items: stretch; gap: var(--sa-space-2); flex-wrap: wrap; margin-bottom: var(--sa-space-5); }
+.stats-commercial-step {
+  flex: 1 1 140px; min-width: 0;
+  padding: 13px 15px;
+  border: 1px solid var(--sa-border);
+  border-radius: var(--sa-radius-lg);
+  display: flex; flex-direction: column; gap: 5px;
+}
+.stats-commercial-step span { font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
+.stats-commercial-step strong {
+  font-family: var(--sa-font-display); font-size: var(--sa-text-lg); font-weight: 500;
+  color: var(--sa-text); font-variant-numeric: tabular-nums;
+}
+.stats-commercial-arrow { align-self: center; color: var(--sa-border-strong); }
+
+.stats-metric-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--sa-space-5); }
+.stats-metric-list > div { display: flex; flex-direction: column; gap: 5px; }
+.stats-metric-list span { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--sa-text-faint); }
+.stats-metric-list strong {
+  font-family: var(--sa-font-display); font-size: var(--sa-text-lg); font-weight: 500;
+  color: var(--sa-text); font-variant-numeric: tabular-nums;
+  padding-bottom: 6px; border-bottom: 1px solid var(--sa-border-strong);
+}
+
+.acq-source-list { display: flex; flex-direction: column; gap: var(--sa-space-3); }
+.acq-source-row { display: grid; grid-template-columns: minmax(110px, auto) minmax(80px, 1fr) auto; align-items: center; gap: var(--sa-space-4); }
+.acq-source-label { font-size: var(--sa-text-sm); color: var(--sa-text); }
+.acq-source-bar { height: 6px; border-radius: 3px; background: var(--sa-surface-2); overflow: hidden; }
+.acq-source-bar .remplissage { height: 100%; background: var(--sa-accent); border-radius: 3px; }
+.acq-source-value { font-size: var(--sa-text-xs); color: var(--sa-text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.stats-period-control { font-size: var(--sa-text-xs); color: var(--sa-text-faint); }
+
+@media (max-width: 760px) {
+  .stats-lecture p { font-size: var(--sa-text-md); }
+  .stats-ca-valeur { font-size: 1.5rem; }
+  .acq-source-row { grid-template-columns: 1fr; gap: 4px; }
+  .acq-source-value { white-space: normal; }
+}
+
+/* L'entonnoir : la progression se lit sur le FILET du bas, qui s'epaissit
+   et fonce d'une etape a l'autre. Un aplat derriere le texte faisait
+   tomber le contraste jusqu'a 3.01:1 - et l'ancien degrade etait calcule
+   en inline sur des valeurs de l'identite sombre. */
+.stats-commercial-step { background: var(--sa-surface); border-bottom-width: 2px; }
+.stats-commercial-step.est-etape-1 { border-bottom-color: #C3CCC5; }
+.stats-commercial-step.est-etape-2 { border-bottom-color: #7E9686; }
+.stats-commercial-step.est-etape-3 { border-bottom-color: var(--sa-accent); }
+.stats-commercial-arrow { color: var(--sa-text-faint); }

@@ -46,8 +46,31 @@ const chantierActionsEnd = appSource.indexOf("function renderChantierCard", chan
 assert.match(appSource.slice(chantierActionsStart, chantierActionsEnd), /toggle-chantier-details/);
 
 assert.match(appSource, /const a = await Api\.analytics\(\)/);
-assert.match(appSource, /stats-performance-panel/);
-assert.match(appSource, /stats-lower-grid/);
+// Statistiques est passe des panneaux empiles a la gouttiere des pages
+// composees, et les « points cles » ont remonte en tete : un rapport mene
+// avec ses conclusions, pas avec ses preuves. Ce qui est garde ici est
+// l'INTENTION - la page raconte quelque chose avant d'aligner des
+// chiffres - et non les anciens noms de panneaux.
+{
+  const statsStart = appSource.indexOf("async function loadStatistiques");
+  const statsEnd = appSource.indexOf("async function loadAvis", statsStart);
+  const stats = appSource.slice(statsStart, statsEnd);
+  assert.ok(statsStart !== -1 && statsEnd > statsStart, "loadStatistiques est introuvable");
+  assert.match(stats, /saSection\("Ce qu'il faut retenir"/, "la lecture doit ouvrir la page");
+  assert.ok(
+    stats.indexOf("Ce qu'il faut retenir") < stats.indexOf("Chiffre d'affaires"),
+    "les points clés doivent précéder les chiffres",
+  );
+  for (const bloc of ["Chiffre d'affaires", "Performance commerciale", "Acquisition", "Clients et paiements"]) {
+    assert.ok(stats.includes(bloc), `section perdue dans la refonte : ${bloc}`);
+  }
+  // Les mesures elles-memes doivent rester : la refonte recompose, elle
+  // ne retire pas d'information.
+  for (const mesure of ["taux_acceptation", "panier_moyen", "valeur_pipeline",
+    "delai_moyen_paiement_jours", "montant_impayes", "sources_acquisition"]) {
+    assert.ok(stats.includes(mesure), `mesure perdue dans la refonte : ${mesure}`);
+  }
+}
 assert.doesNotMatch(appSource, /84\s?720\s?€/);
 assert.doesNotMatch(appSource, /45\s?300\s?€/);
 
