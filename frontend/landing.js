@@ -81,43 +81,22 @@
     { id: "t", chapter: 7, w: 0,   t: 0,    from: 1.00, to: 1.06, pos: "50% 50%", fill: true }
   ];
 
-  // Emplacement de l'ecran du bureau dans la frame R, en % de l'image
-  // (mesure sur la photo d'origine). On y affiche la marque, pas une
-  // capture du SaaS : l'application est en refonte, et y incruster une
-  // vieille capture donnerait une fausse idee du produit.
-  // Emplacement de la dalle, mesure sur la photo.
+  // Emplacement de la dalle du moniteur dans la frame R, en % de l'image.
   //
-  // Le moniteur n'est PAS d'aplomb : ses coins sont en
-  // (951,500) (1198,504) (1204,635) (953,638), soit un bord haut incline
-  // de 1,15deg et un bord gauche de 0,81deg. Prendre la boite englobante
-  // de ce quadrilatere — ce qui avait ete fait — donne forcement un
-  // rectangle plus grand que la dalle, qui deborde aux coins : c'est ce
-  // qu'on voyait en bas a gauche.
+  // On y affiche la marque, pas une capture du SaaS : l'application est en
+  // refonte, et y incruster une vieille capture donnerait une fausse idee
+  // du produit.
   //
-  // On utilise donc le rectangle INSCRIT, plus la rotation du moniteur.
-  // Le leger retrait qui subsiste se lit comme la bordure noire de la
-  // dalle, ce qui est realiste.
   // Coins releves sur la photo :
   //   TL (943.7, 495.3)  TR (1200.0, 494.3)
   //   BL (947.1, 641.7)  BR (1209.4, 636.4)
-  // Ce n'est ni un rectangle ni un simple rectangle tourne : le bord haut
-  // mesure 256 px et le bord bas 262 px. Le moniteur est vu en legere
-  // perspective, et les verticales penchent a droite en descendant.
+  // Ce n'est ni un rectangle ni un rectangle tourne : le bord haut mesure
+  // 256 px et le bord bas 262 px, et le bord gauche ne se decale que de
+  // 3 px sur la hauteur quand le droit se decale de 8 px. C'est une
+  // perspective, que seule une homographie peut rendre (voir placeScreen).
   //
-  // D'ou la matrice : un `rotate` seul laissait un liseré gris d'un cote
-  // et debordait de l'autre. Les coefficients sont l'ajustement affine au
-  // sens des moindres carres sur les quatre coins ; le rectangle est
-  // retreci de 3 px (echelle native) pour absorber la perspective
-  // residuelle et ne jamais mordre sur le cadre.
-  // Les QUATRE COINS de la dalle, en % de l'image (elargis de 1 px vers
-  // l'exterieur : mieux vaut mordre d'un pixel sur le cadre noir que
-  // laisser paraitre un pixel de gris sur du noir).
-  //
-  // Une transformation affine ne suffit pas ici : le bord gauche ne se
-  // decale que de 3 px sur la hauteur quand le droit se decale de 8 px.
-  // Une affine ne peut rendre qu'une seule pente et prend donc la
-  // moyenne — elle sur-incline a gauche et sous-incline a droite, d'ou le
-  // gris qui restait en bas a gauche. Il faut une homographie.
+  // Les coins sont elargis de 1 px vers l'exterieur : mieux vaut mordre
+  // d'un pixel sur le cadre noir que laisser paraitre un pixel de gris.
   var PRODUCT_SCREEN = {
     enabled: true,
     tl: [49.11, 46.16], tr: [62.55, 46.06],
@@ -703,6 +682,39 @@
       price.innerHTML = "Comptez " + euro(o.creation) + " " + o.mention + " à la création, puis "
         + euro(o.mensuel) + " " + o.mention + "/mois de gestion &amp; maintenance.";
     }
+
+    // Le bloc entier est construit depuis pricing.js : aucun prix ni
+    // aucune prestation n'est ecrit en dur dans la landing.
+    var host = document.getElementById("lc-site-offer");
+    if (!host) return;
+    var nbPlans = (typeof PRICING_ORDRE !== "undefined") ? PRICING_ORDRE.length : 0;
+    var avecTous = nbPlans > 0 && (o.disponibleAvec || []).length === nbPlans;
+
+    host.innerHTML = ''
+      + '<p class="lc-eyebrow">Option · hors abonnement</p>'
+      + '<h2 class="lc-h2">' + o.nom + ',<br>relié à votre Suite Artisan.</h2>'
+      + '<div class="lc-offer">'
+      +   '<div class="lc-offer-main">'
+      +     '<p class="lc-lead">' + o.description + '</p>'
+      +     '<div class="lc-offer-prices">'
+      +       '<div><span class="lc-offer-amount">' + euro(o.creation) + ' €</span>'
+      +         '<span class="lc-offer-unit">' + o.mention + ' à la création</span></div>'
+      +       '<span class="lc-offer-plus" aria-hidden="true">puis</span>'
+      +       '<div><span class="lc-offer-amount">' + euro(o.mensuel) + ' €</span>'
+      +         '<span class="lc-offer-unit">' + o.mention + ' / mois de gestion &amp; maintenance</span></div>'
+      +     '</div>'
+      +     '<p class="lc-offer-note">' + o.resumeInclus + '</p>'
+      +     '<div class="lc-actions">'
+      +       '<a href="index.html?tab=register" class="lc-btn lc-btn-primary lc-btn-lg">Créer mon compte</a>'
+      +       '<a href="#faq" class="lc-btn lc-btn-ghost lc-btn-lg">Ce qui est compris</a>'
+      +     '</div>'
+      +     '<p class="lc-note">Prestation facultative, facturée séparément de l’abonnement'
+      +       (avecTous ? ' et disponible avec tous les plans, y compris le plan gratuit.' : '.') + '</p>'
+      +   '</div>'
+      +   '<ul class="lc-offer-list">'
+      +     o.carteInclus.map(function (x) { return "<li>" + x + "</li>"; }).join("")
+      +   '</ul>'
+      + '</div>';
   })();
 
   // Recalage si les polices arrivent apres coup (evite un decalage des

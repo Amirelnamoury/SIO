@@ -437,6 +437,33 @@
 .lc-plan-feats li::before { content: ""; position: absolute; left: 0; top: .6em; width: 6px; height: 1px; background: var(--lc-champagne); }
 .lc-plan .lc-btn { width: 100%; }
 
+/* ------------------ OPTION SITE VITRINE ------------------
+   Presentee comme une option a cote de l'abonnement, jamais comme un
+   palier de plus : encadre, sur un fond distinct des cartes de tarifs. */
+.lc-offer {
+  margin-top: 42px; display: grid; grid-template-columns: 1.25fr .75fr; gap: 44px;
+  padding: 38px 40px; border: 1px solid rgba(200, 168, 122, .34); border-radius: 16px;
+  background: linear-gradient(140deg, rgba(200, 168, 122, .09), rgba(17, 17, 15, .6));
+  backdrop-filter: blur(8px);
+}
+.lc-offer-main .lc-lead { margin-top: 0; }
+.lc-offer-prices { display: flex; align-items: baseline; flex-wrap: wrap; gap: 14px 20px; margin: 30px 0 20px; }
+.lc-offer-prices > div { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
+.lc-offer-amount { font-family: var(--lc-display); font-size: 2.3rem; font-weight: 500; }
+.lc-offer-unit { font-size: .86rem; color: var(--lc-muted); }
+.lc-offer-plus { font-size: .84rem; color: var(--lc-champagne); text-transform: uppercase; letter-spacing: .12em; }
+.lc-offer-note { font-size: .9rem; color: var(--lc-muted); max-width: 52ch; }
+.lc-offer-list { display: grid; gap: 13px; align-content: start; padding-top: 6px; }
+.lc-offer-list li { position: relative; padding-left: 22px; font-size: .93rem; color: var(--lc-white); }
+.lc-offer-list li::before {
+  content: ""; position: absolute; left: 0; top: .52em;
+  width: 9px; height: 9px; border-radius: 50%;
+  border: 1px solid var(--lc-champagne); background: var(--lc-champagne-soft);
+}
+@media (max-width: 860px) {
+  .lc-offer { grid-template-columns: 1fr; gap: 30px; padding: 30px 24px; }
+}
+
 /* ---------- FAQ ---------- */
 .lc-faq { margin-top: 44px; border-top: 1px solid var(--lc-line); }
 .lc-faq details { border-bottom: 1px solid var(--lc-line); }
