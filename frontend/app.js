@@ -2728,61 +2728,132 @@ const CLIENT_PIPELINE_ORDRE = [
   "devis_a_faire", "devis_envoye", "negociation", "gagne", "perdu",
 ];
 
-// Bande de KPI du pipeline : calculee sur le pipeline actif (hors gagne/perdu,
-// qui sont des etats de sortie), a partir des memes clients deja recus.
-function prospectsKpiBandHtml(clients) {
-  const actifs = clients.filter((c) => !["gagne", "perdu"].includes(c.statut));
-  const aContacter = actifs.filter((c) => c.statut === "nouveau").length;
-  const enQualif = actifs.filter((c) => c.statut === "qualification").length;
-  const visites = actifs.filter((c) => c.statut === "visite_prevue").length;
-  const valeurPipeline = actifs.reduce((s, c) => s + (c.montant_estime || 0), 0);
+// ---------------------------------------------------------------------
+// PROSPECTS — « la reglette »
+// ---------------------------------------------------------------------
+// La page ouvrait sur cinq cartes de KPI (total, a contacter, en
+// qualification, visites, valeur) au-dessus d'un kanban de neuf colonnes.
+// Cinq nombres alignes ne disent pas ou en est le commerce, et les neuf
+// colonnes s'affichaient toutes, vides comprises : quatre colonnes
+// « Vide » a faire defiler avant d'atteindre la suivante.
+//
+// A la place : UN objet, la reglette. Le pipeline est une valeur qui se
+// deplace le long d'un axe ; on le montre donc comme un axe, pas comme
+// des cartes. Et les colonnes vides se replient.
 
-  // Repartition de la valeur pipeline par maturite (memes 7 statuts actifs
-  // que CLIENT_PIPELINE_ORDRE, regroupes en 3 blocs) : simple resomme de
-  // c.montant_estime deja utilise ci-dessus pour le total, aucune donnee
-  // supplementaire ni recalcul metier.
-  const sommeStatuts = (statuts) => actifs.filter((c) => statuts.includes(c.statut)).reduce((s, c) => s + (c.montant_estime || 0), 0);
-  const tot = ["nouveau", "contacte"];
-  const qualif = ["qualification", "visite_prevue"];
-  const avance = ["devis_a_faire", "devis_envoye", "negociation"];
-  const valeurTot = sommeStatuts(tot);
-  const valeurQualif = sommeStatuts(qualif);
-  const valeurAvance = sommeStatuts(avance);
-  const repartitionHtml = valeurPipeline
-    ? `<div class="pipeline-value-bar">
-        ${valeurTot ? `<div class="pipeline-value-seg is-tot" style="width:${(valeurTot / valeurPipeline) * 100}%;" title="Nouveau + Contacté : ${fmtEuro(valeurTot)}"></div>` : ""}
-        ${valeurQualif ? `<div class="pipeline-value-seg is-qualif" style="width:${(valeurQualif / valeurPipeline) * 100}%;" title="Qualification + Visite prévue : ${fmtEuro(valeurQualif)}"></div>` : ""}
-        ${valeurAvance ? `<div class="pipeline-value-seg is-avance" style="width:${(valeurAvance / valeurPipeline) * 100}%;" title="Devis à faire/envoyé + Négociation : ${fmtEuro(valeurAvance)}"></div>` : ""}
-      </div>`
-    : "";
+/** Jours ecoules depuis le dernier mouvement de la fiche. `updated_at` est
+ *  deja renvoye par ClientOut : c'est la donnee qui dit qu'un prospect
+ *  dort, et elle n'etait exploitee nulle part. */
+function clientJoursSansMouvement(c) {
+  if (!c.updated_at) return null;
+  const d = new Date(c.updated_at);
+  if (isNaN(d)) return null;
+  return Math.floor((Date.now() - d.getTime()) / 86400000);
+}
+const CLIENT_SEUIL_DORMANT = 15;
+
+function clientDort(c) {
+  if (["gagne", "perdu"].includes(c.statut)) return false;
+  const j = clientJoursSansMouvement(c);
+  return j !== null && j >= CLIENT_SEUIL_DORMANT;
+}
+
+/** La reglette : la valeur du pipeline repartie sur les trois maturites,
+ *  sur un seul axe. Un pipeline est un mouvement, pas un tableau de bord -
+ *  on montre la forme de ce mouvement. */
+function prospectsRegletteHtml(clients) {
+  const actifs = clients.filter((c) => !["gagne", "perdu"].includes(c.statut));
+  const blocs = [
+    { cle: "amont", label: "Premier contact", statuts: ["nouveau", "contacte"] },
+    { cle: "qualif", label: "Qualification", statuts: ["qualification", "visite_prevue"] },
+    { cle: "aval", label: "Devis et négociation", statuts: ["devis_a_faire", "devis_envoye", "negociation"] },
+  ].map((b) => {
+    const items = actifs.filter((c) => b.statuts.includes(c.statut));
+    return { ...b, nb: items.length, valeur: items.reduce((s, c) => s + (c.montant_estime || 0), 0) };
+  });
+  const total = blocs.reduce((s, b) => s + b.valeur, 0);
+  const aContacter = actifs.filter((c) => c.statut === "nouveau").length;
+  const dormants = actifs.filter(clientDort).length;
+
+  // Les signaux : uniquement ceux qui appellent un geste. Un compteur a
+  // zero n'a rien a dire, il ne s'affiche pas.
+  const signaux = [];
+  signaux.push(`${actifs.length} prospect${actifs.length > 1 ? "s" : ""} actif${actifs.length > 1 ? "s" : ""}`);
+  if (aContacter) signaux.push(`<strong>${aContacter}</strong> à contacter`);
+  if (dormants) signaux.push(`<strong class="est-dormant">${dormants}</strong> sans mouvement depuis plus de ${CLIENT_SEUIL_DORMANT} jours`);
 
   return `
-  <div class="kpi-band kpi-band-5col">
-    <div class="kpi-card">
-      <div class="kpi-card-label">Total prospects</div>
-      <div class="kpi-card-value">${actifs.length}</div>
-      <div class="kpi-card-sub">Pipeline actif</div>
+  <section class="reglette">
+    <div class="reglette-total">
+      <span class="reglette-total-valeur">${total ? fmtEuro(total) : "—"}</span>
+      <span class="reglette-total-label">de pipeline actif</span>
     </div>
-    <div class="kpi-card${aContacter ? " is-highlight" : ""}">
-      <div class="kpi-card-label">À contacter</div>
-      <div class="kpi-card-value">${aContacter}</div>
-      <div class="kpi-card-sub">Nouveaux contacts</div>
+    <div class="reglette-axe">
+      ${total ? `<div class="reglette-barre">
+        ${blocs.filter((b) => b.valeur).map((b) => `
+          <span class="reglette-seg est-${b.cle}" style="flex:${b.valeur}"
+                title="${b.label} : ${fmtEuro(b.valeur)}"></span>`).join("")}
+      </div>` : ""}
+      <div class="reglette-legende">
+        ${blocs.map((b) => `
+          <span class="reglette-item">
+            <span class="reglette-puce est-${b.cle}" aria-hidden="true"></span>
+            <span class="reglette-item-label">${b.label}</span>
+            <span class="reglette-item-valeur">${b.valeur ? fmtEuro(b.valeur) : "—"}</span>
+            <span class="reglette-item-nb">${b.nb} prospect${b.nb > 1 ? "s" : ""}</span>
+          </span>`).join("")}
+      </div>
     </div>
-    <div class="kpi-card">
-      <div class="kpi-card-label">En qualification</div>
-      <div class="kpi-card-value">${enQualif}</div>
-      <div class="kpi-card-sub">&nbsp;</div>
+    <p class="reglette-signaux">${signaux.join(" · ")}</p>
+  </section>`;
+}
+
+// Conserve : la bande de KPI d'origine n'existe plus, mais d'autres vues
+// appellent encore ce nom. Il redirige vers la reglette.
+function prospectsKpiBandHtml(clients) { return prospectsRegletteHtml(clients); }
+
+function renderClientCard(c) {
+  const contact = [c.telephone, c.email].filter(Boolean).map(escapeHtml).join(" · ");
+  const statutOptions = Object.entries(CLIENT_STATUT_META)
+    .map(([value, m]) => `<option value="${value}" ${value === c.statut ? "selected" : ""}>${m.label}</option>`)
+    .join("");
+
+  // L'ancienne carte affichait toujours Source / Valeur / Action, avec
+  // « Non renseignée », « Inconnue », « Aucune action prévue » quand la
+  // donnee manquait : trois lignes de rien sur la majorite des cartes. On
+  // n'affiche desormais que ce qui existe - une carte muette est une
+  // information en soi, elle dit « ce prospect n'a pas encore ete qualifie ».
+  const lignes = [];
+  if (c.montant_estime) {
+    const proba = c.probabilite !== null && c.probabilite !== undefined ? ` · ${c.probabilite} %` : "";
+    lignes.push(`<div class="kanban-card-valeur">${fmtEuro(c.montant_estime)}<span>${proba}</span></div>`);
+  }
+  if (c.prochaine_action) {
+    lignes.push(`<div class="kanban-card-action"><span aria-hidden="true">→</span> ${escapeHtml(c.prochaine_action)}</div>`);
+  }
+
+  const jours = clientJoursSansMouvement(c);
+  const dort = clientDort(c);
+
+  // Une seule indication a la fois, la plus specifique en priorite. Le
+  // sommeil passe avant le potentiel : c'est celle qui appelle un geste.
+  let badge = null;
+  if (dort) badge = { label: `${jours} j sans suite`, cls: "pill-dormant" };
+  else if (c.probabilite !== null && c.probabilite !== undefined && c.probabilite >= 70) badge = { label: "Fort potentiel", cls: "pill-accent" };
+  else if (c.statut === "visite_prevue") badge = { label: "Visite prévue", cls: "pill-green" };
+  else if (c.statut === "nouveau") badge = { label: "À contacter", cls: "pill-accent" };
+
+  return `
+  <div class="kanban-card${dort ? " est-dormant" : ""}" data-action="voir-timeline" data-id="${c.id}">
+    <div class="kanban-card-top">
+      <div class="kanban-card-title">${escapeHtml(c.nom)}</div>
+      ${badge ? `<span class="pill ${badge.cls}">${badge.label}</span>` : ""}
     </div>
-    <div class="kpi-card">
-      <div class="kpi-card-label">Visites à venir</div>
-      <div class="kpi-card-value">${visites}</div>
-      <div class="kpi-card-sub">&nbsp;</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-card-label">Valeur pipeline</div>
-      <div class="kpi-card-value">${fmtEuro(valeurPipeline)}</div>
-      <div class="kpi-card-sub">Estimée, pipeline actif</div>
-      ${repartitionHtml}
+    ${contact || c.societe ? `<div class="kanban-card-sub">${contact}${c.societe ? (contact ? " · " : "") + escapeHtml(c.societe) : ""}</div>` : ""}
+    ${lignes.join("")}
+    <div class="kanban-card-actions">
+      <select data-action="changer-statut-client" data-id="${c.id}" aria-label="Statut de ${escapeHtml(c.nom)}">${statutOptions}</select>
+      <button type="button" class="btn-sm btn-sm-danger" data-action="delete-client" data-id="${c.id}" title="Archiver" aria-label="Archiver">&times;</button>
     </div>
   </div>`;
 }
@@ -2790,16 +2861,16 @@ function prospectsKpiBandHtml(clients) {
 async function loadClients() {
   const kpiBand = document.getElementById("prospects-kpi-band");
   const board = document.getElementById("clients-kanban");
-  board.innerHTML = skeletonCards();
+  board.innerHTML = '<div class="kanban-squelette"><span></span><span></span><span></span></div>';
   try {
     const clients = await Api.listClients();
     clientsCache = clients;
-    if (kpiBand) kpiBand.innerHTML = clients.length ? prospectsKpiBandHtml(clients) : "";
+    if (kpiBand) kpiBand.innerHTML = clients.length ? prospectsRegletteHtml(clients) : "";
     if (clients.length === 0) {
       board.innerHTML = `<div class="empty-state">
-        Aucun contact pour le moment.<br><br>
+        <strong>Aucun contact pour le moment.</strong><br><br>
         Les demandes venant de votre site vitrine arrivent automatiquement ici.
-        Vous pouvez aussi ajouter un contact a la main.
+        Vous pouvez aussi ajouter un contact à la main.
       </div>`;
       return;
     }
@@ -2810,10 +2881,23 @@ async function loadClients() {
     board.innerHTML = CLIENT_PIPELINE_ORDRE.map((statut, i) => {
       const meta = CLIENT_STATUT_META[statut] || { label: statut };
       const items = parColonne[statut] || [];
-      // Valeur totale de la colonne : meme champ montant_estime deja utilise
-      // par la bande de KPI (prospectsKpiBandHtml), simplement resomme par
-      // colonne plutot que sur tout le pipeline actif.
       const valeurColonne = items.reduce((s, c) => s + (c.montant_estime || 0), 0);
+
+      // Une etape vide se replie en rail etroit. Elle reste visible - le
+      // pipeline est un enchainement, en retirer un maillon rendrait la
+      // suite incomprehensible - mais elle ne coute plus 258 px de
+      // defilement horizontal chacune. A neuf etapes, cela faisait
+      // regulierement un ecran entier de colonnes « Vide » a traverser.
+      if (!items.length) {
+        return `
+        <div class="kanban-column est-repliee" title="${escapeHtml(meta.label)} — aucun prospect">
+          <div class="kanban-column-header">
+            <span class="kanban-column-title">${meta.label}</span>
+            <span class="kanban-column-zero">0</span>
+          </div>
+        </div>`;
+      }
+
       return `
       <div class="kanban-column">
         <div class="kanban-column-header">
@@ -2821,11 +2905,9 @@ async function loadClients() {
             <span class="kanban-column-title">${meta.label}</span>
             <div class="kanban-column-meta">${items.length} prospect${items.length > 1 ? "s" : ""}${valeurColonne ? ` · ${fmtEuro(valeurColonne)}` : ""}</div>
           </div>
-          ${i < CLIENT_PIPELINE_ORDRE.length - 1 ? '<span class="kanban-column-arrow">&rarr;</span>' : ""}
+          ${i < CLIENT_PIPELINE_ORDRE.length - 1 ? '<span class="kanban-column-arrow" aria-hidden="true">&rarr;</span>' : ""}
         </div>
-        <div class="kanban-cards">
-          ${items.length ? items.map(renderClientCard).join("") : '<div class="kanban-empty">Vide</div>'}
-        </div>
+        <div class="kanban-cards">${items.map(renderClientCard).join("")}</div>
       </div>`;
     }).join("");
   } catch (err) {
@@ -2833,54 +2915,8 @@ async function loadClients() {
   }
 }
 
-function renderClientCard(c) {
-  const contact = [c.telephone, c.email].filter(Boolean).map(escapeHtml).join(" · ");
-  const statutOptions = Object.entries(CLIENT_STATUT_META)
-    .map(([value, m]) => `<option value="${value}" ${value === c.statut ? "selected" : ""}>${m.label}</option>`)
-    .join("");
 
-  // Triplet Source / Valeur / Action toujours affiche (avec un texte de
-  // repli explicite quand la donnee est absente), au lieu de lignes qui
-  // apparaissent ou disparaissent selon les champs renseignes - memes
-  // champs reels qu'avant (c.source, c.montant_estime, c.probabilite,
-  // c.prochaine_action), juste une presentation constante entre les cartes.
-  const sourceTxt = c.source && c.source !== "manuel" ? (CLIENT_SOURCE_LABELS[c.source] || c.source) : "Non renseignée";
-  const valeurTxt = c.montant_estime
-    ? fmtEuro(c.montant_estime) + (c.probabilite !== null && c.probabilite !== undefined ? ` · ${c.probabilite}%` : "")
-    : "Inconnue";
-  const actionTxt = c.prochaine_action || "Aucune action prévue";
 
-  // Indication ponctuelle (voir 02-prospects) : "Fort potentiel" (accent)
-  // quand la probabilite deja saisie est elevee, "Visite prevue" (vert)
-  // pour l'etape du meme nom, "A contacter" (accent) pour un prospect tout
-  // juste arrive - memes champs deja lus ci-dessus (c.probabilite,
-  // c.statut), aucune nouvelle donnee. Une seule indication a la fois,
-  // la plus specifique en priorite.
-  let badge = null;
-  if (c.probabilite !== null && c.probabilite !== undefined && c.probabilite >= 70) {
-    badge = { label: "Fort potentiel", cls: "pill-accent" };
-  } else if (c.statut === "visite_prevue") {
-    badge = { label: "Visite prévue", cls: "pill-green" };
-  } else if (c.statut === "nouveau") {
-    badge = { label: "À contacter", cls: "pill-accent" };
-  }
-
-  return `
-  <div class="kanban-card${badge && badge.label === "Fort potentiel" ? " is-fort-potentiel" : ""}" data-action="voir-timeline" data-id="${c.id}">
-    <div class="kanban-card-top">
-      <div class="kanban-card-title">${escapeHtml(c.nom)}</div>
-      ${badge ? `<span class="pill ${badge.cls}">${badge.label}</span>` : ""}
-    </div>
-    <div class="kanban-card-sub">${contact || "Pas de coordonnees"}${c.societe ? " · " + escapeHtml(c.societe) : ""}</div>
-    <div class="kanban-card-field"><span class="kanban-card-field-label">Source</span>${escapeHtml(sourceTxt)}</div>
-    <div class="kanban-card-field"><span class="kanban-card-field-label">Valeur</span>${escapeHtml(valeurTxt)}</div>
-    <div class="kanban-card-field"><span class="kanban-card-field-label">Action</span>${escapeHtml(actionTxt)}</div>
-    <div class="kanban-card-actions">
-      <select data-action="changer-statut-client" data-id="${c.id}" aria-label="Statut de ${escapeHtml(c.nom)}">${statutOptions}</select>
-      <button type="button" class="btn-sm btn-sm-danger" data-action="delete-client" data-id="${c.id}" title="Archiver" aria-label="Archiver">&times;</button>
-    </div>
-  </div>`;
-}
 
 function showClientForm() {
   const container = document.getElementById("client-form-container");

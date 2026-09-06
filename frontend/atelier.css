@@ -469,3 +469,105 @@ label { color: var(--sa-text-muted); }
   .dash-chiffres { grid-template-columns: 1fr 1fr; gap: var(--sa-space-5); }
   .dash-chiffre-valeur { font-size: 1.25rem; }
 }
+
+/* =====================================================================
+   PROSPECTS — « la reglette »
+   ---------------------------------------------------------------------
+   Cinq cartes de KPI au-dessus d'un kanban ne disent pas ou en est le
+   commerce. Un pipeline est une VALEUR QUI SE DEPLACE le long d'un axe :
+   on le montre donc comme un axe, en un seul objet.
+   ===================================================================== */
+.reglette {
+  display: grid;
+  grid-template-columns: minmax(150px, auto) minmax(0, 1fr);
+  gap: var(--sa-space-3) var(--sa-space-8);
+  padding: 22px 0 20px;
+  border-top: 1px solid var(--sa-border);
+  border-bottom: 1px solid var(--sa-border);
+  margin-bottom: var(--sa-space-8);
+}
+.reglette-total { display: flex; flex-direction: column; gap: 4px; }
+.reglette-total-valeur {
+  font-family: var(--sa-font-display);
+  font-size: 1.85rem; font-weight: 500; line-height: 1;
+  color: var(--sa-text); font-variant-numeric: tabular-nums;
+}
+.reglette-total-label { font-size: var(--sa-text-xs); color: var(--sa-text-faint); }
+
+.reglette-axe { min-width: 0; }
+.reglette-barre { display: flex; gap: 2px; height: 8px; margin-bottom: 14px; }
+.reglette-seg { border-radius: 1px; min-width: 4px; }
+/* Trois valeurs de la meme famille, du plus clair au plus soutenu : la
+   maturite se lit comme une densite d'encre, pas comme trois couleurs
+   differentes qui n'auraient aucun rapport entre elles. */
+.reglette-seg.est-amont, .reglette-puce.est-amont { background: #A9BBAE; }
+.reglette-seg.est-qualif, .reglette-puce.est-qualif { background: #67856F; }
+.reglette-seg.est-aval, .reglette-puce.est-aval { background: var(--sa-accent); }
+
+.reglette-legende { display: flex; flex-wrap: wrap; gap: var(--sa-space-6); }
+.reglette-item { display: grid; grid-template-columns: 8px auto; grid-template-rows: auto auto auto; gap: 1px var(--sa-space-2); align-items: baseline; }
+.reglette-puce { width: 8px; height: 8px; border-radius: 1px; grid-row: 1; align-self: center; }
+.reglette-item-label { font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
+.reglette-item-valeur { grid-column: 2; font-family: var(--sa-font-display); font-size: var(--sa-text-md); font-weight: 500; color: var(--sa-text); font-variant-numeric: tabular-nums; }
+.reglette-item-nb { grid-column: 2; font-size: var(--sa-text-2xs); color: var(--sa-text-faint); }
+
+.reglette-signaux { grid-column: 1 / -1; margin: 4px 0 0; font-size: var(--sa-text-sm); color: var(--sa-text-muted); }
+.reglette-signaux strong { color: var(--sa-text); font-weight: 600; }
+.reglette-signaux .est-dormant { color: var(--sa-warning); }
+
+@media (max-width: 860px) {
+  .reglette { grid-template-columns: 1fr; gap: var(--sa-space-4); }
+  .reglette-legende { gap: var(--sa-space-4); }
+}
+
+/* ---------- Le tableau : etapes vides repliees ----------
+   Les neuf etapes s'affichaient toutes, vides comprises, a 258 px
+   chacune : quatre colonnes « Vide » a traverser avant d'atteindre la
+   suivante. Une etape vide se replie en rail, mais reste visible - le
+   pipeline est un enchainement, en retirer un maillon rendrait la suite
+   incomprehensible. */
+.kanban-column.est-repliee {
+  width: 132px; flex-shrink: 0;
+  opacity: 0.62;
+}
+.kanban-column.est-repliee .kanban-column-header { align-items: baseline; }
+.kanban-column-zero {
+  margin-left: auto;
+  font-family: var(--sa-font-display); font-size: var(--sa-text-md);
+  color: var(--sa-text-faint);
+}
+
+.kanban-column-header { background: transparent; border-bottom: 1px solid var(--sa-border-strong); border-radius: 0; }
+.kanban-column-title { font-size: var(--sa-text-xs); font-weight: 600; color: var(--sa-text); }
+.kanban-column-meta { font-size: var(--sa-text-2xs); color: var(--sa-text-faint); font-variant-numeric: tabular-nums; }
+.kanban-column-arrow { color: var(--sa-border-strong); }
+
+.kanban-card {
+  background: var(--sa-surface);
+  border: 1px solid var(--sa-border);
+  border-radius: var(--sa-radius-lg);
+  box-shadow: none;
+}
+.kanban-card:hover { border-color: var(--sa-border-strong); }
+/* Le sommeil se marque par un filet, pas par un fond : quinze cartes au
+   fond ambre seraient illisibles. */
+.kanban-card.est-dormant { box-shadow: inset 2px 0 0 var(--sa-warning); }
+.kanban-card-title { font-weight: 600; color: var(--sa-text); }
+.kanban-card-sub { font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
+.kanban-card-valeur {
+  margin-top: 8px;
+  font-family: var(--sa-font-display); font-size: var(--sa-text-md); font-weight: 500;
+  color: var(--sa-text); font-variant-numeric: tabular-nums;
+}
+.kanban-card-valeur span { font-family: var(--sa-font); font-size: var(--sa-text-xs); font-weight: 400; color: var(--sa-text-faint); }
+.kanban-card-action { margin-top: 6px; font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
+.kanban-card-action span { color: var(--sa-accent); font-weight: 600; }
+.pill-dormant { background: var(--sa-warning-soft); color: var(--sa-warning); border-color: #E4D2B0; }
+
+.kanban-squelette { display: flex; gap: var(--sa-space-6); }
+.kanban-squelette span {
+  display: block; width: 258px; height: 260px; border-radius: var(--sa-radius-lg);
+  background: linear-gradient(100deg, var(--sa-surface) 30%, var(--sa-surface-2) 50%, var(--sa-surface) 70%);
+  background-size: 260% 100%; animation: sa-scintille 1.4s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) { .kanban-squelette span { animation: none; } }
