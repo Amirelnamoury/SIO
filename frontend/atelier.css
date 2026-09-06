@@ -1424,3 +1424,88 @@ label { color: var(--sa-text-muted); }
 .doc-row-icon { color: var(--sa-text-faint); }
 .doc-row-title { color: var(--sa-text); font-weight: 500; }
 .doc-row-sub, .doc-row-meta { color: var(--sa-text-muted); font-size: var(--sa-text-xs); }
+
+/* =====================================================================
+   MOBILE — six vues corrigees apres audit a 375 px
+   ---------------------------------------------------------------------
+   Un audit systematique des douze vues chargees avec des donnees a
+   revele que six debordaient horizontalement. Aucune ne se voit sans
+   mesure : le debordement pousse la page, il ne casse pas le rendu.
+   ===================================================================== */
+
+/* 1. LE PIEGE PRINCIPAL, deux fois : `1fr` en colonne de grille signifie
+      `minmax(auto, 1fr)`, et `auto` vaut le MIN-CONTENT. Une piste censee
+      valoir 343 px s'elargissait donc a 411 px, la largeur minimale de la
+      carte. C'est le « grid blowout » classique, et il ne se voit pas :
+      la page defile lateralement, elle ne casse pas.
+      `minmax(0, 1fr)` autorise la piste a devenir plus etroite que son
+      contenu, qui peut alors se replier ou couper proprement. */
+.chantier-grille { grid-template-columns: repeat(auto-fill, minmax(min(330px, 100%), 1fr)); }
+@media (max-width: 760px) {
+  .chantier-grille { grid-template-columns: minmax(0, 1fr); }
+  /* Le pied de carte porte l'action, son echeance et la date : a 343 px
+     ils ne tiennent plus sur une ligne. Ils se replient. */
+  .chantier-card-pied { flex-wrap: wrap; row-gap: 4px; }
+  .chantier-card-echeance { margin-left: 0; padding-left: 0; border-left: 0; }
+}
+
+/* 2. CLIENTS manquait au bloc responsive des barres d'outils, comme
+      Chantiers avant lui : ses trois listes deroulantes a `min-width:
+      150px` debordaient de 214 px. */
+@media (max-width: 900px) {
+  #view-clients .list-toolbar { flex-wrap: wrap; }
+  #view-clients .list-toolbar .list-search { flex: 1 1 100%; min-width: 0; }
+  #view-clients .list-toolbar select { flex: 1 1 132px; min-width: 0; max-width: none; }
+}
+
+/* 3. LA BARRE DE MODULE de Devis est une navigation : elle ne se replie
+      pas, elle defile. Cinq entrees ne tiennent pas sur 343 px, et les
+      empiler ferait perdre la lecture d'un fil de navigation. */
+@media (max-width: 760px) {
+  .devis-modulebar {
+    margin-left: -16px; margin-right: -16px; padding-left: 16px; padding-right: 16px;
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .devis-modulebar::-webkit-scrollbar { display: none; }
+  .devis-modulebar button, .devis-modulebar span { white-space: nowrap; flex-shrink: 0; }
+}
+
+/* 4. LE GRAPHIQUE debordait de 2 px : un SVG a viewBox garde sa largeur
+      intrinseque si on ne la borne pas. */
+.chart-svg, .stats-chart-wrap svg { max-width: 100%; height: auto; display: block; }
+
+/* 5. CIBLES TACTILES. Deux elements passaient sous le seuil confortable :
+      le lien d'action de l'accueil (21 px) et la case a cocher d'une
+      tache (17 px). Une case a cocher de 17 px sur un chantier, avec des
+      gants, n'est pas cliquable. */
+@media (max-width: 760px) {
+  .lien-action { display: inline-block; padding: 6px 0; min-height: 32px; }
+  .tache-row-check { width: 22px; height: 22px; }
+  .tache-row { gap: var(--sa-space-3); padding: 12px 8px; }
+}
+
+/* Deux corrections issues du second passage mobile. */
+@media (max-width: 760px) {
+  /* Le titre du chantier et sa pastille de statut ne tiennent pas sur une
+     ligne a 343 px : la pastille passe dessous plutot que de deborder. */
+  .chantier-card-tete { flex-wrap: wrap; row-gap: 6px; }
+  .chantier-card-tete .badge { order: 3; }
+  .chantier-card-identite { flex: 1 1 100%; }
+  /* WCAG 2.5.8 demande 24 px de cote pour une cible de pointage. Une case
+     a cocher de 17 px sur un chantier, avec des gants, n'est pas
+     cliquable ; 24 px avec de l'air autour l'est. */
+  .tache-row-check { width: 24px; height: 24px; }
+}
+
+/* =====================================================================
+   AVIS — le menu d'en-tete rentre dans la page
+   ---------------------------------------------------------------------
+   `#view-avis .avis-header-actions .action-menu` etait pousse a
+   `right: -28px`, hors de la colonne de contenu. Il ne provoquait pas de
+   defilement horizontal - le conteneur le rognait - mais le bouton
+   flottait 28 px au-dela du bord du contenu, desaligne de tous les autres
+   en-tetes du produit. Un decalage hérité de la reproduction d'une
+   maquette, qui n'a plus de raison d'etre dans une grille reguliere.
+   ===================================================================== */
+#view-avis .avis-header-actions .action-menu { position: static; right: auto; }
+#view-avis .avis-header-actions { gap: var(--sa-space-2); }
