@@ -40,9 +40,9 @@
 }
 
 /* ------------------------- PANNEAU MARQUE -------------------------
-   Photographies d'atelier, distinctes de celles de la visite : l'ecran
-   d'authentification a sa propre respiration. Provenance et licence
-   documentees dans assets/auth/README.md (CC0). */
+   Deux visuels d'atelier propres a cet ecran, distincts des frames de la
+   visite : l'authentification a sa propre respiration, dans la meme
+   lumiere doree. Origine documentee dans assets/auth/README.md. */
 .auth-screen .auth-brand-panel {
   /* Colle et haute d'un ecran, sans s'etirer. Le formulaire d'inscription
      est long : sans cela le panneau s'allongeait avec lui et la photo,
@@ -53,7 +53,10 @@
   display: flex; align-items: flex-end;
   padding: 56px;
   background-image: url("assets/auth/connexion.webp");
-  background-size: cover; background-position: 50% 50%;
+  /* Images au format portrait, comme le panneau : le recadrage `cover`
+     ne rogne donc presque rien. Legerement remonte pour garder l'artisan
+     et l'ouverture sur le paysage dans le champ. */
+  background-size: cover; background-position: 50% 42%;
   overflow: hidden;
   transition: background-image .4s ease;
 }
@@ -277,6 +280,10 @@
   .auth-screen .auth-brand-panel {
     position: relative; height: auto; min-height: 200px;
     flex: 0 0 auto; padding: 26px 24px;
+    /* En banniere courte, on ne voit qu'une tranche horizontale d'une
+       image portrait : cadree a 42 % elle coupait l'artisan au torse.
+       On remonte pour garder le visage et le haut de la scene. */
+    background-position: 50% 24%;
   }
   .auth-screen .auth-brand-points { display: none; }
   .auth-screen .auth-brand-tagline { font-size: 1.4rem; margin-bottom: 0; }

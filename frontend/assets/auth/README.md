@@ -1,47 +1,48 @@
 # Assets — écran connexion / inscription
 
-Deux photographies d'atelier, volontairement **différentes de celles de la
-visite de la landing** : l'écran d'authentification a sa propre respiration.
+Deux visuels d'atelier propres à cet écran, **distincts des frames de la
+visite** de la landing : l'authentification a sa propre respiration, tout
+en gardant la même lumière dorée.
 
 | Fichier | Écran | Sujet |
 |---|---|---|
-| `connexion.webp` | Connexion | outils d'artisan disposés sur un établi en bois sombre |
-| `inscription.webp` | Inscription | rabot et copeaux de bois |
+| `connexion.webp` | Connexion | artisan en tablier consultant une tablette dans son atelier, camionnette et paysage au fond |
+| `inscription.webp` | Inscription | établi de créateur : plans, échantillons de matériaux, ordinateur portable, fenêtre au couchant |
 
-`auth.css` bascule de l'une à l'autre selon l'onglet actif, via
+`auth.css` bascule de l'un à l'autre selon l'onglet actif, via
 `:has(#register-form:not([hidden]))` — sans JavaScript ni duplication du
 panneau dans `index.html`.
 
-## Provenance et licence
+## Origine
 
-Les deux images sont en **CC0 1.0** (domaine public) : usage commercial
-libre, **aucune attribution requise**, aucune redevance.
+Les deux images sont **générées par intelligence artificielle**, comme le
+logo (`assets/landing/logo.webp`) et les 20 frames de la visite. Elles ont
+été fournies par l'éditeur du site.
 
-| Fichier | Titre d'origine | Licence | Source |
-|---|---|---|---|
-| `connexion.webp` | *Carpenter toolkit displayed showing tools* | CC0 1.0 | [rawpixel.com/image/3237401](https://www.rawpixel.com/image/3237401/free-photo-image-hammer-wood-creative-commons) |
-| `inscription.webp` | *Slivers shaved wood next hand* | CC0 1.0 | [rawpixel.com/image/3303918](https://www.rawpixel.com/image/3303918/free-photo-image-apparel-cc0-clothing) |
+Conséquences pratiques, utiles à garder en tête :
 
-Trouvées via l'API [Openverse](https://openverse.org), filtrée sur
-`license=cc0` et `category=photograph`.
-
-> **À vérifier avant mise en production.** La licence indiquée ci-dessus est
-> celle déclarée par la source au moment du téléchargement. Pour un site
-> commercial, il est prudent de la reconfirmer sur la page d'origine et
-> d'en conserver une copie datée. Aucune des deux images ne comporte de
-> personne reconnaissable ni de marque tierce visible — deux critères qui
-> avaient fait écarter d'autres candidates.
+- **Aucune licence de banque d'images à respecter**, aucune attribution à
+  afficher, aucune redevance.
+- **La personne visible sur `connexion.webp` n'existe pas.** Il n'y a donc
+  aucun droit à l'image à obtenir — contrairement à une photographie de
+  stock montrant un modèle réel.
+- Ce ne sont **pas des chantiers réalisés par des clients** de Suite
+  Artisan. Les mentions légales le précisent déjà pour les photographies
+  de la page d'accueil ; la formulation couvre également celles-ci.
 
 ## Format
 
-Redimensionnées à 900 px de large et converties en WebP (qualité 80) :
-55 Ko et 19 Ko. Le panneau fait au plus ~660 px de large sur un écran de
-1440 px, donc 900 px suffit largement, y compris sur écran dense.
+Sources en 1122 × 1402 (portrait), redimensionnées à 900 px de large et
+converties en WebP (qualité 78) : **61 Ko** et **82 Ko**.
+
+Le format portrait correspond à celui du panneau : le recadrage
+`object-fit: cover` ne rogne donc presque rien, contrairement à une image
+en paysage qu'il aurait fallu tailler sévèrement.
 
 Pour régénérer après remplacement d'une image :
 
 ```js
 sharp(source)
   .resize({ width: 900, withoutEnlargement: true, kernel: "lanczos3" })
-  .webp({ quality: 80, effort: 6 })
+  .webp({ quality: 78, effort: 6 })
 ```
