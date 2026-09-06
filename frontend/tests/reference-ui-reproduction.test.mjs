@@ -251,4 +251,24 @@ assert.doesNotMatch(appSource, /toLocaleString\("fr-FR"\)\s*;/,
 assert.match(styleSource, /#profil-content \.form-section \{[^}]*margin-top/);
 assert.match(styleSource, /#profil-content \.form-section \.form-box \{[^}]*border: 0/);
 
+// ---------------------------------------------------------------------
+// LA COQUILLE, SUITE : UN DERNIER RESTE
+// ---------------------------------------------------------------------
+// La passe precedente avait retire les largeurs de colonne par vue, mais
+// pas ce decalage de 269 px de la recherche globale sur Prospects et
+// Clients : le champ le plus haut de l'ecran sautait de place sur ces deux
+// vues, et nulle part ailleurs.
+assert.doesNotMatch(styleSource, /body\[data-view="[a-z]+"\][^{]*\.topbar-search-btn[^{]*\{[^}]*margin-left/,
+  "la recherche globale ne doit pas se decaler selon la vue");
+
+// ---------------------------------------------------------------------
+// COCHER UNE TACHE, A TOUTES LES LARGEURS
+// ---------------------------------------------------------------------
+// La case a cocher faisait 17 px de cote. Un correctif la portait a 24 px,
+// mais sous `@media (max-width: 760px)` uniquement - comme si un artisan
+// gante ne consultait ses taches que sur telephone. WCAG 2.5.8 parle de
+// cible de POINTAGE : la souris et le trackpad comptent aussi.
+assert.match(styleSource, /\.tache-row-check \{[^}]*width: 24px[^}]*height: 24px/,
+  "la case a cocher d'une tache fait 24 px partout, pas seulement sur mobile");
+
 console.log("OK - reference-ui-reproduction.test.mjs");

@@ -2864,11 +2864,20 @@ function prospectsRegletteHtml(clients) {
   if (aContacter) signaux.push(`<strong>${aContacter}</strong> à contacter`);
   if (dormants) signaux.push(`<strong class="est-dormant">${dormants}</strong> sans mouvement depuis plus de ${CLIENT_SEUIL_DORMANT} jours`);
 
+  // Sans montant estime, la reglette affichait « — » en gros caracteres
+  // suivi de « de pipeline actif » : une phrase amputee, qui se lit comme un
+  // chiffre qui n'a pas su se calculer. Quand il n'y a rien a chiffrer, on
+  // le dit - et on en profite pour indiquer ou saisir le montant, puisque
+  // c'est precisement le geste qui manque.
+  const aucunMontant = !total;
   return `
-  <section class="reglette">
+  <section class="reglette ${aucunMontant ? "est-sans-montant" : ""}">
     <div class="reglette-total">
-      <span class="reglette-total-valeur">${total ? fmtEuro(total) : "—"}</span>
-      <span class="reglette-total-label">de pipeline actif</span>
+      ${aucunMontant
+        ? `<span class="reglette-total-vide">Aucun montant estimé sur vos prospects actifs.</span>
+           <span class="reglette-total-label">Renseignez-le sur une fiche pour suivre la valeur du pipeline.</span>`
+        : `<span class="reglette-total-valeur">${fmtEuro(total)}</span>
+           <span class="reglette-total-label">de pipeline actif</span>`}
     </div>
     <div class="reglette-axe">
       ${total ? `<div class="reglette-barre">
@@ -3998,17 +4007,21 @@ function devisTotalisateurHtml(t) {
 
 /** Recalcule le bloc a chaque frappe. Branche sur `input` ET `change` :
  *  le premier couvre la saisie au clavier, le second les listes
- *  deroulantes (TVA) et les fleches d'un champ nombre. */
-function brancherTotalisateur(formEl, containerId) {
+ *  deroulantes (TVA) et les fleches d'un champ nombre.
+ *
+ *  Les selecteurs des champs sont passes en argument plutot qu'ecrits en
+ *  dur : le meme totalisateur sert au devis (remise et acompte) et a la
+ *  facture (ni l'une ni l'autre). Ils etaient figes sur les identifiants du
+ *  devis, ce qui interdisait toute reutilisation - et la facture, qui liste
+ *  pourtant les memes prestations avec le meme taux de TVA, ne montrait
+ *  aucun total avant l'enregistrement. */
+function brancherTotalisateur(formEl, containerId, champs = {}) {
+  const { tva = "#df-taux-tva", remise = "#df-remise", acompte = "#df-acompte" } = champs;
   const cible = formEl.querySelector(".totalisateur-hote");
   if (!cible) return;
+  const lire = (sel) => (sel ? parseFloat(formEl.querySelector(sel)?.value) || 0 : 0);
   const recalculer = () => {
-    const t = devisTotaux(
-      lireLignes(containerId),
-      parseFloat(formEl.querySelector("#df-taux-tva")?.value) || 0,
-      parseFloat(formEl.querySelector("#df-remise")?.value) || 0,
-      parseFloat(formEl.querySelector("#df-acompte")?.value) || 0,
-    );
+    const t = devisTotaux(lireLignes(containerId), lire(tva), lire(remise), lire(acompte));
     cible.innerHTML = devisTotalisateurHtml(t);
     // Chaque ligne affiche aussi son propre total : c'est la ou une erreur
     // de quantite ou de prix se voit, bien avant le total general.
@@ -4411,8 +4424,8 @@ async function showDevisForm(devis, preselectClientId) {
              en euros s'affiche en face, et se recalcule a chaque frappe.
              L'ecran ne montrait AUCUN total : on construisait un devis en
              aveugle et on decouvrait le montant apres enregistrement. -->
-        <div class="devis-pied">
-          <div class="devis-pied-conditions">
+        <div class="doc-pied">
+          <div class="doc-pied-conditions">
             <div class="form-section-title">Conditions</div>
             <div class="form-grid">
               <div>
@@ -5173,11 +5186,17 @@ function showFactureForm() {
             ${lignesEditorHtml("fa-lignes", null)}
           </div>
 
-          <div class="form-section">
-            <div class="form-section-title">Échéance</div>
-            <div class="form-grid">
-              <div><label for="fa-echeance">Date d'échéance</label><input type="date" id="fa-echeance"></div>
+          <div class="doc-pied">
+            <div class="doc-pied-conditions">
+              <div class="form-section-title">Échéance</div>
+              <div class="form-grid">
+                <div><label for="fa-echeance">Date d'échéance</label><input type="date" id="fa-echeance"></div>
+              </div>
             </div>
+            <!-- Le meme totalisateur que sur le devis. Emettre une facture de
+                 1 840 € sans voir le total avant de cliquer « Creer » etait la
+                 seule incoherence de fond entre les deux ecrans. -->
+            <div class="totalisateur-hote" aria-live="polite" aria-label="Totaux de la facture"></div>
           </div>
 
           <p class="field-error" id="facture-form-error" hidden></p>
@@ -5192,6 +5211,8 @@ function showFactureForm() {
 
     const formEl = document.getElementById("facture-form");
     attacherEditeurLignes(formEl);
+    // Une facture n'a ni remise ni acompte : on ne passe que la TVA.
+    brancherTotalisateur(formEl, "fa-lignes", { tva: "#fa-tva", remise: null, acompte: null });
 
     formEl.addEventListener("submit", async (e) => {
       e.preventDefault();

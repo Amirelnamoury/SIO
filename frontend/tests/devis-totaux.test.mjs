@@ -97,4 +97,29 @@ assert.equal(devisTotaux([], 20, 0, 30), null, "sans ligne, aucun total ne doit 
   assert.equal(t.acompte, 500, "50 % d'acompte sur 1 000 € HT = 500 €, pas 600 €");
 }
 
+// ---------------------------------------------------------------------
+// LA FACTURE MONTRE SES TOTAUX, ELLE AUSSI
+// ---------------------------------------------------------------------
+// L'ecran de creation d'une facture listait les memes prestations avec le
+// meme taux de TVA que le devis, et n'affichait aucun total : on emettait
+// une facture de 1 840 € sans jamais voir le montant avant de cliquer
+// « Creer ». La cause etait un detail d'implementation - le totalisateur
+// avait ses selecteurs de champs ecrits en dur sur les identifiants du
+// devis (`#df-taux-tva`...), donc inutilisable ailleurs.
+{
+  const source = appSource;
+  assert.match(source, /function brancherTotalisateur\(formEl, containerId, champs/,
+    "les champs du totalisateur doivent etre parametrables, sinon il ne sert qu'au devis");
+  assert.match(source, /brancherTotalisateur\(formEl, "fa-lignes"/,
+    "le formulaire de facture doit brancher le totalisateur");
+  assert.match(source, /aria-label="Totaux de la facture"/,
+    "le formulaire de facture doit reserver la place des totaux");
+  // Une facture n'a ni remise ni acompte : les deux lignes ne doivent pas
+  // apparaitre, et le total TTC se calcule directement sur le brut.
+  const t = devisTotaux([{ quantite: 1, prix_unitaire_ht: 940 }], 10, 0, 0);
+  assert.equal(t.remise, 0);
+  assert.equal(t.acompte, 0);
+  assert.equal(t.ttc, 1034);
+}
+
 console.log("OK - devis-totaux.test.mjs");

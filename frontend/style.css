@@ -382,8 +382,10 @@ input[readonly] { background: var(--sa-surface-2); }
 @media (min-width: 901px) {
   .view-header h2 { font-size: 1.85rem; line-height: 1.12; }
   body[data-view="prospects"] .view-header > .btn-primary { margin-top: 20px; }
-  body[data-view="prospects"] .topbar-search-btn,
-  body[data-view="clients"] .topbar-search-btn { width: 420px; margin-left: 269px; }
+  /* Un dernier reste de la coquille par vue, echappe a la passe precedente :
+     la recherche globale se decalait de 269 px vers la droite sur Prospects
+     et Clients, et nulle part ailleurs. Le champ le plus haut de l'ecran
+     sautait donc de place a chaque passage sur ces deux vues. */
 }
 
 #view-devis .view-header { margin-bottom: 34px; }
@@ -735,6 +737,9 @@ input[readonly] { background: var(--sa-surface-2); }
 .dash-empty { font-size: var(--sa-text-sm); color: var(--sa-text-muted); padding: var(--sa-space-3) 0; }
 .dash-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--sa-border); font-size: var(--sa-text-sm); gap: var(--sa-space-3); }
 .dash-row:last-child { border-bottom: none; }
+/* L'adresse du site est le seul lien de ces rangees : 21 px de haut sans
+   ce retrait, juste sous le seuil. */
+.dash-row a { display: inline-block; padding: 2px 0; }
 
 /* ---------- Activation checklist ---------- */
 .activation-card { margin-bottom: var(--sa-space-8); padding-top: var(--sa-space-6); border-top: 1px solid var(--sa-border); }
@@ -916,7 +921,13 @@ input[readonly] { background: var(--sa-surface-2); }
 }
 .tache-row { display: flex; align-items: center; gap: var(--sa-space-3); min-height: 63px; margin-bottom: 6px; padding: 10px 16px; border: 1px solid var(--sa-border); }
 .list .tache-row:first-child { border-top: 1px solid var(--sa-border); }
-.tache-row-check { width: 17px; height: 17px; flex-shrink: 0; cursor: pointer; }
+/* 24 px, a toutes les largeurs. Cocher une tache est LE geste de cette vue,
+   et la case faisait 17 px de cote. Le correctif existait deja - mais sous
+   `@media (max-width: 760px)` seulement, comme si un artisan gante ne
+   consultait ses taches que sur telephone. WCAG 2.5.8 parle de cible de
+   POINTAGE, pas de cible tactile : la souris et le trackpad comptent
+   aussi. */
+.tache-row-check { width: 24px; height: 24px; flex-shrink: 0; cursor: pointer; }
 .tache-row-body { flex: 1; min-width: 0; }
 .tache-row-titre { font-size: var(--sa-text-sm); font-weight: var(--sa-weight-medium); }
 .tache-row-sub { margin-top: 1px; }
@@ -1236,7 +1247,10 @@ input[readonly] { background: var(--sa-surface-2); }
 #clients-directory .crm-stat:nth-of-type(4) { width: 180px; }
 #clients-directory .crm-stat:nth-of-type(5) { width: 160px; }
 .clients-header-actions { flex-direction: column; align-items: flex-end; gap: 6px; margin-top: 0; }
-.clients-header-actions .btn-archives { border: 0; padding: 0; color: var(--sa-accent); }
+/* `padding: 0` ramenait ce bouton a 16 px de haut - sous le seuil de 24 px
+   d'une cible de pointage. Le retrait vertical le retablit sans lui rendre
+   le cadre dont on ne veut pas ici. */
+.clients-header-actions .btn-archives { border: 0; padding: 6px 0; color: var(--sa-accent); }
 .clients-header-actions .btn-primary { margin-top: 0; }
 .clients-toolbar { gap: 8px; flex-wrap: nowrap; }
 .clients-toolbar .list-search { max-width: 380px; margin-right: auto; }
@@ -2098,6 +2112,10 @@ label { color: var(--sa-text-muted); }
   color: var(--sa-text); font-variant-numeric: tabular-nums;
 }
 .reglette-total-label { font-size: var(--sa-text-xs); color: var(--sa-text-faint); }
+/* Sans montant, la phrase remplace le chiffre : meme place, meme poids
+   visuel, mais elle dit quelque chose au lieu d'afficher un tiret. */
+.reglette-total-vide { font-size: var(--sa-text-sm); color: var(--sa-text-muted); max-width: 34ch; }
+.reglette.est-sans-montant .reglette-total-label { max-width: 34ch; }
 
 .reglette-axe { min-width: 0; }
 .reglette-barre { display: flex; gap: 2px; height: 8px; margin-bottom: 14px; }
@@ -2496,16 +2514,21 @@ label { color: var(--sa-text-muted); }
   padding-right: 2px;
 }
 
-/* ---------- Le pied du document ---------- */
-.devis-pied {
+/* ---------- Le pied du document ----------
+   Conditions a gauche, totaux a droite, filet fort au-dessus : le pied
+   d'un devis comme d'une facture. La classe s'appelait `devis-pied` et
+   c'est ce qui a fait hesiter a la reutiliser pour la facture - qui s'est
+   donc passee de totalisateur pendant tout ce temps. Un nom trop etroit
+   n'est pas qu'une question de gout : il decourage la reutilisation. */
+.doc-pied {
   display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
   gap: var(--sa-space-8);
   margin-top: var(--sa-space-8);
   padding-top: var(--sa-space-6);
   border-top: 1px solid var(--sa-border-strong);
 }
-.devis-pied-conditions { min-width: 0; }
-.devis-pied-conditions textarea { width: 100%; min-height: 74px; }
+.doc-pied-conditions { min-width: 0; }
+.doc-pied-conditions textarea { width: 100%; min-height: 74px; }
 
 /* ---------- Le totalisateur ----------
    Aligne a droite, libelles a gauche, montants en colonne, filet fort
@@ -2514,11 +2537,13 @@ label { color: var(--sa-text-muted); }
    affiche qui differerait de celui enregistre serait pire que pas de
    total du tout. */
 .totalisateur { font-variant-numeric: tabular-nums; }
-.totalisateur.est-vide {
-  padding: var(--sa-space-5);
-  border: 1px dashed var(--sa-border-strong); border-radius: var(--sa-radius-lg);
-}
-.totalisateur.est-vide p { margin: 0; font-size: var(--sa-text-sm); color: var(--sa-text-muted); }
+/* L'attente d'un total n'a pas besoin d'un encadre en pointilles - la
+   direction artistique les proscrit, et celui-ci attirait l'oeil plus que
+   les totaux qu'il annonce. Un filet en tete, au meme endroit que le futur
+   « Total HT », et la phrase en encre discrete : la place est tenue, sans
+   rien promettre de plus. */
+.totalisateur.est-vide { padding-top: var(--sa-space-3); border-top: 1px solid var(--sa-border); }
+.totalisateur.est-vide p { margin: 0; font-size: var(--sa-text-sm); color: var(--sa-text-faint); }
 .totalisateur-ligne {
   display: flex; justify-content: space-between; align-items: baseline; gap: var(--sa-space-4);
   padding: 7px 0;
@@ -2545,7 +2570,7 @@ label { color: var(--sa-text-muted); }
 .totalisateur-ligne.est-acompte span:last-child { color: var(--sa-laiton); font-size: var(--sa-text-sm); }
 
 @media (max-width: 900px) {
-  .devis-pied { grid-template-columns: 1fr; gap: var(--sa-space-6); }
+  .doc-pied { grid-template-columns: 1fr; gap: var(--sa-space-6); }
   .lignes-editor { --ligne-cols: minmax(0, 1fr) 62px 76px 88px 88px 34px; }
 }
 @media (max-width: 700px) {
@@ -2785,7 +2810,10 @@ label { color: var(--sa-text-muted); }
 /* Le contexte est cliquable : il mene au chantier ou au client. */
 .tache-row-contexte {
   display: inline-flex; align-items: baseline; gap: 6px;
-  margin-top: 2px; padding: 0;
+  /* 19 px de haut pour un bouton qui mene au chantier : le retrait vertical
+     le porte au seuil de 24 px sans deplacer le texte, la marge negative
+     compensant l'espace pris. */
+  margin-top: 0; padding: 3px 0;
   border: 0; background: none;
   font: inherit; font-size: var(--sa-text-xs);
   color: var(--sa-accent); cursor: pointer;
@@ -3076,7 +3104,6 @@ label { color: var(--sa-text-muted); }
       gants, n'est pas cliquable. */
 @media (max-width: 760px) {
   .lien-action { display: inline-block; padding: 6px 0; min-height: 32px; }
-  .tache-row-check { width: 22px; height: 22px; }
   .tache-row { gap: var(--sa-space-3); padding: 12px 8px; }
 }
 
@@ -3087,10 +3114,8 @@ label { color: var(--sa-text-muted); }
   .chantier-card-tete { flex-wrap: wrap; row-gap: 6px; }
   .chantier-card-tete .badge { order: 3; }
   .chantier-card-identite { flex: 1 1 100%; }
-  /* WCAG 2.5.8 demande 24 px de cote pour une cible de pointage. Une case
-     a cocher de 17 px sur un chantier, avec des gants, n'est pas
-     cliquable ; 24 px avec de l'air autour l'est. */
-  .tache-row-check { width: 24px; height: 24px; }
+  /* La case a cocher fait desormais 24 px a TOUTES les largeurs : la regle
+     specifique au mobile qui vivait ici n'a plus lieu d'etre. */
 }
 
 /* =====================================================================
