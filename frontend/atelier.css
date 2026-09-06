@@ -1198,3 +1198,72 @@ label { color: var(--sa-text-muted); }
   color: var(--sa-text-faint);
 }
 .tache-row-check { accent-color: var(--sa-accent); }
+
+/* =====================================================================
+   PLANNING — la page reglee
+   ---------------------------------------------------------------------
+   Un planning EST une page reglee : c'est exactement l'objet dont la
+   direction « Atelier » parle. Les rangees horaires deviennent donc des
+   reglures, pas des bordures de tableau.
+
+   ATTENTION, dette rattrapee ici : le traitement du week-end, du jour
+   courant et des lignes de grille avait ete ajoute lors de la passe de
+   finition precedente, mais il vivait dans theme.css. En remplacant
+   theme.css par atelier.css, ces regles ont disparu - la classe
+   `is-weekend` continuait d'etre posee par app.js sans plus rien
+   declencher. Elles sont retablies ici, aux valeurs du papier.
+   ===================================================================== */
+.planning-day-view, .planning-week-grid, .planning-month-grid {
+  background: var(--sa-border);
+  border-color: var(--sa-border-strong);
+  border-radius: var(--sa-radius-lg);
+}
+.planning-day-cell { background: var(--sa-surface); }
+/* Samedi et dimanche reculent d'un plan : la semaine se lit d'un coup
+   d'oeil, mais un rendez-vous pose un samedi reste parfaitement visible.
+   C'est le FOND qui recule, jamais le contenu. */
+.planning-day-cell.is-weekend { background: var(--sa-surface-2); }
+/* Aujourd'hui : une arete de laiton en tete de colonne plutot qu'un
+   aplat sur toute sa hauteur. Un trait franc se voit mieux qu'un lavis
+   dilue, et n'ajoute presque pas de couleur a l'ecran.
+   Cette regle doit rester APRES `.is-weekend` : meme specificite, et un
+   samedi peut etre aujourd'hui. */
+.planning-day-cell.is-today {
+  background: var(--sa-surface);
+  box-shadow: inset 0 2px 0 var(--sa-laiton);
+}
+.planning-day-cell.is-today .planning-day-header { color: var(--sa-laiton); }
+.planning-day-cell.drag-over { background: var(--sa-accent-soft); }
+
+/* Les reglures : elles se repetent toutes les 41 px. Au meme ton que les
+   separations de colonnes, l'empilement faisait une trame ; un cran en
+   dessous, la grille structure sans peser. */
+.planning-hour-row { border-bottom-color: #E7E2D6; }
+.planning-hour-gutter { background: var(--sa-surface-2); border-right-color: var(--sa-border); }
+.planning-hour-label { color: var(--sa-text-faint); font-variant-numeric: tabular-nums; }
+.planning-day-header { color: var(--sa-text-muted); }
+.planning-month-weekday { background: var(--sa-bg); color: var(--sa-text-faint); }
+
+/* Les rendez-vous : une fiche posee sur la page, avec un filet de couleur
+   sur le flanc pour le type. Le filet suffit - un aplat colore par
+   evenement rendrait la semaine illisible. */
+.planning-item, .planning-item-positioned {
+  background: var(--sa-surface-2);
+  border-left-width: 2px;
+  border-radius: var(--sa-radius-sm);
+  color: var(--sa-text);
+}
+.planning-item:hover, .planning-item-positioned:hover { background: var(--sa-surface-3); }
+.planning-item-blue { border-left-color: var(--sa-info); }
+.planning-item-orange { border-left-color: var(--sa-warning); }
+.planning-item-gray { border-left-color: var(--sa-text-faint); }
+.planning-item-green { border-left-color: var(--sa-success); }
+.planning-now-line { border-top-color: var(--sa-danger); }
+.planning-now-dot { background: var(--sa-danger); }
+.planning-day-empty { color: var(--sa-text-faint); }
+
+/* Le selecteur Jour / Semaine / Mois : meme grammaire que les segments
+   d'etat ailleurs dans le produit. */
+.planning-modes { background: var(--sa-surface-2); border-radius: var(--sa-radius-sm); }
+.planning-modes .btn-sm-primary { background: var(--sa-accent); color: var(--sa-text-on-accent); border-color: var(--sa-accent); }
+.planning-label { font-family: var(--sa-font-display); font-weight: 600; letter-spacing: 0.02em; color: var(--sa-text); }
