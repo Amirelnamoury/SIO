@@ -71,7 +71,6 @@ Api.listTaches = async () => [
 Api.listDocuments = async () => [
   { id: 1, nom: "Photo avant travaux", type: "photo", url: null, nom_original: "photo.jpg", taille_octets: 240000, client_id: null, chantier_id: 2, created_at: tg(3) },
 ];
-Api.listConformite = async () => [];
 Api.planning = async () => [{ id: 1, date: new Date().toISOString(), type: "rdv", titre: "Métré chez Mme Roussel", reference_id: 1, client_id: null, chantier_id: null }];
 Api.analytics = async () => ({ ca_par_mois: [4200, 5100, 6400, 8100, 9200, 11650].map((ca, i) => { const d = new Date(); d.setMonth(d.getMonth() - (5 - i)); return { mois: d.toISOString().slice(0, 7), ca }; }), valeur_pipeline: 42100, montant_impayes: 13340, nb_devis_total: 48, nb_devis_signes: 21, nb_clients_acquis: 18, nb_clients_recurrents: 7, taux_acceptation: 58, panier_moyen: 6420, delai_moyen_paiement_jours: 34, sources_acquisition: [{ source: "site_vitrine", nb_clients: 15, nb_gagnes: 5, ca: 31200 }] });
 // AvisOut : la source est requise et porte un libelle (AVIS_SOURCE_LABELS),
@@ -126,23 +125,42 @@ currentArtisan = {
 };
 Api.me = async () => currentArtisan;
 Api.updateMe = async (p) => Object.assign(currentArtisan, p);
+// PrestationOut : le libelle s'appelle `description` - il n'y a pas de champ
+// `nom` - et `taux_tva` est requis. Ecrite de memoire, cette entree affichait
+// « TVA undefined% » et deux lignes sur trois sans titre.
 Api.listPrestations = async () => [
-  { id: 1, libelle: "Remplacement d'un chauffe-eau 200 L", unite: "u", prix_unitaire_ht: 940, description: "Dépose de l'ancien, pose et mise en service." },
-  { id: 2, libelle: "Recherche de fuite non destructive", unite: "u", prix_unitaire_ht: 180, description: null },
-  { id: 3, libelle: "Pose de carrelage mural", unite: "m2", prix_unitaire_ht: 45.5, description: null },
+  { id: 1, artisan_id: 1, description: "Remplacement d'un chauffe-eau 200 L", categorie: "Sanitaire", unite: "u", prix_unitaire_ht: 940, taux_tva: 10, created_at: tg(90) },
+  { id: 2, artisan_id: 1, description: "Recherche de fuite non destructive", categorie: "Dépannage", unite: "u", prix_unitaire_ht: 180, taux_tva: 20, created_at: tg(60) },
+  { id: 3, artisan_id: 1, description: "Pose de carrelage mural", categorie: null, unite: "m2", prix_unitaire_ht: 45.5, taux_tva: 10, created_at: tg(30) },
 ];
+// FournisseurOut : `contact_nom`, pas `contact`, et `categorie` est requise.
 Api.listFournisseurs = async () => [
-  { id: 1, nom: "Point P Villeurbanne", contact: "M. Sanchez", telephone: "04 72 10 88 00", email: "villeurbanne@pointp.fr", notes: "Remise 12 % sur le sanitaire." },
-  { id: 2, nom: "Cedeo Lyon Est", contact: null, telephone: "04 78 03 41 12", email: null, notes: null },
+  { id: 1, nom: "Point P Villeurbanne", categorie: "Matériaux", contact_nom: "M. Sanchez", telephone: "04 72 10 88 00", email: "villeurbanne@pointp.fr", adresse: "22 rue Léon Blum", notes: "Remise 12 % sur le sanitaire." },
+  { id: 2, nom: "Cedeo Lyon Est", categorie: "Sanitaire", contact_nom: null, telephone: "04 78 03 41 12", email: null, adresse: null, notes: null },
 ];
 Api.listEquipe = async () => [
-  { id: 1, nom: "Karim Bertin", email: "karim@bertin-plomberie.fr", role: "administrateur", actif: true },
-  { id: 2, nom: "Léa Fournier", email: "lea@bertin-plomberie.fr", role: "collaborateur", actif: true },
+  { id: 1, artisan_id: 1, nom: "Karim Bertin", email: "karim@bertin-plomberie.fr", role: "administrateur", actif: true, created_at: tg(400) },
+  // Les deux seuls roles du modele sont `administrateur` et `salarie`.
+  { id: 2, artisan_id: 1, nom: "Léa Fournier", email: "lea@bertin-plomberie.fr", role: "salarie", actif: true, created_at: tg(120) },
 ];
+// ContratOut : `frequence` et `statut`, pas `periodicite`/`actif`.
 Api.listContrats = async () => [
-  { id: 1, client_id: 1, client_nom: "Bertrand", titre: "Entretien annuel chaudière", montant_ht: 180, periodicite: "annuel", prochaine_echeance: jg(45), actif: true },
+  { id: 1, client_id: 1, client_nom: "Bertrand", titre: "Entretien annuel chaudière", montant_ht: 180, taux_tva: 10, frequence: "annuel", statut: "actif", prochaine_echeance: jg(45), derniere_generation: jg(-320), nb_factures_generees: 3, created_at: tg(400) },
 ];
-Api.conformiteAlertes = async () => [];
-Api.automationStatus = async () => ({ actif: true, relances_devis_envoyees_30j: 6, relances_factures_envoyees_30j: 2, derniere_execution: tg(1) });
+// ConformiteOut : `libelle`, `date_expiration`, `jours_restants`, `alerte`.
+Api.listConformite = async () => [
+  { id: 1, artisan_id: 1, type: "assurance_decennale", libelle: "Assurance décennale AXA", date_expiration: jg(21), document_url: null, created_at: tg(300), alerte: true, jours_restants: 21 },
+  { id: 2, artisan_id: 1, type: "qualibat", libelle: "Qualification Qualibat 5111", date_expiration: jg(210), document_url: null, created_at: tg(300), alerte: false, jours_restants: 210 },
+];
+Api.conformiteAlertes = async () => [
+  { id: 1, artisan_id: 1, type: "assurance_decennale", libelle: "Assurance décennale AXA", date_expiration: jg(21), document_url: null, created_at: tg(300), alerte: true, jours_restants: 21 },
+];
+// AutomationStatutOut : etat systeme du moteur, pas des compteurs par artisan.
+Api.automationStatus = async () => ({
+  email_configure: true, fournisseur: "Resend", intervalle_minutes: 60,
+  derniere_execution: tg(0.05),
+  derniere_execution_resume: "3 devis relances, 1 facture relancee, 4 emails envoyes, 0 non configures, 0 erreurs",
+  prochaine_execution_estimee: new Date(Date.now() + 42 * 60000).toISOString(),
+});
 Api.listSiteMedia = async () => ({ photos: [], logo_url: null });
 })();

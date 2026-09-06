@@ -773,22 +773,37 @@ async function refreshProfilePhoto({ force = false } = {}) {
 }
 
 function refreshEntrepriseProfileSummary() {
-  const valeurs = [
-    currentArtisan.nom_entreprise, currentArtisan.metier, currentArtisan.email,
-    currentArtisan.telephone, currentArtisan.ville, currentArtisan.code_postal,
-    currentArtisan.adresse, currentArtisan.siret, currentArtisan.assurance_decennale_nom,
+  // On nomme les champs manquants au lieu de les compter. « 3 informations
+  // manquantes » oblige a relire tout le formulaire pour trouver lesquelles ;
+  // « SIRET, adresse et assurance » dit ou aller. Et quand tout est
+  // renseigne, le bloc DISPARAIT : une barre de progression a 100 % est une
+  // decoration, et elle occupait le coin le plus visible de la page.
+  const champs = [
+    { valeur: currentArtisan.nom_entreprise, nom: "le nom de l'entreprise" },
+    { valeur: currentArtisan.metier, nom: "le métier" },
+    { valeur: currentArtisan.email, nom: "l'email" },
+    { valeur: currentArtisan.telephone, nom: "le téléphone" },
+    { valeur: currentArtisan.ville, nom: "la ville" },
+    { valeur: currentArtisan.code_postal, nom: "le code postal" },
+    { valeur: currentArtisan.adresse, nom: "l'adresse" },
+    { valeur: currentArtisan.siret, nom: "le SIRET" },
+    { valeur: currentArtisan.assurance_decennale_nom, nom: "l'assureur décennale" },
   ];
-  const renseignees = valeurs.filter((valeur) => String(valeur || "").trim()).length;
-  const manquantes = valeurs.length - renseignees;
-  const progression = Math.round((renseignees / valeurs.length) * 100);
+  const manquants = champs.filter((c) => !String(c.valeur || "").trim());
+  const progression = Math.round(((champs.length - manquants.length) / champs.length) * 100);
   document.getElementById("enterprise-profile-monogram").textContent = monogram(currentArtisan.nom_entreprise || "SA");
   document.getElementById("enterprise-profile-name").textContent = currentArtisan.nom_entreprise || "Entreprise";
   document.getElementById("enterprise-profile-trade").textContent = METIER_LABELS[currentArtisan.metier] || currentArtisan.metier || "";
-  document.getElementById("enterprise-profile-completion-label").textContent = `Profil complété à ${progression}%`;
-  document.getElementById("enterprise-profile-progress").style.width = `${progression}%`;
-  document.getElementById("enterprise-profile-missing").textContent = manquantes
-    ? `${manquantes} information${manquantes > 1 ? "s" : ""} manquante${manquantes > 1 ? "s" : ""}`
-    : "Profil complet";
+
+  const bloc = document.querySelector(".enterprise-profile-completion");
+  bloc.hidden = manquants.length === 0;
+  if (manquants.length) {
+    const noms = manquants.map((c) => c.nom);
+    const liste = noms.length === 1 ? noms[0] : `${noms.slice(0, -1).join(", ")} et ${noms[noms.length - 1]}`;
+    document.getElementById("enterprise-profile-completion-label").textContent = `Profil complété à ${progression}%`;
+    document.getElementById("enterprise-profile-progress").style.width = `${progression}%`;
+    document.getElementById("enterprise-profile-missing").textContent = `Il manque ${liste}.`;
+  }
   updateProfilePhotoControls();
 }
 
@@ -995,7 +1010,6 @@ function renderMembreCard(m) {
   }
   return `
   <div class="item-card enterprise-record">
-    <span class="enterprise-record-avatar">${escapeHtml(monogram(m.nom))}</span>
     <div class="enterprise-record-main">
       <div class="item-title">${escapeHtml(m.nom)}${estMoi ? " (vous)" : ""}</div>
       <div class="item-sub">${escapeHtml(m.email)}</div>
@@ -1113,7 +1127,6 @@ async function loadPrestations() {
 function renderPrestationCard(p) {
   return `
   <div class="item-card enterprise-record">
-    <span class="enterprise-record-avatar">${escapeHtml(monogram(p.description))}</span>
     <div class="enterprise-record-main">
       <div class="item-title">${escapeHtml(p.description)}</div>
       <div class="item-sub">${escapeHtml(p.categorie || PRESTATION_CATEGORIE_DEFAUT)} · ${escapeHtml(p.unite)} · TVA ${p.taux_tva}%</div>
@@ -1240,7 +1253,6 @@ function renderFournisseurCard(f) {
   const contact = [f.contact_nom, f.telephone, f.email].filter(Boolean).map(escapeHtml).join(" · ");
   return `
   <div class="item-card enterprise-record">
-    <span class="enterprise-record-avatar">${escapeHtml(monogram(f.nom))}</span>
     <div class="enterprise-record-main">
       <div class="item-title">${escapeHtml(f.nom)}</div>
       <div class="item-sub">${contact || "Pas de contact renseigné"}</div>
@@ -5386,7 +5398,6 @@ function renderContratCard(c) {
   const meta = CONTRAT_STATUT_META[c.statut] || { label: c.statut, badge: "badge-gray" };
   return `
   <div class="item-card enterprise-record">
-    <span class="enterprise-record-avatar">${escapeHtml(monogram(c.titre))}</span>
     <div class="enterprise-record-main">
       <div class="item-title">${escapeHtml(c.titre)}</div>
       <div class="item-sub">${escapeHtml(c.client_nom)} · ${fmtEuro(c.montant_ht)} HT · TVA ${c.taux_tva}% · ${CONTRAT_FREQUENCE_LABELS[c.frequence] || c.frequence}</div>
@@ -7788,7 +7799,12 @@ async function loadConformite() {
 
     if (alertes.length > 0) {
       banner.hidden = false;
-      banner.textContent = `${alertes.length} élément(s) de conformité arrivent à échéance dans moins de 30 jours (ou sont déjà expirés).`;
+      // « 1 élément(s) ... arrivent » : la parenthese evite d'accorder le nom
+      // mais laisse le verbe faux. Deux phrases coutent moins qu'une phrase
+      // qui sonne comme un message d'erreur de developpeur.
+      banner.textContent = alertes.length === 1
+        ? "Un élément de conformité arrive à échéance dans moins de 30 jours, ou est déjà expiré."
+        : `${alertes.length} éléments de conformité arrivent à échéance dans moins de 30 jours, ou sont déjà expirés.`;
     } else {
       banner.hidden = true;
     }
@@ -7809,7 +7825,6 @@ function renderConformiteCard(item) {
   const typeLabel = CONFORMITE_TYPE_LABELS[item.type] || item.type;
   return `
   <div class="item-card enterprise-record ${item.alerte ? "is-due" : ""}">
-    <span class="enterprise-record-avatar">${escapeHtml(monogram(typeLabel))}</span>
     <div class="enterprise-record-main">
       <div class="item-title">${escapeHtml(item.libelle)}</div>
       <div class="item-sub">${escapeHtml(typeLabel)}</div>
@@ -7830,7 +7845,7 @@ function setupConformiteView() {
     const container = document.getElementById("conformite-form-container");
     container.innerHTML = `
       <div class="form-box">
-        <h3>Nouvel element de conformite</h3>
+        <h3>Nouvel élément de conformité</h3>
         <form id="conformite-form">
           <div class="form-grid">
             <div>

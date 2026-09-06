@@ -200,4 +200,37 @@ assert.match(styleSource, /\.avis-repartition-piste/, "la repartition des notes 
 assert.doesNotMatch(styleSource, /\.notifications-tools \{[^}]*position: absolute/);
 assert.doesNotMatch(styleSource, /#view-avis > \.list-search \{[^}]*position: absolute/);
 
+// ---------------------------------------------------------------------
+// ENTREPRISE : PAS DE MONOGRAMME LA OU IL N'Y A PAS DE PERSONNE
+// ---------------------------------------------------------------------
+// Equipe, prestations, fournisseurs, contrats et conformite partagent le
+// composant `.enterprise-record`. Il ouvrait chaque entree sur deux lettres
+// dans un carre : « RD » devant « Remplacement d'un chauffe-eau », « AD »
+// devant « Assurance decennale ». Des initiales de phrase, qui se lisent
+// comme des initiales de personne.
+assert.doesNotMatch(appSource, /enterprise-record-avatar/, "le monogramme des listes Entreprise ne doit pas revenir");
+assert.doesNotMatch(styleSource, /\.enterprise-record-avatar/);
+
+// La vue Entreprise n'est plus enfermee dans de grands cadres arrondis :
+// `.form-box` encadre un formulaire qui SURGIT dans une liste, pas un ecran
+// de reglages, qui EST la page.
+for (const boite of ["#entreprise-form-box", "#visual-identity-box, #automatisation-form-box"]) {
+  assert.match(styleSource, new RegExp(`${boite.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} \\{[^}]*border: 0`),
+    `${boite} ne doit plus porter de cadre`);
+}
+
+// Un texte destine a un artisan, pas a un developpeur : ni pluriel entre
+// parentheses, ni verbe qui ne s'accorde pas avec son sujet.
+//
+// L'assertion porte sur le CODE seul, commentaires retires : sans cela elle
+// se declenchait sur le commentaire qui, dans app.js, cite justement la
+// tournure qu'il explique avoir corrigee.
+const appSansCommentaires = appSource
+  .replace(/\/\*[\s\S]*?\*\//g, "")
+  .split("\n").map((l) => l.replace(/(^|\s)\/\/.*$/, "$1")).join("\n");
+// La negative exclut les signatures dont le parametre s'appelle `s` -
+// `sousScoreHtml(s) {`, `(s) =>` : du JavaScript, pas du francais.
+assert.doesNotMatch(appSansCommentaires, /\w+\(s\)(?!\s*[{=])/,
+  "pas de pluriel entre parentheses dans un texte visible");
+
 console.log("OK - reference-ui-reproduction.test.mjs");

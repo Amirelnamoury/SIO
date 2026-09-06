@@ -1500,33 +1500,66 @@ input[readonly] { background: var(--sa-surface-2); }
 /* ---------- Entreprise : espace de gestion commun aux huit onglets ---------- */
 #view-entreprise .view-header { margin-bottom: var(--sa-space-5); }
 #view-entreprise .view-header-desc { max-width: none; white-space: nowrap; }
-#view-entreprise .entreprise-tabs { flex-wrap: nowrap; align-items: center; gap: 4px; margin-bottom: var(--sa-space-5); padding: 4px; overflow-x: auto; border: 1px solid var(--sa-border); border-radius: var(--sa-radius-lg); background: var(--sa-surface); scrollbar-width: none; }
+/* Huit onglets sur un filet, comme les onglets de toutes les autres vues.
+   Ils vivaient dans un bandeau encadre et arrondi qui n'existait nulle part
+   ailleurs dans le produit : deux grammaires pour la meme fonction. */
+#view-entreprise .entreprise-tabs { flex-wrap: nowrap; align-items: center; gap: var(--sa-space-4); margin-bottom: var(--sa-space-5); padding: 0; overflow-x: auto; border: 0; border-bottom: 1px solid var(--sa-border); border-radius: 0; background: transparent; scrollbar-width: none; }
 #view-entreprise .entreprise-tabs::-webkit-scrollbar { display: none; }
-#view-entreprise .entreprise-tabs .filter-chip { flex: 0 0 auto; margin: 0; padding: 9px 11px; border: 0; border-radius: var(--sa-radius-sm); color: var(--sa-text-muted); font-size: var(--sa-text-xs); white-space: nowrap; }
-#view-entreprise .entreprise-tabs .filter-chip:hover { background: var(--sa-surface-2); color: var(--sa-text); }
+#view-entreprise .entreprise-tabs::-webkit-scrollbar { display: none; }
+#view-entreprise .entreprise-tabs .filter-chip { flex: 0 0 auto; margin: 0; padding: 9px 0; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: transparent; color: var(--sa-text-muted); font-size: var(--sa-text-xs); white-space: nowrap; }
+#view-entreprise .entreprise-tabs .filter-chip:hover { background: transparent; color: var(--sa-text); }
+#view-entreprise .entreprise-tabs .filter-chip.active { background: transparent; border-bottom-color: var(--sa-laiton); color: var(--sa-text); }
 #view-entreprise [data-tab-panel] { min-height: 260px; }
 #view-entreprise .subsection-header { min-height: 52px; margin-bottom: 8px; padding-bottom: 14px; border-bottom: 1px solid var(--sa-border); }
 #view-entreprise .subsection-header h2 { font-size: var(--sa-text-lg) !important; }
 #view-entreprise .section-hint { margin: 0 0 var(--sa-space-5); }
-#view-entreprise .entreprise-section > .list { overflow: hidden; border: 1px solid var(--sa-border); border-radius: var(--sa-radius-lg); background: var(--sa-surface); }
+/* La liste n'est plus une boite arrondie posee sur le papier : un filet en
+   tete, puis un filet entre chaque entree. Le meme geste que partout. */
+#view-entreprise .entreprise-section > .list { border-top: 1px solid var(--sa-border); background: transparent; }
 #view-entreprise .entreprise-section .empty-state { padding: 44px 24px; text-align: center; }
 #view-entreprise .entreprise-section .empty-state .btn-primary,
 #view-entreprise .entreprise-section .empty-state .btn-secondary { margin-top: var(--sa-space-3); }
-#view-entreprise .entreprise-section .item-card { padding: 16px 18px; border-bottom: 1px solid var(--sa-border); }
+#view-entreprise .entreprise-section .item-card { padding: 12px 0; background: transparent; border-bottom: 1px solid var(--sa-border); }
+/* Le filet d'alerte a besoin de son retrait : sans lui, le trait rouge
+   colle au texte. Le raccourci `padding` ci-dessus ecrasait celui que
+   `.item-card.is-due` posait plus haut. */
+#view-entreprise .entreprise-section .item-card.is-due { padding-left: 14px; }
 #view-entreprise .entreprise-section .item-card:first-child { border-top: 0; }
 #view-entreprise .entreprise-section .item-card:last-child { border-bottom: 0; }
-.enterprise-record { display: grid; grid-template-columns: 42px minmax(0, 1fr) auto; align-items: center; gap: 12px 14px; }
-.enterprise-record-avatar { display: grid; place-items: center; width: 42px; height: 42px; border: 1px solid var(--sa-border); border-radius: var(--sa-radius-md); background: var(--sa-surface-2); color: var(--sa-accent); font-family: var(--sa-font-display); font-size: var(--sa-text-sm); font-weight: var(--sa-weight-bold); }
+/* ---------------------------------------------------------------------
+   LES CINQ LISTES DE LA VUE ENTREPRISE
+   ---------------------------------------------------------------------
+   Equipe, prestations, fournisseurs, contrats et conformite partagent ce
+   composant : le corriger une fois corrige cinq onglets.
+
+   Il ouvrait chaque entree sur un monogramme de deux lettres dans un
+   carre. Pour un membre de l'equipe, passe encore ; pour le reste, cela
+   donnait « RD » en tete de « Remplacement d'un chauffe-eau » et « AD »
+   devant « Assurance decennale » - des initiales de phrase, qui se lisent
+   comme des initiales de personne. La colonne est supprimee.
+
+   Les actions descendaient aussi sur une deuxieme rangee : un catalogue
+   de dix prestations occupait alors une page et demie pour dix lignes de
+   texte. Elles reviennent sur la ligne, a droite.
+   --------------------------------------------------------------------- */
+.enterprise-record { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 6px var(--sa-space-4); padding: 12px 0; }
 .enterprise-record-main { min-width: 0; }
-.enterprise-record-status { align-self: start; justify-self: end; }
-.enterprise-record .item-actions { grid-column: 2 / -1; margin-top: 0; }
+.enterprise-record-status { align-self: center; justify-self: end; }
+.enterprise-record .item-actions { grid-column: auto; margin-top: 0; justify-self: end; }
 .enterprise-record .item-meta { margin-top: 5px; }
 .enterprise-record .item-title { font-size: var(--sa-text-base); }
-.enterprise-record-amount { color: var(--sa-text); font-size: var(--sa-text-base); font-weight: var(--sa-weight-bold); white-space: nowrap; }
+.enterprise-record-amount { color: var(--sa-text); font-size: var(--sa-text-base); font-weight: var(--sa-weight-bold); white-space: nowrap; font-variant-numeric: tabular-nums; }
 
-#entreprise-form-box { overflow: hidden; padding: 0; }
-.enterprise-card-label { margin: 0; padding: 15px 20px 0; color: var(--sa-text-faint); font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-bold); text-transform: uppercase; letter-spacing: .06em; }
-.enterprise-profile-summary { display: grid; grid-template-columns: 64px minmax(0, 1fr) 220px; align-items: center; gap: 16px; min-height: 104px; margin: 0 0 4px; padding: 14px 20px 18px; border-bottom: 1px solid var(--sa-border); }
+/* `.form-box` encadre un formulaire qui SURGIT dans une liste - creer un
+   devis, un client : la boite est alors juste, elle dit « ceci se detache
+   de la page ». Ici, elle enfermait la page ENTIERE dans un grand cadre
+   arrondi. Rien ne surgit sur un ecran de reglages : c'est l'ecran. */
+#entreprise-form-box { overflow: visible; padding: 0; background: transparent; border: 0; border-radius: 0; }
+.enterprise-card-label { margin: 0; padding: 0; color: var(--sa-text-faint); font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-bold); text-transform: uppercase; letter-spacing: .06em; }
+/* Troisieme colonne en `auto` et non en 220px fixes : le bloc « profil
+   complete » disparait quand il n'y a plus rien a completer, et une piste
+   figee laisserait un vide de 220 px a sa place. */
+.enterprise-profile-summary { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; align-items: center; gap: 16px; min-height: 104px; margin: 0 0 4px; padding: 14px 0 18px; border-bottom: 1px solid var(--sa-border); }
 .enterprise-profile-avatar { position: relative; width: 64px; height: 64px; }
 .enterprise-profile-monogram, .enterprise-profile-avatar img { display: grid; place-items: center; width: 64px; height: 64px; border-radius: var(--sa-radius-lg); }
 .enterprise-profile-monogram { background: var(--sa-accent-soft); color: var(--sa-accent); font-family: var(--sa-font-display); font-size: 1.55rem; font-weight: var(--sa-weight-bold); }
@@ -1538,11 +1571,12 @@ input[readonly] { background: var(--sa-surface-2); }
 .enterprise-profile-photo-form .btn-sm { padding: 5px 8px; font-size: var(--sa-text-2xs); }
 .enterprise-profile-photo-hint { margin-top: 5px; color: var(--sa-text-faint); font-size: .62rem; }
 #profile-photo-error { margin: 6px 0 0; font-size: var(--sa-text-2xs); }
-.enterprise-profile-completion { display: grid; gap: 6px; color: var(--sa-text-muted); font-size: var(--sa-text-xs); }
+.enterprise-profile-completion { display: grid; gap: 6px; width: 260px; color: var(--sa-text-muted); font-size: var(--sa-text-xs); }
+.enterprise-profile-completion[hidden] { display: none; }
 .enterprise-profile-progress { height: 5px; overflow: hidden; border-radius: var(--sa-radius-full); background: var(--sa-surface-3); }
 .enterprise-profile-progress span { display: block; height: 100%; border-radius: inherit; background: var(--sa-accent); }
 .enterprise-profile-completion small { color: var(--sa-text-faint); font-size: var(--sa-text-2xs); }
-#entreprise-form-box #entreprise-form { padding: 16px 20px 20px; }
+#entreprise-form-box #entreprise-form { padding: 16px 0 20px; }
 #entreprise-form-box .form-section { margin-bottom: 18px; padding-bottom: 18px; }
 #entreprise-form-box .form-section-title { margin-bottom: 12px; color: var(--sa-accent); }
 #entreprise-form-box .form-grid { gap: 13px 16px; }
@@ -1551,11 +1585,17 @@ input[readonly] { background: var(--sa-surface-2); }
 #entreprise-form-box input, #entreprise-form-box select { padding: 9px 11px; font-size: var(--sa-text-xs); }
 #entreprise-form-box .form-actions { justify-content: flex-end; margin-top: 16px; }
 
-#visual-identity-box { padding: var(--sa-space-6); }
+/* Les deux autres onglets qui portaient encore le grand cadre arrondi.
+   Meme raison qu'ailleurs : sur un ecran de reglages, le panneau n'est pas
+   un objet qui surgit dans une page - il EST la page. */
+#visual-identity-box, #automatisation-form-box { padding: var(--sa-space-2) 0 0; background: transparent; border: 0; border-radius: 0; }
 #visual-identity-box > h3, #automatisation-form-box > h3 { margin-bottom: 8px; }
 #visual-identity-box .visual-identity-grid { margin-top: var(--sa-space-5); }
 #visual-identity-box .media-upload-section { padding: 18px; border: 1px solid var(--sa-border); border-radius: var(--sa-radius-lg); background: var(--sa-bg); }
-#automatisation-form-box { padding: var(--sa-space-6); }
+/* Les quatre delais de relance sont une meme question posee quatre fois :
+   leurs champs doivent s'aligner meme quand un intitule passe sur deux
+   lignes - sinon le dernier descend tout seul, comme s'il etait a part. */
+#automatisation-form-box .form-grid { align-items: end; }
 #automation-status { margin-top: var(--sa-space-5); padding-top: var(--sa-space-5); border-top: 1px solid var(--sa-border); }
 
 /* ---------- Notifications : vraie inbox, groupee, ligne dense. ---------- */
@@ -1635,8 +1675,11 @@ input[readonly] { background: var(--sa-surface-2); }
   #entreprise-form-box .enterprise-address-field { grid-column: auto; }
   .enterprise-profile-summary { grid-template-columns: 64px minmax(0, 1fr); }
   .enterprise-profile-completion { grid-column: 1 / -1; }
-  .enterprise-record { grid-template-columns: 38px minmax(0, 1fr) auto; }
-  .enterprise-record-avatar { width: 38px; height: 38px; }
+  /* Sous 900 px, les actions descendent sur leur propre rangee : cinq
+     boutons - « Modifier », « Generer maintenant », « Suspendre »... - ne
+     tiennent pas a cote d'un titre sur une tablette. */
+  .enterprise-record { grid-template-columns: minmax(0, 1fr) auto; }
+  .enterprise-record .item-actions { grid-column: 1 / -1; justify-self: start; margin-top: 8px; flex-wrap: wrap; }
   .notif-row { grid-template-columns: 10px minmax(0, 1fr) auto; }
   .notif-date { grid-column: 2; text-align: left; }
   .notif-row > .btn-sm { grid-column: 2; justify-self: start; }
@@ -1644,13 +1687,12 @@ input[readonly] { background: var(--sa-surface-2); }
 }
 
 @media (max-width: 620px) {
-  #view-entreprise .entreprise-tabs { border-right: 0; border-left: 0; border-radius: 0; }
   .enterprise-profile-summary { grid-template-columns: 1fr; }
   .enterprise-profile-avatar { width: 64px; }
-  .enterprise-profile-completion { grid-column: auto; }
-  .enterprise-record { grid-template-columns: 38px minmax(0, 1fr); }
-  .enterprise-record-status { grid-column: 2; justify-self: start; }
-  .enterprise-record .item-actions { grid-column: 1 / -1; }
+  .enterprise-profile-completion { grid-column: auto; width: auto; }
+  .enterprise-record { grid-template-columns: minmax(0, 1fr); }
+  .enterprise-record-status { grid-column: 1; justify-self: start; }
+  .enterprise-record .item-actions { grid-column: 1; }
 }
 
 /* ---------- Toast ---------- */
