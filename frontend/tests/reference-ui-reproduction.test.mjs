@@ -160,4 +160,44 @@ for (const [, valeur] of styleSource.matchAll(/letter-spacing:\s*(-[\d.]+)em/g))
     `approche trop serree (${valeur}em) : au-dela de -0.01em on retombe dans le SaaS generique`);
 }
 
+// ---------------------------------------------------------------------
+// LE PLANNING PLACE SES RENDEZ-VOUS A LEUR HEURE
+// ---------------------------------------------------------------------
+// `.planning-item-positioned` recoit un `top` en pixels calcule par app.js
+// depuis l'heure du rendez-vous. Sans `position: absolute`, ce `top` ne fait
+// que decaler un element reste dans le flux : tous les rendez-vous du jour
+// s'empilaient SOUS la grille horaire, et la vue Semaine ne montrait plus
+// rien a l'heure juste. Le defaut a survecu longtemps parce qu'un planning
+// vide n'a rien a mal placer.
+assert.match(styleSource, /\.planning-item-positioned \{[^}]*position: absolute/,
+  "un rendez-vous positionne doit l'etre vraiment, sinon il retombe sous la grille");
+
+// ---------------------------------------------------------------------
+// NOTIFICATIONS ET AVIS PARLENT LA LANGUE DU RESTE DU PRODUIT
+// ---------------------------------------------------------------------
+// Ces deux vues etaient les dernieres a etre restees des tableaux CRUD
+// generiques. Elles passent maintenant par la gouttiere `.sa-section`,
+// comme l'accueil, la fiche client et les statistiques.
+assert.match(appSource, /renderNotificationsFiltered[\s\S]{0,3600}?saSection\(/,
+  "les groupes de notifications doivent passer par la gouttiere de marge");
+assert.match(appSource, /avisResumeHtml[\s\S]{0,3000}?saSection\(/,
+  "le resume des avis doit passer par la gouttiere de marge");
+
+// Le meme glyphe de document ouvrait les cinq types de notification : une
+// icone qui ne distingue rien est une decoration, et la direction artistique
+// les proscrit.
+assert.doesNotMatch(appSource, /notif-icon/, "l'icone generique des notifications ne doit pas revenir");
+assert.doesNotMatch(styleSource, /\.notif-icon/);
+
+// La moyenne des avis s'annonce en toutes lettres, pas dans une carte-chiffre
+// de 260 px avec 800 px de vide a sa droite.
+assert.doesNotMatch(styleSource, /\.avis-score-card/, "la carte-chiffre de la moyenne ne doit pas revenir");
+assert.match(styleSource, /\.avis-repartition-piste/, "la repartition des notes doit rester : une moyenne seule ment");
+
+// Aucune barre d'outils calee en absolu a une distance fixe du haut : ces
+// nombres n'etaient vrais que pour la hauteur d'en-tete du jour ou ils ont
+// ete releves.
+assert.doesNotMatch(styleSource, /\.notifications-tools \{[^}]*position: absolute/);
+assert.doesNotMatch(styleSource, /#view-avis > \.list-search \{[^}]*position: absolute/);
+
 console.log("OK - reference-ui-reproduction.test.mjs");

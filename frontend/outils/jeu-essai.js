@@ -17,6 +17,19 @@
    revele six vues en debordement horizontal n'a ete possible qu'avec des
    donnees reelles dans chaque ecran - a vide, les douze vues passaient.
 
+   ECRIRE UNE ENTREE, MODE D'EMPLOI
+   Toujours lire le schema du serveur AVANT d'inventer une charge utile.
+   `backend/app/schemas.py` fait foi. Quatre fois de suite, une entree
+   ecrite de memoire a fait passer une vue pour cassee - ou pour saine :
+     - `score` au lieu de `valeur` : les cinq barres de sante ne
+       s'affichaient jamais, et l'audit croyait couvrir cette zone ;
+     - `nb_demandes_30j` absent : « undefined » ecrit en toutes lettres ;
+     - `message`/`lue`/`created_at` au lieu de `sous_titre`/`lu`/`date` :
+       les notifications perdaient leur sous-titre et leur date ;
+     - une source d'avis inventee : le libelle brut s'affichait.
+   Une charge utile fausse ne teste rien ; elle deplace juste le bug dans
+   l'outil de test, ou il est bien plus difficile a voir.
+
    A n'utiliser qu'en developpement, evidemment : il ecrase l'objet Api.
    ===================================================================== */
 // Jeu d'essai global : de quoi peupler chaque vue pour un audit mobile
@@ -61,8 +74,27 @@ Api.listDocuments = async () => [
 Api.listConformite = async () => [];
 Api.planning = async () => [{ id: 1, date: new Date().toISOString(), type: "rdv", titre: "Métré chez Mme Roussel", reference_id: 1, client_id: null, chantier_id: null }];
 Api.analytics = async () => ({ ca_par_mois: [4200, 5100, 6400, 8100, 9200, 11650].map((ca, i) => { const d = new Date(); d.setMonth(d.getMonth() - (5 - i)); return { mois: d.toISOString().slice(0, 7), ca }; }), valeur_pipeline: 42100, montant_impayes: 13340, nb_devis_total: 48, nb_devis_signes: 21, nb_clients_acquis: 18, nb_clients_recurrents: 7, taux_acceptation: 58, panier_moyen: 6420, delai_moyen_paiement_jours: 34, sources_acquisition: [{ source: "site_vitrine", nb_clients: 15, nb_gagnes: 5, ca: 31200 }] });
-Api.listAvis = async () => [{ id: 1, client_nom: "Bertrand", note: 5, commentaire: "Travail soigné, délais tenus, je recommande sans hésiter.", publie: true, created_at: tg(10) }];
-Api.listNotifications = async () => [{ id: 1, type: "facture_retard", titre: "Facture FA-2026-014 en retard", message: "1 840 € restent à encaisser.", lue: false, created_at: tg(1) }];
+// AvisOut : la source est requise et porte un libelle (AVIS_SOURCE_LABELS),
+// l'etat de publication s'appelle `publie_site`. Le jeu d'essai disait
+// `publie` et omettait `source` : la carte affichait « undefined » a cote de
+// la date, et l'onglet « Publies » restait vide quoi qu'il arrive.
+Api.listAvis = async () => [
+  { id: 1, artisan_id: 1, client_id: 1, client_nom: "Bertrand", note: 5, commentaire: "Travail soigné, délais tenus, je recommande sans hésiter.", nom_auteur: null, source: "lien_public", publie_site: true, created_at: tg(10) },
+  { id: 2, artisan_id: 1, client_id: null, client_nom: null, note: 4, commentaire: "Bonne intervention, un peu de retard le premier jour.", nom_auteur: "M. Delaunay", source: "manuel", publie_site: false, created_at: tg(26) },
+  { id: 3, artisan_id: 1, client_id: 2, client_nom: "Roussel", note: 5, commentaire: null, nom_auteur: null, source: "lien_public", publie_site: false, created_at: tg(3) },
+];
+// NotificationOut : `sous_titre`, `urgent`, `date`, `view`, `lu`. Le jeu
+// d'essai inventait `message`, `lue` et `created_at` : la ligne perdait son
+// sous-titre, affichait « undefined » a la place de la date, et aucune
+// notification ne pouvait tomber dans le groupe « A traiter ». Les cinq
+// ci-dessous couvrent les quatre groupes et les trois modules.
+Api.listNotifications = async () => [
+  { id: 1, type: "facture_relance", notification_id: 1, client_id: 1, titre: "Facture FA-2026-014 en retard de 12 jours", sous_titre: "Bertrand · 1 840,00 € restent à encaisser", urgent: true, date: tg(0.2), view: "factures", lu: false },
+  { id: 2, type: "conformite", notification_id: 2, client_id: null, titre: "Assurance décennale à renouveler", sous_titre: "AXA · échéance dans 21 jours", urgent: true, date: tg(0.6), view: "entreprise", lu: false },
+  { id: 3, type: "devis_relance", notification_id: 3, client_id: 1, titre: "Devis DV-2026-089 lu, sans réponse", sous_titre: "Bertrand · consulté hier, 2 relances envoyées", urgent: false, date: tg(0.4), view: "devis", lu: false },
+  { id: 4, type: "nouvelle_demande_devis", notification_id: 4, client_id: 2, titre: "Nouvelle demande depuis le site", sous_titre: "Roussel · remplacement de chauffe-eau", urgent: false, date: tg(1.3), view: "prospects", lu: true },
+  { id: 5, type: "message_client", notification_id: 5, client_id: 1, titre: "Message de Bertrand", sous_titre: "« Peut-on décaler la visite de mardi ? »", urgent: false, date: tg(6), view: "prospects", lu: true },
+];
 Api.dashboard = async () => ({ finances: { ca_mois: 18420, a_encaisser: 1840, paiements_recents: [{ date_paiement: jg(-2), moyen: "Virement", montant: 4200 }] }, commercial: { devis_en_attente: 7, valeur_pipeline: 42100 }, aujourdhui: { factures_en_retard: [{ id: 14, numero: "FA-2026-014", client_nom: "Bertrand", montant_restant: 1840 }], devis_a_relancer: [], taches: [{ id: 1, titre: "Commander le carrelage" }], chantiers_a_venir: [], evenements: [{ id: 1, titre: "Métré chez Mme Roussel", date_debut: new Date().toISOString() }] }, alertes_conformite: [], presence_site: { statut: "livre", url: "https://exemple.fr", nb_demandes_total: 9, nb_demandes_30j: 3, nb_clients_gagnes: 2, ca_genere: 12400, taux_conversion: 22.2 } });
 Api.dashboardRecommandations = async () => [{ message: "Trois devis de plus de 30 jours n'ont jamais été relancés.", urgence: "haute" }];
 // Le contrat serveur est SanteEntrepriseOut / SousScoreOut : la valeur du
@@ -75,4 +107,42 @@ Api.dashboardRecommandations = async () => [{ message: "Trois devis de plus de 3
 Api.dashboardSante = async () => ({ score_global: 72, raison_absence_globale: null, commercial: { label: "Commercial", valeur: 68 }, tresorerie: { label: "Trésorerie", valeur: 31 }, chantiers: { label: "Chantiers", valeur: 80 }, conformite: { label: "Conformité", valeur: null, raison_absence: "Aucune information de conformité enregistrée" }, organisation: { label: "Organisation", valeur: 42 } });
 Api.dashboardActivation = async () => ({ entierement_active: true, entreprise_configuree: true, premier_client: true, premier_devis: true, premiere_facture: true });
 window.hasPlan = () => true;
+
+// ---------------------------------------------------------------------
+// L'ENTREPRISE. Cette page lit `currentArtisan` - une liaison lexicale de
+// premier niveau d'app.js, donc absente de `window` mais accessible en
+// ecriture depuis n'importe quel script. Sans elle, loadEntrepriseForm()
+// levait sur `currentArtisan.nom_entreprise` et la vue restait vide :
+// c'est la raison pour laquelle Entreprise n'avait jamais ete auditee.
+// ---------------------------------------------------------------------
+currentArtisan = {
+  id: 1, nom_entreprise: "Bertin & Fils", metier: "plombier",
+  email: "contact@bertin-plomberie.fr", telephone: "04 78 55 12 40",
+  ville: "Villeurbanne", code_postal: "69100", adresse: "14 rue des Charmilles",
+  siret: "812 456 789 00021", assurance_decennale_nom: "AXA",
+  assurance_decennale_numero: "DEC-2026-4471", assurance_decennale_echeance: jg(120),
+  photo_url: null, role: "administrateur", plan: "business", onboarding_termine: true,
+  relance_devis_j1: 3, relance_devis_j2: 7, relance_devis_j3: 15, relance_facture_jours: 5,
+};
+Api.me = async () => currentArtisan;
+Api.updateMe = async (p) => Object.assign(currentArtisan, p);
+Api.listPrestations = async () => [
+  { id: 1, libelle: "Remplacement d'un chauffe-eau 200 L", unite: "u", prix_unitaire_ht: 940, description: "Dépose de l'ancien, pose et mise en service." },
+  { id: 2, libelle: "Recherche de fuite non destructive", unite: "u", prix_unitaire_ht: 180, description: null },
+  { id: 3, libelle: "Pose de carrelage mural", unite: "m2", prix_unitaire_ht: 45.5, description: null },
+];
+Api.listFournisseurs = async () => [
+  { id: 1, nom: "Point P Villeurbanne", contact: "M. Sanchez", telephone: "04 72 10 88 00", email: "villeurbanne@pointp.fr", notes: "Remise 12 % sur le sanitaire." },
+  { id: 2, nom: "Cedeo Lyon Est", contact: null, telephone: "04 78 03 41 12", email: null, notes: null },
+];
+Api.listEquipe = async () => [
+  { id: 1, nom: "Karim Bertin", email: "karim@bertin-plomberie.fr", role: "administrateur", actif: true },
+  { id: 2, nom: "Léa Fournier", email: "lea@bertin-plomberie.fr", role: "collaborateur", actif: true },
+];
+Api.listContrats = async () => [
+  { id: 1, client_id: 1, client_nom: "Bertrand", titre: "Entretien annuel chaudière", montant_ht: 180, periodicite: "annuel", prochaine_echeance: jg(45), actif: true },
+];
+Api.conformiteAlertes = async () => [];
+Api.automationStatus = async () => ({ actif: true, relances_devis_envoyees_30j: 6, relances_factures_envoyees_30j: 2, derniere_execution: tg(1) });
+Api.listSiteMedia = async () => ({ photos: [], logo_url: null });
 })();

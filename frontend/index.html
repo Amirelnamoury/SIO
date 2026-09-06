@@ -11,7 +11,7 @@
      DIRECTION-ARTISTIQUE.md. Les deux feuilles superposees d'avant ont ete
      fondues ici, verification faite par comparaison des styles calcules
      sur les douze vues (voir outils/empreinte-styles.js). -->
-<link rel="stylesheet" href="style.css?v=20260907-coquille">
+<link rel="stylesheet" href="style.css?v=20260907-avis2">
 <!-- Habillage de l'ecran connexion/inscription. Charge APRES style.css,
      tous ses selecteurs sont ancres sous .auth-screen : rien ne fuit vers
      le SaaS. Supprimer cette ligne rend l'ecran a son etat precedent. -->
@@ -783,15 +783,19 @@
 
       <div id="avis-form-container" hidden></div>
 
-      <div class="filters" id="avis-filters">
-        <button type="button" class="filter-chip active" data-publie="">Tous <span class="filter-chip-count"></span></button>
-        <button type="button" class="filter-chip" data-publie="1">Publiés <span class="filter-chip-count"></span></button>
-        <button type="button" class="filter-chip" data-publie="0">Non publiés <span class="filter-chip-count"></span></button>
-      </div>
-
-      <div class="list-search">
-        <svg viewBox="0 0 24 24" class="nav-icon list-search-icon"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-        <input type="text" id="avis-search" placeholder="Rechercher un client, un avis...">
+      <!-- Meme correction que sur Notifications : la recherche etait posee en
+           absolu a « top: 267px », une mesure prise sur la composition d'un
+           jour donne. Elle vit maintenant sur la rangee des onglets. -->
+      <div class="vue-barre-filtres">
+        <div class="filters" id="avis-filters">
+          <button type="button" class="filter-chip active" data-publie="">Tous <span class="filter-chip-count"></span></button>
+          <button type="button" class="filter-chip" data-publie="1">Publiés <span class="filter-chip-count"></span></button>
+          <button type="button" class="filter-chip" data-publie="0">Non publiés <span class="filter-chip-count"></span></button>
+        </div>
+        <div class="list-search">
+          <svg viewBox="0 0 24 24" class="nav-icon list-search-icon"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input type="text" id="avis-search" placeholder="Rechercher un client, un avis...">
+        </div>
       </div>
 
       <div id="avis-list" class="list"></div>
@@ -1004,6 +1008,11 @@
           <p class="view-header-desc">Suivez les événements importants et les actions qui nécessitent votre attention.</p>
         </div>
       </div>
+      <!-- Onglets et outils sur une seule rangee, dans le flux. Les outils
+           etaient positionnes en absolu a « top: 108px » : la valeur tombait
+           juste tant que l'en-tete gardait exactement sa hauteur du jour ou
+           elle a ete mesuree. -->
+      <div class="vue-barre-filtres">
       <div class="filters" id="notifications-filters">
         <button type="button" class="filter-chip active" data-mode="toutes">Toutes <span class="filter-chip-count"></span></button>
         <button type="button" class="filter-chip" data-mode="non-lues">Non lues <span class="filter-chip-count"></span></button>
@@ -1020,6 +1029,7 @@
           <option value="gestion">Gestion</option>
           <option value="entreprise">Entreprise</option>
         </select>
+      </div>
       </div>
       <div id="notifications-list" class="list"></div>
     </section>
@@ -1099,7 +1109,7 @@
 <script src="env.js"></script>
 <script src="config.js"></script>
 <script src="pricing.js"></script>
-<script src="api.js?v=20260907-coquille"></script>
-<script src="app.js?v=20260907-coquille"></script>
+<script src="api.js?v=20260907-avis2"></script>
+<script src="app.js?v=20260907-avis2"></script>
 </body>
 </html>

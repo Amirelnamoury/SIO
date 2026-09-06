@@ -871,30 +871,17 @@ input[readonly] { background: var(--sa-surface-2); }
 
 /* ---------- Avis clients : score global + panneau "a demander" + grille
    2 colonnes de cartes d'avis. ---------- */
-.avis-resume-grid { align-items: stretch; }
-@media (max-width: 760px) { .avis-resume-grid { grid-template-columns: 1fr; } }
-.avis-score-card { min-height: 152px; display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 22px; align-content: center; }
-.avis-score-chiffre { grid-row: 1 / 3; align-self: center; letter-spacing: 0; }
-.avis-score-chiffre span { font-weight: 600; }
-.avis-score-stars { align-self: end; font-size: 1.2rem; }
-.avis-demander-card { min-height: 152px; background: var(--sa-surface); }
-.avis-demander-item { border: 1px solid var(--sa-border); border-radius: var(--sa-radius-md); padding: 10px 12px; }
 .avis-demander-nom { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .avis-demander-sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.avis-demander-item .btn-sm { width: 100%; }
-.avis-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--sa-space-3); }
-.avis-card { min-height: 174px; padding: 14px; }
-.avis-card-top { display: flex; align-items: flex-start; gap: 10px; }
-.avis-card-identity { flex: 1; min-width: 0; }
+.avis-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--sa-space-6); }
+.avis-card { padding: 14px 0 0; }
 .avis-card-bottom { margin-top: var(--sa-space-3); }
-#view-avis { position: relative; }
 #view-avis > .section-hint { display: none; }
 #view-avis .view-header { margin-bottom: 18px; }
 #view-avis .avis-header-actions { position: relative; align-items: center; margin-top: 20px; }
 #view-avis .avis-header-actions .btn-primary { margin-right: 0; }
-#view-avis #avis-filters { width: calc(100% - 260px); margin-bottom: 14px; }
-#view-avis > .list-search { position: absolute; z-index: 1; top: 267px; right: 0; width: 242px; margin: 0; }
-#view-avis .avis-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+#view-avis .avis-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sa-space-6); }
+#view-avis #avis-list { padding-top: var(--sa-space-5); }
 .avis-request-form-box { margin-bottom: 14px; }
 
 /* ---------- Documents : compteur + ligne dense avec icone de type. ---------- */
@@ -1353,7 +1340,16 @@ input[readonly] { background: var(--sa-surface-2); }
 .planning-hour-row { height: 41px; border-bottom: 1px solid var(--sa-border); }
 .planning-now-line { position: absolute; left: 0; right: 0; height: 0; border-top: 1px solid var(--sa-danger); z-index: 2; }
 .planning-now-dot { position: absolute; left: -3px; top: -3px; width: 6px; height: 6px; border-radius: 50%; }
-.planning-item-positioned { border-radius: 4px; padding: 2px 6px; overflow: hidden; line-height: 1.3; background: var(--sa-surface-3); border-left: 2px solid var(--sa-text-faint); font-size: var(--sa-text-2xs); z-index: 1; }
+/* `position: absolute` manquait. La classe s'appelle « positioned », app.js
+   lui calcule un `top` en pixels depuis l'heure du rendez-vous et le pose en
+   style inline - mais sans position absolue ce `top` ne fait que decaler un
+   element reste dans le flux. Resultat : tous les rendez-vous du jour
+   s'empilaient SOUS la grille horaire au lieu de se placer a leur heure, et
+   la vue Semaine, dont c'est la raison d'etre, ne montrait plus rien a
+   l'heure juste. Le defaut est anterieur a la fusion des feuilles : la regle
+   n'existait dans aucune des deux. Il ne se voyait pas tant que le planning
+   restait vide - encore une vue qu'un jeu d'essai vide declarait saine. */
+.planning-item-positioned { position: absolute; border-radius: 4px; padding: 2px 6px; overflow: hidden; line-height: 1.3; background: var(--sa-surface-3); border-left: 2px solid var(--sa-text-faint); font-size: var(--sa-text-2xs); z-index: 1; }
 .planning-item-positioned .planning-item-heure { display: block; font-size: 0.62rem; }
 .planning-item-positioned .planning-item-titre { display: block; font-weight: var(--sa-weight-semibold); white-space: nowrap; }
 
@@ -1563,31 +1559,56 @@ input[readonly] { background: var(--sa-surface-2); }
 #automation-status { margin-top: var(--sa-space-5); padding-top: var(--sa-space-5); border-top: 1px solid var(--sa-border); }
 
 /* ---------- Notifications : vraie inbox, groupee, ligne dense. ---------- */
-.notif-group { margin-bottom: 18px; }
-.notif-group-title { font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-bold); text-transform: uppercase; letter-spacing: 0.06em; color: var(--sa-accent); margin: 0 0 7px; }
-.notif-group-title span { color: var(--sa-text-faint); }
-.notif-group-rows { overflow: hidden; border: 1px solid var(--sa-border); border-radius: var(--sa-radius-lg); background: var(--sa-surface); }
-.notif-row { display: grid; grid-template-columns: 7px 32px minmax(0, 1fr) 120px auto 32px; align-items: center; gap: 9px; min-height: 61px; padding: 8px 10px; }
-.notif-row:last-child { border-bottom: none; }
-.notif-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--sa-text-faint); flex-shrink: 0; }
-.notif-row.is-urgent .notif-dot { background: var(--sa-accent); }
-.notif-icon { display: grid; place-items: center; width: 30px; height: 30px; border-radius: var(--sa-radius-sm); background: var(--sa-surface-3); color: var(--sa-text-muted); }
-.notif-icon .nav-icon { width: 15px; height: 15px; }
-.notif-row.is-urgent .notif-icon { background: var(--sa-warning-soft); color: var(--sa-warning); }
-.notif-icon-facture_relance { background: var(--sa-danger-soft); color: var(--sa-danger); }
-.notif-icon-conformite { background: var(--sa-warning-soft); color: var(--sa-warning); }
-.notif-main { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+/* ---------------------------------------------------------------------
+   NOTIFICATIONS — des lignes reglees, pas des boites
+   ---------------------------------------------------------------------
+   Cette vue etait la derniere a etre restee un tableau CRUD generique :
+   des rangees en boites arrondies posees sur le papier, chacune ouverte
+   par le meme glyphe de document quel que soit le type. Le regroupement
+   passe desormais par la gouttiere de `.sa-section` - l'intitule et le
+   decompte dans la marge - et les lignes ne portent plus qu'un filet.
+   --------------------------------------------------------------------- */
+.notif-lignes { border-top: 1px solid var(--sa-border); }
+.notif-row {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) 108px auto 32px;
+  align-items: center; gap: var(--sa-space-3);
+  min-height: 58px; padding: 10px 0;
+}
+/* Le cran de laiton : une entaille dans la marge de la ligne, pas une
+   pastille. Non lue, elle se voit ; lue, il n'y a rien - et c'est le bon
+   signal, l'absence. */
+.notif-cran { width: 2px; height: 15px; background: transparent; }
+.notif-row.est-non-lue .notif-cran { background: var(--sa-laiton); }
+.notif-main { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .notif-title { font-size: var(--sa-text-sm); font-weight: var(--sa-weight-medium); color: var(--sa-text); }
+.notif-row.est-lue .notif-title { font-weight: 400; color: var(--sa-text-muted); }
 .notif-row.is-urgent .notif-title { font-weight: var(--sa-weight-semibold); }
 .notif-sub { overflow: hidden; font-size: var(--sa-text-xs); color: var(--sa-text-muted); text-overflow: ellipsis; white-space: nowrap; }
-.notif-date { color: var(--sa-text-muted); font-size: .62rem; text-align: right; white-space: nowrap; }
-#view-notifications { position: relative; }
+.notif-date { color: var(--sa-text-faint); font-size: var(--sa-text-2xs); text-align: right; white-space: nowrap; }
+/* Le groupe « A traiter » se distingue par son filet de marge, en rouge :
+   le meme geste que le trait de tete sur l'accueil. Aucune boite, aucun
+   aplat - la couleur ne porte pas l'information seule, l'intitule le dit. */
+.sa-section.est-urgente .sa-section-marge { border-right-color: var(--sa-danger); }
+.sa-section.est-urgente .sa-section-titre { color: var(--sa-danger); }
+/* Onglets a gauche, outils a droite, sur une meme ligne posee dans le flux.
+   Les deux vues concernees calaient leurs outils en position absolue a une
+   distance fixe du haut - 108 px ici, 267 px sur les avis. Ces nombres
+   n'etaient vrais que pour la hauteur d'en-tete du jour ou ils ont ete
+   releves : une description qui passe sur deux lignes, et l'outil se pose
+   sur autre chose. */
+.vue-barre-filtres {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--sa-space-4); flex-wrap: wrap;
+  border-bottom: 1px solid var(--sa-border);
+}
+.vue-barre-filtres > .filters { margin-bottom: 0; border-bottom: 0; }
+.vue-barre-filtres > .list-search { width: 242px; margin: 0 0 8px; }
 #view-notifications .view-header { margin-bottom: 22px; }
 #view-notifications .view-header-eyebrow { margin-bottom: 12px; }
 #view-notifications .view-header-desc { max-width: none; white-space: nowrap; }
-#view-notifications #notifications-filters { width: calc(100% - 300px); margin-bottom: 19px; }
 #view-notifications #notifications-list { padding-top: 6px; }
-.notifications-tools { position: absolute; top: 108px; right: 0; display: flex; align-items: center; gap: 7px; }
+.notifications-tools { display: flex; align-items: center; gap: 7px; margin-bottom: 8px; }
 .notifications-tools .list-search { width: 184px; margin: 0; }
 .notifications-tools select { width: 92px; padding: 8px 9px; font-size: var(--sa-text-xs); }
 
@@ -1607,7 +1628,8 @@ input[readonly] { background: var(--sa-surface-2); }
   #view-avis .view-header-desc, #view-entreprise .view-header-desc, #view-notifications .view-header-desc { white-space: normal; }
   #view-avis #avis-filters, #view-notifications #notifications-filters { width: 100%; }
   #view-avis .avis-header-actions .action-menu { position: static; }
-  #view-avis > .list-search, .notifications-tools { position: static; width: 100%; margin-bottom: var(--sa-space-4); }
+  /* La rangee onglets + outils s'empile : les outils prennent la largeur. */
+  .vue-barre-filtres > .list-search, .notifications-tools { width: 100%; margin-bottom: var(--sa-space-4); }
   .notifications-tools .list-search { flex: 1 1 220px; width: auto; }
   #view-avis .avis-grid { grid-template-columns: 1fr; }
   #entreprise-form-box .enterprise-address-field { grid-column: auto; }
@@ -1615,10 +1637,10 @@ input[readonly] { background: var(--sa-surface-2); }
   .enterprise-profile-completion { grid-column: 1 / -1; }
   .enterprise-record { grid-template-columns: 38px minmax(0, 1fr) auto; }
   .enterprise-record-avatar { width: 38px; height: 38px; }
-  .notif-row { grid-template-columns: 7px 32px minmax(0, 1fr) auto; }
-  .notif-date { grid-column: 3; text-align: left; }
-  .notif-row > .btn-sm { grid-column: 3; justify-self: start; }
-  .notif-row > .action-menu { grid-column: 4; grid-row: 1 / 3; }
+  .notif-row { grid-template-columns: 10px minmax(0, 1fr) auto; }
+  .notif-date { grid-column: 2; text-align: left; }
+  .notif-row > .btn-sm { grid-column: 2; justify-self: start; }
+  .notif-row > .action-menu { grid-column: 3; grid-row: 1 / 3; }
 }
 
 @media (max-width: 620px) {
@@ -3038,53 +3060,76 @@ label { color: var(--sa-text-muted); }
    demande la preuve sociale : on croit une citation sobre, pas un
    bandeau clignotant.
    ===================================================================== */
-.avis-resume-grid { display: grid; grid-template-columns: minmax(200px, 260px) minmax(0, 1fr); gap: var(--sa-space-6); margin-bottom: var(--sa-space-6); }
-.avis-score-card {
-  padding: var(--sa-space-5);
-  background: var(--sa-surface); border: 1px solid var(--sa-border);
-  border-radius: var(--sa-radius-lg);
-  text-align: center;
-}
-.avis-score-chiffre {
+/* La moyenne s'annonce en toutes lettres, comme partout ailleurs dans le
+   produit : une phrase, pas un chiffre enferme dans une carte. Le 4,7 tenait
+   dans une boite de 260 px avec un vide de 800 px a sa droite. */
+.avis-lede {
+  margin: var(--sa-space-5) 0 4px;
   font-family: var(--sa-font-display);
-  font-size: 2.6rem; font-weight: 500; line-height: 1; color: var(--sa-text);
-  font-variant-numeric: tabular-nums;
+  font-size: clamp(1.5rem, 2.4vw, 2.05rem); font-weight: 500;
+  line-height: 1.18; color: var(--sa-text); font-variant-numeric: tabular-nums;
 }
-.avis-score-chiffre span { font-size: 1.1rem; color: var(--sa-text-faint); }
-.avis-score-stars { margin: 8px 0 4px; }
-.avis-score-sub { font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
+.avis-lede-sub { margin: 0 0 var(--sa-space-2); font-size: var(--sa-text-sm); color: var(--sa-text-muted); }
 .avis-stars { color: var(--sa-laiton); letter-spacing: 2px; }
 
-.avis-demander-card { padding: var(--sa-space-5); border: 1px dashed var(--sa-border-strong); border-radius: var(--sa-radius-lg); }
-.avis-demander-title { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--sa-text-faint); margin-bottom: var(--sa-space-3); }
-.avis-demander-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--sa-space-4); }
-.avis-demander-nom { font-weight: 600; color: var(--sa-text); font-size: var(--sa-text-sm); }
-.avis-demander-sub { font-size: var(--sa-text-xs); color: var(--sa-text-muted); margin-bottom: 8px; }
+/* La repartition des notes. Une moyenne de 4,7 peut sortir de cinq avis a
+   4,7 ou de quatre 5 et d'un 1 : ce ne sont pas les memes entreprises, et
+   ce n'est pas la meme chose a faire. Cinq reglettes le disent en un coup
+   d'oeil, la ou le seul chiffre le cachait. */
+.avis-repartition { display: flex; flex-direction: column; gap: 7px; max-width: 420px; }
+.avis-repartition-ligne { display: grid; grid-template-columns: 34px minmax(0, 1fr) 24px; align-items: center; gap: var(--sa-space-3); }
+.avis-repartition-note { font-size: var(--sa-text-xs); color: var(--sa-text-muted); font-variant-numeric: tabular-nums; }
+.avis-repartition-note span { color: var(--sa-laiton); }
+.avis-repartition-piste { height: 3px; background: var(--sa-surface-2); }
+.avis-repartition-trait { display: block; height: 100%; background: var(--sa-laiton); }
+.avis-repartition-compte { font-size: var(--sa-text-xs); color: var(--sa-text-muted); text-align: right; font-variant-numeric: tabular-nums; }
 
-.avis-card { background: var(--sa-surface); border: 1px solid var(--sa-border); border-radius: var(--sa-radius-lg); }
+/* « A demander » : des lignes reglees. La boite en pointilles qui les
+   entourait etait un cadre decoratif de plus, et le bouton pleine largeur
+   qu'elle contenait ressemblait a un champ vide. */
+.avis-demander { display: flex; flex-direction: column; }
+.avis-demander-ligne {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: center; gap: var(--sa-space-3);
+  padding: 10px 0; border-bottom: 1px solid var(--sa-border);
+}
+.avis-demander-ligne:first-child { border-top: 1px solid var(--sa-border); }
+.avis-demander-nom { font-weight: 600; color: var(--sa-text); font-size: var(--sa-text-sm); }
+.avis-demander-sub { font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
+
+/* La carte d'avis : un filet en tete plutot qu'un cadre complet. Ce qui la
+   delimite est la citation elle-meme, pas une bordure sur quatre cotes. */
+.avis-card { background: transparent; border: 0; border-top: 2px solid var(--sa-border-strong); border-radius: 0; }
+.avis-stars-vides { color: var(--sa-border-strong); }
+.avis-card.est-publie { border-top-color: var(--sa-accent); }
+.avis-card-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 /* La citation elle-meme : c'est le seul endroit du produit ou Fraunces
    passe en italique. Un avis n'est pas une donnee, c'est une parole. */
 .avis-card-quote {
-  margin: var(--sa-space-4) 0;
-  padding-left: 16px;
-  border-left: 2px solid var(--sa-laiton);
+  margin: var(--sa-space-3) 0;
   font-family: var(--sa-font-display);
   font-size: var(--sa-text-md); font-style: italic;
   line-height: 1.55; color: var(--sa-text);
 }
+.avis-card-sans-mot { margin: var(--sa-space-3) 0; font-size: var(--sa-text-sm); color: var(--sa-text-faint); font-style: italic; }
+.avis-card-attribution { margin: 0 0 var(--sa-space-3); font-size: var(--sa-text-sm); font-weight: 600; color: var(--sa-text); }
+.avis-card-origine { display: block; font-weight: 400; font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
+.avis-card-etat { font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
+.avis-card.est-publie .avis-card-etat { color: var(--sa-accent); }
 .avis-card-bottom { display: flex; align-items: center; justify-content: space-between; gap: var(--sa-space-3); flex-wrap: wrap; padding-top: var(--sa-space-3); border-top: 1px solid var(--sa-border); }
-
-@media (max-width: 860px) { .avis-resume-grid { grid-template-columns: 1fr; } }
 
 /* =====================================================================
    NOTIFICATIONS — l'urgent se distingue par un filet
+   ---------------------------------------------------------------------
+   Le filet rouge est desormais celui de la MARGE du groupe « A traiter »,
+   pas un liseré repete sur chaque ligne : la distinction se fait une fois,
+   au niveau ou elle a du sens. Les regles `.notif-row-titre`,
+   `-message`, `-date` et `.is-unread` qui vivaient ici ne visaient aucune
+   classe emise par app.js - du code mort ecrit pour un balisage qui n'a
+   jamais existe.
    ===================================================================== */
 .notif-row { border-bottom: 1px solid var(--sa-border); background: transparent; border-radius: 0; }
 .notif-row:hover { background: var(--sa-surface); }
-.notif-row.is-urgent { box-shadow: inset 2px 0 0 var(--sa-danger); }
-.notif-row.is-unread { background: var(--sa-surface); }
-.notif-row-titre { color: var(--sa-text); font-weight: 500; }
-.notif-row-message, .notif-row-date { color: var(--sa-text-muted); font-size: var(--sa-text-xs); }
 
 /* =====================================================================
    ENTREPRISE ET PROFIL — des formulaires, pas des murs de champs

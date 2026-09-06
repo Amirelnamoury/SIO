@@ -1509,8 +1509,12 @@ async function loadStatistiques() {
 // ===================== Avis clients =====================
 const AVIS_SOURCE_LABELS = { manuel: "Saisi à la main", lien_public: "Envoyé par le client" };
 
+// Les etoiles pleines et les vides ne se lisent pas au meme niveau : toutes
+// dans la meme encre laiton, « ★★★★☆ » se compte au lieu de se voir. Les
+// vides reculent d'un ton, et la note reste lisible pour qui ne distingue
+// pas les deux glyphes - l'element porte un aria-label « n sur 5 ».
 function starsText(note) {
-  return "★".repeat(note) + "☆".repeat(5 - note);
+  return `${"★".repeat(note)}<span class="avis-stars-vides">${"☆".repeat(5 - note)}</span>`;
 }
 
 // Partagee entre le panneau timeline client et le panneau "Avis a demander"
@@ -1535,28 +1539,54 @@ function avisResumeHtml(avis, clients) {
   const idsAvecAvis = new Set(avis.map((a) => a.client_id).filter(Boolean));
   const aDemander = (clients || []).filter((c) => c.statut === "gagne" && !idsAvecAvis.has(c.id)).slice(0, 2);
 
-  const moyenne = avis.length ? avis.reduce((s, a) => s + a.note, 0) / avis.length : null;
-  const gaucheHtml = `
-    <div class="avis-score-card">
-      ${moyenne !== null
-        ? `<div class="avis-score-chiffre">${moyenne.toFixed(1)}<span>/5</span></div>
-           <div class="avis-stars avis-score-stars">${starsText(Math.round(moyenne))}</div>
-           <div class="avis-score-sub">${avis.length} avis</div>`
-        : `<div class="dash-empty">Pas encore d'avis reçu.</div>`}
+  if (!avis.length) {
+    return `<p class="avis-lede">Aucun avis pour le moment.</p>
+      <p class="avis-lede-sub">Saisissez-en un, ou envoyez une demande depuis la fiche d'un client.</p>`;
+  }
+
+  // La moyenne SEULE ment : 4,7 peut cacher quatre 5 et un 1, ou cinq
+  // 4,7 - ce ne sont pas les memes entreprises et ce n'est pas la meme
+  // chose a faire. La repartition est donc affichee a cote, en reglettes.
+  const moyenne = avis.reduce((s, a) => s + a.note, 0) / avis.length;
+  const nonPublies = avis.filter((a) => !a.publie_site).length;
+  const enFrancais = (n) => ["zéro", "un", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf", "dix"][n] || String(n);
+  const attente = nonPublies === 0
+    ? "Tous sont publiés sur votre site."
+    : nonPublies === 1
+      ? "Un n'est pas encore publié sur votre site."
+      : `${enFrancais(nonPublies).replace(/^./, (c) => c.toUpperCase())} ne sont pas encore publiés sur votre site.`;
+
+  const lede = `
+    <p class="avis-lede">${moyenne.toFixed(1).replace(".", ",")} sur 5, sur ${avis.length} avis.</p>
+    <p class="avis-lede-sub">${attente}</p>`;
+
+  const maxi = Math.max(...[5, 4, 3, 2, 1].map((n) => avis.filter((a) => a.note === n).length));
+  const repartition = `
+    <div class="avis-repartition">
+      ${[5, 4, 3, 2, 1].map((n) => {
+        const compte = avis.filter((a) => a.note === n).length;
+        const part = maxi ? (compte / maxi) * 100 : 0;
+        return `<div class="avis-repartition-ligne">
+          <span class="avis-repartition-note">${n}<span aria-hidden="true"> ★</span></span>
+          <span class="avis-repartition-piste"><span class="avis-repartition-trait" style="width:${part}%"></span></span>
+          <span class="avis-repartition-compte">${compte}</span>
+        </div>`;
+      }).join("")}
     </div>`;
-  const droiteHtml = aDemander.length ? `
-    <div class="avis-demander-card">
-      <div class="avis-demander-title">Avis à demander</div>
-      <div class="avis-demander-grid">
-        ${aDemander.map((c) => `
-          <div class="avis-demander-item">
-            <div class="avis-demander-nom">${escapeHtml(c.nom)}</div>
-            <div class="avis-demander-sub">${escapeHtml(c.societe || c.ville || "Client gagné")}</div>
-            <button type="button" class="btn-sm btn-sm-primary" data-action="demander-avis" data-client-id="${c.id}">Demander</button>
-          </div>`).join("")}
-      </div>
+
+  const demander = aDemander.length ? `
+    <div class="avis-demander">
+      ${aDemander.map((c) => `
+        <div class="avis-demander-ligne">
+          <span class="avis-demander-nom">${escapeHtml(c.nom)}</span>
+          <span class="avis-demander-sub">${escapeHtml(c.societe || c.ville || "Client gagné")}</span>
+          <button type="button" class="btn-sm" data-action="demander-avis" data-client-id="${c.id}">Demander</button>
+        </div>`).join("")}
     </div>` : "";
-  return `<div class="avis-resume-grid">${gaucheHtml}${droiteHtml}</div>`;
+
+  return lede
+    + saSection("Répartition", repartition, `${avis.length} avis reçus`)
+    + saSection("À demander", demander, "clients gagnés sans avis");
 }
 
 // Dernier avis charge, pour filtrer par onglet (Tous/Publies/Non publies)
@@ -1596,17 +1626,19 @@ function renderAvisListFiltered() {
     : '<div class="empty-state">Aucun avis dans cet onglet.</div>';
 }
 
+// Un avis EST une citation : c'est le temoignage qui doit dominer, pas le
+// cadre autour. La carte s'ouvre donc sur la note, puis donne la parole au
+// client en corps de texte, et ne range l'attribution qu'apres - l'ordre
+// d'une citation sur une page imprimee. L'avatar monogramme a disparu :
+// deux lettres dans un carre gris n'apprenaient rien que le nom, ecrit
+// juste a cote, ne disait deja.
 function renderAvisCard(a) {
-  const statutPill = a.publie_site ? { classe: "pill-green", label: "Publié sur le site" } : { classe: "pill-gray", label: "Non publié" };
+  const auteur = a.client_nom || a.nom_auteur || "Anonyme";
+  const source = AVIS_SOURCE_LABELS[a.source] || "Origine inconnue";
   return `
-  <div class="avis-card">
+  <div class="avis-card ${a.publie_site ? "est-publie" : ""}">
     <div class="avis-card-top">
-      <div class="crm-avatar">${escapeHtml(monogram(a.client_nom || "?"))}</div>
-      <div class="avis-card-identity">
-        <div class="avis-stars">${starsText(a.note)}</div>
-        <div class="item-sub">${escapeHtml(a.client_nom || "Anonyme")}</div>
-        <div class="item-sub">${fmtDate(a.created_at)} · ${AVIS_SOURCE_LABELS[a.source] || a.source}</div>
-      </div>
+      <span class="avis-stars" aria-label="${a.note} sur 5">${starsText(a.note)}</span>
       <div class="action-menu">
         <button type="button" class="action-menu-trigger" data-action="toggle-action-menu" aria-haspopup="true" aria-expanded="false" aria-label="Plus d'actions sur cet avis">
           <svg viewBox="0 0 24 24" class="nav-icon"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg>
@@ -1616,9 +1648,12 @@ function renderAvisCard(a) {
         </div>
       </div>
     </div>
-    ${a.commentaire ? `<div class="avis-card-quote">« ${escapeHtml(a.commentaire)} »</div>` : ""}
+    ${a.commentaire
+      ? `<blockquote class="avis-card-quote">« ${escapeHtml(a.commentaire)} »</blockquote>`
+      : `<p class="avis-card-sans-mot">Une note, sans commentaire.</p>`}
+    <p class="avis-card-attribution">${escapeHtml(auteur)}<span class="avis-card-origine">${fmtDate(a.created_at)} · ${source}</span></p>
     <div class="avis-card-bottom">
-      <span class="pill ${statutPill.classe}">${statutPill.label}</span>
+      <span class="avis-card-etat">${a.publie_site ? "Publié sur le site" : "Non publié"}</span>
       <button type="button" class="btn-sm ${a.publie_site ? "" : "btn-sm-primary"}" data-action="toggle-publie-site" data-id="${a.id}" data-publie="${a.publie_site ? "1" : "0"}">
         ${a.publie_site ? "Retirer du site" : "Publier sur le site"}
       </button>
@@ -1820,17 +1855,35 @@ function renderNotificationsFiltered() {
     const valeur = new Date(iso);
     return valeur.getFullYear() === date.getFullYear() && valeur.getMonth() === date.getMonth() && valeur.getDate() === date.getDate();
   };
+  // Les groupes passent par la gouttiere de `.sa-section` : l'intitule et le
+  // decompte vivent dans la marge, a droite du filet, comme sur l'accueil, la
+  // fiche client et les statistiques. C'est ce qui manquait le plus a cet
+  // ecran - il etait le seul a parler une autre langue que le reste du
+  // produit, avec ses lignes en boites posees sur le papier.
+  const nombre = (n, singulier, pluriel) => `${n} ${n > 1 ? pluriel : singulier}`;
   const groupes = [
-    { label: "À traiter", items: filtrees.filter((n) => n.urgent) },
-    { label: "Aujourd'hui", items: filtrees.filter((n) => !n.urgent && memeJour(n.date, aujourdHui)) },
-    { label: "Hier", items: filtrees.filter((n) => !n.urgent && memeJour(n.date, hier)) },
-    { label: "Plus tôt", items: filtrees.filter((n) => !n.urgent && !memeJour(n.date, aujourdHui) && !memeJour(n.date, hier)) },
+    { label: "À traiter", classe: "est-urgente",
+      note: (n) => nombre(n, "demande une action", "demandent une action"),
+      items: filtrees.filter((n) => n.urgent) },
+    { label: "Aujourd'hui", classe: "",
+      note: (n) => nombre(n, "événement", "événements"),
+      items: filtrees.filter((n) => !n.urgent && memeJour(n.date, aujourdHui)) },
+    { label: "Hier", classe: "",
+      note: (n) => nombre(n, "événement", "événements"),
+      items: filtrees.filter((n) => !n.urgent && memeJour(n.date, hier)) },
+    { label: "Plus tôt", classe: "",
+      note: (n) => nombre(n, "événement", "événements"),
+      items: filtrees.filter((n) => !n.urgent && !memeJour(n.date, aujourdHui) && !memeJour(n.date, hier)) },
   ];
-  list.innerHTML = groupes.filter((groupe) => groupe.items.length).map((groupe) => `
-    <div class="notif-group">
-      <p class="notif-group-title">${groupe.label} <span>(${groupe.items.length})</span></p>
-      <div class="notif-group-rows">${groupe.items.map(notificationRowHtml).join("")}</div>
-    </div>`).join("");
+  list.innerHTML = groupes
+    .filter((groupe) => groupe.items.length)
+    .map((groupe) => saSection(
+      groupe.label,
+      `<div class="notif-lignes">${groupe.items.map(notificationRowHtml).join("")}</div>`,
+      groupe.note(groupe.items.length),
+      groupe.classe,
+    ))
+    .join("");
 }
 
 function fmtNotificationDate(iso) {
@@ -1850,10 +1903,15 @@ function notificationRowHtml(n) {
     devis: "Voir le devis", factures: "Voir la facture", chantiers: "Voir le chantier",
     entreprise: "Mettre à jour", prospects: n.type === "message_client" ? "Voir le message" : "Voir le prospect",
   };
+  // Plus d'icone : c'etait le meme glyphe de document pour les cinq types de
+  // notification, repete a chaque ligne. Il ne distinguait rien - le bouton
+  // d'action, lui, nomme la destination (« Voir la facture », « Voir le
+  // devis »). L'etat lu/non lu n'est plus une pastille grise indistinguable
+  // d'une puce : il se lit sur l'encre du titre et sur un cran de laiton dans
+  // la marge, c'est-a-dire sur la ligne elle-meme.
   return `
-  <div class="notif-row ${n.urgent ? "is-urgent" : ""}">
-    <span class="notif-dot"></span>
-    <span class="notif-icon notif-icon-${escapeHtml(n.type)}" aria-hidden="true"><svg viewBox="0 0 24 24" class="nav-icon"><path d="M7 3h10v18H7z"/><path d="M10 8h4M10 12h4M10 16h3"/></svg></span>
+  <div class="notif-row ${n.urgent ? "is-urgent" : ""} ${n.lu ? "est-lue" : "est-non-lue"}">
+    <span class="notif-cran" aria-hidden="true"></span>
     <div class="notif-main">
       <span class="notif-title">${escapeHtml(n.titre)}</span>
       ${n.sous_titre ? `<span class="notif-sub">${escapeHtml(n.sous_titre)}</span>` : ""}
@@ -2546,10 +2604,10 @@ function dashLede(nbAFaire, retards, montantRetard) {
 /** Une section composee : intitule dans la marge, contenu a droite. C'est
  *  la structure d'un document technique, et c'est ce qui distingue les
  *  pages composees des pages denses. Voir DIRECTION-ARTISTIQUE.md. */
-function saSection(titre, corps, note = "") {
+function saSection(titre, corps, note = "", classe = "") {
   if (!corps) return "";
   return `
-  <section class="sa-section">
+  <section class="sa-section ${classe}">
     <div class="sa-section-marge">
       <h3 class="sa-section-titre">${titre}</h3>
       ${note ? `<p class="sa-section-note">${note}</p>` : ""}
