@@ -2509,9 +2509,75 @@ function activationChecklistHtml(activation) {
   </div>`;
 }
 
+// ---------------------------------------------------------------------
+// L'ACCUEIL — « la journee »
+// ---------------------------------------------------------------------
+// L'ancienne version ouvrait sur une bande de quatre KPI : chiffre
+// d'affaires, devis en attente, factures a relancer, chantiers en cours.
+// Quatre nombres alignes ne repondent a aucune question. L'artisan qui
+// ouvre son logiciel le matin n'en pose qu'une : « qu'est-ce que je dois
+// faire aujourd'hui ? »
+//
+// La page repond donc dans cet ordre : une PHRASE qui resume la situation,
+// puis ce qu'il y a a faire, puis la journee, et seulement ensuite les
+// chiffres du mois - qui sont un bilan, pas une consigne.
+
+/** La phrase d'ouverture. Elle est calculee, jamais decorative : c'est le
+ *  resume que l'utilisateur lirait a voix haute en ouvrant son cahier. */
+function dashLede(nbAFaire, retards, montantRetard) {
+  if (!nbAFaire) return { titre: "Rien ne vous attend ce matin.", detail: "Tout est à jour. Bonne journée." };
+  const titre = nbAFaire === 1 ? "Une chose à traiter aujourd'hui." : `${nbAFaire} choses à traiter aujourd'hui.`;
+  if (retards) {
+    return {
+      titre,
+      detail: retards === 1
+        ? `Dont une facture en retard, ${fmtEuro(montantRetard)}.`
+        : `Dont ${retards} factures en retard, ${fmtEuro(montantRetard)} au total.`,
+      alerte: true,
+    };
+  }
+  return { titre, detail: "Aucun retard de paiement." };
+}
+
+/** Une section composee : intitule dans la marge, contenu a droite. C'est
+ *  la structure d'un document technique, et c'est ce qui distingue les
+ *  pages composees des pages denses. Voir DIRECTION-ARTISTIQUE.md. */
+function saSection(titre, corps, note = "") {
+  if (!corps) return "";
+  return `
+  <section class="sa-section">
+    <div class="sa-section-marge">
+      <h3 class="sa-section-titre">${titre}</h3>
+      ${note ? `<p class="sa-section-note">${note}</p>` : ""}
+    </div>
+    <div class="sa-section-corps">${corps}</div>
+  </section>`;
+}
+
+/** Les chiffres du mois : une ligne typographiee, pas quatre cartes. Le
+ *  filet sous chaque montant remplace la boite - c'est le meme geste que
+ *  le soulignement d'un total sur un devis. */
+function dashChiffresHtml(d, chantiersEnCours) {
+  const chiffre = (label, valeur, note, classe = "") => `
+    <div class="dash-chiffre ${classe}">
+      <span class="dash-chiffre-label">${label}</span>
+      <span class="dash-chiffre-valeur">${valeur}</span>
+      <span class="dash-chiffre-note">${note}</span>
+    </div>`;
+  return `
+    <div class="dash-chiffres">
+      ${chiffre("Facture ce mois-ci", fmtEuro(d.finances.ca_mois), "encaissé et en attente")}
+      ${chiffre("Reste à encaisser", fmtEuro(d.finances.a_encaisser),
+        d.finances.a_encaisser > 0 ? "sur factures émises" : "tout est encaissé",
+        d.finances.a_encaisser > 0 ? "est-du" : "")}
+      ${chiffre("Devis en attente", String(d.commercial.devis_en_attente), `${fmtEuro(d.commercial.valeur_pipeline)} de pipeline`)}
+      ${chiffre("Chantiers ouverts", String(chantiersEnCours.length), chantiersEnCours.length ? "en cours ou en pause" : "aucun chantier actif")}
+    </div>`;
+}
+
 async function loadDashboard() {
   const container = document.getElementById("dashboard-content");
-  container.innerHTML = skeletonCards();
+  container.innerHTML = '<div class="dash-squelette"><span></span><span></span><span></span></div>';
   try {
     const [d, recommandations, sante, activation, chantiers] = await Promise.all([
       Api.dashboard(), Api.dashboardRecommandations(), Api.dashboardSante(), Api.dashboardActivation(),
@@ -2521,38 +2587,30 @@ async function loadDashboard() {
       Api.listChantiers().catch(() => []),
     ]);
 
-    // Compte neuf : aucun client, devis ou facture pose encore. Un ecran de
-    // KPI a 0 ne sert a rien ici - on montre un vrai point de depart a la
-    // place, construit uniquement a partir de l'activation deja recue (les
-    // memes drapeaux qui alimentent la checklist plus bas). Des qu'une seule
-    // de ces trois choses existe, le dashboard standard reprend la main.
-    const dateLabelBrut = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
-    const dateLabel = dateLabelBrut.charAt(0).toUpperCase() + dateLabelBrut.slice(1);
+    const dateBrut = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+    const dateLabel = dateBrut.charAt(0).toUpperCase() + dateBrut.slice(1);
 
+    // Compte neuf : aucun client, devis ou facture pose encore. Un ecran de
+    // chiffres a zero ne sert a rien - on montre un vrai point de depart.
     const estCompteNeuf = !!activation && !activation.premier_client && !activation.premier_devis && !activation.premiere_facture;
     if (estCompteNeuf) {
       container.innerHTML = `
-        <div class="dash-masthead">
-          <p class="dash-masthead-eyebrow">${dateLabel}</p>
-          <h2 class="dash-masthead-lede dash-hero-empty-lede">Votre espace est prêt</h2>
-        </div>
-        <div class="dash-hero-empty">
-          <p>Ajoutez votre premier client, puis créez votre premier devis : le tableau de bord se remplit avec votre activité au fur et à mesure.</p>
-          <div class="dash-hero-actions">
+        <header class="dash-entete">
+          <p class="dash-date">${dateLabel}</p>
+          <h2 class="dash-lede">Votre atelier est prêt.</h2>
+          <p class="dash-lede-detail">Ajoutez votre premier client, puis créez votre premier devis. Cette page se remplira de votre activité au fur et à mesure.</p>
+          <div class="dash-entete-actions">
             <button type="button" class="btn-primary" data-action="dash-empty-client">Ajouter un client</button>
             <button type="button" class="btn-secondary" data-action="dash-empty-devis">Créer un devis</button>
           </div>
-        </div>
-        ${activationChecklistHtml(activation)}
+        </header>
+        ${saSection("Mise en route", activationChecklistHtml(activation))}
       `;
       return;
     }
 
-    // "A faire" = ce qui demande une action, regroupe par categorie (comme
-    // "FACTURES EN RETARD" / "DEVIS A RELANCER" sur la reference) plutot
-    // qu'en une seule liste plate ; les rendez-vous du jour vivent a part,
-    // dans le panneau "Planning du jour" (meme donnee d.aujourdhui.
-    // evenements, seule la place dans la page change).
+    // "A faire" : regroupe par nature, comme un cahier de releve. Les
+    // rendez-vous vivent a part - ce sont des horaires, pas des taches.
     const taskGroupes = [
       {
         label: "Factures en retard",
@@ -2601,101 +2659,63 @@ async function loadDashboard() {
       },
     ];
     const prioriteItems = taskGroupes.flatMap((g) => g.items);
+    const retards = d.aujourdhui.factures_en_retard.length;
+    const montantRetard = d.aujourdhui.factures_en_retard.reduce((s, f) => s + f.montant_restant, 0);
+    const lede = dashLede(prioriteItems.length, retards, montantRetard);
 
-    const planningDuJourHtml = d.aujourdhui.evenements.length
-      ? d.aujourdhui.evenements.map((e) => `
-        <div class="dash-agenda-row" data-action="voir-notification" data-view="planning" role="button" tabindex="0">
-          <span class="dash-agenda-heure">${new Date(e.date_debut).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</span>
-          <span class="dash-agenda-dot" aria-hidden="true"></span>
-          <span class="dash-agenda-titre">${escapeHtml(e.titre)}</span>
-        </div>`).join("")
-      : `<div class="dash-agenda-empty">
-          <span class="dash-agenda-empty-title">Journée dégagée</span>
-          <span class="dash-agenda-empty-sub">Aucun rendez-vous prévu aujourd'hui.</span>
-        </div>`;
+    // La journee : une ligne de temps, pas une liste. L'heure est dans la
+    // marge de la ligne et les evenements sont relies par un filet - on lit
+    // la forme de la journee avant d'en lire le contenu.
+    const agenda = d.aujourdhui.evenements.length
+      ? `<ol class="dash-journee">${d.aujourdhui.evenements.map((e) => `
+          <li class="dash-journee-item" data-action="voir-notification" data-view="planning" role="button" tabindex="0">
+            <time class="dash-journee-heure">${new Date(e.date_debut).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</time>
+            <span class="dash-journee-titre">${escapeHtml(e.titre)}</span>
+          </li>`).join("")}</ol>`
+      : `<p class="dash-vide">Journée dégagée — aucun rendez-vous prévu.
+         <button type="button" class="lien-action" data-action="show-evenement-form">Planifier quelque chose</button></p>`;
 
-    // Ordre et contenu calques sur la reference (01-dashboard) : bandeau
-    // statique, PUIS la bande de KPI, PUIS "A faire"/Planning - dans cet
-    // ordre precis. Les 4 KPI reprennent exactement les 4 categories de la
-    // reference (CA, devis en attente, factures a relancer, chantiers en
-    // cours), pas une substitution jugee "plus utile" (l'ancienne 4e carte
-    // "Nouveaux prospects" a ete retiree : la reference ne montre que ces 4
-    // categories sur le dashboard, cette donnee reste consultable sur
-    // Prospects/Statistiques).
-    const nbUrgent = prioriteItems.length;
-    // "Chantiers en cours" : meme definition que la bande de KPI de la page
-    // Chantiers (statut hors a_preparer/termine/facture/paye), appliquee ici
-    // aux chantiers recuperes en plus (voir Promise.all ci-dessus).
     const chantiersEnCours = chantiers.filter((c) => !["a_preparer", "termine", "facture", "paye"].includes(c.statut));
-    const prochainChantier = d.aujourdhui.chantiers_a_venir[0];
 
     container.innerHTML = `
-      <div class="dash-masthead">
-        <p class="dash-masthead-eyebrow">${dateLabel}</p>
-        <h2 class="dash-masthead-lede">Votre activité, en un coup d'œil.</h2>
-      </div>
+      <header class="dash-entete">
+        <p class="dash-date">${dateLabel}</p>
+        <h2 class="dash-lede${lede.alerte ? " est-alerte" : ""}">${lede.titre}</h2>
+        <p class="dash-lede-detail">${lede.detail}</p>
+      </header>
 
-      <div class="kpi-band">
-        <div class="kpi-card">
-          <div class="kpi-card-label">Chiffre d'affaires</div>
-          <div class="kpi-card-value">${fmtEuro(d.finances.ca_mois)}</div>
-          <div class="kpi-card-sub${d.finances.a_encaisser > 0 ? " is-alert" : ""}">${d.finances.a_encaisser > 0 ? `${fmtEuro(d.finances.a_encaisser)} à encaisser` : "Tout encaissé"}</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-card-label">Devis en attente</div>
-          <div class="kpi-card-value">${d.commercial.devis_en_attente}</div>
-          <div class="kpi-card-sub">${fmtEuro(d.commercial.valeur_pipeline)} de pipeline</div>
-        </div>
-        <div class="kpi-card${d.aujourdhui.factures_en_retard.length ? " is-highlight" : ""}">
-          <div class="kpi-card-label">Factures à relancer</div>
-          <div class="kpi-card-value">${d.aujourdhui.factures_en_retard.length}</div>
-          <div class="kpi-card-sub${d.aujourdhui.factures_en_retard.length ? " is-alert" : ""}">${fmtEuro(d.aujourdhui.factures_en_retard.reduce((s, f) => s + f.montant_restant, 0))}</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-card-label">Chantiers en cours</div>
-          <div class="kpi-card-value">${chantiersEnCours.length}</div>
-          <div class="kpi-card-sub">${prochainChantier ? `Prochain : ${escapeHtml(prochainChantier.titre)}` : "&nbsp;"}</div>
-        </div>
-      </div>
+      ${saSection(
+        "À faire",
+        prioriteItems.length
+          ? dashTaskGroupsHtml(taskGroupes)
+          : '<p class="dash-vide">Rien qui nécessite votre attention aujourd\'hui.</p>',
+        prioriteItems.length ? `${prioriteItems.length} point${prioriteItems.length > 1 ? "s" : ""}` : "")}
 
-      <div class="dash-today">
-        <div class="dash-today-main">
-          <div class="dash-today-head">
-            <h3>À faire</h3>
-            ${nbUrgent ? `<span class="dash-today-count">${nbUrgent}</span>` : ""}
-          </div>
-          ${prioriteItems.length
-            ? dashTaskGroupsHtml(taskGroupes)
-            : '<div class="dash-today-clear">Rien qui nécessite votre attention aujourd\'hui.</div>'}
-        </div>
-        <div class="dash-today-rail">
-          <h3>Planning du jour</h3>
-          <div class="dash-agenda">${planningDuJourHtml}</div>
-        </div>
-      </div>
-      ${d.finances.paiements_recents.length ? `
-      <div class="dash-section">
-        <h3>Paiements récents</h3>
-        ${d.finances.paiements_recents.map((p) => `<div class="dash-row"><span>${fmtDate(p.date_paiement)} · ${p.moyen}</span><strong>${fmtEuro(p.montant)}</strong></div>`).join("")}
-      </div>` : ""}
+      ${saSection("Aujourd'hui", agenda,
+        d.aujourdhui.evenements.length ? `${d.aujourdhui.evenements.length} rendez-vous` : "")}
 
-      ${activationChecklistHtml(activation)}
+      ${saSection("Le mois", dashChiffresHtml(d, chantiersEnCours) + (d.finances.paiements_recents.length
+        ? `<div class="dash-paiements">
+             <span class="dash-paiements-titre">Derniers encaissements</span>
+             ${d.finances.paiements_recents.map((p) => `
+               <div class="dash-paiement"><span>${fmtDate(p.date_paiement)} · ${escapeHtml(p.moyen)}</span><strong>${fmtEuro(p.montant)}</strong></div>`).join("")}
+           </div>`
+        : ""),
+        new Date().toLocaleDateString("fr-FR", { month: "long", year: "numeric" }))}
 
-      <div class="dash-glance">
-        <div class="dash-glance-col">
-          <h4>Recommandations</h4>
-          ${recommandations.length ? recommandations.map(recommandationRowHtml).join("") : '<div class="dash-empty">Aucune recommandation pour le moment.</div>'}
-        </div>
-        <div class="dash-glance-col">
-          <h4>Santé de votre entreprise</h4>
-          ${santeWidgetHtml(sante)}
-        </div>
-      </div>
+      ${saSection("Mise en route", activationChecklistHtml(activation))}
 
-      <div class="dash-glance-footer">
-        <h4>Présence en ligne</h4>
-        ${renderPresenceSite(d.presence_site)}
-      </div>
+      ${saSection("À surveiller",
+        `<div class="dash-conseils">
+           <div class="dash-conseils-col">
+             ${recommandations.length
+               ? recommandations.map(recommandationRowHtml).join("")
+               : '<p class="dash-vide">Aucune recommandation pour le moment.</p>'}
+           </div>
+           <div class="dash-conseils-col">${santeWidgetHtml(sante)}</div>
+         </div>`)}
+
+      ${saSection("Présence en ligne", renderPresenceSite(d.presence_site))}
     `;
   } catch (err) {
     container.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;

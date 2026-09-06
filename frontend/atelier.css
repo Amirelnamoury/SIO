@@ -1,0 +1,471 @@
+/* =====================================================================
+   Suite Artisan — atelier.css
+   ---------------------------------------------------------------------
+   Direction artistique « Atelier ». Le raisonnement complet est dans
+   DIRECTION-ARTISTIQUE.md ; ce fichier en est l'application.
+
+   Il REMPLACE theme.css (l'ancienne identite sombre) : les deux sont
+   exclusifs, on n'empile pas deux palettes. Revenir en arriere = remettre
+   theme.css a la place de cette ligne dans index.html.
+
+   La these : l'application se lit comme un document technique. Du papier,
+   de l'encre, des filets, des marges. Pas un dashboard sombre a accents
+   dores - c'est devenu le defaut d'usine du « SaaS premium », et cela ne
+   dit rien de l'artisanat.
+   ===================================================================== */
+
+:root {
+  /* ---------- Surfaces : trois plans, pas un de plus ----------
+     Un quatrieme niveau de gris ne se percoit plus, il n'ajoute que des
+     regles a ecrire. Clarte L* mesuree : 91.7 / 95.2 / 98.3. */
+  --sa-bg: #F4F1EA;              /* le papier : pierre calcaire, jamais du blanc pur */
+  --sa-surface: #FCFAF5;         /* la feuille posee sur l'etabli */
+  --sa-surface-2: #EBE7DE;       /* le creux : en-tete de tableau, zone inerte */
+  --sa-surface-3: #E3DED2;       /* survol d'une zone deja en creux */
+  --sa-sidebar: #23261F;         /* l'atelier : le seul plan sombre, voir plus bas */
+
+  /* ---------- Filets ----------
+     Deux roles a ne pas confondre. `border` texture sans structurer, il
+     est VOLONTAIREMENT sous le seuil de contraste (1.24:1).
+     `border-strong` est un contour fonctionnel : WCAG 1.4.11 impose 3:1
+     pour qu'un champ ou un bouton soit identifiable (mesure 3.14:1). */
+  --sa-border: #DFDACE;
+  --sa-border-strong: #8E8876;
+
+  /* ---------- Encre : trois niveaux, tous au-dessus du seuil ----------
+     14.89:1 / 6.43:1 / 4.68:1 sur le papier. Le troisieme niveau porte
+     les libelles de colonne et les mentions : un libelle illisible n'est
+     pas « discret », il est rate. */
+  --sa-text: #1C1E1A;            /* noir chaud, jamais #000 */
+  --sa-text-muted: #55584F;
+  --sa-text-faint: #6A6D62;
+  --sa-text-on-accent: #FCFAF5;  /* 9.69:1 sur le vert-de-gris */
+  --sa-text-on-dark: #F0EDE4;    /* sur la colonne sombre */
+  --sa-text-on-dark-muted: #A8A99E;
+
+  /* ---------- Accent : vert-de-gris ----------
+     Zinc patine, vetement de travail. Elle tient lieu d'encre soutenue
+     plutot que de couleur vive : elle porte l'action primaire et l'etat
+     actif sans crier. */
+  --sa-accent: #2E4739;
+  --sa-accent-strong: #243A2E;
+  --sa-accent-soft: #E4EAE4;
+  --sa-accent-on-dark: #9DBBA6;
+
+  /* ---------- Laiton : le detail, jamais l'aplat ----------
+     Filet sous un chiffre cle, soulignement d'un onglet actif. Jamais un
+     bouton plein - c'etait l'erreur de l'identite precedente. 4.93:1. */
+  --sa-laiton: #8A6024;
+  --sa-laiton-soft: #F1E8D6;
+  --sa-bronze: var(--sa-laiton);
+  --sa-bronze-strong: #704C1C;
+  --sa-bronze-soft: var(--sa-laiton-soft);
+
+  /* ---------- Semantique : lisible, jamais clignotante ---------- */
+  --sa-success: #3B6647;         /* 5.86:1 */
+  --sa-success-soft: #E3EBE4;
+  --sa-warning: #8A5E19;         /* 5.04:1 */
+  --sa-warning-soft: #F5EAD6;
+  --sa-danger: #9E3A2B;          /* 6.02:1 — terre cuite */
+  --sa-danger-strong: #85301F;
+  --sa-danger-border: #D9B5AC;
+  --sa-danger-soft: #F6E4DF;
+  --sa-info: #42596B;            /* 6.48:1 — ardoise */
+  --sa-info-soft: #E4EAEE;
+  --sa-neutral-soft: var(--sa-surface-2);
+
+  /* ---------- Typographie : celles du site public ----------
+     L'application utilisait Archivo + Public Sans, le site Fraunces +
+     Inter. Deux typographies pour une marque, sans raison. Fraunces porte
+     les titres et les chiffres : elle lit « imprime », c'est elle qui fait
+     qu'un montant ressemble a un montant de devis. */
+  --sa-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --sa-font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+
+  /* ---------- L'angle vif ----------
+     Les grands arrondis partout sont la signature du composant generique.
+     2px sur ce qu'on manipule, 4px sur un objet, 0 sur une section. */
+  --sa-radius-sm: 2px;
+  --sa-radius-md: 3px;
+  --sa-radius-lg: 4px;
+  --sa-radius-xl: 6px;
+  --sa-radius-full: 999px;
+
+  /* ---------- Ombres : presque aucune ----------
+     La profondeur vient du ton du papier et des filets. Une seule ombre
+     reelle, pour ce qui flotte au-dessus de la page. */
+  --sa-shadow-xs: none;
+  --sa-shadow-sm: 0 1px 2px rgba(28, 30, 26, .05);
+  --sa-shadow-md: 0 6px 20px rgba(28, 30, 26, .10);
+  --sa-shadow-lg: 0 16px 44px rgba(28, 30, 26, .16);
+  /* Focus : un liseré franc colle a la bordure, pas un halo diffus. */
+  --sa-shadow-focus: 0 0 0 1px var(--sa-accent);
+
+  --sa-ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+
+  /* ---------- La marge ----------
+     Gouttiere des pages composees : les intitules de section y vivent en
+     petites capitales, separes du contenu par un filet vertical. C'est la
+     structure d'un document technique. */
+  --sa-marge: 108px;
+
+  /* Ponts retro-compatibles (styles inline residuels dans app.js). */
+  --primary: var(--sa-text);
+  --accent: var(--sa-accent);
+  --bg: var(--sa-bg);
+  --surface: var(--sa-surface);
+  --text: var(--sa-text);
+  --text-muted: var(--sa-text-muted);
+  --border: var(--sa-border);
+  --success: var(--sa-success);
+  --warning: var(--sa-warning);
+  --danger: var(--sa-danger);
+  --info: var(--sa-info);
+}
+
+/* Les chiffres s'alignent partout. Sans chasse fixe, deux montants voisins
+   ne se comparent pas a l'oeil : c'est le premier signe qu'une interface
+   n'a pas ete composee. */
+body { font-feature-settings: "tnum" 0; }
+.kpi-card-value, .list-row-amount, .dash-stat .value,
+td, th, .stat-value, input[type="number"], time,
+[class*="montant"], [class*="-num"], [class*="chiffre"] {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Fraunces est une variable font a taille optique : sans reglage elle
+   rend un dessin de titre a toutes les tailles. On l'annonce. */
+h1, h2, h3, .kpi-card-value, .dash-masthead-lede, .sidebar-brand-name {
+  font-optical-sizing: auto;
+  letter-spacing: -0.005em;
+}
+
+/* =====================================================================
+   L'ATELIER — la colonne sombre
+   ---------------------------------------------------------------------
+   Un seul plan sombre dans toute l'application : la navigation. Ce n'est
+   pas un reste de l'ancienne identite, c'est une decision de composition -
+   la table a dessin est eclairee, l'atelier autour ne l'est pas. Elle
+   donne au papier sa valeur et evite l'ecran uniformement clair.
+   ===================================================================== */
+.sidebar { background: var(--sa-sidebar); border-right: none; }
+.sidebar-brand { padding: 22px var(--sa-space-4) 18px; }
+.sidebar-brand-mark {
+  background: transparent;
+  color: var(--sa-laiton);
+  border: 1px solid #4A4E42;
+  border-radius: 2px;
+  font-family: var(--sa-font-display);
+}
+.sidebar-brand-name { font-family: var(--sa-font-display); font-weight: 600; letter-spacing: 0; }
+
+.nav-group-label { color: #7C7F72; letter-spacing: 0.09em; }
+.nav-link { border-radius: 0; color: var(--sa-text-on-dark-muted); }
+.nav-link:hover { background: rgba(240, 237, 228, .05); color: var(--sa-text-on-dark); }
+/* L'element actif : pas d'aplat colore, un filet de laiton et de l'encre
+   claire. Le meme geste que le soulignement d'un onglet. */
+.nav-link.active { background: rgba(240, 237, 228, .07); color: var(--sa-text-on-dark); }
+.sidebar .nav-link::before { width: 2px; background: transparent; }
+.sidebar .nav-link.active::before { background: var(--sa-laiton); }
+.nav-link.active .nav-icon { color: var(--sa-laiton); }
+.sidebar-footer { border-top-color: #34382E; }
+.btn-ghost-small { color: var(--sa-text-on-dark-muted); }
+.btn-ghost-small:hover { background: rgba(240, 237, 228, .06); color: var(--sa-text-on-dark); }
+.badge-count { background: #34382E; color: var(--sa-text-on-dark-muted); border: none; }
+.nav-link.active .badge-count { background: var(--sa-laiton); color: #1C1E1A; }
+.kbd-hint { border-color: var(--sa-border-strong); color: var(--sa-text-faint); }
+
+/* =====================================================================
+   LA TABLE A DESSIN — topbar et espace de travail
+   ===================================================================== */
+.topbar {
+  background: var(--sa-bg);
+  border-bottom: 1px solid var(--sa-border);
+}
+.topbar-search-btn {
+  background: transparent;
+  border: 1px solid var(--sa-border-strong);
+  border-radius: var(--sa-radius-sm);
+  color: var(--sa-text-faint);
+}
+.topbar-search-btn:hover { background: var(--sa-surface); border-color: var(--sa-text-faint); }
+.topbar-avatar, .topbar-icon-btn { border-radius: var(--sa-radius-sm); }
+
+/* =====================================================================
+   BOUTONS — l'action primaire est de l'encre, pas de la couleur
+   ===================================================================== */
+.btn-primary, .btn-sm-primary, .topbar-create-btn {
+  background: var(--sa-accent);
+  color: var(--sa-text-on-accent);
+  border: 1px solid var(--sa-accent);
+  border-radius: var(--sa-radius-sm);
+  font-weight: 500;
+  letter-spacing: 0;
+}
+.btn-primary:hover, .btn-sm-primary:hover, .topbar-create-btn:hover {
+  background: var(--sa-accent-strong);
+  border-color: var(--sa-accent-strong);
+}
+.btn-secondary, .btn-sm, .btn-archives {
+  background: var(--sa-surface);
+  color: var(--sa-text);
+  border: 1px solid var(--sa-border-strong);
+  border-radius: var(--sa-radius-sm);
+}
+.btn-secondary:hover, .btn-sm:hover, .btn-archives:hover {
+  background: var(--sa-surface-2);
+  border-color: var(--sa-text-faint);
+}
+
+/* =====================================================================
+   CHAMPS — un trait, pas une boite
+   ===================================================================== */
+input, select, textarea {
+  background: var(--sa-surface);
+  border: 1px solid var(--sa-border-strong);
+  border-radius: var(--sa-radius-sm);
+  color: var(--sa-text);
+}
+input:hover, select:hover, textarea:hover { border-color: var(--sa-text-faint); }
+input:focus, select:focus, textarea:focus {
+  border-color: var(--sa-accent);
+  box-shadow: var(--sa-shadow-focus);
+}
+input::placeholder, textarea::placeholder { color: var(--sa-text-faint); }
+label { color: var(--sa-text-muted); }
+:focus-visible { outline: 2px solid var(--sa-accent); outline-offset: 2px; }
+
+/* =====================================================================
+   SURFACES — la carte est reservee a ce qu'on manipule
+   ---------------------------------------------------------------------
+   Une section n'est pas une carte : elle est separee par un filet et de
+   l'espace. C'est ce qui supprime l'empilement de rectangles.
+   ===================================================================== */
+.card, .form-box, .kpi-card {
+  background: var(--sa-surface);
+  border: 1px solid var(--sa-border);
+  border-radius: var(--sa-radius-lg);
+  box-shadow: none;
+}
+.side-panel-box, .action-menu-panel, .topbar-create-menu,
+.confirm-dialog-box, .search-modal-box {
+  background: var(--sa-surface);
+  border-color: var(--sa-border-strong);
+  box-shadow: var(--sa-shadow-lg);
+}
+.side-panel { background: rgba(28, 30, 26, .32); }
+
+/* =====================================================================
+   TABLEAUX ET LISTES — le filet fait le travail
+   ===================================================================== */
+.list-row { border-bottom-color: var(--sa-border); }
+.list .list-row:first-child { border-top-color: var(--sa-border); }
+.list-row:hover { background: var(--sa-surface); }
+
+/* =====================================================================
+   PASTILLES ET BADGES — un mot, une teinte, pas de pilule criarde
+   ===================================================================== */
+.badge, .pill {
+  border-radius: var(--sa-radius-sm);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  border: 1px solid transparent;
+}
+.badge-gray, .pill-gray { background: var(--sa-surface-2); color: var(--sa-text-muted); border-color: var(--sa-border); }
+.badge-green, .pill-green { background: var(--sa-success-soft); color: var(--sa-success); border-color: #C9DACE; }
+.badge-orange { background: var(--sa-warning-soft); color: var(--sa-warning); border-color: #E4D2B0; }
+.badge-red, .pill-red { background: var(--sa-danger-soft); color: var(--sa-danger); border-color: #E3C4BC; }
+.badge-blue { background: var(--sa-info-soft); color: var(--sa-info); border-color: #C8D4DB; }
+.pill-accent { background: var(--sa-laiton-soft); color: var(--sa-laiton); border-color: #E0CFAE; }
+
+/* =====================================================================
+   LA MARGE — gouttiere des pages composees
+   ---------------------------------------------------------------------
+   Les intitules de section vivent a gauche, en petites capitales, separes
+   du contenu par un filet vertical. Structure de document technique.
+   Reservee aux pages COMPOSEES : les pages denses (listes, planning) ont
+   besoin de toute leur largeur. Meme identite n'est pas meme page.
+   ===================================================================== */
+.sa-section {
+  display: grid;
+  grid-template-columns: var(--sa-marge) minmax(0, 1fr);
+  gap: 0 var(--sa-space-6);
+  padding-top: 40px;
+}
+.sa-section + .sa-section { border-top: 1px solid var(--sa-border); }
+.sa-section-marge {
+  position: relative;
+  padding-right: var(--sa-space-6);
+  border-right: 1px solid var(--sa-border);
+}
+.sa-section-titre {
+  margin: 2px 0 0;
+  font-family: var(--sa-font);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--sa-text-faint);
+  text-align: right;
+}
+.sa-section-note { margin: 6px 0 0; font-size: 0.6875rem; color: var(--sa-text-faint); text-align: right; line-height: 1.5; }
+.sa-section-corps { min-width: 0; padding-bottom: 40px; }
+
+/* En dessous de 1100 px la gouttiere disparait : elle couterait plus de
+   largeur qu'elle n'apporte de structure. L'intitule repasse au-dessus. */
+@media (max-width: 1100px) {
+  .sa-section { grid-template-columns: 1fr; gap: 0; padding-top: 28px; }
+  .sa-section-marge { padding: 0 0 10px; border-right: none; border-bottom: 1px solid var(--sa-border); margin-bottom: 16px; }
+  .sa-section-titre, .sa-section-note { text-align: left; }
+}
+
+/* =====================================================================
+   ASCENSEURS — fins, sur papier
+   ===================================================================== */
+* { scrollbar-width: thin; scrollbar-color: #C2BCAE var(--sa-bg); }
+@supports (-webkit-appearance: none) and (not (-moz-appearance: none)) {
+  * { scrollbar-width: auto; scrollbar-color: auto; }
+  *::-webkit-scrollbar { width: 9px; height: 9px; }
+  *::-webkit-scrollbar-track, *::-webkit-scrollbar-corner { background: var(--sa-bg); }
+  *::-webkit-scrollbar-thumb {
+    background: #C2BCAE; border: 2px solid var(--sa-bg); border-radius: 5px;
+  }
+  *::-webkit-scrollbar-thumb:hover { background: #A69F8E; }
+}
+
+/* =====================================================================
+   ETATS — aucun etat generique
+   ===================================================================== */
+.empty-state {
+  background: transparent;
+  border: 1px dashed var(--sa-border-strong);
+  border-radius: var(--sa-radius-lg);
+  color: var(--sa-text-muted);
+}
+.skeleton {
+  background: linear-gradient(100deg, var(--sa-surface) 30%, var(--sa-surface-2) 50%, var(--sa-surface) 70%);
+  background-size: 260% 100%;
+  border: 1px solid var(--sa-border);
+}
+
+/* =====================================================================
+   ACCUEIL — « la journee »
+   ---------------------------------------------------------------------
+   La page ne s'ouvre plus sur quatre KPI mais sur une PHRASE calculee.
+   L'artisan qui ouvre son logiciel le matin ne pose qu'une question :
+   « qu'est-ce que je dois faire aujourd'hui ? » Les chiffres du mois sont
+   un bilan, pas une consigne : ils passent apres.
+   ===================================================================== */
+.dash-entete { padding: 44px 0 8px; }
+.dash-date {
+  margin: 0 0 12px;
+  font-size: 0.6875rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--sa-text-faint);
+}
+.dash-lede {
+  margin: 0;
+  font-family: var(--sa-font-display);
+  font-size: clamp(1.6rem, 3.4vw, 2.35rem);
+  font-weight: 500;
+  line-height: 1.15;
+  color: var(--sa-text);
+  max-width: 22ch;
+}
+/* Le retard ne colore pas toute la phrase : seul un filet de terre cuite
+   la precede. Une phrase entiere en rouge, chaque matin, cesse d'alerter. */
+.dash-lede.est-alerte { padding-left: 16px; border-left: 2px solid var(--sa-danger); }
+.dash-lede-detail { margin: 10px 0 0; font-size: var(--sa-text-base); color: var(--sa-text-muted); max-width: 46ch; }
+.dash-entete-actions { display: flex; gap: var(--sa-space-3); margin-top: var(--sa-space-6); flex-wrap: wrap; }
+
+.dash-vide { margin: 0; font-size: var(--sa-text-sm); color: var(--sa-text-muted); }
+.lien-action {
+  border: 0; background: none; padding: 0; margin-left: 4px;
+  font: inherit; color: var(--sa-accent); text-decoration: underline;
+  text-underline-offset: 3px; cursor: pointer;
+}
+.lien-action:hover { color: var(--sa-accent-strong); }
+
+/* ---------- La journee : une ligne de temps ----------
+   L'heure vit dans la marge de la ligne et les evenements sont relies par
+   un filet continu : on lit la FORME de la journee avant son contenu. */
+.dash-journee { list-style: none; margin: 0; padding: 0; }
+.dash-journee-item {
+  display: grid; grid-template-columns: 62px 1fr; align-items: baseline; gap: var(--sa-space-4);
+  position: relative;
+  padding: 11px 0 11px 0;
+  border-bottom: 1px solid var(--sa-border);
+  cursor: pointer;
+}
+.dash-journee-item:last-child { border-bottom: 0; }
+.dash-journee-item:hover .dash-journee-titre { color: var(--sa-accent); }
+.dash-journee-item:focus-visible { outline: 2px solid var(--sa-accent); outline-offset: 2px; }
+.dash-journee-heure {
+  font-family: var(--sa-font-display);
+  font-size: var(--sa-text-sm); font-weight: 600;
+  color: var(--sa-text); font-variant-numeric: tabular-nums;
+}
+.dash-journee-titre { font-size: var(--sa-text-sm); color: var(--sa-text-muted); }
+
+/* ---------- Les chiffres du mois ----------
+   Une ligne typographiee, pas quatre cartes. Le filet sous chaque montant
+   remplace la boite : c'est le geste du total souligne sur un devis. */
+.dash-chiffres {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--sa-space-6) var(--sa-space-8);
+}
+.dash-chiffre { display: flex; flex-direction: column; gap: 6px; }
+.dash-chiffre-label {
+  font-size: 0.6875rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--sa-text-faint);
+}
+.dash-chiffre-valeur {
+  font-family: var(--sa-font-display);
+  font-size: 1.5rem; font-weight: 500; line-height: 1;
+  color: var(--sa-text);
+  font-variant-numeric: tabular-nums;
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--sa-border-strong);
+}
+/* Le laiton signale le seul chiffre qui appelle une action : ce qui reste
+   du. C'est exactement son role - un detail, jamais un aplat. */
+.dash-chiffre.est-du .dash-chiffre-valeur { border-bottom-color: var(--sa-laiton); }
+.dash-chiffre-note { font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
+
+.dash-paiements { margin-top: var(--sa-space-8); }
+.dash-paiements-titre {
+  display: block; margin-bottom: var(--sa-space-2);
+  font-size: 0.6875rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.08em; color: var(--sa-text-faint);
+}
+.dash-paiement {
+  display: flex; justify-content: space-between; gap: var(--sa-space-4);
+  padding: 7px 0; border-bottom: 1px solid var(--sa-border);
+  font-size: var(--sa-text-sm); color: var(--sa-text-muted);
+}
+.dash-paiement:last-child { border-bottom: 0; }
+.dash-paiement strong { color: var(--sa-text); font-variant-numeric: tabular-nums; }
+
+.dash-conseils { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: var(--sa-space-8); }
+.dash-conseils-col { min-width: 0; }
+@media (max-width: 860px) { .dash-conseils { grid-template-columns: 1fr; gap: var(--sa-space-6); } }
+
+.dash-squelette { display: flex; flex-direction: column; gap: var(--sa-space-4); padding-top: 44px; }
+.dash-squelette span {
+  display: block; height: 74px; border-radius: var(--sa-radius-lg);
+  background: linear-gradient(100deg, var(--sa-surface) 30%, var(--sa-surface-2) 50%, var(--sa-surface) 70%);
+  background-size: 260% 100%;
+  animation: sa-scintille 1.4s linear infinite;
+}
+.dash-squelette span:first-child { height: 120px; }
+@keyframes sa-scintille { from { background-position: 130% 0; } to { background-position: -30% 0; } }
+@media (prefers-reduced-motion: reduce) { .dash-squelette span { animation: none; } }
+
+@media (max-width: 760px) {
+  .dash-entete { padding: 26px 0 4px; }
+  .dash-lede { max-width: none; }
+  .dash-chiffres { grid-template-columns: 1fr 1fr; gap: var(--sa-space-5); }
+  .dash-chiffre-valeur { font-size: 1.25rem; }
+}
