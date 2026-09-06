@@ -575,16 +575,18 @@
         <select id="chantiers-client-filtre" aria-label="Filtrer par client">
           <option value="">Client</option>
         </select>
+        <!-- Une seule liste de tri. Il y en avait deux (« Date de début » et
+             « Trier par Priorité ») : la seconde etait evaluee en premier
+             cote JS, donc elle ecrasait silencieusement le choix fait dans
+             la premiere, qui restait pourtant affiche. Aucune option n'est
+             perdue, elles sont reunies sur une seule dimension. -->
         <select id="chantiers-sort" aria-label="Trier les chantiers">
-          <option value="date_debut_desc">Date de début</option>
-          <option value="date_debut_asc">Date croissante</option>
+          <option value="risque">Tri : urgence</option>
+          <option value="progression">Avancement</option>
+          <option value="date_debut_desc">Début le plus récent</option>
+          <option value="date_debut_asc">Début le plus ancien</option>
           <option value="budget_desc">Budget</option>
           <option value="titre_asc">Nom</option>
-        </select>
-        <select id="chantiers-priorite-tri" aria-label="Trier par priorité">
-          <option value="">Trier par Priorité</option>
-          <option value="risque">À surveiller d'abord</option>
-          <option value="progression">Avancement décroissant</option>
         </select>
       </div>
 

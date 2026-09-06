@@ -1102,29 +1102,122 @@ input[readonly] { background: var(--sa-surface-2); }
 #view-chantiers .list-toolbar select { min-width: 102px; max-width: 135px; margin-bottom: 12px; }
 #view-chantiers #chantiers-priorite-tri { min-width: 138px; max-width: 150px; }
 
+/* ---------- Liste des chantiers : une ligne par chantier ----------
+   Les chantiers etaient rendus en cartes de 82 px, plus 8 px de marge et
+   une bordure : environ 92 px chacune. A trente chantiers cela faisait
+   pres de 2 800 px a parcourir pour lire une liste. La grammaire est
+   maintenant celle, deja utilisee par Devis et Factures, de la ligne
+   dense : filet de separation au lieu d'une bordure de carte, pas de
+   marge, une seule ligne de hauteur. On tombe a ~53 px, soit 40 % de
+   defilement en moins, et la page ne parle plus deux langues pour le
+   meme genre de liste.
+
+   Les deux jauges (avancement, budget) tiennent dans la largeur d'une
+   colonne : la lecture "ou j'en suis / ce que j'ai depense" reste
+   immediate, ce qui etait l'interet de l'ancienne carte. */
+.chantier-entete,
 .chantier-row {
-  display: grid; grid-template-columns: 240px 180px 145px 95px minmax(150px, 1fr) 150px;
-  align-items: center; gap: 12px; min-height: 82px; margin-bottom: 8px; padding: 10px 13px;
-  background: var(--sa-surface); border: 1px solid var(--sa-border); border-radius: var(--sa-radius-lg);
+  display: grid;
+  /* Les deux colonnes elastiques portent du texte qui doit se lire en
+     entier : le nom du chantier et la prochaine action. Les autres sont
+     fixes parce que leur contenu l'est (un pourcentage, un badge, une
+     date). La colonne d'action a le meme poids que le nom : c'est elle
+     qui dit quoi faire. */
+  grid-template-columns: minmax(0, 1.55fr) 96px 104px 104px minmax(0, 1.45fr) 100px auto;
+  align-items: center;
+  gap: var(--sa-space-3);
 }
-.chantier-row.is-warning { background: var(--sa-warning-soft); border-color: #70572f; }
-.chantier-row.is-complete { border-color: #304c37; }
-.chantier-row-identity { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.chantier-row-identity .crm-avatar { width: 34px; height: 34px; background: #d9d1c1; color: #29261f; }
-.chantier-row-identity-text { min-width: 0; }
-.chantier-row-client { font-size: var(--sa-text-2xs); color: var(--sa-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.chantier-row-title { font-size: var(--sa-text-sm); font-weight: var(--sa-weight-bold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
-.chantier-row-progress-block { padding-right: 4px; }
-.chantier-row-label { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 7px; font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
-.chantier-row-label strong { color: var(--sa-text); }
-.chantier-row-metric, .chantier-row-next { min-width: 0; padding-left: 12px; border-left: 1px solid var(--sa-border); }
-.chantier-row-metric span, .chantier-row-next span { display: block; font-size: var(--sa-text-2xs); text-transform: uppercase; color: var(--sa-text-faint); }
-.chantier-row-metric strong, .chantier-row-next strong { display: block; font-size: var(--sa-text-sm); color: var(--sa-text); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.chantier-row-metric small { display: block; font-size: var(--sa-text-2xs); color: var(--sa-text-muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chantier-entete {
+  position: sticky; top: 0; z-index: 2;
+  padding: 8px 12px; margin-bottom: 0;
+  background: var(--sa-bg);
+  border-bottom: 1px solid var(--sa-border);
+  font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-bold);
+  text-transform: uppercase; letter-spacing: 0.05em; color: var(--sa-text-faint);
+}
+.chantier-row {
+  padding: 9px 12px; min-height: 53px;
+  border-bottom: 1px solid var(--sa-border);
+  transition: background-color var(--sa-duration-fast) var(--sa-ease);
+}
+.chantier-row:hover { background: var(--sa-surface); }
+/* Le statut d'alerte se marque par un filet sur le flanc, pas par un
+   aplat de couleur : trente lignes de fond ambre seraient illisibles. */
+.chantier-row.is-late { box-shadow: inset 2px 0 0 var(--sa-danger); }
+.chantier-row.is-warning { box-shadow: inset 2px 0 0 var(--sa-warning); }
+.chantier-row.is-complete { box-shadow: inset 2px 0 0 var(--sa-success); }
+
+.chantier-col-nom { min-width: 0; }
+.chantier-row-title { font-size: var(--sa-text-sm); font-weight: var(--sa-weight-semibold); color: var(--sa-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chantier-row-client { font-size: var(--sa-text-xs); color: var(--sa-text-muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chantier-col-statut { min-width: 0; }
+
+.chantier-col-jauge { min-width: 0; }
+.chantier-jauge-valeur { font-size: var(--sa-text-xs); font-weight: var(--sa-weight-semibold); color: var(--sa-text); font-variant-numeric: tabular-nums; margin-bottom: 5px; }
+.chantier-jauge-vide { font-size: var(--sa-text-2xs); color: var(--sa-text-faint); }
+
+.chantier-col-action { min-width: 0; font-size: var(--sa-text-xs); }
+.chantier-action-texte { display: block; color: var(--sa-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chantier-col-action.is-vide .chantier-action-texte { color: var(--sa-text-faint); }
+.chantier-action-quand { display: block; color: var(--sa-text-muted); font-variant-numeric: tabular-nums; margin-top: 1px; }
+.chantier-action-quand.is-late { color: var(--sa-danger); font-weight: var(--sa-weight-semibold); }
+
+.chantier-col-date { font-size: var(--sa-text-xs); color: var(--sa-text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.chantier-col-date.is-late { color: var(--sa-danger); }
+.chantier-retard { display: block; font-weight: var(--sa-weight-semibold); }
+
 .chantier-row-actions { display: flex; justify-content: flex-end; min-width: 0; }
 .chantier-row-actions .item-actions { margin: 0; flex-wrap: nowrap; }
 .chantier-row-actions .btn-sm { white-space: nowrap; }
-.chantier-details { grid-column: 1 / -1; padding: 16px 4px 6px; border-top: 1px solid var(--sa-border); }
+.chantier-details { grid-column: 1 / -1; padding: 16px 4px 6px; margin-top: 10px; border-top: 1px solid var(--sa-border); }
+
+/* En dessous de 1180 px, les deux colonnes les moins urgentes cedent la
+   place : la prochaine action et la date restent, elles portent la
+   decision. */
+/* En dessous de 1180 px, la colonne budget cede la place : la prochaine
+   action et la date restent, ce sont elles qui portent la decision.
+   Les jauges sont ciblees par une classe explicite (`est-budget`) et non
+   par une position : `nth-of-type` compte les elements par BALISE, donc
+   `.chantier-col-jauge:nth-of-type(2)` ne designait pas la deuxieme jauge
+   mais le deuxieme div de la ligne - qui est la colonne statut. La regle
+   ne s'appliquait a rien. */
+@media (max-width: 1180px) {
+  .chantier-entete, .chantier-row { grid-template-columns: minmax(0, 1.6fr) 92px 100px minmax(0, 1.4fr) 96px auto; }
+  .chantier-entete span:nth-child(4), .chantier-col-jauge.est-budget { display: none; }
+}
+
+/* En mobile la grille se replie en bloc, mais un bloc COURT : nom et
+   statut sur la meme ligne, une jauge d'avancement sur une seule ligne
+   (libelle et barre cote a cote, pas empiles), puis la prochaine action
+   et l'echeance face aux boutons. */
+@media (max-width: 760px) {
+  .chantier-entete { display: none; }
+  .chantier-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px var(--sa-space-3);
+    padding: 12px; min-height: 0;
+  }
+  .chantier-col-nom { grid-column: 1; grid-row: 1; }
+  .chantier-col-statut { grid-column: 2; grid-row: 1; justify-self: end; }
+  .chantier-col-jauge.est-avancement {
+    grid-column: 1 / -1; grid-row: 2;
+    display: flex; align-items: center; gap: var(--sa-space-2);
+  }
+  .chantier-col-jauge.est-avancement .chantier-jauge-valeur { margin: 0; min-width: 42px; }
+  .chantier-col-jauge.est-avancement .sante-barre { flex: 1; }
+  /* L'action et son echeance passent sur une seule ligne, la date de fin
+     se cale a droite en face : deux lignes gagnees par chantier, soit
+     pres de deux ecrans sur un portefeuille de trente. */
+  .chantier-col-action {
+    grid-column: 1; grid-row: 3;
+    display: flex; align-items: baseline; gap: 6px; min-width: 0;
+  }
+  .chantier-col-action .chantier-action-texte { overflow: hidden; text-overflow: ellipsis; }
+  .chantier-col-action .chantier-action-quand { margin-top: 0; flex-shrink: 0; }
+  .chantier-col-date { grid-column: 2; grid-row: 3; justify-self: end; text-align: right; }
+  .chantier-retard { display: inline; margin-left: 4px; }
+  .chantier-row-actions { grid-column: 1 / -1; grid-row: 4; }
+}
 
 .item-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sa-space-3); flex-wrap: wrap; }
 .item-title { font-weight: var(--sa-weight-semibold); font-size: var(--sa-text-md); color: var(--sa-text); }
@@ -1732,6 +1825,12 @@ input[readonly] { background: var(--sa-surface-2); }
   #view-documents .list-toolbar { flex-wrap: wrap; margin-bottom: var(--sa-space-5); }
   #view-documents .list-toolbar .list-search { flex: 1 1 100%; min-width: 0; max-width: none; }
   #view-documents .list-toolbar select { flex: 1 1 130px; width: auto !important; max-width: none; }
+  /* Chantiers manquait a cette liste : sa barre d'outils est en
+     `flex-wrap: nowrap` (ligne 1100) et debordait donc de l'ecran en
+     mobile, poussant toute la page en defilement horizontal. */
+  #view-chantiers .list-toolbar { flex-wrap: wrap; }
+  #view-chantiers .list-toolbar .list-search { flex: 1 1 100%; min-width: 0; margin-right: 0; }
+  #view-chantiers .list-toolbar select { flex: 1 1 130px; min-width: 0; max-width: none; }
   #view-avis .view-header-desc, #view-entreprise .view-header-desc, #view-notifications .view-header-desc { white-space: normal; }
   #view-avis #avis-filters, #view-notifications #notifications-filters { width: 100%; }
   #view-avis .avis-header-actions .action-menu { position: static; }

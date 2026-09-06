@@ -79,7 +79,12 @@ assert.match(styleSource, /#view-factures \.list-toolbar \{[^}]*margin-bottom: v
 assert.match(styleSource, /#view-factures #facture-filters \{ margin-bottom: var\(--sa-space-4\); \}/);
 assert.match(styleSource, /#view-factures #factures-statut-filtre \{ width: 108px; \}/);
 assert.doesNotMatch(styleSource, /\.list-row\.is-due \{[^}]*padding-left/);
-assert.match(styleSource, /\.chantier-row \{[\s\S]*?min-height: 82px/);
+// La liste des chantiers est passee de la carte de 82 px a la ligne dense,
+// a la demande de l'utilisateur : a trente chantiers, les cartes faisaient
+// pres de 2 800 px a parcourir. La grammaire est celle, deja en place, des
+// listes Devis et Factures - filet de separation, pas de marge, une ligne.
+assert.match(styleSource, /\.chantier-row \{[\s\S]*?min-height: 53px/);
+assert.match(styleSource, /\.chantier-entete \{[\s\S]*?position: sticky/);
 assert.match(styleSource, /\.tache-row \{[\s\S]*?min-height: 63px/);
 assert.match(styleSource, /\.doc-row \{[\s\S]*?min-height: 63px/);
 assert.doesNotMatch(styleSource, /letter-spacing:\s*-/);

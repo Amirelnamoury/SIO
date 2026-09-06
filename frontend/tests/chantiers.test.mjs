@@ -10,6 +10,7 @@ const appPath = path.join(frontendDir, "app.js");
 const apiPath = path.join(frontendDir, "api.js");
 const appSource = fs.readFileSync(appPath, "utf8");
 const apiSource = fs.readFileSync(apiPath, "utf8");
+const indexSource = fs.readFileSync(path.join(frontendDir, "index.html"), "utf8");
 
 const focusStart = appSource.indexOf("function focusChantierCard");
 const focusEnd = appSource.indexOf("function rentabiliteHtml", focusStart);
@@ -41,6 +42,101 @@ assert.equal(switchedTo, "chantiers");
 focusContext.__chantiers.focusChantierCard();
 assert.equal(selectedWith, '[data-chantier-id="73"]', "le chantier doit être retrouvé par son ID");
 assert.equal(scrolled, true);
+
+// =====================================================================
+// LES QUATRE CORRECTIFS
+// ---------------------------------------------------------------------
+// Quatre defauts silencieux : ils ne levaient aucune erreur, la page
+// s'affichait normalement, et l'information etait simplement fausse ou
+// absente. C'est exactement le genre de chose qu'un test doit retenir.
+// =====================================================================
+const correctifsStart = appSource.indexOf("function chantierJoursRetard");
+const correctifsEnd = appSource.indexOf("function chantierMatchesFilter", correctifsStart);
+assert.ok(correctifsStart !== -1 && correctifsEnd > correctifsStart, "les helpers de lecture d'un chantier sont introuvables");
+const correctifs = {};
+vm.runInNewContext(
+  `${appSource.slice(correctifsStart, correctifsEnd)}
+   globalThis.__c = { chantierJoursRetard, chantierProchaineAction, chantierEstASurveiller };`,
+  correctifs,
+  { filename: appPath },
+);
+const C = correctifs.__c;
+const dans = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
+const chantier = (extra = {}) => ({
+  id: 1, titre: "Rénovation cuisine", client_nom: "Martin", adresse: "Villeurbanne",
+  statut: "en_cours", progression: 50, budget: 10000, total_depenses: 5000,
+  date_debut: dans(-30), date_fin_prevue: dans(10), date_reception: null, taches: [], ...extra,
+});
+
+// 1. `date_fin_prevue` est renvoyee par ChantierOut mais n'etait exposee
+//    nulle part : aucun chantier ne pouvait etre signale en retard.
+assert.equal(C.chantierJoursRetard(chantier({ date_fin_prevue: dans(-3) })), 3);
+assert.equal(C.chantierJoursRetard(chantier()), 0, "une fin prévue dans le futur n'est pas un retard");
+assert.equal(
+  C.chantierJoursRetard(chantier({ statut: "termine", date_fin_prevue: dans(-30) })), 0,
+  "un chantier terminé ne peut plus être en retard",
+);
+assert.equal(C.chantierJoursRetard(chantier({ date_fin_prevue: null })), 0);
+// Le champ doit etre saisissable des deux cotes, sinon il reste toujours vide.
+assert.match(appSource, /id="cf-fin"/, "la création doit permettre de saisir la fin prévue");
+assert.match(appSource, /date_fin_prevue: emptyToNull\(document\.getElementById\("cf-fin"\)\.value\)/);
+assert.match(appSource, /id="chantier-fin-\$\{c\.id\}"/, "la modification doit permettre de saisir la fin prévue");
+assert.match(appSource, /date_fin_prevue: emptyToNull\(document\.getElementById\(`chantier-fin-\$\{id\}`\)\.value\)/);
+
+// 2. La fiche lisait `c.prochaine_action`, un champ qui existe sur un
+//    CLIENT mais pas sur un chantier : la ligne affichait "Aucune action
+//    planifiée" pour tous les chantiers, en permanence.
+const sectionChantiers = appSource.slice(
+  appSource.indexOf("// ===================== Chantiers"),
+  appSource.indexOf("// ===================== Taches"),
+);
+assert.deepEqual(
+  sectionChantiers.split("\n").filter((l) => l.includes("c.prochaine_action") && !l.trimStart().startsWith("//")),
+  [],
+  "prochaine_action n'existe pas dans ChantierOut : rien ne doit le lire ici",
+);
+assert.match(C.chantierProchaineAction(chantier({ statut: "termine" })).texte, /Clôturer/);
+assert.match(C.chantierProchaineAction(chantier({ statut: "facture" })).texte, /réception/i);
+const avecTaches = C.chantierProchaineAction(chantier({
+  taches: [
+    { id: 1, titre: "Peinture", statut: "a_faire", echeance: dans(9) },
+    { id: 2, titre: "Poser le carrelage", statut: "a_faire", echeance: dans(2) },
+    { id: 3, titre: "Démolition", statut: "faite", echeance: dans(-9) },
+  ],
+}));
+assert.equal(avecTaches.texte, "Poser le carrelage", "la tâche datée la plus proche gagne, les tâches faites sont ignorées");
+const tacheEnRetard = C.chantierProchaineAction(chantier({
+  taches: [{ id: 1, titre: "Carrelage", statut: "a_faire", echeance: dans(-4) }],
+}));
+assert.equal(tacheEnRetard.enRetard, true);
+assert.match(tacheEnRetard.quand, /retard 4 j/);
+assert.match(C.chantierProchaineAction(chantier({ statut: "a_preparer" })).texte, /Démarrage/);
+assert.equal(C.chantierProchaineAction(chantier({ date_fin_prevue: null })).vide, true);
+
+// 3. Les deux listes de tri concurrentes sont fusionnees : la seconde
+//    ecrasait silencieusement la premiere, qui restait affichee.
+assert.doesNotMatch(appSource, /currentChantierPriorite/, "le second tri concurrent doit avoir disparu");
+assert.doesNotMatch(indexSource, /chantiers-priorite-tri/);
+for (const valeur of ["risque", "progression", "date_debut_desc", "date_debut_asc", "budget_desc", "titre_asc"]) {
+  assert.match(indexSource, new RegExp(`value="${valeur}"`), `option de tri perdue : ${valeur}`);
+}
+
+// 4. La recherche portait sur le textContent de la carte entiere, donc
+//    aussi sur les libelles de l'interface.
+const rechercheStart = appSource.indexOf("function chantierMatchesRecherche");
+const rechercheEnd = appSource.indexOf("function renderChantiersListFiltered", rechercheStart);
+const recherche = {};
+vm.runInNewContext(
+  `${appSource.slice(rechercheStart, rechercheEnd)}\nglobalThis.__r = chantierMatchesRecherche;`,
+  recherche,
+  { filename: appPath },
+);
+const cible = chantier({ titre: "Villa Ducros", client_nom: "Ducros", adresse: "Villeurbanne" });
+assert.equal(recherche.__r(cible, "villeurbanne"), true);
+assert.equal(recherche.__r(cible, "ducros"), true);
+assert.equal(recherche.__r(cible, "note"), false, "la recherche ne doit pas voir les libellés de l'interface");
+assert.equal(recherche.__r(cible, ""), true);
+assert.doesNotMatch(appSource, /setupListeSearch\("chantiers-search"/, "la recherche générique ne doit plus être branchée");
 
 const chipStart = appSource.indexOf("function planningItemChip");
 const chipEnd = appSource.indexOf("function planningDayCellHtml", chipStart);

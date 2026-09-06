@@ -4715,6 +4715,60 @@ function setupContratsView() {
 // sur l'objet chantier (c.budget/c.total_depenses), pas de calcul metier
 // nouveau, juste un seuil d'affichage. Fonction partagee entre la bande de
 // KPI et le filtre par onglet pour ne jamais avoir deux definitions.
+// Retard : la seule definition du produit. `date_fin_prevue` est renvoyee
+// par ChantierOut depuis toujours, mais n'etait exposee nulle part dans
+// l'interface - ni en creation, ni en modification, ni en affichage. Aucun
+// chantier ne pouvait donc etre signale en retard. Elle est desormais
+// saisissable (voir le formulaire de creation et showChantierEditForm).
+function chantierJoursRetard(c) {
+  if (["termine", "facture", "paye"].includes(c.statut) || !c.date_fin_prevue) return 0;
+  const fin = new Date(String(c.date_fin_prevue).slice(0, 10) + "T00:00:00");
+  if (isNaN(fin)) return 0;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.max(0, Math.round((today - fin) / 86400000));
+}
+
+// La prochaine action. L'ancienne fiche lisait `c.prochaine_action`, un
+// champ qui existe sur un CLIENT mais PAS sur un chantier : ChantierOut ne
+// le renvoie pas. La ligne affichait donc "Aucune action planifiee" pour
+// tous les chantiers, en permanence. Elle est maintenant deduite de donnees
+// qui existent vraiment - les taches ouvertes, les dates et le statut.
+// L'ordre des cas est celui de la vie du chantier : ce qui bloque la
+// cloture passe avant ce qui reste a faire sur le terrain.
+function chantierProchaineAction(c) {
+  const fmtCourt = (iso) => new Date(String(iso).slice(0, 10) + "T00:00:00")
+    .toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+
+  if (c.statut === "termine") return { texte: "Clôturer le chantier" };
+  if (["facture", "paye"].includes(c.statut) && !c.date_reception) return { texte: "Enregistrer la réception" };
+
+  const ouvertes = (c.taches || []).filter((t) => t.statut !== "faite");
+  if (ouvertes.length) {
+    const datees = ouvertes.filter((t) => t.echeance).sort((a, b) => a.echeance.localeCompare(b.echeance));
+    const t = datees[0] || ouvertes[0];
+    if (!t.echeance) return { texte: t.titre };
+    const retard = Math.round((new Date().setHours(0, 0, 0, 0) - new Date(t.echeance + "T00:00:00")) / 86400000);
+    return { texte: t.titre, quand: retard > 0 ? `retard ${retard} j` : fmtCourt(t.echeance), enRetard: retard > 0 };
+  }
+
+  if (c.statut === "a_preparer") {
+    return c.date_debut
+      ? { texte: "Démarrage du chantier", quand: fmtCourt(c.date_debut) }
+      : { texte: "Planifier le démarrage" };
+  }
+  // Pas de `quand` ici : la date de fin a deja sa propre colonne juste a
+  // cote. La repeter donnait "Livraison prevue 27 aout" a gauche et
+  // "27/08/2026" a droite - la meme information deux fois sur la meme
+  // ligne, ce qui saute aux yeux des que les deux colonnes se retrouvent
+  // cote a cote en mobile.
+  if (c.date_fin_prevue) {
+    return { texte: "Livraison prévue", enRetard: chantierJoursRetard(c) > 0 };
+  }
+  if (["termine", "facture", "paye"].includes(c.statut)) return { texte: "Dossier clôturé", vide: true };
+  return { texte: "Aucune action planifiée", vide: true };
+}
+
 function chantierEstASurveiller(c) {
   if (["termine", "facture", "paye", "a_preparer"].includes(c.statut)) return false;
   const consomme = c.budget && c.total_depenses ? (c.total_depenses / c.budget) * 100 : null;
@@ -4768,24 +4822,44 @@ function chantierMatchesFilter(c, filtre) {
   return true;
 }
 
-let currentChantierSort = "date_debut_desc";
+let currentChantierSort = "risque";
 let currentChantierAvancement = "";
 let currentChantierClient = "";
-let currentChantierPriorite = "";
+let currentChantierRecherche = "";
 
 // Tri purement client sur des champs deja recus (c.date_debut, c.budget,
 // c.titre) - aucune donnee nouvelle, juste un reordonnancement de
 // chantiersCache avant le rendu. .slice() : ne jamais trier le tableau
 // source en place (chantiersKpiBandHtml et le compteur par onglet lisent
 // le meme chantiersCache juste avant).
+//
+// Il y avait ici DEUX listes de tri concurrentes : `chantiers-sort` et
+// `chantiers-priorite-tri`. La seconde etait testee en premier, donc des
+// qu'elle etait renseignee elle ecrasait silencieusement le choix fait
+// dans la premiere - qui restait pourtant affiche a l'ecran. Elles sont
+// fusionnees en une seule dimension : aucune option n'est perdue, mais le
+// resultat correspond enfin a ce qui est selectionne.
 function chantierSort(chantiers) {
   const c = chantiers.slice();
-  if (currentChantierPriorite === "risque") return c.sort((a, b) => Number(chantierEstASurveiller(b)) - Number(chantierEstASurveiller(a)));
-  if (currentChantierPriorite === "progression") return c.sort((a, b) => (b.progression || 0) - (a.progression || 0));
+  if (currentChantierSort === "progression") return c.sort((a, b) => (b.progression || 0) - (a.progression || 0));
   if (currentChantierSort === "budget_desc") return c.sort((a, b) => (b.budget || 0) - (a.budget || 0));
   if (currentChantierSort === "titre_asc") return c.sort((a, b) => a.titre.localeCompare(b.titre, "fr"));
   if (currentChantierSort === "date_debut_asc") return c.sort((a, b) => (a.date_debut || "").localeCompare(b.date_debut || ""));
-  return c.sort((a, b) => (b.date_debut || "").localeCompare(a.date_debut || "")); // date_debut_desc, par defaut
+  if (currentChantierSort === "date_debut_desc") return c.sort((a, b) => (b.date_debut || "").localeCompare(a.date_debut || ""));
+  // "risque", par defaut : le retard d'abord, puis la tension budgetaire.
+  const score = (x) => chantierJoursRetard(x) * 10 + (chantierEstASurveiller(x) ? 5 : 0);
+  return c.sort((a, b) => score(b) - score(a) || (b.date_debut || "").localeCompare(a.date_debut || ""));
+}
+
+// La recherche porte sur ce que l'utilisateur voit et retient : le nom du
+// chantier, le client, l'adresse. Elle passait auparavant par le masquage
+// generique de reapplyListSearch, qui compare le textContent de la CARTE
+// ENTIERE - donc aussi "Budget consomme", "Voir le chantier" ou le libelle
+// d'un statut. Taper "note" faisait disparaitre des chantiers au hasard,
+// et la liste se vidait sans rien expliquer.
+function chantierMatchesRecherche(c, q) {
+  if (!q) return true;
+  return [c.titre, c.client_nom, c.adresse].filter(Boolean).join(" ").toLowerCase().includes(q);
 }
 
 function renderChantiersListFiltered() {
@@ -4794,6 +4868,7 @@ function renderChantiersListFiltered() {
     const el = document.querySelector(`#chantier-filters [data-statut="${f}"] .filter-chip-count`);
     if (el) el.textContent = `(${chantiersCache.filter((c) => chantierMatchesFilter(c, f)).length})`;
   });
+  const q = currentChantierRecherche.trim().toLowerCase();
   const filtres = chantierSort(chantiersCache.filter((c) => {
     if (!chantierMatchesFilter(c, currentChantierFilter)) return false;
     const progression = Number(c.progression) || 0;
@@ -4801,11 +4876,17 @@ function renderChantiersListFiltered() {
     if (currentChantierAvancement === "milieu" && (progression <= 25 || progression > 75)) return false;
     if (currentChantierAvancement === "fin" && progression <= 75) return false;
     if (currentChantierClient && String(c.client_id) !== currentChantierClient) return false;
-    return true;
+    return chantierMatchesRecherche(c, q);
   }));
-  list.innerHTML = filtres.length ? filtres.map(renderChantierCard).join("") : '<div class="empty-state">Aucun chantier dans cet onglet.</div>';
+
+  if (!filtres.length) {
+    list.innerHTML = `<div class="empty-state">${q
+      ? `Aucun chantier ne correspond à « ${escapeHtml(currentChantierRecherche.trim())} » dans cette sélection.`
+      : "Aucun chantier dans cet onglet."}</div>`;
+    return;
+  }
+  list.innerHTML = chantiersEnteteHtml() + filtres.map(renderChantierCard).join("");
   focusChantierCard();
-  reapplyListSearch("chantiers-search", "#chantiers-list .chantier-card");
 }
 
 async function loadChantiers() {
@@ -5052,8 +5133,10 @@ async function showChantierEditForm(c) {
         <div><label for="chantier-client-${c.id}">Client *</label><select id="chantier-client-${c.id}" ${clientVerrouille ? "disabled" : ""}>${clientOptionsHtml(c.client_id)}</select></div>
         <div><label for="chantier-adresse-${c.id}">Adresse</label><input type="text" id="chantier-adresse-${c.id}" value="${escapeHtml(c.adresse || "")}"></div>
         <div><label for="chantier-date-${c.id}">Date de début</label><input type="date" id="chantier-date-${c.id}" value="${escapeHtml(c.date_debut || "")}"></div>
+        <div><label for="chantier-fin-${c.id}">Fin prévue</label><input type="date" id="chantier-fin-${c.id}" value="${escapeHtml(c.date_fin_prevue || "")}"></div>
         <div><label for="chantier-budget-${c.id}">Budget prévu (euros)</label><input type="number" step="0.01" min="0" id="chantier-budget-${c.id}" value="${c.budget !== null ? escapeHtml(c.budget) : ""}" ${verrou ? "disabled" : ""}></div>
       </div>
+      <p class="section-hint">Sans fin prévue, le chantier ne peut jamais être signalé en retard.</p>
       ${verrou ? '<div class="item-sub" style="margin-top:8px;">Le client et le budget sont verrouillés car la facture finale a été créée.</div>' : ""}
       ${c.devis_id && !verrou ? '<div class="item-sub" style="margin-top:8px;">Le client reste celui du devis associé.</div>' : ""}
       <p class="field-error" id="chantier-edit-error-${c.id}" hidden></p>
@@ -5090,7 +5173,7 @@ function chantierActionsHtml(c) {
   items.push({ divider: true });
   items.push({ attrs: `data-action="delete-chantier" data-id="${c.id}"`, label: "Archiver", danger: true });
 
-  const primaireHtml = `<button type="button" class="btn-sm btn-sm-primary" data-action="toggle-chantier-details" data-id="${c.id}" aria-expanded="false">Voir le chantier</button>`;
+  const primaireHtml = `<button type="button" class="btn-sm btn-sm-primary" data-action="toggle-chantier-details" data-id="${c.id}" aria-expanded="false">Voir</button>`;
   const menuHtml = items
     .map((it) => it.divider
       ? '<div class="action-menu-divider"></div>'
@@ -5107,6 +5190,25 @@ function chantierActionsHtml(c) {
         <div class="action-menu-panel" role="menu">${menuHtml}</div>
       </div>
     </div>`;
+}
+
+// En-tete de colonnes, collant en haut de la liste. Avec trente chantiers
+// on ne voit plus le debut de la liste au bout de deux ecrans : sans lui,
+// une colonne de pourcentages ne dit plus si elle parle d'avancement ou de
+// budget. `aria-hidden` : chaque cellule d'une ligne porte deja son propre
+// libelle accessible, l'en-tete est un repere visuel, pas une structure de
+// tableau (ce n'en est pas un au sens HTML).
+function chantiersEnteteHtml() {
+  return `
+  <div class="chantier-entete" aria-hidden="true">
+    <span>Chantier</span>
+    <span>Statut</span>
+    <span>Avancement</span>
+    <span>Budget</span>
+    <span>Prochaine action</span>
+    <span>Fin prévue</span>
+    <span></span>
+  </div>`;
 }
 
 function renderChantierCard(c) {
@@ -5135,40 +5237,44 @@ function renderChantierCard(c) {
 
   const progression = Math.max(0, Math.min(100, Number(c.progression) || 0));
   const budgetPct = c.budget ? Math.round(((c.total_depenses || 0) / c.budget) * 100) : null;
-  const marge = c.marge_reelle !== null && c.marge_reelle !== undefined ? c.marge_reelle : c.marge_estimee;
   const estTermine = ["termine", "facture", "paye"].includes(c.statut);
   const estASurveiller = chantierEstASurveiller(c);
-  const prochaineAction = c.prochaine_action
-    || (c.statut === "a_preparer" && c.date_debut ? `Démarrage ${fmtDate(c.date_debut)}` : "Aucune action planifiée");
-  const rowClass = estASurveiller ? " is-warning" : estTermine ? " is-complete" : "";
+  const joursRetard = chantierJoursRetard(c);
+  const action = chantierProchaineAction(c);
+  const rowClass = joursRetard > 0 ? " is-late" : estASurveiller ? " is-warning" : estTermine ? " is-complete" : "";
   const statutMeta = CHANTIER_STATUT_META[c.statut] || { badge: "badge-gray", label: c.statut };
+  // Les deux barres ne disent pas la meme chose, elles ne peuvent donc pas
+  // partager un code couleur. L'AVANCEMENT reste neutre : un chantier a
+  // 15 % n'est pas en difficulte, il vient de commencer - le peindre en
+  // rouge (ce que faisait l'ancienne fiche) transforme trente lignes de
+  // debut de chantier en trente fausses alertes. Seul le BUDGET porte un
+  // signal, avec les seuils deja utilises par "A surveiller" (85 %).
+  const niveauBudget = (pct) => (pct >= 85 ? "bas" : pct >= 60 ? "moyen" : "haut");
 
   return `
   <div class="chantier-card chantier-row${rowClass}" data-chantier-id="${c.id}">
-    <div class="chantier-row-identity">
-      <div class="crm-avatar">${escapeHtml(monogram(c.client_nom || c.titre))}</div>
-      <div class="chantier-row-identity-text">
-        <div class="chantier-row-client">${escapeHtml(c.client_nom || "Client non renseigné")}</div>
-        <div class="chantier-row-title">${escapeHtml(c.titre)}</div>
-        <span class="badge ${statutMeta.badge}">${escapeHtml(statutMeta.label)}</span>
-      </div>
+    <div class="chantier-col-nom">
+      <div class="chantier-row-title">${escapeHtml(c.titre)}</div>
+      <div class="chantier-row-client">${escapeHtml(c.client_nom || "Client non renseigné")}${c.adresse ? " · " + escapeHtml(c.adresse) : ""}</div>
     </div>
-    <div class="chantier-row-progress-block">
-      <div class="chantier-row-label">Avancement <strong>${progression}%</strong></div>
-      <div class="sante-barre"><div class="remplissage niveau-${progression >= 70 ? "haut" : progression >= 40 ? "moyen" : "bas"}" style="width:${progression}%;"></div></div>
+    <div class="chantier-col-statut"><span class="badge ${statutMeta.badge}">${escapeHtml(statutMeta.label)}</span></div>
+    <div class="chantier-col-jauge est-avancement">
+      <div class="chantier-jauge-valeur">${progression} %</div>
+      <div class="sante-barre"><div class="remplissage" style="width:${progression}%;"></div></div>
     </div>
-    <div class="chantier-row-metric">
-      <span>Budget consommé</span>
-      <strong>${budgetPct === null ? "—" : `${budgetPct}%`}</strong>
-      <small>${c.budget !== null ? `${fmtEuro(c.total_depenses || 0)} sur ${fmtEuro(c.budget)}` : "Budget non renseigné"}</small>
+    <div class="chantier-col-jauge est-budget">
+      <div class="chantier-jauge-valeur">${budgetPct === null ? "—" : `${budgetPct} %`}</div>
+      ${budgetPct === null
+        ? '<div class="chantier-jauge-vide">non renseigné</div>'
+        : `<div class="sante-barre"><div class="remplissage niveau-${niveauBudget(budgetPct)}" style="width:${Math.min(budgetPct, 100)}%;"></div></div>`}
     </div>
-    <div class="chantier-row-metric chantier-row-margin">
-      <span>${estTermine ? "Marge réelle" : "Marge estimée"}</span>
-      <strong>${marge === null || marge === undefined ? "—" : fmtEuro(marge)}</strong>
+    <div class="chantier-col-action${action.vide ? " is-vide" : ""}">
+      <span class="chantier-action-texte">${escapeHtml(action.texte)}</span>
+      ${action.quand ? `<span class="chantier-action-quand${action.enRetard ? " is-late" : ""}">${escapeHtml(action.quand)}</span>` : ""}
     </div>
-    <div class="chantier-row-next">
-      <span>Prochaine action</span>
-      <strong>${escapeHtml(prochaineAction)}</strong>
+    <div class="chantier-col-date${joursRetard > 0 ? " is-late" : ""}">
+      ${c.date_fin_prevue ? fmtDate(c.date_fin_prevue) : "—"}
+      ${joursRetard > 0 ? `<span class="chantier-retard">+${joursRetard} j</span>` : ""}
     </div>
     <div class="chantier-row-actions">${chantierActionsHtml(c)}</div>
     <div class="chantier-details" id="chantier-details-${c.id}" hidden>
@@ -5269,8 +5375,12 @@ function setupChantiersView() {
     currentChantierClient = e.target.value;
     renderChantiersListFiltered();
   });
-  document.getElementById("chantiers-priorite-tri").addEventListener("change", (e) => {
-    currentChantierPriorite = e.target.value;
+  // La recherche est traitee ici plutot que par setupListesSearch : ce
+  // dernier masque les cartes dont le textContent ne contient pas la
+  // requete, ce qui revenait a chercher aussi dans les libelles de
+  // l'interface. Voir chantierMatchesRecherche.
+  document.getElementById("chantiers-search").addEventListener("input", (e) => {
+    currentChantierRecherche = e.target.value;
     renderChantiersListFiltered();
   });
 
@@ -5301,6 +5411,7 @@ function setupChantiersView() {
             <div class="form-section-title">Planification</div>
             <div class="form-grid">
               <div><label for="cf-date">Date de début</label><input type="date" id="cf-date"></div>
+              <div><label for="cf-fin">Fin prévue</label><input type="date" id="cf-fin"></div>
               <div><label for="cf-budget">Budget prévu (euros)</label><input type="number" step="0.01" min="0" id="cf-budget"></div>
             </div>
           </div>
@@ -5325,6 +5436,7 @@ function setupChantiersView() {
           client_id: parseInt(document.getElementById("cf-client").value, 10),
           adresse: emptyToNull(document.getElementById("cf-adresse").value),
           date_debut: emptyToNull(document.getElementById("cf-date").value),
+          date_fin_prevue: emptyToNull(document.getElementById("cf-fin").value),
           budget: budgetRaw === "" ? null : parseFloat(budgetRaw),
         });
         showToast("Chantier créé.");
@@ -5371,7 +5483,7 @@ function setupChantiersView() {
       if (!details) return;
       details.hidden = !details.hidden;
       btn.setAttribute("aria-expanded", String(!details.hidden));
-      btn.textContent = details.hidden ? "Voir le chantier" : "Masquer le détail";
+      btn.textContent = details.hidden ? "Voir" : "Masquer";
     } else if (btn.dataset.action === "edit-chantier") {
       const chantier = chantiersCache.find((c) => c.id === id);
       if (chantier) await showChantierEditForm(chantier);
@@ -5390,6 +5502,7 @@ function setupChantiersView() {
         titre,
         adresse: emptyToNull(document.getElementById(`chantier-adresse-${id}`).value),
         date_debut: emptyToNull(document.getElementById(`chantier-date-${id}`).value),
+        date_fin_prevue: emptyToNull(document.getElementById(`chantier-fin-${id}`).value),
       };
       if (chantier && !chantier.finances_verrouillees && !chantier.devis_id) {
         payload.client_id = parseInt(document.getElementById(`chantier-client-${id}`).value, 10);
@@ -6823,7 +6936,10 @@ function setupListesSearch() {
   setupListeSearch("clients-search", "#clients-directory .crm-row");
   setupListeSearch("devis-search", "#devis-list .list-row");
   setupListeSearch("factures-search", "#factures-list .list-row");
-  setupListeSearch("chantiers-search", "#chantiers-list .chantier-card");
+  // Chantiers : recherche geree par la page (voir chantierMatchesRecherche).
+  // Le masquage generique compare le textContent de la carte entiere, donc
+  // aussi les libelles de l'interface - taper "note" faisait disparaitre
+  // des chantiers au hasard, et laissait la liste vide sans rien expliquer.
   setupListeSearch("documents-search", "#documents-list .doc-row");
   setupListeSearch("avis-search", "#avis-list .avis-card");
   setupListeSearch("notifications-search", "#notifications-list .notif-row");
