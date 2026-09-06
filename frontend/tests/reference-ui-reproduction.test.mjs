@@ -41,16 +41,9 @@ assert.doesNotMatch(factureRenderer, /toggle-chantier-details/);
 assert.doesNotMatch(factureRenderer, /\$\{c\.id\}/);
 assert.match(factureRenderer, /monogram\(f\.client_nom\)/);
 
-// La page Chantiers a ete refondue en cockpit : le detail ne se deplie plus
-// dans la carte (`toggle-chantier-details`), il s'ouvre dans un tiroir
-// lateral. L'intention gardee ici est la meme qu'avant - une fiche de
-// chantier doit ouvrir son dossier - seul le geste a change.
-const ficheStart = appSource.indexOf("function chFicheHtml");
-const ficheEnd = appSource.indexOf("function chTableauHtml", ficheStart);
-const ficheRenderer = appSource.slice(ficheStart, ficheEnd);
-assert.ok(ficheStart !== -1 && ficheEnd > ficheStart, "chFicheHtml est introuvable");
-assert.match(ficheRenderer, /data-action="ouvrir-chantier"/);
-assert.doesNotMatch(appSource, /toggle-chantier-details/, "l'ancienne carte depliable a ete remplacee par le tiroir");
+const chantierActionsStart = appSource.indexOf("function chantierActionsHtml");
+const chantierActionsEnd = appSource.indexOf("function renderChantierCard", chantierActionsStart);
+assert.match(appSource.slice(chantierActionsStart, chantierActionsEnd), /toggle-chantier-details/);
 
 assert.match(appSource, /const a = await Api\.analytics\(\)/);
 assert.match(appSource, /stats-performance-panel/);
