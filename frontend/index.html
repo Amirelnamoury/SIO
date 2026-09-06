@@ -7,13 +7,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260906-atelier2">
+<link rel="stylesheet" href="style.css?v=20260906-atelier3">
 <!-- Direction artistique « Atelier » : papier, encre, filets, marges.
      Voir DIRECTION-ARTISTIQUE.md pour le raisonnement complet.
      Elle REMPLACE theme.css (l'ancienne identite sombre) - les deux sont
      exclusifs, on n'empile pas deux palettes. Revenir en arriere consiste
      a remettre theme.css a la place de cette ligne. -->
-<link rel="stylesheet" href="atelier.css?v=2">
+<link rel="stylesheet" href="atelier.css?v=3">
 <!-- Habillage de l'ecran connexion/inscription. Charge APRES style.css,
      tous ses selecteurs sont ancres sous .auth-screen : rien ne fuit vers
      le SaaS. Supprimer cette ligne rend l'ecran a son etat precedent. -->
@@ -365,10 +365,13 @@
           <option value="termine">Chantier terminé</option>
           <option value="sans">Sans chantier</option>
         </select>
+        <!-- Le tri par nom est le defaut : c'est un annuaire, on y vient
+             pour retrouver quelqu'un. C'est aussi le seul tri ou le
+             decoupage par initiale a un sens. -->
         <select id="clients-tri" aria-label="Trier les clients">
-          <option value="recent">Trier par (Récence)</option>
-          <option value="nom">Nom</option>
-          <option value="ca">CA généré</option>
+          <option value="nom">Trier par (Nom)</option>
+          <option value="recent">Client le plus récent</option>
+          <option value="ca">Chiffre d'affaires</option>
         </select>
       </div>
       <div id="clients-directory" class="list"></div>
@@ -1066,7 +1069,7 @@
 <script src="env.js"></script>
 <script src="config.js"></script>
 <script src="pricing.js"></script>
-<script src="api.js?v=20260906-atelier2"></script>
-<script src="app.js?v=20260906-atelier2"></script>
+<script src="api.js?v=20260906-atelier3"></script>
+<script src="app.js?v=20260906-atelier3"></script>
 </body>
 </html>

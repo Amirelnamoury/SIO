@@ -3306,50 +3306,67 @@ function monogram(nom) {
 // (avec repli silencieux sur [] si le plan ne l'autorise pas, comme
 // ailleurs dans le fichier) uniquement pour le rattacher aux clients
 // gagnes par client_id - aucune nouvelle donnee, aucun nouvel endpoint.
-function clientsKpiBandHtml(clients, chantiers) {
-  const idsClients = new Set(clients.map((c) => c.id));
-  const chantiersClients = chantiers.filter((c) => idsClients.has(c.client_id));
-  const actifsParClient = new Set(
-    chantiersClients.filter((c) => !["termine", "facture", "paye"].includes(c.statut)).map((c) => c.client_id)
-  );
-  const valeurActifs = chantiersClients
-    .filter((c) => !["termine", "facture", "paye"].includes(c.statut))
-    .reduce((s, c) => s + (c.budget || 0), 0);
-  const sansChantier = clients.length - new Set(chantiersClients.map((c) => c.client_id)).size;
-  return `
-  <div class="kpi-band">
-    <div class="kpi-card">
-      <div class="kpi-card-label">Clients gagnés</div>
-      <div class="kpi-card-value">${clients.length}</div>
-      <div class="kpi-card-sub">Annuaire complet</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-card-label">Avec chantier en cours</div>
-      <div class="kpi-card-value">${actifsParClient.size}</div>
-      <div class="kpi-card-sub">${clients.length ? Math.round((actifsParClient.size / clients.length) * 100) : 0}% de l'annuaire</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-card-label">Budget chantiers en cours</div>
-      <div class="kpi-card-value">${fmtEuro(valeurActifs)}</div>
-      <div class="kpi-card-sub">Cumul, clients gagnés</div>
-    </div>
-    <div class="kpi-card${sansChantier ? " is-highlight" : ""}">
-      <div class="kpi-card-label">Sans chantier</div>
-      <div class="kpi-card-value">${sansChantier}</div>
-      <div class="kpi-card-sub">Jamais de chantier créé</div>
-    </div>
-  </div>`;
+// ---------------------------------------------------------------------
+// CLIENTS — « le repertoire »
+// ---------------------------------------------------------------------
+// Ce n'est pas un CRM, c'est un annuaire : on y vient pour retrouver
+// quelqu'un. La composition suit donc celle d'un repertoire - trie par
+// nom, avec l'initiale dans la marge des que la lettre change. C'est ce
+// geste, et pas une table de plus, qui rend la page reconnaissable.
+//
+// Trois defauts corriges au passage, tous les trois lourds a l'usage :
+//   - la page affichait QUATRE clients a la fois. Un annuaire feuillete
+//     quatre par quatre n'est pas un annuaire.
+//   - la recherche passait par le masquage generique, qui compare le
+//     textContent des lignes DEJA AFFICHEES : elle ne cherchait donc que
+//     dans la page courante de quatre, et paraissait ne rien trouver.
+//   - une bande de quatre KPI ouvrait la page, comme partout ailleurs.
+
+/** La synthese : une ligne, pas quatre cartes. Elle situe l'annuaire
+ *  (combien, combien d'actifs, combien encaisse) sans occuper un ecran. */
+function clientsSyntheseHtml(clients, chantiers, factures) {
+  const ids = new Set(clients.map((c) => c.id));
+  const leurs = chantiers.filter((c) => ids.has(c.client_id));
+  const actifs = new Set(leurs.filter((c) => !["termine", "facture", "paye"].includes(c.statut)).map((c) => c.client_id));
+  const sansChantier = clients.length - new Set(leurs.map((c) => c.client_id)).size;
+  const encaisse = factures.filter((f) => ids.has(f.client_id)).reduce((s, f) => s + (f.montant_paye || 0), 0);
+
+  const parts = [`<strong>${clients.length}</strong> client${clients.length > 1 ? "s" : ""}`];
+  if (actifs.size) parts.push(`<strong>${actifs.size}</strong> avec un chantier en cours`);
+  if (sansChantier) parts.push(`<strong>${sansChantier}</strong> sans aucun chantier`);
+  if (encaisse) parts.push(`<strong>${fmtEuro(encaisse)}</strong> encaissés`);
+
+  return `<p class="clients-synthese">${parts.join(" · ")}</p>`;
 }
 
-const CLIENTS_PAGE_SIZE = 4;
+// Conserve : d'autres appels portent encore ce nom.
+function clientsKpiBandHtml(clients, chantiers) {
+  return clientsSyntheseHtml(clients, chantiers, clientsDirectoryCache.factures || []);
+}
+
+// Un annuaire se feuillette entierement. La pagination ne reapparait qu'au
+// dela d'un seuil ou le defilement deviendrait vraiment couteux ; en
+// dessous, tout tient sur une page qu'on parcourt a la molette.
+const CLIENTS_PAGE_SIZE = 60;
 let clientsDirectoryCache = { clients: [], chantiers: [], factures: [], devis: [] };
 let currentClientsPage = 1;
+let clientsRecherche = "";
+
+/** La recherche porte sur ce que l'utilisateur connait de son client :
+ *  son nom, sa societe, ses coordonnees, sa ville. Pas sur le textContent
+ *  de la ligne, qui contenait aussi « Derniere activite » ou « CA genere ». */
+function clientMatchesRecherche(c, q) {
+  if (!q) return true;
+  return [c.nom, c.societe, c.email, c.telephone, c.ville]
+    .filter(Boolean).join(" ").toLowerCase().includes(q);
+}
 
 function filteredClientsDirectory() {
   const { clients, chantiers, factures } = clientsDirectoryCache;
   const statut = document.getElementById("clients-statut-filtre")?.value || "";
   const projet = document.getElementById("clients-projet-filtre")?.value || "";
-  const tri = document.getElementById("clients-tri")?.value || "recent";
+  const tri = document.getElementById("clients-tri")?.value || "nom";
+  const q = clientsRecherche.trim().toLowerCase();
   const clientChantiers = (id) => chantiers.filter((ch) => ch.client_id === id);
   const estTermine = (ch) => ["termine", "facture", "paye"].includes(ch.statut);
 
@@ -3361,16 +3378,23 @@ function filteredClientsDirectory() {
     if (projet === "en_cours" && !aProjetActif) return false;
     if (projet === "termine" && !projets.some(estTermine)) return false;
     if (projet === "sans" && projets.length) return false;
-    return true;
+    return clientMatchesRecherche(client, q);
   });
 
-  if (tri === "nom") resultat.sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
+  if (tri === "recent") resultat.sort((a, b) => (b.id || 0) - (a.id || 0));
   else if (tri === "ca") resultat.sort((a, b) => {
     const ca = (id) => factures.filter((f) => f.client_id === id).reduce((s, f) => s + (f.montant_paye || 0), 0);
     return ca(b.id) - ca(a.id);
   });
-  else resultat.sort((a, b) => (b.id || 0) - (a.id || 0));
+  else resultat.sort((a, b) => a.nom.localeCompare(b.nom, "fr")); // nom, par defaut
   return resultat;
+}
+
+/** L'initiale d'un nom, pour le decoupage du repertoire. On enleve les
+ *  accents : Élie et Elie doivent se ranger sous la meme lettre. */
+function clientInitiale(nom) {
+  const c = (nom || "?").trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").charAt(0).toUpperCase();
+  return /[A-Z]/.test(c) ? c : "#";
 }
 
 function renderClientsDirectoryPage() {
@@ -3378,14 +3402,34 @@ function renderClientsDirectoryPage() {
   const pagination = document.getElementById("clients-pagination");
   const { chantiers, factures, devis } = clientsDirectoryCache;
   const clients = filteredClientsDirectory();
+  const tri = document.getElementById("clients-tri")?.value || "nom";
+
+  if (!clients.length) {
+    const q = clientsRecherche.trim();
+    container.innerHTML = `<div class="empty-state">${q
+      ? `Aucun client ne correspond à « ${escapeHtml(q)} ».`
+      : "Aucun client ne correspond à ces filtres."}</div>`;
+    pagination.innerHTML = "";
+    return;
+  }
+
   const pageCount = Math.max(1, Math.ceil(clients.length / CLIENTS_PAGE_SIZE));
   currentClientsPage = Math.min(Math.max(1, currentClientsPage), pageCount);
   const debut = (currentClientsPage - 1) * CLIENTS_PAGE_SIZE;
   const page = clients.slice(debut, debut + CLIENTS_PAGE_SIZE);
 
-  container.innerHTML = page.length
-    ? page.map((c) => renderClientDirectoryRow(c, chantiers, factures, devis)).join("")
-    : '<div class="empty-state">Aucun client ne correspond à ces filtres.</div>';
+  // Le decoupage par initiale n'a de sens que sur un tri alphabetique.
+  // Trie par CA ou par recence, il decouperait au hasard.
+  let lettre = null;
+  container.innerHTML = page.map((c) => {
+    let entete = "";
+    if (tri === "nom") {
+      const l = clientInitiale(c.nom);
+      if (l !== lettre) { lettre = l; entete = `<div class="repertoire-lettre" aria-hidden="true">${l}</div>`; }
+    }
+    return entete + renderClientDirectoryRow(c, chantiers, factures, devis);
+  }).join("");
+
   pagination.innerHTML = clients.length > CLIENTS_PAGE_SIZE
     ? `<button type="button" class="btn-icon-sm" data-clients-page="1" aria-label="Première page">«</button>
        <button type="button" class="btn-icon-sm" data-clients-page="${Math.max(1, currentClientsPage - 1)}" aria-label="Page précédente">‹</button>
@@ -3393,13 +3437,12 @@ function renderClientsDirectoryPage() {
        <button type="button" class="btn-icon-sm" data-clients-page="${Math.min(pageCount, currentClientsPage + 1)}" aria-label="Page suivante">›</button>
        <button type="button" class="btn-icon-sm" data-clients-page="${pageCount}" aria-label="Dernière page">»</button>`
     : "";
-  reapplyListSearch("clients-search", "#clients-directory .crm-row");
 }
 
 async function loadClientsDirectory() {
   const container = document.getElementById("clients-directory");
-  const kpiBand = document.getElementById("clients-kpi-band");
-  container.innerHTML = skeletonCards();
+  const synthese = document.getElementById("clients-kpi-band");
+  container.innerHTML = '<div class="repertoire-squelette"><span></span><span></span><span></span><span></span><span></span></div>';
   try {
     const [clients, chantiers, factures, devis] = await Promise.all([
       Api.listClients("gagne"),
@@ -3407,21 +3450,60 @@ async function loadClientsDirectory() {
       Api.listFactures().catch(() => []),
       Api.listDevis().catch(() => []),
     ]);
+    clientsDirectoryCache = { clients, chantiers, factures, devis };
     if (clients.length === 0) {
-      kpiBand.innerHTML = "";
+      synthese.innerHTML = "";
       container.innerHTML = `<div class="empty-state">
-        Aucun client pour le moment.<br><br>
-        Un prospect devient client automatiquement quand il passe au statut "Gagne" dans le pipeline.
+        <strong>Aucun client pour le moment.</strong><br><br>
+        Un prospect devient client automatiquement quand il passe au statut « Gagné » dans le pipeline.
       </div>`;
       return;
     }
-    kpiBand.innerHTML = clientsKpiBandHtml(clients, chantiers);
-    clientsDirectoryCache = { clients, chantiers, factures, devis };
+    synthese.innerHTML = clientsSyntheseHtml(clients, chantiers, factures);
     currentClientsPage = 1;
     renderClientsDirectoryPage();
   } catch (err) {
     container.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
   }
+}
+
+// La ligne du repertoire. L'ancienne portait un bouton « Voir le client »
+// alors que la ligne entiere etait deja cliquable : deux cibles pour le
+// meme geste, et 150 px de largeur perdus. Le CA passe en Fraunces a
+// droite, aligne d'une ligne a l'autre - c'est le chiffre qu'on parcourt
+// verticalement quand on cherche son meilleur client.
+function renderClientDirectoryRow(c, chantiers, factures, devis) {
+  const contact = [c.email, c.telephone].filter(Boolean).join(" · ");
+  const chantiersClient = chantiers.filter((ch) => ch.client_id === c.id);
+  const enCours = chantiersClient.filter((ch) => !["termine", "facture", "paye"].includes(ch.statut)).length;
+  const termines = chantiersClient.filter((ch) => ["termine", "facture", "paye"].includes(ch.statut)).length;
+  const chantiersTxt = chantiersClient.length
+    ? [enCours ? `${enCours} en cours` : null, termines ? `${termines} terminé${termines > 1 ? "s" : ""}` : null].filter(Boolean).join(" · ")
+    : "—";
+  const caGenere = factures.filter((f) => f.client_id === c.id).reduce((s, f) => s + (f.montant_paye || 0), 0);
+  const activite = dernierActiviteClient(c.id, devis, factures);
+
+  return `
+  <div class="crm-row" data-action="voir-timeline" data-id="${c.id}" role="button" tabindex="0"
+       aria-label="Ouvrir la fiche de ${escapeHtml(c.nom)}">
+    <div class="crm-avatar" aria-hidden="true">${escapeHtml(monogram(c.nom))}</div>
+    <div class="crm-main">
+      <div class="crm-name">${escapeHtml(c.nom)}${c.societe ? `<span class="crm-societe">${escapeHtml(c.societe)}</span>` : ""}</div>
+      <div class="crm-contact">${escapeHtml(contact || "Pas de coordonnées")}</div>
+    </div>
+    <div class="crm-stat">
+      <div class="crm-stat-label">Dernière activité</div>
+      <div class="crm-stat-value">${activite ? `${escapeHtml(activite.label)} · ${escapeHtml(activite.date)}` : "—"}</div>
+    </div>
+    <div class="crm-stat">
+      <div class="crm-stat-label">Chantiers</div>
+      <div class="crm-stat-value">${escapeHtml(chantiersTxt)}</div>
+    </div>
+    <div class="crm-ca">
+      <div class="crm-stat-label">Encaissé</div>
+      <div class="crm-ca-valeur">${caGenere > 0 ? fmtEuro(caGenere) : "—"}</div>
+    </div>
+  </div>`;
 }
 
 // "Derniere activite" : le plus recent des evenements commerciaux DEJA
@@ -3443,47 +3525,6 @@ function dernierActiviteClient(clientId, devisListe, facturesListe) {
   if (!candidats.length) return null;
   candidats.sort((a, b) => new Date(b.date) - new Date(a.date));
   return { label: candidats[0].label, date: fmtDateCourte(candidats[0].date) };
-}
-
-// chantiers/factures/devis : memes listes completes deja recuperees pour la
-// bande de KPI ou juste au-dessus (voir clientsKpiBandHtml et
-// dernierActiviteClient), simplement rejointes par client_id ici - aucun
-// nouvel appel au-dela de celui deja ajoute, aucune donnee inventee
-// (FactureOut.client_id/.montant_paye et DevisOut.client_id existent deja
-// cote API, voir backend/app/schemas.py).
-function renderClientDirectoryRow(c, chantiers, factures, devis) {
-  const contact = [c.email, c.telephone].filter(Boolean).join(" · ");
-  const chantiersClient = chantiers.filter((ch) => ch.client_id === c.id);
-  const enCours = chantiersClient.filter((ch) => !["termine", "facture", "paye"].includes(ch.statut)).length;
-  const termines = chantiersClient.filter((ch) => ["termine", "facture", "paye"].includes(ch.statut)).length;
-  const chantiersTxt = chantiersClient.length
-    ? [enCours ? `${enCours} en cours` : null, termines ? `${termines} terminé${termines > 1 ? "s" : ""}` : null].filter(Boolean).join(" · ")
-    : "Aucun";
-  const caGenere = factures.filter((f) => f.client_id === c.id).reduce((s, f) => s + (f.montant_paye || 0), 0);
-  const activite = dernierActiviteClient(c.id, devis, factures);
-  return `
-  <div class="crm-row" data-action="voir-timeline" data-id="${c.id}" role="button" tabindex="0">
-    <div class="crm-avatar">${escapeHtml(monogram(c.nom))}</div>
-    <div class="crm-main">
-      <div class="crm-name">${escapeHtml(c.nom)}</div>
-      <div class="crm-contact">${escapeHtml(contact || "Pas de coordonnées")}</div>
-    </div>
-    <div class="crm-stat">
-      <div class="crm-stat-label">Dernière activité</div>
-      <div class="crm-stat-value">${activite ? `${escapeHtml(activite.label)} · ${escapeHtml(activite.date)}` : "—"}</div>
-    </div>
-    <div class="crm-stat">
-      <div class="crm-stat-label">Chantiers</div>
-      <div class="crm-stat-value">${escapeHtml(chantiersTxt)}</div>
-    </div>
-    <div class="crm-stat">
-      <div class="crm-stat-label">CA généré</div>
-      <div class="crm-stat-value">${caGenere > 0 ? fmtEuro(caGenere) : "—"}</div>
-    </div>
-    <div class="crm-action">
-      <button type="button" class="btn-sm" data-action="voir-timeline" data-id="${c.id}">Voir le client</button>
-    </div>
-  </div>`;
 }
 
 // ===================== Devis & relances =====================
@@ -7018,7 +7059,15 @@ function setupListeSearch(inputId, itemSelector) {
 function setupListesSearch() {
   // Pas de recherche sur Prospects : la reference (02-prospects) n'en montre
   // pas sur cette vue, et l'utilisateur a explicitement demande son retrait.
-  setupListeSearch("clients-search", "#clients-directory .crm-row");
+  // Clients : recherche geree par la page (voir clientMatchesRecherche).
+  // Le masquage generique compare le textContent des lignes DEJA
+  // AFFICHEES : il ne cherchait donc que dans la page courante, et
+  // paraissait ne rien trouver des que le client cherche etait ailleurs.
+  document.getElementById("clients-search")?.addEventListener("input", (e) => {
+    clientsRecherche = e.target.value;
+    currentClientsPage = 1;
+    renderClientsDirectoryPage();
+  });
   setupListeSearch("devis-search", "#devis-list .list-row");
   setupListeSearch("factures-search", "#factures-list .list-row");
   // Chantiers : recherche geree par la page (voir chantierMatchesRecherche).

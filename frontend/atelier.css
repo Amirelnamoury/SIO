@@ -571,3 +571,101 @@ label { color: var(--sa-text-muted); }
   background-size: 260% 100%; animation: sa-scintille 1.4s linear infinite;
 }
 @media (prefers-reduced-motion: reduce) { .kanban-squelette span { animation: none; } }
+
+/* =====================================================================
+   CLIENTS — « le repertoire »
+   ---------------------------------------------------------------------
+   Ce n'est pas un CRM, c'est un annuaire : on y vient pour retrouver
+   quelqu'un. L'initiale apparait dans la marge des que la lettre change.
+   C'est ce geste, et pas une table de plus, qui rend la page
+   reconnaissable - et il rend le parcours visuel reellement plus rapide.
+   ===================================================================== */
+.clients-synthese {
+  margin: 0 0 var(--sa-space-6);
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--sa-border);
+  font-size: var(--sa-text-sm);
+  color: var(--sa-text-muted);
+}
+.clients-synthese strong {
+  color: var(--sa-text); font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.repertoire-lettre {
+  margin: var(--sa-space-6) 0 2px;
+  font-family: var(--sa-font-display);
+  font-size: var(--sa-text-md);
+  font-weight: 600;
+  color: var(--sa-laiton);
+  line-height: 1;
+}
+.repertoire-lettre:first-child { margin-top: 0; }
+
+.crm-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1.5fr) minmax(0, 1.1fr) minmax(0, 0.8fr) auto;
+  align-items: center;
+  gap: var(--sa-space-4);
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--sa-border);
+  background: transparent;
+  border-radius: 0;
+  cursor: pointer;
+  transition: background-color var(--sa-duration-fast) var(--sa-ease);
+}
+.crm-row:hover { background: var(--sa-surface); }
+.crm-row:focus-visible { outline: 2px solid var(--sa-accent); outline-offset: -2px; }
+.crm-avatar {
+  width: 34px; height: 34px;
+  background: var(--sa-surface-2); color: var(--sa-text-muted);
+  border: 1px solid var(--sa-border);
+  border-radius: var(--sa-radius-sm);
+  font-family: var(--sa-font-display); font-weight: 600; font-size: 0.78rem;
+  display: grid; place-items: center;
+}
+.crm-main { min-width: 0; }
+.crm-name {
+  display: flex; align-items: baseline; gap: 8px; min-width: 0;
+  font-size: var(--sa-text-sm); font-weight: 600; color: var(--sa-text);
+}
+.crm-societe { font-weight: 400; font-size: var(--sa-text-xs); color: var(--sa-text-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.crm-contact { font-size: var(--sa-text-xs); color: var(--sa-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.crm-stat { min-width: 0; }
+.crm-stat-label { font-size: var(--sa-text-2xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--sa-text-faint); }
+.crm-stat-value { font-size: var(--sa-text-xs); color: var(--sa-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Le chiffre qu'on parcourt verticalement quand on cherche son meilleur
+   client : en Fraunces, aligne d'une ligne a l'autre. */
+.crm-ca { text-align: right; min-width: 96px; }
+.crm-ca-valeur {
+  font-family: var(--sa-font-display);
+  font-size: var(--sa-text-md); font-weight: 500;
+  color: var(--sa-text); font-variant-numeric: tabular-nums;
+}
+
+.clients-pagination { display: flex; align-items: center; justify-content: center; gap: var(--sa-space-2); margin-top: var(--sa-space-6); font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
+
+.repertoire-squelette { display: flex; flex-direction: column; gap: 1px; }
+.repertoire-squelette span {
+  display: block; height: 58px;
+  background: linear-gradient(100deg, var(--sa-surface) 30%, var(--sa-surface-2) 50%, var(--sa-surface) 70%);
+  background-size: 260% 100%; animation: sa-scintille 1.4s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) { .repertoire-squelette span { animation: none; } }
+
+/* En dessous de 900 px, la ligne se replie : le nom et l'encaisse restent
+   face a face, l'activite et les chantiers passent dessous. Ce sont les
+   deux choses qu'on cherche sur un telephone. */
+@media (max-width: 900px) {
+  .crm-row {
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+    gap: 4px var(--sa-space-3);
+    padding: 12px 8px;
+  }
+  .crm-avatar { grid-row: 1 / 3; }
+  .crm-main { grid-column: 2; grid-row: 1; }
+  .crm-ca { grid-column: 3; grid-row: 1; }
+  .crm-stat { grid-column: 2 / -1; display: flex; align-items: baseline; gap: 6px; }
+  .crm-stat-label { text-transform: none; letter-spacing: 0; }
+  .crm-stat-label::after { content: " :"; }
+}
