@@ -54,13 +54,20 @@ mesurés sur le fond papier.
 Trois plans suffisent. Un quatrième niveau de gris ne se perçoit plus, il
 ne fait qu'ajouter des règles à écrire.
 
+**Le creux fixe le plancher de contraste.** C'est la plus sombre des trois
+surfaces, donc celle sur laquelle un texte passe le moins bien. La
+validation initiale de la palette ne l'avait pas testée : les en-têtes de
+colonnes des listes, qui vivent dessus, tombaient à 4.28:1 — sous le seuil.
+Toute couleur de texte doit être vérifiée **sur les trois surfaces**, jamais
+seulement sur le papier.
+
 ### Encre — trois niveaux
 
 | Rôle | Valeur | Contraste | Usage |
 |---|---|---|---|
 | principal | `#1C1E1A` | 14.89:1 | titres, montants, contenu. Noir chaud, jamais `#000`. |
 | secondaire | `#55584F` | 6.43:1 | descriptions, métadonnées lisibles. |
-| tertiaire | `#6A6D62` | 4.68:1 | libellés de colonne, mentions. Reste **au-dessus** du seuil : un libellé illisible n'est pas « discret », il est raté. |
+| tertiaire | `#66695E` | 4.97:1 | libellés de colonne, mentions. Reste **au-dessus** du seuil : un libellé illisible n'est pas « discret », il est raté. |
 
 ### Accents
 
@@ -91,7 +98,7 @@ journée.
 | Rôle | Valeur | Contraste |
 |---|---|---|
 | `--sa-border` filet | `#DFDACE` | 1.24:1 — **volontairement sous le seuil**. Il texture, il ne structure pas. |
-| `--sa-border-strong` contour | `#8E8876` | 3.14:1 — contour fonctionnel d'un champ ou d'un bouton. WCAG 1.4.11 impose 3:1 pour identifier un composant. |
+| `--sa-border-strong` contour | `#86806E` | 3.19:1 — contour fonctionnel d'un champ ou d'un bouton. WCAG 1.4.11 impose 3:1 pour identifier un composant. Mesuré sur le creux, la surface la plus sombre. |
 
 ## 4. Typographie
 

@@ -28,17 +28,22 @@
      Deux roles a ne pas confondre. `border` texture sans structurer, il
      est VOLONTAIREMENT sous le seuil de contraste (1.24:1).
      `border-strong` est un contour fonctionnel : WCAG 1.4.11 impose 3:1
-     pour qu'un champ ou un bouton soit identifiable (mesure 3.14:1). */
+     pour qu'un champ ou un bouton soit identifiable. Mesure sur la
+     surface la plus sombre, le creux : 3.19:1. */
   --sa-border: #DFDACE;
-  --sa-border-strong: #8E8876;
+  --sa-border-strong: #86806E;
 
   /* ---------- Encre : trois niveaux, tous au-dessus du seuil ----------
-     14.89:1 / 6.43:1 / 4.68:1 sur le papier. Le troisieme niveau porte
+     14.89:1 / 6.43:1 / 4.97:1 sur le papier. Le troisieme niveau porte
      les libelles de colonne et les mentions : un libelle illisible n'est
-     pas « discret », il est rate. */
+     pas « discret », il est rate.
+     Il vaut 4.54:1 sur le CREUX (#EBE7DE), la plus sombre des trois
+     surfaces : c'est elle qui fixe le plancher, et c'est justement celle
+     que la validation initiale de la palette avait oubliee. Les en-tetes
+     de colonnes des listes, qui vivent dessus, tombaient a 4.28:1. */
   --sa-text: #1C1E1A;            /* noir chaud, jamais #000 */
   --sa-text-muted: #55584F;
-  --sa-text-faint: #6A6D62;
+  --sa-text-faint: #66695E;
   --sa-text-on-accent: #FCFAF5;  /* 9.69:1 sur le vert-de-gris */
   --sa-text-on-dark: #F0EDE4;    /* sur la colonne sombre */
   --sa-text-on-dark-muted: #A8A99E;
@@ -56,6 +61,9 @@
      Filet sous un chiffre cle, soulignement d'un onglet actif. Jamais un
      bouton plein - c'etait l'erreur de l'identite precedente. 4.93:1. */
   --sa-laiton: #8A6024;
+  /* Le laiton sur la COLONNE SOMBRE. La meme valeur y tombe a 2.76:1 :
+     une couleur qui traverse deux fonds a besoin de deux valeurs. 5.96:1. */
+  --sa-laiton-sur-sombre: #C79A4E;
   --sa-laiton-soft: #F1E8D6;
   --sa-bronze: var(--sa-laiton);
   --sa-bronze-strong: #704C1C;
@@ -152,27 +160,27 @@ h1, h2, h3, .kpi-card-value, .dash-masthead-lede, .sidebar-brand-name {
 .sidebar-brand { padding: 22px var(--sa-space-4) 18px; }
 .sidebar-brand-mark {
   background: transparent;
-  color: var(--sa-laiton);
+  color: var(--sa-laiton-sur-sombre);
   border: 1px solid #4A4E42;
   border-radius: 2px;
   font-family: var(--sa-font-display);
 }
 .sidebar-brand-name { font-family: var(--sa-font-display); font-weight: 600; letter-spacing: 0; }
 
-.nav-group-label { color: #7C7F72; letter-spacing: 0.09em; }
+.nav-group-label { color: #8E9184; letter-spacing: 0.09em; }
 .nav-link { border-radius: 0; color: var(--sa-text-on-dark-muted); }
 .nav-link:hover { background: rgba(240, 237, 228, .05); color: var(--sa-text-on-dark); }
 /* L'element actif : pas d'aplat colore, un filet de laiton et de l'encre
    claire. Le meme geste que le soulignement d'un onglet. */
 .nav-link.active { background: rgba(240, 237, 228, .07); color: var(--sa-text-on-dark); }
 .sidebar .nav-link::before { width: 2px; background: transparent; }
-.sidebar .nav-link.active::before { background: var(--sa-laiton); }
-.nav-link.active .nav-icon { color: var(--sa-laiton); }
+.sidebar .nav-link.active::before { background: var(--sa-laiton-sur-sombre); }
+.nav-link.active .nav-icon { color: var(--sa-laiton-sur-sombre); }
 .sidebar-footer { border-top-color: #34382E; }
 .btn-ghost-small { color: var(--sa-text-on-dark-muted); }
 .btn-ghost-small:hover { background: rgba(240, 237, 228, .06); color: var(--sa-text-on-dark); }
 .badge-count { background: #34382E; color: var(--sa-text-on-dark-muted); border: none; }
-.nav-link.active .badge-count { background: var(--sa-laiton); color: #1C1E1A; }
+.nav-link.active .badge-count { background: var(--sa-laiton-sur-sombre); color: #1C1E1A; }
 .kbd-hint { border-color: var(--sa-border-strong); color: var(--sa-text-faint); }
 
 /* =====================================================================
@@ -797,3 +805,50 @@ label { color: var(--sa-text-muted); }
   .fiche-affaire { grid-template-columns: minmax(0, 1fr) auto; }
   .fiche-affaire-meta { grid-column: 1; font-size: var(--sa-text-2xs); }
 }
+
+/* =====================================================================
+   DEVIS & RELANCES — « le suivi »
+   ---------------------------------------------------------------------
+   Cinq cartes de KPI ouvraient la page. Elle ne repond pourtant qu'a une
+   question : lequel dois-je relancer ? Le chiffre qui appelle un geste
+   passe en tete, en toutes lettres ; les quatre autres redeviennent une
+   ligne de contexte. Meme grammaire que la phrase d'ouverture de
+   l'accueil, appliquee a une autre question.
+   ===================================================================== */
+.devis-suivi { margin-bottom: var(--sa-space-6); }
+.devis-suivi-lede h3 {
+  margin: 0;
+  font-family: var(--sa-font-display);
+  font-size: clamp(1.25rem, 2.4vw, 1.6rem);
+  font-weight: 500; line-height: 1.2; color: var(--sa-text);
+}
+.devis-suivi-lede p { margin: 6px 0 0; font-size: var(--sa-text-sm); color: var(--sa-text-muted); }
+/* Le filet terre cuite ne s'allume que s'il y a vraiment quelque chose a
+   relancer. Une page rouge tous les matins cesse d'alerter. */
+.devis-suivi-lede.est-alerte { padding-left: 14px; border-left: 2px solid var(--sa-danger); }
+.devis-suivi-contexte {
+  margin: var(--sa-space-4) 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--sa-border);
+  font-size: var(--sa-text-sm); color: var(--sa-text-muted);
+}
+.devis-suivi-contexte strong { color: var(--sa-text); font-weight: 600; font-variant-numeric: tabular-nums; }
+.devis-suivi-contexte .est-alerte { color: var(--sa-warning); }
+
+/* La colonne « Suivi » porte desormais l'etat de LECTURE du devis, tire
+   de `date_consultation` - un champ que l'API renvoyait depuis toujours et
+   que l'interface n'affichait nulle part. Un devis lu avant-hier et reste
+   sans reponse n'appelle pas le meme geste qu'un devis jamais ouvert
+   depuis douze jours ; l'ancienne version disait « En attente de réponse »
+   dans les deux cas. */
+.list-row-suivi.is-alerte { color: var(--sa-danger); font-weight: 500; }
+.list-row-suivi.is-accent { color: var(--sa-laiton); font-weight: 500; }
+.list-row-suivi.is-success { color: var(--sa-success); }
+.list-row-suivi.is-muted { color: var(--sa-text-muted); }
+.list-row.is-due { box-shadow: inset 2px 0 0 var(--sa-danger); }
+
+/* La barre de module reproduit une reference fournie par l'utilisateur ;
+   on ne la retire pas, on la remet dans la grammaire du papier. */
+.devis-modulebar { border-bottom-color: var(--sa-border); color: var(--sa-text-muted); }
+.devis-modulebar button.active { color: var(--sa-text); border-bottom-color: var(--sa-laiton); }
+.devis-modulebar span { color: var(--sa-text-faint); }

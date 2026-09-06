@@ -15,6 +15,13 @@ const renderEnd = appSource.indexOf("async function showDevisForm", renderStart)
 assert.ok(feedbackStart !== -1 && feedbackEnd > feedbackStart, "feedbackRelanceDevis est introuvable");
 assert.ok(renderStart !== -1 && renderEnd > renderStart, "renderDevisCard est introuvable");
 
+// La colonne « Suivi » est desormais calculee par devisSuivi(), qui
+// exploite `date_consultation` - un champ que l'API renvoyait depuis
+// toujours et que l'interface n'affichait nulle part.
+const suiviStart = appSource.indexOf("function joursDepuis(");
+const suiviEnd = appSource.indexOf("function devisKpiBandHtml(", suiviStart);
+assert.ok(suiviStart !== -1 && suiviEnd > suiviStart, "les helpers de suivi sont introuvables");
+
 let plan = "essentiel";
 const plans = ["gratuit", "essentiel", "pro", "business"];
 const context = {
@@ -30,16 +37,48 @@ const context = {
   monogram: (value) => String(value || "?").slice(0, 2).toUpperCase(),
   fmtEuro: (value) => value == null ? null : `${value} €`,
   fmtDate: () => "29/08/2026",
+  fmtDateCourte: () => "29 août",
   hasPlan: (minimum) => plans.indexOf(plan) >= plans.indexOf(minimum),
 };
 vm.runInNewContext(
-  `${appSource.slice(feedbackStart, feedbackEnd)}\n${appSource.slice(renderStart, renderEnd)}\n`
-    + "globalThis.__devisRelances = { feedbackRelanceDevis, renderDevisCard };",
+  `${appSource.slice(suiviStart, suiviEnd)}\n${appSource.slice(feedbackStart, feedbackEnd)}\n${appSource.slice(renderStart, renderEnd)}\n`
+    + "globalThis.__devisRelances = { feedbackRelanceDevis, renderDevisCard, devisSuivi };",
   context,
   { filename: appPath },
 );
 
-const { feedbackRelanceDevis, renderDevisCard } = context.__devisRelances;
+const { feedbackRelanceDevis, renderDevisCard, devisSuivi } = context.__devisRelances;
+
+// ---------------------------------------------------------------------
+// L'ETAT DE LECTURE D'UN DEVIS
+// ---------------------------------------------------------------------
+// Trois situations que l'ancienne colonne « Suivi » confondait toutes en
+// « En attente de réponse » : jamais envoye, envoye mais jamais ouvert,
+// ouvert et reste sans reponse. Ce sont pourtant trois gestes differents.
+{
+  const ilYA = (jours) => new Date(Date.now() - jours * 86400000).toISOString();
+  const suivi = (extra) => devisSuivi({ statut: "envoye", nb_relances: 0, montant_ht: 100, ...extra }, false);
+
+  assert.match(suivi({ date_envoi: ilYA(3), date_consultation: ilYA(1) }).texte, /^Lu hier/,
+    "un devis ouvert doit dire quand il a ete lu");
+  assert.equal(suivi({ date_envoi: ilYA(3), date_consultation: ilYA(1) }).cls, "is-success");
+
+  const jamaisOuvert = suivi({ date_envoi: ilYA(12), date_consultation: null });
+  assert.match(jamaisOuvert.texte, /Jamais ouvert · envoyé il y a 12 j/);
+  assert.equal(jamaisOuvert.cls, "is-alerte",
+    "au-dela d'une semaine sans ouverture, ce n'est plus de l'attente");
+
+  assert.equal(suivi({ date_envoi: ilYA(2), date_consultation: null }).cls, "is-muted",
+    "deux jours sans ouverture reste normal");
+
+  assert.match(suivi({ date_envoi: ilYA(9), date_consultation: ilYA(2), nb_relances: 2 }).texte,
+    /2 relances/, "le nombre de relances doit rester visible");
+
+  assert.match(devisSuivi({ statut: "nouveau", montant_ht: null }, false).texte, /À chiffrer/);
+  assert.match(devisSuivi({ statut: "nouveau", montant_ht: 100 }, false).texte, /Prêt à envoyer/);
+  assert.match(devisSuivi({ statut: "envoye" }, true).texte, /Relance due aujourd'hui/,
+    "une relance due passe avant tout le reste");
+}
 const base = {
   id: 42,
   client_nom: "Client test",

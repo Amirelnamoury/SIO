@@ -3649,45 +3649,112 @@ function dernierActiviteClient(clientId, devisListe, facturesListe) {
   return { label: candidats[0].label, date: fmtDateCourte(candidats[0].date) };
 }
 
-// ===================== Devis & relances =====================
-// Bande de KPI + compteurs par onglet : calcules a partir de la liste
-// complete (jamais filtree par le statut actif), memes champs deja
-// renvoyes par l'API pour chaque devis - aucune nouvelle donnee.
+// ---------------------------------------------------------------------
+// DEVIS & RELANCES — « le suivi »
+// ---------------------------------------------------------------------
+// La page ouvrait sur CINQ cartes de KPI. Elle ne repond pourtant qu'a une
+// question : lequel dois-je relancer, et depuis combien de temps
+// attend-il ? Le chiffre qui compte passe donc en tete, en toutes lettres,
+// et les quatre autres redeviennent une ligne de contexte.
+//
+// LE POINT IMPORTANT : `date_consultation` est renvoye par DevisOut depuis
+// toujours et n'etait affiche NULLE PART. C'est pourtant le fait le plus
+// decisif pour decider d'une relance - un devis lu avant-hier et reste
+// sans reponse n'appelle pas le meme geste qu'un devis jamais ouvert
+// depuis douze jours. Il devient la colonne « Suivi ».
+
+/** Jours ecoules depuis une date ISO, ou null. */
+function joursDepuis(iso) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (isNaN(d)) return null;
+  return Math.floor((Date.now() - d.getTime()) / 86400000);
+}
+function ilYA(j) {
+  if (j === null) return "";
+  if (j === 0) return "aujourd'hui";
+  if (j === 1) return "hier";
+  return `il y a ${j} j`;
+}
+
+/** L'etat de lecture d'un devis. Trois situations distinctes que
+ *  l'interface confondait toutes en « En attente de réponse » :
+ *  jamais envoye, envoye mais jamais ouvert, ouvert sans reponse. */
+function devisSuivi(d, isDue) {
+  if (isDue) return { texte: "Relance due aujourd'hui", cls: "is-accent" };
+  if (d.statut === "signe") return { texte: `Accepté${d.date_signature ? " · " + fmtDateCourte(d.date_signature) : ""}`, cls: "is-success" };
+  if (d.statut === "perdu") return { texte: "Perdu", cls: "is-muted" };
+  if (d.statut === "nouveau") return { texte: d.montant_ht !== null ? "Prêt à envoyer" : "À chiffrer", cls: "is-muted" };
+
+  const relances = d.nb_relances > 0 ? ` · ${d.nb_relances} relance${d.nb_relances > 1 ? "s" : ""}` : "";
+  const jLu = joursDepuis(d.date_consultation);
+  if (jLu !== null) return { texte: `Lu ${ilYA(jLu)}${relances}`, cls: "is-success" };
+
+  const jEnvoi = joursDepuis(d.date_envoi);
+  if (jEnvoi === null) return { texte: `En attente de réponse${relances}`, cls: "is-muted" };
+  // Jamais ouvert : au-dela d'une semaine, ce n'est plus de l'attente,
+  // c'est un devis qui n'est probablement jamais arrive.
+  return {
+    texte: `Jamais ouvert · envoyé ${ilYA(jEnvoi)}${relances}`,
+    cls: jEnvoi >= 7 ? "is-alerte" : "is-muted",
+  };
+}
+
+/** Le suivi en tete de page. Le chiffre qui appelle un geste est ecrit en
+ *  toutes lettres ; les quatre autres KPI deviennent une ligne de
+ *  contexte. Meme grammaire que la phrase d'ouverture de l'accueil,
+ *  appliquee a une autre question - c'est ce que veut dire « meme
+ *  identite, page differente ». */
 function devisKpiBandHtml(tousDevis, nbARelancer) {
   const enCours = tousDevis.filter((d) => !["signe", "perdu", "expire"].includes(d.statut));
-  const enAttente = tousDevis.filter((d) => d.statut === "nouveau");
+  const aChiffrer = tousDevis.filter((d) => d.statut === "nouveau" && d.montant_ht === null).length;
+  const pretsAEnvoyer = tousDevis.filter((d) => d.statut === "nouveau" && d.montant_ht !== null).length;
   const valeurEnJeu = enCours.reduce((s, d) => s + (d.montant_ttc || 0), 0);
   const signes = tousDevis.filter((d) => d.statut === "signe").length;
   const perdus = tousDevis.filter((d) => d.statut === "perdu").length;
-  const tauxSignature = signes + perdus > 0 ? Math.round((signes / (signes + perdus)) * 100) : null;
+  const taux = signes + perdus > 0 ? Math.round((signes / (signes + perdus)) * 100) : null;
+
+  // Les devis jamais ouverts depuis plus d'une semaine : un signal que
+  // l'interface ne donnait pas, et qui vaut souvent mieux qu'une relance
+  // de plus (le devis n'est peut-etre jamais arrive).
+  const jamaisOuverts = enCours.filter((d) =>
+    d.date_envoi && !d.date_consultation && (joursDepuis(d.date_envoi) ?? 0) >= 7).length;
+
+  const montantDus = tousDevis
+    .filter((d) => devisDueIds.has(d.id))
+    .reduce((s, d) => s + (d.montant_ttc || 0), 0);
+
+  let titre, detail, alerte = false;
+  if (nbARelancer) {
+    titre = nbARelancer === 1 ? "Un devis à relancer aujourd'hui." : `${nbARelancer} devis à relancer aujourd'hui.`;
+    detail = montantDus ? `${fmtEuro(montantDus)} en attente de réponse.` : "En attente de réponse.";
+    alerte = true;
+  } else if (aChiffrer) {
+    titre = aChiffrer === 1 ? "Un devis reste à chiffrer." : `${aChiffrer} devis restent à chiffrer.`;
+    detail = "Aucune relance due aujourd'hui.";
+  } else if (pretsAEnvoyer) {
+    titre = pretsAEnvoyer === 1 ? "Un devis est prêt à partir." : `${pretsAEnvoyer} devis sont prêts à partir.`;
+    detail = "Aucune relance due aujourd'hui.";
+  } else {
+    titre = "Rien à relancer aujourd'hui.";
+    detail = enCours.length ? `${enCours.length} devis en attente de réponse.` : "Aucun devis en cours.";
+  }
+
+  const contexte = [];
+  if (valeurEnJeu) contexte.push(`<strong>${fmtEuro(valeurEnJeu)}</strong> en jeu`);
+  if (aChiffrer) contexte.push(`<strong>${aChiffrer}</strong> à chiffrer`);
+  if (pretsAEnvoyer) contexte.push(`<strong>${pretsAEnvoyer}</strong> prêt${pretsAEnvoyer > 1 ? "s" : ""} à envoyer`);
+  if (jamaisOuverts) contexte.push(`<strong class="est-alerte">${jamaisOuverts}</strong> jamais ouvert${jamaisOuverts > 1 ? "s" : ""}`);
+  if (taux !== null) contexte.push(`signature <strong>${taux} %</strong> (${signes} sur ${signes + perdus})`);
+
   return `
-  <div class="kpi-band kpi-band-5col">
-    <div class="kpi-card">
-      <div class="kpi-card-label">Devis en cours</div>
-      <div class="kpi-card-value">${enCours.length}</div>
-      <div class="kpi-card-sub">Total : ${tousDevis.length}</div>
+  <section class="devis-suivi">
+    <div class="devis-suivi-lede${alerte ? " est-alerte" : ""}">
+      <h3>${titre}</h3>
+      <p>${detail}</p>
     </div>
-    <div class="kpi-card">
-      <div class="kpi-card-label">En attente</div>
-      <div class="kpi-card-value">${enAttente.length}</div>
-      <div class="kpi-card-sub">Pas encore envoyés</div>
-    </div>
-    <div class="kpi-card${nbARelancer ? " is-highlight" : ""}">
-      <div class="kpi-card-label">À relancer</div>
-      <div class="kpi-card-value">${nbARelancer}</div>
-      <div class="kpi-card-sub${nbARelancer ? " is-alert" : ""}">${nbARelancer ? "Relance due" : "Rien à relancer"}</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-card-label">Valeur en jeu</div>
-      <div class="kpi-card-value">${fmtEuro(valeurEnJeu)}</div>
-      <div class="kpi-card-sub">TTC, devis en cours</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-card-label">Taux de signature</div>
-      <div class="kpi-card-value">${tauxSignature !== null ? tauxSignature + "%" : "—"}</div>
-      <div class="kpi-card-sub">${signes} signé${signes > 1 ? "s" : ""} · ${perdus} perdu${perdus > 1 ? "s" : ""}</div>
-    </div>
-  </div>`;
+    ${contexte.length ? `<p class="devis-suivi-contexte">${contexte.join(" · ")}</p>` : ""}
+  </section>`;
 }
 
 function devisTabCountsHtml(tousDevis) {
@@ -3924,13 +3991,7 @@ function renderDevisCard(d) {
   // separe du numero de devis (colonne dediee "Devis N°" juste a cote) -
   // toujours derive de champs deja recus (statut, date_signature, relance
   // due, nb_relances), jamais une nouvelle donnee.
-  let suivi;
-  if (isDue) suivi = { texte: "Relance due aujourd'hui", cls: "is-accent" };
-  else if (d.statut === "signe") suivi = { texte: `Accepté${d.date_signature ? " · " + fmtDateCourte(d.date_signature) : ""}`, cls: "is-success" };
-  else if (d.statut === "perdu") suivi = { texte: "Perdu", cls: "is-muted" };
-  else if (d.statut === "nouveau") suivi = { texte: d.montant_ht !== null ? "Prêt à envoyer" : "À chiffrer", cls: "is-muted" };
-  else if (d.nb_relances > 0) suivi = { texte: `${d.nb_relances} relance${d.nb_relances > 1 ? "s" : ""} envoyée${d.nb_relances > 1 ? "s" : ""}`, cls: "is-muted" };
-  else suivi = { texte: "En attente de réponse", cls: "is-muted" };
+  const suivi = devisSuivi(d, isDue);
 
   return `
   <div class="list-row list-row-devis ${isDue ? "is-due" : ""}">
