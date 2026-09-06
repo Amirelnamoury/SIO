@@ -6315,6 +6315,13 @@ function planningDayCellHtml(dateObj, items, { compact = false, showWeekday = tr
   // voir le commentaire de planningToIso() pour le bug que ca evite.
   const dayItems = items.filter((i) => planningToIso(new Date(i.date)) === iso).sort((a, b) => a.date.localeCompare(b.date));
   const isToday = iso === planningToIso(new Date());
+  // Samedi/dimanche : marques ici plutot que par un nth-child cote CSS,
+  // car les trois vues n'ont pas la meme structure de grille (le gutter
+  // des heures occupe la premiere colonne en vue jour/semaine, sept
+  // en-tetes precedent les cases en vue mois) - un calcul de position y
+  // serait faux a la premiere evolution.
+  const jourSemaine = dateObj.getDay();
+  const isWeekend = jourSemaine === 0 || jourSemaine === 6;
   const headerLabel = showWeekday
     ? dateObj.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" })
     : String(dateObj.getDate());
@@ -6322,7 +6329,7 @@ function planningDayCellHtml(dateObj, items, { compact = false, showWeekday = tr
     ? `<div class="planning-day-track">${planningHourRowsHtml()}${planningLayoutDay(dayItems).map(planningPositionedItemHtml).join("")}${isToday ? planningNowLineHtml() : ""}</div>`
     : `<div class="planning-day-items">${dayItems.map((i) => planningItemChip(i, compact)).join("") || (compact ? "" : '<div class="planning-day-empty">Rien de prévu</div>')}</div>`;
   return `
-    <div class="planning-day-cell ${isToday ? "is-today" : ""} ${hourGrid ? "has-hour-grid" : ""} ${extraClass}" data-date="${iso}">
+    <div class="planning-day-cell ${isToday ? "is-today" : ""} ${isWeekend ? "is-weekend" : ""} ${hourGrid ? "has-hour-grid" : ""} ${extraClass}" data-date="${iso}">
       <div class="planning-day-header">${headerLabel}</div>
       ${body}
     </div>`;

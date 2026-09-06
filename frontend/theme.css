@@ -33,6 +33,16 @@
   --sa-surface: #1e231c;         /* cartes, panneaux */
   --sa-surface-2: #242a21;       /* surface elevee (bloc secondaire) */
   --sa-surface-3: #292f26;       /* survol, etat ouvert */
+  /* Cinquieme plan, sous la surface : sert aux zones qui doivent RECULER
+     (les cases de week-end du planning). Ecart mesure : -1.9 de clarte
+     L* sous `surface` — perceptible, jamais un trou noir. */
+  --sa-surface-sunken: #1a1f19;
+  /* Surface d'un element mis en avant. Anciennement un lavis de champagne
+     a 12 %, qui composait un brun (#343425) trop present sur une grande
+     carte. Ici c'est un graphite olive rechauffe d'une pointe de
+     champagne : l'element reste distinct par sa bordure forte, pas par un
+     aplat colore. */
+  --sa-surface-accent: #282c22;
 
   /* ---------- Bordures ----------
      Deux roles distincts, a ne pas confondre :
@@ -41,19 +51,37 @@
      - `border-strong` : contour FONCTIONNEL (champs, boutons). WCAG
        1.4.11 impose 3:1 pour identifier un composant.
      La palette proposee suggerait #4A5045 ; mesure a 1.92:1 sur la
-     surface, il rendait les champs indistincts. Releve a #6b7464, qui
-     donne 3.28:1 sur surface et 3.78:1 sur le fond tout en restant dans
-     la meme famille olive. */
+     surface, il rendait les champs indistincts.
+     Premiere correction : #6b7464 (3.28:1 / 3.78:1). Il passait le seuil
+     mais tirait franchement vers le vert — sa composante verte depassait
+     de 12,5 la moyenne rouge/bleu, assez pour qu'un champ de saisie lise
+     « vert » plutot que « graphite ». Neutralise a #71736c : ce meme
+     ecart tombe a 4,5, et le contraste monte au passage (3.33:1 sur
+     surface, 3.83:1 sur le fond). */
   --sa-border: #2c3129;
-  --sa-border-strong: #6b7464;
+  --sa-border-strong: #71736c;
+  /* Lignes internes d'une grille (rangees horaires du planning). Elles se
+     repetent tous les 41 px : au meme ton que `border`, l'empilement
+     devenait une trame grise. Un cran en dessous, la grille structure
+     sans peser. */
+  --sa-grid-line: #232821;
 
   /* ---------- Texte : ivoire chaud, puis deux retraits ----------
-     16.07:1 / 8.72:1 / 5.48:1 sur le fond. Le troisieme niveau tire vers
+     16.07:1 / 8.72:1 / 6.86:1 sur le fond. Le troisieme niveau tire vers
      l'olive : c'est lui qui porte les metadonnees et les titres de
-     groupe, et qui installe la teinte naturelle sans jamais crier. */
+     groupe, et qui installe la teinte naturelle sans jamais crier.
+
+     Ce troisieme niveau valait #898e82. Mesure sur le FOND il passait
+     (5.48:1) — mais ces petits libelles ne vivent presque jamais sur le
+     fond : ils vivent dans une carte, et souvent dans une carte elevee ou
+     survolee. Sur `surface-2` il tombait a 4.38:1 et sur `surface-3` a
+     4.09:1, donc sous le seuil, ce qui explique qu'ils paraissaient
+     eteints. Releve a #9aa093 : 5.12:1 dans le pire cas, tout en restant
+     nettement en retrait du secondaire (5.96 contre 7.58 sur surface).
+     La hierarchie principal > secondaire > discret est donc conservee. */
   --sa-text: #f4efe5;
   --sa-text-muted: #b8b2a5;
-  --sa-text-faint: #898e82;
+  --sa-text-faint: #9aa093;
   --sa-text-on-accent: #171811;   /* 8.67:1 sur le champagne */
   --sa-text-on-dark: #f4efe5;
   --sa-text-on-dark-muted: #b8b2a5;
@@ -65,14 +93,23 @@
      la page publique au SaaS. */
   --sa-accent: #d6af68;
   --sa-accent-strong: #e5c47e;
-  --sa-accent-soft: rgba(214, 175, 104, .12);
+  /* Lavis de fond. Il etait a 12 % : correct sur une pastille de 20 px,
+     trop present des qu'il remplissait une carte KPI ou une colonne
+     entiere du planning, ou il virait au brun. Ramene a 8 % — la pastille
+     reste lisible, l'aplat cesse de dominer. Partout ou la surface est
+     grande, c'est desormais une arete champagne qui porte l'accent, pas
+     le remplissage. */
+  --sa-accent-soft: rgba(214, 175, 104, .08);
+  /* Encore plus bas, pour les tres grandes surfaces (la colonne du jour
+     dans le planning) : une chaleur juste perceptible. */
+  --sa-accent-wash: rgba(214, 175, 104, .05);
   --sa-accent-on-dark: #d6af68;
 
   /* ---------- Olive : la teinte de fond de l'identite ----------
      Jamais un vert franc. Sert aux libelles de section et aux etats
      calmes. */
   --sa-olive: #78846d;
-  --sa-olive-muted: #89927c;
+  --sa-olive-muted: #949d86;      /* 6.10:1 sur la sidebar (etait 5.32) */
 
   /* ---------- Semantique ----------
      Desaturee pour rester dans la palette, mais jamais au point de
@@ -98,11 +135,69 @@
   --sa-shadow-sm: 0 2px 8px rgba(0, 0, 0, .18);
   --sa-shadow-md: 0 8px 24px rgba(0, 0, 0, .22);
   --sa-shadow-lg: 0 18px 44px rgba(0, 0, 0, .32);
-  /* Anneau de focus fin. L'indicateur qui porte reellement
-     l'accessibilite reste le passage de la bordure au champagne
-     (7.77:1) et l'outline de `:focus-visible` ; cet anneau ne fait que
-     l'accompagner. */
-  --sa-shadow-focus: 0 0 0 2px var(--sa-accent-soft);
+  /* Anneau de focus. L'indicateur qui porte reellement l'accessibilite
+     reste le passage de la bordure au champagne (7.77:1) et l'outline de
+     `:focus-visible` ; cet anneau ne fait que l'accompagner.
+     Un anneau epais et translucide (3 px a 12 %) faisait un halo diffus
+     autour du champ. Un seul pixel, mais franc : colle a la bordure
+     champagne, il lit comme une arete nette de 2 px. */
+  --sa-shadow-focus: 0 0 0 1px rgba(214, 175, 104, .45);
+
+  /* ---------- Ascenseurs ----------
+     Le rail se confond avec le fond ; seul le pouce existe, a 2.04:1 —
+     assez pour etre saisi, pas assez pour attirer l'oeil. Au survol il
+     monte a 2.99:1. */
+  --sa-scrollbar-track: var(--sa-bg);
+  --sa-scrollbar-thumb: #444b3e;
+  --sa-scrollbar-thumb-hover: #5c6455;
+}
+
+/* =====================================================================
+   ASCENSEURS
+   ---------------------------------------------------------------------
+   style.css masque deliberement les ascenseurs de `html`, `body`,
+   `.sidebar-nav` et des onglets Entreprise. Les conteneurs internes, eux
+   (corps de modale, tableaux larges, menus), heritaient de l'ascenseur
+   Windows : large, clair, etranger a l'interface.
+
+   Le selecteur universel a une specificite nulle : les quatre masquages
+   ci-dessus, poses sur un element ou une classe, continuent donc de
+   gagner. Cette regle ne fait qu'habiller ceux qui restent visibles.
+
+   Deux syntaxes, et l'ordre entre elles compte. Des qu'un navigateur
+   comprend `scrollbar-width`, il IGNORE les pseudo-elements
+   `::-webkit-scrollbar` : les deux ne s'additionnent jamais, l'une
+   desactive l'autre. Or `thin` mesure 12 px sous Chromium, sans reglage
+   possible, tandis que les pseudo-elements descendent ou l'on veut.
+   D'ou la repartition : la syntaxe standard sert de base — c'est la seule
+   que Firefox connaisse — et les moteurs WebKit/Blink la rendent a `auto`
+   pour reprendre la main sur les pseudo-elements, plus fins.
+   ===================================================================== */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--sa-scrollbar-thumb) var(--sa-scrollbar-track);
+}
+
+/* Firefox connait `-moz-appearance` et sort donc de ce bloc ; Chrome,
+   Edge et Safari y entrent.
+   Les DEUX proprietes standard doivent revenir a leur valeur initiale :
+   Chromium desactive les pseudo-elements des que l'une OU l'autre est
+   renseignee. Ne remettre que `scrollbar-width` laissait `scrollbar-color`
+   en place, et l'ascenseur restait a sa largeur systeme de 17 px. */
+@supports (-webkit-appearance: none) and (not (-moz-appearance: none)) {
+  * { scrollbar-width: auto; scrollbar-color: auto; }
+  *::-webkit-scrollbar { width: 9px; height: 9px; }
+  *::-webkit-scrollbar-track,
+  *::-webkit-scrollbar-corner { background: var(--sa-scrollbar-track); }
+  /* La bordure, de la meme couleur que le rail, ramene le pouce a 5 px
+     visibles tout en gardant 9 px de zone de prehension : fin a l'oeil,
+     confortable a la souris. */
+  *::-webkit-scrollbar-thumb {
+    background: var(--sa-scrollbar-thumb);
+    border: 2px solid var(--sa-scrollbar-track);
+    border-radius: 5px;
+  }
+  *::-webkit-scrollbar-thumb:hover { background: var(--sa-scrollbar-thumb-hover); }
 }
 
 /* =====================================================================
@@ -121,8 +216,14 @@
 
 /* L'element actif : teinte champagne tres basse + le liseré vertical que
    style.css dessine deja en ::before. Pas de halo, pas de gros rectangle
-   gris. */
+   gris.
+   Le fond a ete allege (le lavis est passe de 12 a 8 %) et ce sont
+   maintenant le liseré et l'icone qui signalent l'element actif : trois
+   pixels de champagne franc pesent moins a l'ecran qu'un aplat, et se
+   reperent mieux en balayant la colonne du regard. L'icone recoit deja
+   l'accent (style.css ligne 344). */
 .nav-link.active { background: var(--sa-accent-soft); color: var(--sa-text); }
+.sidebar .nav-link.active::before { width: 3px; top: 2px; bottom: 2px; }
 
 /* Titres de groupe (COMMERCIAL, GESTION...) en olive desature : ils
    structurent sans jamais attirer l'oeil plus que le contenu. 5.32:1. */
@@ -161,7 +262,44 @@
   transition: background-color var(--sa-duration-base) var(--sa-ease),
               border-color var(--sa-duration-base) var(--sa-ease);
 }
-.kpi-card:hover { background: var(--sa-surface-2); border-color: var(--sa-border-strong); }
+
+/* Les cartes de chiffres se detachaient a peine du fond. On monte d'un
+   cran de surface — +3,2 points de clarte L*, soit environ 3 % : le seuil
+   ou une carte se lit comme un objet pose sur la page, et en-deca de quoi
+   il faudrait une ombre. Aucune ombre n'est ajoutee : l'ecart de surface
+   suffit, et une ombre porterait la separation bien au-dela des 2-3 %
+   demandes. */
+.kpi-card { background: var(--sa-surface-2); }
+.kpi-card:hover { background: var(--sa-surface-3); border-color: var(--sa-border-strong); }
+
+/* Sur Accueil, Prospects et Factures, la bande n'est pas faite de cartes
+   separees mais d'un seul bandeau a separateurs internes (style.css
+   ligne 697), et chaque cellule y est transparente. Le fond se pose donc
+   sur le bandeau, pas sur les cellules : le bloc se detache du meme cran,
+   les separateurs et la structure d'origine sont intacts. */
+#dashboard-content > .kpi-band,
+#prospects-kpi-band > .kpi-band,
+#factures-tresorerie > .kpi-band { background: var(--sa-surface-2); }
+
+/* ---------- Carte mise en avant (« A relancer », « En retard »...) ----------
+   Elle etait remplie d'un lavis de champagne a 12 %, ce qui donnait un
+   aplat brun (#343425) sur toute la carte. Le meme role est tenu ici par
+   un graphite olive legerement rechauffe, plus une bordure forte : la
+   carte reste immediatement reperable dans la bande, sans introduire une
+   couleur de plus.
+   Les trois bandes qui redefinissaient ce fond avec une specificite d'ID
+   sont reprises a l'identique — sans quoi Prospects et Factures seraient
+   restes bruns pendant que Devis ne l'etait plus. Le dashboard, lui, pose
+   volontairement `transparent` : on n'y touche pas. */
+.kpi-card.is-highlight,
+#prospects-kpi-band > .kpi-band .kpi-card.is-highlight,
+#factures-tresorerie > .kpi-band .kpi-card.is-highlight {
+  background: var(--sa-surface-accent);
+  border-color: var(--sa-border-strong);
+}
+.kpi-card.is-highlight:hover { background: var(--sa-surface-3); }
+/* Meme raisonnement pour la carte « fort potentiel » du kanban. */
+.kanban-card.is-fort-potentiel { background: var(--sa-surface-accent); }
 
 /* ---------- Boutons ---------- */
 .btn-primary, .btn-secondary {
@@ -173,3 +311,58 @@
    fonctionnelle est a 3.28:1, pas un fantome. */
 .btn-secondary { border-color: var(--sa-border-strong); }
 .btn-secondary:hover { background: var(--sa-surface-2); border-color: var(--sa-accent); }
+
+/* ---------- Champs de saisie ----------
+   Rien a ecrire ici : les champs prennent `--sa-border-strong`, dont la
+   composante verte a ete neutralisee plus haut, et `--sa-shadow-focus`,
+   devenu un liseré d'un pixel au lieu d'un halo de trois. La structure,
+   les tailles et les etats sont ceux de style.css.
+
+   ---------- Planning ----------
+   La grille fonctionnait, mais trois choses pesaient : la colonne du jour
+   etait un aplat brun sur toute sa hauteur, les rangees horaires
+   dessinaient une trame grise, et le week-end avait exactement le meme
+   poids qu'un jour ouvre. */
+
+/* Les lignes qui se repetent (une par heure) passent au ton de grille,
+   un cran sous la bordure. Celles qui separent reellement deux zones —
+   l'en-tete de colonne, le haut du gutter — gardent la bordure franche :
+   la hierarchie de la grille redevient lisible. */
+.planning-hour-row { border-bottom-color: var(--sa-grid-line); }
+.planning-week-grid,
+.planning-month-grid { background: var(--sa-grid-line); }
+
+/* Samedi et dimanche reculent d'un plan au lieu de disparaitre : la
+   semaine se lit d'un coup d'oeil, mais un rendez-vous pose un samedi
+   reste parfaitement visible. L'en-tete du jour, lui, garde son niveau de
+   texte discret — les dates restent lisibles, c'est le FOND qui recule,
+   jamais le contenu. */
+.planning-day-cell.is-weekend { background: var(--sa-surface-sunken); }
+
+/* « Aujourd'hui » : l'aplat champagne a 12 % remplissait une colonne
+   entiere en vue semaine, d'ou l'impression de gros bloc brun. Il tombe a
+   5 % — juste une chaleur — et le reperage passe a une arete de 2 px en
+   haut de la colonne. Un trait franc se voit mieux qu'un aplat dilue, et
+   n'ajoute presque pas de dore a l'ecran.
+   Cette regle doit rester APRES `.is-weekend` : les deux ont la meme
+   specificite, et un samedi peut etre aujourd'hui. */
+.planning-day-cell.is-today {
+  background: var(--sa-accent-wash);
+  box-shadow: inset 0 2px 0 var(--sa-accent);
+}
+
+/* ---------- Barre de module Devis & relances ----------
+   Cette barre n'est pas un ancien systeme : elle reproduit la reference
+   `04-devis&relances.jpeg`, et elle se place SOUS la topbar globale, pas
+   a sa place — c'est donc bien une navigation secondaire. Rien n'en est
+   retire ici. On rend seulement visible ce qui s'y clique : les deux
+   boutons reagissent au survol, les libelles de section restent au niveau
+   de texte discret. */
+.devis-modulebar span { color: var(--sa-text-faint); }
+.devis-modulebar button {
+  cursor: pointer;
+  transition: color var(--sa-duration-base) var(--sa-ease),
+              border-color var(--sa-duration-base) var(--sa-ease);
+}
+.devis-modulebar button:hover { color: var(--sa-text); border-bottom-color: var(--sa-border-strong); }
+.devis-modulebar button.active:hover { border-bottom-color: var(--sa-accent); }
