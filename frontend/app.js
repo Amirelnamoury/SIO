@@ -5389,36 +5389,59 @@ function chantierEstASurveiller(c) {
   return consomme !== null && consomme >= 85;
 }
 
-// Bande de KPI : agregee a partir des memes chantiers deja recus (aucun
-// nouvel appel, aucune donnee inventee).
+// ---------------------------------------------------------------------
+// CHANTIERS — la situation, en deux lignes
+// ---------------------------------------------------------------------
+// La page ouvrait sur quatre cartes de KPI, comme presque toutes les
+// autres. Ici la composition ne reprend PAS la grande phrase de l'accueil
+// ni celle de Devis : ce n'est pas une page ou l'on decide d'un geste,
+// c'est une page ou l'on surveille une charge. Deux lignes typographiees
+// suffisent - la composition du portefeuille, puis ce qui derape.
+//
+// Les cartes elles-memes portent deja la comparaison avancement/budget,
+// chantier par chantier. L'en-tete n'a donc qu'a dire combien il y en a
+// et lesquels sortent des clous.
+
 function chantiersKpiBandHtml(chantiers) {
-  const enCours = chantiers.filter((c) => !["a_preparer", "termine", "facture", "paye"].includes(c.statut));
+  if (!chantiers.length) return "";
+
+  const actifs = chantiers.filter((c) => !["a_preparer", "termine", "facture", "paye"].includes(c.statut));
   const aPreparer = chantiers.filter((c) => c.statut === "a_preparer");
-  const aSurveiller = chantiers.filter(chantierEstASurveiller);
-  const margeTotale = chantiers.reduce((s, c) => s + (c.marge_estimee || c.marge_reelle || 0), 0);
+  const enPause = actifs.filter((c) => c.statut === "en_pause");
+  const enCours = actifs.filter((c) => c.statut !== "en_pause");
+  const ouverts = actifs.length + aPreparer.length;
+
+  const enRetard = chantiers.filter((c) => chantierJoursRetard(c) > 0);
+  const retardMax = enRetard.reduce((m, c) => Math.max(m, chantierJoursRetard(c)), 0);
+  const depasses = chantiers.filter((c) => c.budget && (c.total_depenses || 0) > c.budget);
+  const tendus = chantiers.filter((c) => chantierEstASurveiller(c) && !depasses.includes(c));
+  const margeTotale = chantiers.reduce((s, c) => {
+    const m = c.marge_reelle !== null && c.marge_reelle !== undefined ? c.marge_reelle : c.marge_estimee;
+    return s + (m || 0);
+  }, 0);
+
+  // La charge : de quoi est fait le portefeuille ouvert.
+  const charge = [`<strong>${ouverts}</strong> chantier${ouverts > 1 ? "s" : ""} ouvert${ouverts > 1 ? "s" : ""}`];
+  if (enCours.length) charge.push(`${enCours.length} en cours`);
+  if (aPreparer.length) charge.push(`${aPreparer.length} à préparer`);
+  if (enPause.length) charge.push(`${enPause.length} en pause`);
+
+  // Les signaux : uniquement ce qui sort des clous. Un compteur a zero n'a
+  // rien a dire, il ne s'affiche pas.
+  const signaux = [];
+  if (enRetard.length) {
+    signaux.push(`<strong class="est-retard">${enRetard.length}</strong> en retard${retardMax ? `, jusqu'à ${retardMax} j` : ""}`);
+  }
+  if (depasses.length) signaux.push(`<strong class="est-retard">${depasses.length}</strong> au-delà du budget`);
+  if (tendus.length) signaux.push(`<strong class="est-tendu">${tendus.length}</strong> à surveiller`);
+  if (margeTotale) signaux.push(`marge prévisionnelle <strong>${fmtEuro(margeTotale)}</strong>`);
+  if (!enRetard.length && !depasses.length && !tendus.length) signaux.unshift("Tous dans les clous");
+
   return `
-  <div class="kpi-band">
-    <div class="kpi-card">
-      <div class="kpi-card-label">Chantiers en cours</div>
-      <div class="kpi-card-value">${enCours.length}</div>
-      <div class="kpi-card-sub">${chantiers.length ? Math.round((enCours.length / chantiers.length) * 100) : 0}% du total</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-card-label">À préparer</div>
-      <div class="kpi-card-value">${aPreparer.length}</div>
-      <div class="kpi-card-sub">Démarrage à planifier</div>
-    </div>
-    <div class="kpi-card${aSurveiller.length ? " is-highlight" : ""}">
-      <div class="kpi-card-label">À surveiller</div>
-      <div class="kpi-card-value">${aSurveiller.length}</div>
-      <div class="kpi-card-sub${aSurveiller.length ? " is-alert" : ""}">Budget consommé ≥ 85%</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-card-label">Marge prévisionnelle</div>
-      <div class="kpi-card-value">${fmtEuro(margeTotale)}</div>
-      <div class="kpi-card-sub">Cumul, tous chantiers</div>
-    </div>
-  </div>`;
+  <section class="chantiers-situation">
+    <p class="chantiers-charge">${charge.join(" · ")}</p>
+    <p class="chantiers-signaux">${signaux.join(" · ")}</p>
+  </section>`;
 }
 
 let currentChantierFilter = ""; // "" | a_preparer | en_cours | a_surveiller | termine

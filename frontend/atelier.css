@@ -1099,3 +1099,54 @@ label { color: var(--sa-text-muted); }
   .balance { grid-template-columns: 1fr; gap: var(--sa-space-4); }
   .balance-legende { gap: var(--sa-space-4); }
 }
+
+/* =====================================================================
+   CHANTIERS — la situation en deux lignes
+   ---------------------------------------------------------------------
+   La composition ne reprend PAS la grande phrase de l'accueil ni celle de
+   Devis. Ce n'est pas une page ou l'on decide d'un geste, c'est une page
+   ou l'on surveille une charge : deux lignes typographiees suffisent, la
+   composition du portefeuille puis ce qui derape. Les cartes portent deja
+   la comparaison avancement/budget, chantier par chantier.
+   ===================================================================== */
+.chantiers-situation {
+  padding: 18px 0 16px;
+  border-top: 1px solid var(--sa-border);
+  border-bottom: 1px solid var(--sa-border);
+  margin-bottom: var(--sa-space-6);
+}
+.chantiers-charge {
+  margin: 0;
+  font-family: var(--sa-font-display);
+  font-size: var(--sa-text-lg); font-weight: 500; color: var(--sa-text);
+}
+.chantiers-charge strong { font-weight: 600; font-variant-numeric: tabular-nums; }
+.chantiers-signaux { margin: 7px 0 0; font-size: var(--sa-text-sm); color: var(--sa-text-muted); }
+.chantiers-signaux strong { color: var(--sa-text); font-weight: 600; font-variant-numeric: tabular-nums; }
+.chantiers-signaux .est-retard { color: var(--sa-danger); }
+.chantiers-signaux .est-tendu { color: var(--sa-warning); }
+
+/* ---------- Les cartes, dans la grammaire du papier ----------
+   La grille et la composition des cartes sont celles demandees par
+   l'utilisateur (cartes, jamais lignes de tableau, rangees en grille pour
+   ne pas rallonger le defilement). Seul l'habillage change. */
+.chantier-card { background: var(--sa-surface); border-color: var(--sa-border); box-shadow: none; }
+.chantier-card:hover { border-color: var(--sa-border-strong); background: var(--sa-surface); }
+/* Le trait de niveau reste le seul aplat colore de la carte. */
+.chantier-card.is-late { box-shadow: inset 3px 0 0 var(--sa-danger); }
+.chantier-card.is-warning { box-shadow: inset 3px 0 0 var(--sa-warning); }
+.chantier-card.is-complete { box-shadow: inset 3px 0 0 var(--sa-success); }
+.chantier-card.is-focused { border-color: var(--sa-accent); }
+.chantier-card-titre { font-family: var(--sa-font-display); font-weight: 600; }
+.chantier-jauge-label { color: var(--sa-text-faint); }
+.chantier-jauge-valeur { font-family: var(--sa-font-display); font-weight: 500; }
+/* Les jauges : la piste recule dans le papier, le remplissage porte le
+   contraste. L'avancement reste neutre - un chantier a 15 % vient de
+   commencer, il n'est pas en difficulte. */
+.sante-barre { background: var(--sa-surface-2); }
+.sante-barre .remplissage { background: var(--sa-accent); }
+.sante-barre .remplissage.niveau-haut { background: var(--sa-success); }
+.sante-barre .remplissage.niveau-moyen { background: var(--sa-warning); }
+.sante-barre .remplissage.niveau-bas { background: var(--sa-danger); }
+.chantier-action-fleche { color: var(--sa-accent); }
+.chantier-card-echeance { border-left-color: var(--sa-border); }
