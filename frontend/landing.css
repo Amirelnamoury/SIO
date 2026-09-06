@@ -447,11 +447,27 @@
   backdrop-filter: blur(8px);
 }
 .lc-offer-main .lc-lead { margin-top: 0; }
-.lc-offer-prices { display: flex; align-items: baseline; flex-wrap: wrap; gap: 14px 20px; margin: 30px 0 20px; }
-.lc-offer-prices > div { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
-.lc-offer-amount { font-family: var(--lc-display); font-size: 2.3rem; font-weight: 500; }
-.lc-offer-unit { font-size: .86rem; color: var(--lc-muted); }
-.lc-offer-plus { font-size: .84rem; color: var(--lc-champagne); text-transform: uppercase; letter-spacing: .12em; }
+/* Deux blocs distincts et non une suite "490 puis 19" : le second doit se
+   lire comme une option qu'on peut refuser, pas comme la seconde moitie
+   d'un prix. */
+.lc-offer-prices { display: flex; flex-wrap: wrap; gap: 14px; margin: 28px 0 20px; }
+.lc-offer-price {
+  position: relative; flex: 1 1 210px;
+  padding: 16px 18px; border: 1px solid var(--lc-line); border-radius: 12px;
+  background: rgba(17, 17, 15, .4);
+}
+.lc-offer-price.is-option {
+  border-style: dashed; border-color: rgba(200, 168, 122, .5);
+  background: rgba(200, 168, 122, .06);
+}
+.lc-offer-flag {
+  display: inline-block; margin-bottom: 8px;
+  font-size: .64rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--lc-champagne); background: var(--lc-champagne-soft);
+  border: 1px solid rgba(200, 168, 122, .42); border-radius: 999px; padding: 3px 10px;
+}
+.lc-offer-amount { display: block; font-family: var(--lc-display); font-size: 2.1rem; font-weight: 500; line-height: 1.1; }
+.lc-offer-unit { display: block; margin-top: 5px; font-size: .84rem; color: var(--lc-muted); }
 .lc-offer-note { font-size: .9rem; color: var(--lc-muted); max-width: 52ch; }
 .lc-offer-list { display: grid; gap: 13px; align-content: start; padding-top: 6px; }
 .lc-offer-list li { position: relative; padding-left: 22px; font-size: .93rem; color: var(--lc-white); }
