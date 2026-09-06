@@ -2981,20 +2981,150 @@ function showClientForm() {
   });
 }
 
+// ---------------------------------------------------------------------
+// FICHE CLIENT — « le dossier »
+// ---------------------------------------------------------------------
+// L'ancienne fiche tenait dans un panneau de 460 px et se composait de
+// cinq lignes libelle/valeur, d'un historique, puis d'une liste de
+// messages. Elle ne montrait ni les chantiers, ni les devis, ni les
+// factures du client : pour savoir ou en etait la relation, il fallait
+// ouvrir trois autres pages et recoller soi-meme.
+//
+// Trois decisions :
+//   - les chiffres passent en tete, typographies comme sur l'accueil ;
+//   - un bloc « Affaires » reunit chantiers, devis et factures - les
+//     memes listes que la page Clients recupere deja ;
+//   - l'historique et les messages fusionnent en UNE chronologie. Ce
+//     sont deux facons de raconter la meme chose : ce qui s'est passe
+//     avec ce client, dans l'ordre.
+
+/** Les chiffres du client : quatre reperes typographies, filet dessous,
+ *  comme le total souligne d'un devis. Remplace cinq lignes
+ *  libelle/valeur qui se lisaient comme un formulaire en lecture seule. */
+function clientResumeHtml(r) {
+  const jours = r.dernier_contact
+    ? Math.floor((Date.now() - new Date(r.dernier_contact).getTime()) / 86400000)
+    : null;
+  const chiffre = (label, valeur, note, classe = "") => `
+    <div class="fiche-chiffre ${classe}">
+      <span class="fiche-chiffre-label">${label}</span>
+      <span class="fiche-chiffre-valeur">${valeur}</span>
+      <span class="fiche-chiffre-note">${note}</span>
+    </div>`;
+  return `
+  <div class="fiche-chiffres">
+    ${chiffre("Facturé", fmtEuro(r.valeur_totale) || "—", "depuis le début")}
+    ${chiffre("Impayé", r.impayes ? fmtEuro(r.impayes) : "—",
+      r.impayes ? "à recouvrer" : "rien en attente", r.impayes > 0 ? "est-du" : "")}
+    ${chiffre("Chantiers", String(r.nb_chantiers ?? 0), r.nb_chantiers ? "au total" : "aucun à ce jour")}
+    ${chiffre("Dernier contact", jours === null ? "—" : (jours === 0 ? "aujourd'hui" : `${jours} j`),
+      r.date_dernier_devis ? `dernier devis ${fmtDate(r.date_dernier_devis)}` : "aucun devis")}
+  </div>`;
+}
+
+/** Les affaires du client : chantiers, devis, factures. Rien de tout cela
+ *  n'etait visible depuis la fiche. Les listes sont celles que la page
+ *  Clients charge deja - on les reutilise quand elles sont en cache, on
+ *  les demande sinon, avec le meme repli silencieux qu'ailleurs. */
+function clientAffairesHtml(clientId, chantiers, devis, factures) {
+  const sesChantiers = chantiers.filter((c) => c.client_id === clientId);
+  const sesDevis = devis.filter((d) => d.client_id === clientId);
+  const sesFactures = factures.filter((f) => f.client_id === clientId);
+  if (!sesChantiers.length && !sesDevis.length && !sesFactures.length) {
+    return `<p class="fiche-vide">Aucune affaire pour ce client. Le prochain devis créera son premier dossier.</p>`;
+  }
+
+  const ligne = (attrs, titre, meta, montant, alerte = false) => `
+    <div class="fiche-affaire" ${attrs}>
+      <span class="fiche-affaire-titre">${titre}</span>
+      <span class="fiche-affaire-meta">${meta}</span>
+      <span class="fiche-affaire-montant${alerte ? " est-alerte" : ""}">${montant}</span>
+    </div>`;
+
+  const bloc = (titre, n, contenu) => n
+    ? `<div class="fiche-affaire-groupe">
+         <h5 class="fiche-affaire-groupe-titre">${titre} <span>${n}</span></h5>
+         ${contenu}
+       </div>`
+    : "";
+
+  return `
+    ${bloc("Chantiers", sesChantiers.length, sesChantiers.map((c) => {
+      const meta = CHANTIER_STATUT_META[c.statut] || { label: c.statut };
+      const progression = Number(c.progression) || 0;
+      return ligne(`data-action="ouvrir-chantier-depuis-client" data-id="${c.id}" role="button" tabindex="0"`,
+        escapeHtml(c.titre), escapeHtml(meta.label),
+        ["termine", "facture", "paye"].includes(c.statut) ? "" : `${progression} %`);
+    }).join(""))}
+
+    ${bloc("Devis", sesDevis.length, sesDevis.map((d) => {
+      const meta = DEVIS_STATUT_META[d.statut] || { label: d.statut };
+      return ligne(`data-action="ouvrir-devis-depuis-client" data-id="${d.id}" role="button" tabindex="0"`,
+        escapeHtml(d.numero || `Devis #${d.id}`), escapeHtml(meta.label), fmtEuro(d.montant_ttc) || "");
+    }).join(""))}
+
+    ${bloc("Factures", sesFactures.length, sesFactures.map((f) => {
+      const meta = FACTURE_STATUT_META[f.statut] || { label: f.statut };
+      const impaye = (f.montant_restant || 0) > 0 && f.statut !== "payee";
+      return ligne(`data-action="ouvrir-facture-depuis-client" data-id="${f.id}" role="button" tabindex="0"`,
+        escapeHtml(f.numero || `Facture #${f.id}`), escapeHtml(meta.label),
+        impaye ? fmtEuro(f.montant_restant) : fmtEuro(f.montant_ttc) || "", impaye);
+    }).join(""))}`;
+}
+
+/** L'historique et les messages fusionnes en une seule chronologie.
+ *  C'etaient deux listes de meme forme, l'une sous l'autre, qui
+ *  racontaient la meme chose - ce qui s'est passe avec ce client - dans
+ *  deux ordres separes. On les trie ensemble, du plus recent au plus
+ *  ancien, et un message se distingue par son filet et non par sa place. */
+function clientChronologieHtml(entries, messages) {
+  const items = [
+    ...entries.map((e) => ({ date: e.date, type: "evenement", label: e.label })),
+    ...messages.map((m) => ({
+      date: m.created_at, type: "message",
+      expediteur: m.expediteur === "client" ? "Client" : "Vous",
+      label: m.texte,
+    })),
+  ].filter((i) => i.date).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  if (!items.length) {
+    return `<p class="fiche-vide">Rien ne s'est encore passé avec ce client. Les devis, factures et messages viendront se ranger ici.</p>`;
+  }
+  return `<div class="fiche-chrono">${items.map((i) => `
+    <div class="fiche-chrono-item${i.type === "message" ? " est-message" : ""}">
+      <time class="fiche-chrono-date">${fmtDateTime(i.date)}</time>
+      <div class="fiche-chrono-corps">
+        ${i.type === "message" ? `<span class="fiche-chrono-qui">${i.expediteur}</span>` : ""}
+        <span class="fiche-chrono-label">${escapeHtml(i.label)}</span>
+      </div>
+    </div>`).join("")}</div>`;
+}
+
+function messagesPanelHtml() {
+  return `
+  <form id="client-message-form" class="fiche-reponse">
+    <label for="client-message-texte">Écrire au client</label>
+    <textarea id="client-message-texte" placeholder="Votre message apparaîtra dans son espace client." required></textarea>
+    <p class="field-error" id="client-message-error" hidden></p>
+    <div class="form-actions"><button type="submit" class="btn-sm btn-sm-primary">Envoyer</button></div>
+  </form>`;
+}
+
 function clientQuickActionsHtml(client) {
   const actions = [];
   if (client.telephone) actions.push(`<a class="btn-sm" href="tel:${escapeHtml(client.telephone)}">Appeler</a>`);
   if (client.email) actions.push(`<a class="btn-sm" href="mailto:${escapeHtml(client.email)}">Email</a>`);
   actions.push(`<button type="button" class="btn-sm" data-action="demander-avis" data-client-id="${client.id}">Demander un avis</button>`);
   actions.push(`<button type="button" class="btn-sm" data-action="copier-lien-portail" data-client-id="${client.id}">Copier le lien de l'espace client</button>`);
-  return `<div class="item-actions client-detail-actions">${actions.join("")}</div>`;
+  return `<div class="fiche-actions">
+    <button type="button" class="btn-primary" data-action="quick-devis" data-client-id="${client.id}">+ Nouveau devis</button>
+    ${actions.join("")}
+  </div>`;
 }
 
-// En-tete d'identite du panneau client : monogramme, nom/societe, statut,
-// coordonnees lisibles directement (plus seulement caches derriere les
-// boutons Appeler/Email) et l'action principale (+ Nouveau devis) mise en
-// avant separement des actions secondaires. Memes donnees que l'ancien
-// clientQuickActionsHtml, seule la composition change.
+// L'en-tete d'identite : monogramme, nom, societe, statut, coordonnees
+// cliquables. Les actions vivent desormais dans clientQuickActionsHtml,
+// juste en dessous, action primaire en tete.
 function clientDetailHeaderHtml(client) {
   const initiales = (client.nom || "?").trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
   const statutMeta = CLIENT_STATUT_META[client.statut] || { label: client.statut };
@@ -3004,79 +3134,57 @@ function clientDetailHeaderHtml(client) {
     client.ville || null,
   ].filter(Boolean);
   return `
-  <div class="client-detail-header">
-    <div class="crm-avatar client-detail-avatar">${escapeHtml(initiales)}</div>
-    <div class="client-detail-identity">
-      <div class="client-detail-name">${escapeHtml(client.nom)}</div>
-      ${client.societe ? `<div class="client-detail-societe">${escapeHtml(client.societe)}</div>` : ""}
-      <span class="badge badge-gray">${escapeHtml(statutMeta.label)}</span>
+  <header class="fiche-entete">
+    <div class="crm-avatar fiche-avatar" aria-hidden="true">${escapeHtml(initiales)}</div>
+    <div class="fiche-identite">
+      <h4 class="fiche-nom">${escapeHtml(client.nom)}</h4>
+      <p class="fiche-sous">
+        ${client.societe ? escapeHtml(client.societe) + " · " : ""}<span class="badge badge-gray">${escapeHtml(statutMeta.label)}</span>
+      </p>
+      ${coords.length ? `<p class="fiche-coords">${coords.join(" · ")}</p>` : ""}
     </div>
-  </div>
-  ${coords.length ? `<div class="client-detail-coords">${coords.join('<span class="client-detail-coords-sep">·</span>')}</div>` : ""}
-  <button type="button" class="btn-primary client-detail-cta" data-action="quick-devis" data-client-id="${client.id}">+ Nouveau devis</button>`;
+  </header>`;
 }
 
-function messagesPanelHtml(messages) {
-  const listHtml = messages.length
-    ? messages.map((m) => `
-      <div class="timeline-entry">
-        <span class="timeline-icon"></span>
-        <div><div class="timeline-label"><strong>${m.expediteur === "client" ? "Client" : "Vous"} :</strong> ${escapeHtml(m.texte)}</div><div class="timeline-date">${fmtDateTime(m.created_at)}</div></div>
-      </div>`).join("")
-    : '<div class="empty-state">Aucun message pour le moment. Le client peut vous écrire depuis son espace client.</div>';
+/** Une section du dossier : intitule dans la marge, contenu a droite.
+ *  Meme grammaire que les pages composees, a l'echelle du panneau. */
+function ficheSection(titre, corps) {
+  if (!corps) return "";
   return `
-  <div class="dash-section" style="margin-top:24px;">
-    <h3>Messages</h3>
-    <div id="client-messages-list">${listHtml}</div>
-    <form id="client-message-form" style="margin-top:12px;">
-      <textarea id="client-message-texte" placeholder="Répondre au client..." aria-label="Votre réponse au client" required></textarea>
-      <p class="field-error" id="client-message-error" hidden></p>
-      <div class="form-actions"><button type="submit" class="btn-sm btn-sm-primary">Envoyer</button></div>
-    </form>
-  </div>`;
-}
-
-function clientResumeHtml(r) {
-  const rows = [
-    { label: "Valeur totale facturée", value: fmtEuro(r.valeur_totale) },
-    { label: "Impayés", value: fmtEuro(r.impayes), alerte: r.impayes > 0 },
-    { label: "Chantiers", value: r.nb_chantiers },
-    { label: "Dernier contact", value: r.dernier_contact ? fmtDate(r.dernier_contact) : "-" },
-    { label: "Dernier devis", value: r.date_dernier_devis ? fmtDate(r.date_dernier_devis) : "-" },
-  ];
-  return `<div class="client-detail-resume">
-    ${rows.map((row) => `<div class="profil-row${row.alerte ? " is-alert" : ""}"><div class="label">${row.label}</div><div class="value">${row.value}</div></div>`).join("")}
-  </div>`;
+  <section class="fiche-section">
+    <h5 class="fiche-section-titre">${titre}</h5>
+    <div class="fiche-section-corps">${corps}</div>
+  </section>`;
 }
 
 async function showTimeline(clientId) {
   const client = clientsCache.find((c) => c.id === clientId) || (await Api.listClients()).find((c) => c.id === clientId);
-  document.getElementById("timeline-titre").textContent = "Fiche client";
+  document.getElementById("timeline-titre").textContent = "Dossier client";
   const content = document.getElementById("timeline-content");
-  content.innerHTML = skeletonCards();
+  content.innerHTML = '<div class="fiche-squelette"><span></span><span></span><span></span></div>';
   document.getElementById("panel-timeline").hidden = false;
   document.getElementById("panel-timeline").dataset.clientId = clientId;
 
   try {
-    const [entries, resume, messages] = await Promise.all([
-      Api.clientTimeline(clientId), Api.clientResume(clientId), Api.listClientMessages(clientId).catch(() => []),
+    // Les trois listes d'affaires sont deja en cache quand on arrive depuis
+    // la page Clients ; sinon on les demande, avec le meme repli silencieux
+    // qu'ailleurs si le plan ne les autorise pas.
+    const cache = clientsDirectoryCache;
+    const [entries, resume, messages, chantiers, devis, factures] = await Promise.all([
+      Api.clientTimeline(clientId),
+      Api.clientResume(clientId),
+      Api.listClientMessages(clientId).catch(() => []),
+      cache.chantiers?.length ? cache.chantiers : Api.listChantiers().catch(() => []),
+      cache.devis?.length ? cache.devis : Api.listDevis().catch(() => []),
+      cache.factures?.length ? cache.factures : Api.listFactures().catch(() => []),
     ]);
-    const entriesHtml = entries.length === 0
-      ? '<div class="empty-state">Aucun evenement pour le moment.</div>'
-      : entries.map((e) => `<div class="timeline-entry">
-          <span class="timeline-icon"></span>
-          <div><div class="timeline-label">${escapeHtml(e.label)}</div><div class="timeline-date">${fmtDateTime(e.date)}</div></div>
-        </div>`).join("");
 
     content.innerHTML = `
       ${client ? clientDetailHeaderHtml(client) : ""}
       ${client ? clientQuickActionsHtml(client) : ""}
       ${clientResumeHtml(resume)}
-      <div class="dash-section">
-        <h3>Historique</h3>
-        ${entriesHtml}
-      </div>
-      ${messagesPanelHtml(messages)}
+      ${ficheSection("Affaires", clientAffairesHtml(clientId, chantiers, devis, factures))}
+      ${ficheSection("Chronologie", clientChronologieHtml(entries, messages) + messagesPanelHtml())}
     `;
     refreshBadges();
 
@@ -3148,6 +3256,20 @@ function setupClientsView() {
       document.getElementById("panel-timeline").hidden = true;
       switchView("devis");
       setTimeout(() => showDevisForm(null, clientId), 200);
+    }
+
+    // Le bloc « Affaires » du dossier renvoie vers la piece concernee.
+    // C'est tout l'interet de l'avoir ajoute : depuis la fiche, on atteint
+    // le chantier, le devis ou la facture en un clic, au lieu d'ouvrir la
+    // page correspondante et d'y rechercher la ligne a la main.
+    const affaire = e.target.closest('[data-action^="ouvrir-"][data-action$="-depuis-client"]');
+    if (affaire) {
+      const id = parseInt(affaire.dataset.id, 10);
+      document.getElementById("panel-timeline").hidden = true;
+      if (affaire.dataset.action === "ouvrir-chantier-depuis-client") ouvrirChantierDepuisPlanning(id);
+      else if (affaire.dataset.action === "ouvrir-devis-depuis-client") switchView("devis");
+      else switchView("factures");
+      return;
     }
 
     const avisBtn = e.target.closest('[data-action="demander-avis"]');

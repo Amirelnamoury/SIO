@@ -669,3 +669,131 @@ label { color: var(--sa-text-muted); }
   .crm-stat-label { text-transform: none; letter-spacing: 0; }
   .crm-stat-label::after { content: " :"; }
 }
+
+/* =====================================================================
+   FICHE CLIENT — « le dossier »
+   ---------------------------------------------------------------------
+   Elle tenait dans 460 px et ne montrait ni les chantiers, ni les devis,
+   ni les factures du client : pour savoir ou en etait la relation, il
+   fallait ouvrir trois autres pages. Le panneau s'elargit et devient un
+   vrai dossier.
+   ===================================================================== */
+#panel-timeline .side-panel-box { max-width: 720px; }
+
+.fiche-entete { display: flex; align-items: flex-start; gap: var(--sa-space-4); margin-bottom: var(--sa-space-4); }
+.fiche-avatar { width: 46px; height: 46px; font-size: 0.95rem; flex-shrink: 0; }
+.fiche-identite { min-width: 0; }
+.fiche-nom {
+  margin: 0 0 3px;
+  font-family: var(--sa-font-display);
+  font-size: var(--sa-text-xl); font-weight: 600; color: var(--sa-text);
+  line-height: 1.15;
+}
+.fiche-sous { margin: 0 0 6px; font-size: var(--sa-text-sm); color: var(--sa-text-muted); }
+.fiche-coords { margin: 0; font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
+.fiche-coords a { color: var(--sa-accent); text-decoration: none; }
+.fiche-coords a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+.fiche-actions {
+  display: flex; flex-wrap: wrap; gap: var(--sa-space-2);
+  padding-bottom: var(--sa-space-5);
+  border-bottom: 1px solid var(--sa-border);
+}
+
+/* Les chiffres du client, comme sur l'accueil : un filet sous chacun au
+   lieu de cinq lignes libelle/valeur qui se lisaient comme un formulaire
+   en lecture seule. */
+.fiche-chiffres {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  gap: var(--sa-space-5) var(--sa-space-6);
+  padding: var(--sa-space-5) 0;
+}
+.fiche-chiffre { display: flex; flex-direction: column; gap: 5px; }
+.fiche-chiffre-label { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--sa-text-faint); }
+.fiche-chiffre-valeur {
+  font-family: var(--sa-font-display); font-size: 1.2rem; font-weight: 500; line-height: 1;
+  color: var(--sa-text); font-variant-numeric: tabular-nums;
+  padding-bottom: 6px; border-bottom: 1px solid var(--sa-border-strong);
+}
+.fiche-chiffre.est-du .fiche-chiffre-valeur { color: var(--sa-danger); border-bottom-color: var(--sa-danger); }
+.fiche-chiffre-note { font-size: var(--sa-text-2xs); color: var(--sa-text-muted); }
+
+.fiche-section { padding-top: var(--sa-space-6); border-top: 1px solid var(--sa-border); }
+.fiche-section-titre {
+  margin: 0 0 var(--sa-space-3);
+  font-size: 0.6875rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.1em; color: var(--sa-text-faint);
+}
+.fiche-vide { margin: 0; font-size: var(--sa-text-sm); color: var(--sa-text-muted); }
+
+/* ---------- Les affaires ----------
+   Chantiers, devis et factures reunis. Chaque ligne mene a la piece :
+   depuis la fiche on atteint le dossier en un clic, au lieu d'ouvrir la
+   page correspondante et d'y rechercher la ligne a la main. */
+.fiche-affaire-groupe + .fiche-affaire-groupe { margin-top: var(--sa-space-5); }
+.fiche-affaire-groupe-titre {
+  display: flex; align-items: baseline; gap: 7px;
+  margin: 0 0 4px;
+  font-size: var(--sa-text-xs); font-weight: 600; color: var(--sa-text-muted);
+}
+.fiche-affaire-groupe-titre span { font-family: var(--sa-font-display); color: var(--sa-text-faint); font-variant-numeric: tabular-nums; }
+.fiche-affaire {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: baseline; gap: var(--sa-space-3);
+  padding: 9px 6px; margin: 0 -6px;
+  border-bottom: 1px solid var(--sa-border);
+  cursor: pointer; border-radius: var(--sa-radius-sm);
+  transition: background-color var(--sa-duration-fast) var(--sa-ease);
+}
+.fiche-affaire:hover { background: var(--sa-surface-2); }
+.fiche-affaire:focus-visible { outline: 2px solid var(--sa-accent); outline-offset: -2px; }
+.fiche-affaire-titre { font-size: var(--sa-text-sm); color: var(--sa-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fiche-affaire-meta { font-size: var(--sa-text-xs); color: var(--sa-text-faint); white-space: nowrap; }
+.fiche-affaire-montant {
+  min-width: 74px; text-align: right;
+  font-family: var(--sa-font-display); font-size: var(--sa-text-sm); font-weight: 500;
+  color: var(--sa-text); font-variant-numeric: tabular-nums;
+}
+.fiche-affaire-montant.est-alerte { color: var(--sa-danger); }
+
+/* ---------- La chronologie ----------
+   L'historique et les messages etaient deux listes de meme forme, l'une
+   sous l'autre, qui racontaient la meme chose dans deux ordres separes.
+   Elles fusionnent : un seul fil, du plus recent au plus ancien. Un
+   message se distingue par son filet, pas par sa place. */
+.fiche-chrono { position: relative; }
+.fiche-chrono-item {
+  display: grid; grid-template-columns: 116px minmax(0, 1fr);
+  gap: var(--sa-space-4);
+  padding: 9px 0;
+  border-bottom: 1px solid var(--sa-border);
+}
+.fiche-chrono-item:last-child { border-bottom: 0; }
+.fiche-chrono-date { font-size: var(--sa-text-2xs); color: var(--sa-text-faint); font-variant-numeric: tabular-nums; padding-top: 2px; }
+.fiche-chrono-corps { min-width: 0; font-size: var(--sa-text-sm); color: var(--sa-text-muted); }
+.fiche-chrono-item.est-message .fiche-chrono-corps {
+  padding-left: 11px; border-left: 2px solid var(--sa-accent-soft);
+}
+.fiche-chrono-qui { display: block; font-size: var(--sa-text-2xs); font-weight: 600; color: var(--sa-accent); }
+.fiche-chrono-label { color: var(--sa-text); }
+
+.fiche-reponse { margin-top: var(--sa-space-5); }
+.fiche-reponse label { display: block; margin-bottom: 6px; font-size: var(--sa-text-xs); font-weight: 600; color: var(--sa-text-muted); }
+.fiche-reponse textarea { width: 100%; min-height: 76px; }
+
+.fiche-squelette { display: flex; flex-direction: column; gap: var(--sa-space-4); }
+.fiche-squelette span {
+  display: block; height: 68px; border-radius: var(--sa-radius-lg);
+  background: linear-gradient(100deg, var(--sa-surface-2) 30%, var(--sa-surface-3) 50%, var(--sa-surface-2) 70%);
+  background-size: 260% 100%; animation: sa-scintille 1.4s linear infinite;
+}
+.fiche-squelette span:first-child { height: 96px; }
+@media (prefers-reduced-motion: reduce) { .fiche-squelette span { animation: none; } }
+
+@media (max-width: 760px) {
+  #panel-timeline .side-panel-box { max-width: none; }
+  .fiche-chiffres { grid-template-columns: 1fr 1fr; gap: var(--sa-space-4); }
+  .fiche-chrono-item { grid-template-columns: 1fr; gap: 2px; }
+  .fiche-affaire { grid-template-columns: minmax(0, 1fr) auto; }
+  .fiche-affaire-meta { grid-column: 1; font-size: var(--sa-text-2xs); }
+}
