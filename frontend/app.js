@@ -538,7 +538,6 @@ function switchView(view) {
   document.body.classList.toggle("is-view-dashboard", view === "dashboard");
   document.body.dataset.view = view;
   document.querySelectorAll(".nav-link").forEach((btn) => btn.classList.toggle("active", btn.dataset.view === view));
-  document.querySelectorAll(".devis-modulebar [data-view]").forEach((btn) => btn.classList.toggle("active", btn.dataset.view === view));
   // Sur mobile, la nav devient une rangee horizontale scrollable : sans ca,
   // l'onglet actif peut rester hors champ apres un changement de vue
   // programmatique (recherche globale, palette de commandes...).
@@ -2233,9 +2232,6 @@ function setupTabs() {
   document.querySelectorAll(".nav-link").forEach((btn) => {
     btn.addEventListener("click", () => switchView(btn.dataset.view));
   });
-  document.querySelectorAll(".devis-modulebar [data-view]").forEach((btn) => {
-    btn.addEventListener("click", () => switchView(btn.dataset.view));
-  });
 }
 
 // ===================== Navigation mobile (barre basse + tiroir "Plus") =====================
@@ -2381,8 +2377,12 @@ function renderPresenceSite(p) {
   if (p.url) {
     rows += `<div class="dash-row"><span>Adresse</span><a href="${escapeHtml(p.url)}" target="_blank" rel="noopener">${escapeHtml(p.url)}</a></div>`;
   }
-  rows += `<div class="dash-row"><span>Demandes reçues (30 derniers jours)</span><strong>${p.nb_demandes_30j}</strong></div>`;
-  rows += `<div class="dash-row"><span>Demandes reçues (total)</span><strong>${p.nb_demandes_total}</strong></div>`;
+  // Le schema serveur garantit ces deux entiers, mais une charge utile
+  // amputee ecrivait « undefined » en toutes lettres sous les yeux de
+  // l'artisan. Un tiret dit la meme chose sans avoir l'air casse.
+  const compte = (n) => (Number.isFinite(n) ? n : "—");
+  rows += `<div class="dash-row"><span>Demandes reçues (30 derniers jours)</span><strong>${compte(p.nb_demandes_30j)}</strong></div>`;
+  rows += `<div class="dash-row"><span>Demandes reçues (total)</span><strong>${compte(p.nb_demandes_total)}</strong></div>`;
   if (p.nb_demandes_total > 0) {
     rows += `<div class="dash-row"><span>Devenues clients</span><strong>${p.nb_clients_gagnes}${p.taux_conversion !== null ? ` (${p.taux_conversion}%)` : ""}</strong></div>`;
     rows += `<div class="dash-row"><span>CA réellement généré par le site</span><strong>${fmtEuro(p.ca_genere)}</strong></div>`;

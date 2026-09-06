@@ -61,7 +61,16 @@ vm.runInNewContext(
   { filename: appPath },
 );
 const C = correctifs.__c;
-const dans = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
+// Le jour est lu sur l'horloge LOCALE, pas via toISOString(). L'ancienne
+// version passait par UTC : entre minuit local et minuit UTC, elle rendait
+// la veille, et le test echouait d'un jour - une nuit sur douze en France,
+// jamais aux heures ou on le lance d'habitude. `chantierJoursRetard` compare
+// deux minuits locaux ; le jeu d'essai doit parler la meme langue.
+const dans = (n) => {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
 const chantier = (extra = {}) => ({
   id: 1, titre: "Rénovation cuisine", client_nom: "Martin", adresse: "Villeurbanne",
   statut: "en_cours", progression: 50, budget: 10000, total_depenses: 5000,

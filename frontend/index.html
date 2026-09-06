@@ -11,7 +11,7 @@
      DIRECTION-ARTISTIQUE.md. Les deux feuilles superposees d'avant ont ete
      fondues ici, verification faite par comparaison des styles calcules
      sur les douze vues (voir outils/empreinte-styles.js). -->
-<link rel="stylesheet" href="style.css?v=20260906-fusion">
+<link rel="stylesheet" href="style.css?v=20260907-coquille">
 <!-- Habillage de l'ecran connexion/inscription. Charge APRES style.css,
      tous ses selecteurs sont ancres sous .auth-screen : rien ne fuit vers
      le SaaS. Supprimer cette ligne rend l'ecran a son etat precedent. -->
@@ -410,13 +410,13 @@
 
     <!-- ---------- Section Devis & relances ---------- -->
     <section id="view-devis" class="view" hidden>
-      <nav class="devis-modulebar" aria-label="Navigation commerciale">
-        <span>Devis &amp; devis</span>
-        <button type="button" class="active" data-view="devis">Devis &amp; relances</button>
-        <button type="button" data-view="clients">Clients</button>
-        <span>Commerciaux</span>
-        <span>Contact</span>
-      </nav>
+      <!-- Une barre de modules occupait cette place : « Devis & devis »,
+           « Commerciaux », « Contact » - trois libelles inertes, plus deux
+           boutons qui refaisaient ce que la colonne de gauche fait deja.
+           Elle venait telle quelle d'une capture de reference, a l'epoque
+           ou la consigne etait de reproduire sans interpreter. La direction
+           artistique actuelle proscrit l'un et l'autre : les elements
+           decoratifs sans fonction, et la navigation en double. -->
       <div class="view-header">
         <div class="view-header-text">
           <p class="view-header-eyebrow">Commercial</p>
@@ -1099,7 +1099,7 @@
 <script src="env.js"></script>
 <script src="config.js"></script>
 <script src="pricing.js"></script>
-<script src="api.js?v=20260906-fusion"></script>
-<script src="app.js?v=20260906-fusion"></script>
+<script src="api.js?v=20260907-coquille"></script>
+<script src="app.js?v=20260907-coquille"></script>
 </body>
 </html>

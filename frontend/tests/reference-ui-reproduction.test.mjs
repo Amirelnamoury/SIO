@@ -19,7 +19,13 @@ for (const view of views) {
 
 assert.match(appSource, /document\.body\.dataset\.view = view/);
 assert.match(appSource, /matchMedia\("\(max-width: 900px\)"\)/);
-assert.match(indexSource, /class="devis-modulebar"/);
+// La barre de modules de Devis reproduisait une capture de reference :
+// « Devis & devis », « Commerciaux », « Contact » etaient trois libelles
+// inertes, et ses deux boutons refaisaient la navigation de gauche. La
+// direction artistique actuelle proscrit les deux.
+assert.doesNotMatch(indexSource, /devis-modulebar/, "la barre de modules inerte ne doit pas revenir");
+assert.doesNotMatch(styleSource, /devis-modulebar/);
+assert.doesNotMatch(appSource, /devis-modulebar/);
 assert.match(indexSource, /id="clients-pagination"/);
 
 for (const id of [
@@ -89,9 +95,23 @@ assert.match(appSource, /currentNotificationModule/);
 assert.match(appSource, /function fmtNotificationDate/);
 assert.match(appSource, /label: "À traiter"/);
 
-assert.match(styleSource, /body\[data-view="planning"\] \.content \{ padding: 28px 45px 72px; \}/);
-assert.match(styleSource, /body\[data-view="documents"\] \.content \{ padding: 36px 80px 72px; \}/);
-assert.match(styleSource, /body\[data-view="statistiques"\], body\[data-view="avis"\] \{ --sa-sidebar-w: 230px; \}/);
+// LA COQUILLE NE BOUGE PAS.
+// Ces trois assertions epinglaient l'inverse : un retrait de contenu propre
+// a Planning, un autre propre a Documents, et une largeur de colonne propre
+// a Statistiques et Avis. Elles reproduisaient fidelement une reference
+// faite de captures d'ecran independantes - mais dans un produit on navigue,
+// et la colonne changeait de largeur a chaque clic pendant que la recherche
+// globale disparaissait sur neuf vues sur treize.
+//
+// Ce qui est garde ici est la regle qui a remplace ces mesures : une seule
+// largeur de colonne, une seule hauteur de barre, aucune vue qui masque la
+// barre du haut.
+assert.doesNotMatch(styleSource, /body\[data-view="[a-z]+"\][^{]*\{[^}]*--sa-sidebar-w/,
+  "aucune vue ne redefinit la largeur de la colonne de navigation");
+assert.doesNotMatch(styleSource, /body\[data-view="[a-z]+"\][^{]*\{[^}]*--sa-header-h/,
+  "aucune vue ne redefinit la hauteur de la barre du haut");
+assert.doesNotMatch(styleSource, /body:not\(\[data-view[\s\S]{0,200}?\.topbar\s*\{\s*display: none/,
+  "la barre du haut - recherche globale et bouton Creer - reste sur toutes les vues");
 assert.doesNotMatch(styleSource, /body\[data-view="statistiques"\]::before/);
 assert.doesNotMatch(styleSource, /width: 1024px; height: 702px; min-height: 702px/);
 assert.match(styleSource, /minmax\(210px, 1\.45fr\) 142px 94px minmax\(150px, 1fr\) 108px 128px 28px/);

@@ -163,7 +163,28 @@ Ombres : quasiment aucune. La profondeur vient du ton du papier et des
 filets. Une seule ombre douce, pour ce qui flotte réellement au-dessus de la
 page (menu, modale, tiroir).
 
-## 6. Ce qui est proscrit
+## 6. La coquille ne bouge pas
+
+« Même identité ≠ même page » porte sur la **composition intérieure** des
+écrans : la marge, le rythme, ce qui mérite un filet, ce qui mérite un
+chiffre. Elle ne porte jamais sur le cadre qui les tient.
+
+La colonne de navigation fait **230 px**, la barre du haut **52 px**, sur
+toutes les vues sans exception, et la barre du haut — recherche globale et
+bouton *Créer* — n'est masquée nulle part. C'est une règle, pas une
+préférence : elle a été écrite après avoir constaté que la colonne mesurait
+267 px sur l'accueil, 241 px sur les devis, 198 px sur les prospects et
+195 px sur l'entreprise, et que la recherche disparaissait sur neuf vues sur
+treize. Ces valeurs venaient d'une série de captures de référence, chacune
+prise isolément ; personne ne navigue dans une capture. Dans un produit, on
+navigue, et un cadre qui se déplace à chaque clic ne se lit pas comme une
+intention mais comme un défaut.
+
+La gouttière du contenu est également unique (48 px). Ce qui distingue les
+pages, ce sont les gestes de composition de la section 5 — pas des retraits
+mesurés au pixel près page par page.
+
+## 7. Ce qui est proscrit
 
 - La bande de quatre KPI en ouverture de page. Elle était sur presque toutes
   les pages ; elle ne répond à aucune question précise.
@@ -174,3 +195,5 @@ page (menu, modale, tiroir).
   qui ne séparent rien.
 - La couleur seule comme porteuse d'information : un état porte toujours un
   mot en plus de sa teinte.
+- Les barres de navigation secondaires qui refont ce que fait la colonne de
+  gauche, et les libellés inertes qu'on y trouve pour faire nombre.

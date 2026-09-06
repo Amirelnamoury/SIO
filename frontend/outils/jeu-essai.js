@@ -29,7 +29,13 @@
 // et l'audit continuait sur les anciennes donnees en croyant les avoir
 // remplacees. Ici, un second chargement se contente d'ecraser Api a nouveau.
 (function () {
-const jg = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
+// Jour LOCAL, pas UTC : entre minuit local et minuit UTC, `toISOString()`
+// rend la veille et le jeu d'essai decale toutes ses echeances d'un jour.
+const jg = (n) => {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
 const tg = (n) => new Date(Date.now() - n * 86400e3).toISOString();
 Api.listClients = async () => [
   { id: 1, nom: "Bertrand", societe: "Bertrand & Fils", statut: "gagne", source: "manuel", email: "contact@bertrand-fils.fr", telephone: "06 12 34 56 78", ville: "Villeurbanne", montant_estime: 31000, probabilite: 80, prochaine_action: "Relancer après la visite de mardi", updated_at: tg(2), created_at: tg(60) },
@@ -57,7 +63,7 @@ Api.planning = async () => [{ id: 1, date: new Date().toISOString(), type: "rdv"
 Api.analytics = async () => ({ ca_par_mois: [4200, 5100, 6400, 8100, 9200, 11650].map((ca, i) => { const d = new Date(); d.setMonth(d.getMonth() - (5 - i)); return { mois: d.toISOString().slice(0, 7), ca }; }), valeur_pipeline: 42100, montant_impayes: 13340, nb_devis_total: 48, nb_devis_signes: 21, nb_clients_acquis: 18, nb_clients_recurrents: 7, taux_acceptation: 58, panier_moyen: 6420, delai_moyen_paiement_jours: 34, sources_acquisition: [{ source: "site_vitrine", nb_clients: 15, nb_gagnes: 5, ca: 31200 }] });
 Api.listAvis = async () => [{ id: 1, client_nom: "Bertrand", note: 5, commentaire: "Travail soigné, délais tenus, je recommande sans hésiter.", publie: true, created_at: tg(10) }];
 Api.listNotifications = async () => [{ id: 1, type: "facture_retard", titre: "Facture FA-2026-014 en retard", message: "1 840 € restent à encaisser.", lue: false, created_at: tg(1) }];
-Api.dashboard = async () => ({ finances: { ca_mois: 18420, a_encaisser: 1840, paiements_recents: [{ date_paiement: jg(-2), moyen: "Virement", montant: 4200 }] }, commercial: { devis_en_attente: 7, valeur_pipeline: 42100 }, aujourdhui: { factures_en_retard: [{ id: 14, numero: "FA-2026-014", client_nom: "Bertrand", montant_restant: 1840 }], devis_a_relancer: [], taches: [{ id: 1, titre: "Commander le carrelage" }], chantiers_a_venir: [], evenements: [{ id: 1, titre: "Métré chez Mme Roussel", date_debut: new Date().toISOString() }] }, alertes_conformite: [], presence_site: { statut: "en_ligne", url: "https://exemple.fr" } });
+Api.dashboard = async () => ({ finances: { ca_mois: 18420, a_encaisser: 1840, paiements_recents: [{ date_paiement: jg(-2), moyen: "Virement", montant: 4200 }] }, commercial: { devis_en_attente: 7, valeur_pipeline: 42100 }, aujourdhui: { factures_en_retard: [{ id: 14, numero: "FA-2026-014", client_nom: "Bertrand", montant_restant: 1840 }], devis_a_relancer: [], taches: [{ id: 1, titre: "Commander le carrelage" }], chantiers_a_venir: [], evenements: [{ id: 1, titre: "Métré chez Mme Roussel", date_debut: new Date().toISOString() }] }, alertes_conformite: [], presence_site: { statut: "livre", url: "https://exemple.fr", nb_demandes_total: 9, nb_demandes_30j: 3, nb_clients_gagnes: 2, ca_genere: 12400, taux_conversion: 22.2 } });
 Api.dashboardRecommandations = async () => [{ message: "Trois devis de plus de 30 jours n'ont jamais été relancés.", urgence: "haute" }];
 // Le contrat serveur est SanteEntrepriseOut / SousScoreOut : la valeur du
 // sous-score s'appelle `valeur`, pas `score`, et peut etre nulle quand il n'y

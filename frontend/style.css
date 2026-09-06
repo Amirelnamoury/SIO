@@ -363,7 +363,11 @@ input[readonly] { background: var(--sa-surface-2); }
 @media (max-width: 900px) { .topbar { display: none; } }
 
 /* ---------- Contenu ---------- */
-.content { flex: 1; min-width: 0; max-width: var(--sa-content-w); margin: 0 auto; padding: 28px 30px 72px; width: 100%; }
+/* 48 px de gouttiere, la meme sur toutes les vues. Le retrait etait de 30 px
+   au socle et de 34 a 168 px selon la vue par-dessus : la page se decalait a
+   chaque navigation. Une seule valeur, assez large pour que le contenu ne
+   touche pas le bord de la colonne sombre. */
+.content { flex: 1; min-width: 0; max-width: var(--sa-content-w); margin: 0 auto; padding: 28px 48px 72px; width: 100%; }
 @media (min-width: 1520px) { .content { max-width: 1320px; } }
 
 /* ---------- Page header : eyebrow / titre / description / actions ---------- */
@@ -382,8 +386,6 @@ input[readonly] { background: var(--sa-surface-2); }
   body[data-view="clients"] .topbar-search-btn { width: 420px; margin-left: 269px; }
 }
 
-.devis-modulebar { height: 55px; margin: -28px -54px 29px; padding: 0 25px; display: flex; align-items: stretch; gap: 28px; border-bottom: 1px solid var(--sa-border); font-size: var(--sa-text-sm); }
-.devis-modulebar button, .devis-modulebar span { display: inline-flex; align-items: center; padding: 0; border: 0; border-bottom: 2px solid transparent; background: transparent; color: inherit; font: inherit; }
 #view-devis .view-header { margin-bottom: 34px; }
 #view-devis .view-header-actions { margin-top: 18px; }
 #view-devis .view-header-actions .btn-primary { order: -1; }
@@ -498,32 +500,38 @@ input[readonly] { background: var(--sa-surface-2); }
 @media (min-width: 901px) {
   .mobile-topbar, .bottom-nav, .more-drawer { display: none !important; }
 
-  /* Les references n'utilisent pas toutes le meme shell. Ces largeurs sont
-     attachees a la vue active, pas au metier ni aux donnees. */
-  body[data-view="dashboard"] { --sa-sidebar-w: 267px; --sa-header-h: 64px; }
-  body[data-view="prospects"], body[data-view="clients"] { --sa-sidebar-w: 198px; --sa-header-h: 51px; }
-  body[data-view="devis"] { --sa-sidebar-w: 241px; }
-  body[data-view="factures"], body[data-view="taches"], body[data-view="documents"] { --sa-sidebar-w: 230px; }
-  body[data-view="chantiers"], body[data-view="planning"] { --sa-sidebar-w: 215px; }
-  body[data-view="entreprise"] { --sa-sidebar-w: 195px; }
-  body[data-view="notifications"] { --sa-sidebar-w: 227px; }
-  body[data-view="statistiques"], body[data-view="avis"] { --sa-sidebar-w: 230px; }
+  /* ---------------------------------------------------------------------
+     LA COQUILLE NE BOUGE PAS
+     ---------------------------------------------------------------------
+     Cet endroit portait une largeur de colonne DIFFERENTE par vue - 267,
+     241, 230, 227, 215, 198, 195 px - et faisait disparaitre la barre du
+     haut sur neuf vues sur treize. Le commentaire d'origine l'assumait :
+     « les references n'utilisent pas toutes le meme shell. » C'etait exact
+     de la reference qu'on reproduisait alors, faite de captures d'ecran
+     independantes ou personne ne navigue. Dans un produit, on navigue : la
+     colonne changeait de largeur a chaque clic et la recherche globale
+     disparaissait des qu'on quittait l'accueil. Cela ne se lit pas comme
+     une intention, cela se lit comme un defaut.
 
-  body[data-view="dashboard"] .content { padding-top: 0; padding-left: 34px; padding-right: 34px; }
+     « Meme identite, pas meme page » porte sur la COMPOSITION INTERIEURE
+     des ecrans - la marge, le rythme, ce qui merite un filet - jamais sur
+     le cadre qui les tient. Le cadre est unique : 230 px de colonne, 52 px
+     de barre, partout. Ce qui reste ci-dessous ne concerne plus la
+     coquille mais l'interieur des pages.
+     --------------------------------------------------------------------- */
+
+  /* L'accueil ouvre directement sur son titre : pas de bandeau au-dessus,
+     donc pas de retrait en haut. */
+  body[data-view="dashboard"] .content { padding-top: 0; }
   body[data-view="prospects"] .view-header > .btn-primary { margin-top: 20px; }
-  body[data-view="devis"] .content { padding: 28px 54px 72px; }
-  body[data-view="factures"] .content { padding: 31px 40px 72px; }
-  body[data-view="chantiers"] .content { padding: 28px 45px 72px; }
-  body[data-view="planning"] .content { padding: 28px 45px 72px; }
-  body[data-view="taches"] .content { padding: 28px 80px 72px; }
-  body[data-view="documents"] .content { padding: 36px 80px 72px; }
-  body[data-view="entreprise"] .content { max-width: none; padding: 24px 168px 60px; }
-  body[data-view="notifications"] .content { max-width: none; padding: 38px 142px 60px; }
-  body[data-view="statistiques"] .content, body[data-view="avis"] .content { max-width: none; padding: 28px 80px 60px; }
 
-  body:not([data-view="dashboard"]):not([data-view="prospects"]):not([data-view="clients"]) .topbar {
-    display: none;
-  }
+  /* Quatre pages n'ont pas de liste a faire respirer et gagnent a occuper
+     toute la largeur disponible : elles sont deja composees en interne par
+     la marge de `.sa-section`, un second cadrage les etranglerait. */
+  body[data-view="entreprise"] .content,
+  body[data-view="notifications"] .content,
+  body[data-view="statistiques"] .content,
+  body[data-view="avis"] .content { max-width: none; }
 }
 
 @media (max-width: 760px) {
@@ -2367,9 +2375,6 @@ label { color: var(--sa-text-muted); }
 
 /* La barre de module reproduit une reference fournie par l'utilisateur ;
    on ne la retire pas, on la remet dans la grammaire du papier. */
-.devis-modulebar { border-bottom-color: var(--sa-border); color: var(--sa-text-muted); }
-.devis-modulebar button.active { color: var(--sa-text); border-bottom-color: var(--sa-laiton); }
-.devis-modulebar span { color: var(--sa-text-faint); }
 
 /* =====================================================================
    CREATION / MODIFICATION D'UN DEVIS — « le document »
@@ -2979,17 +2984,10 @@ label { color: var(--sa-text-muted); }
   #view-clients .list-toolbar select { flex: 1 1 132px; min-width: 0; max-width: none; }
 }
 
-/* 3. LA BARRE DE MODULE de Devis est une navigation : elle ne se replie
-      pas, elle defile. Cinq entrees ne tiennent pas sur 343 px, et les
-      empiler ferait perdre la lecture d'un fil de navigation. */
-@media (max-width: 760px) {
-  .devis-modulebar {
-    margin-left: -16px; margin-right: -16px; padding-left: 16px; padding-right: 16px;
-    overflow-x: auto; scrollbar-width: none;
-  }
-  .devis-modulebar::-webkit-scrollbar { display: none; }
-  .devis-modulebar button, .devis-modulebar span { white-space: nowrap; flex-shrink: 0; }
-}
+/* 3. LA BARRE DE MODULE de Devis a ete supprimee : trois de ses cinq
+      entrees etaient des libelles inertes et les deux autres refaisaient
+      la navigation de gauche. Le traitement mobile qui la faisait defiler
+      part avec elle. */
 
 /* 4. LE GRAPHIQUE debordait de 2 px : un SVG a viewBox garde sa largeur
       intrinseque si on ne la borne pas. */
