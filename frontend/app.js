@@ -4710,116 +4710,864 @@ function setupContratsView() {
   });
 }
 
-// ===================== Chantiers =====================
-// "A surveiller" : budget deja consomme au-dela de 85% - signal deja present
-// sur l'objet chantier (c.budget/c.total_depenses), pas de calcul metier
-// nouveau, juste un seuil d'affichage. Fonction partagee entre la bande de
-// KPI et le filtre par onglet pour ne jamais avoir deux definitions.
-function chantierEstASurveiller(c) {
-  if (["termine", "facture", "paye", "a_preparer"].includes(c.statut)) return false;
-  const consomme = c.budget && c.total_depenses ? (c.total_depenses / c.budget) * 100 : null;
-  return consomme !== null && consomme >= 85;
+// ===================== Chantiers — le cockpit =====================
+// Toute cette section repose sur un constat : /chantiers renvoie deja tout
+// ce qu'il faut pour piloter (budget, depenses, progression, dates, taches,
+// reception, verrou de facturation), mais l'ancienne page se contentait de
+// les afficher cote a cote. Rien ici n'appelle l'API en plus ni n'invente
+// une donnee : tout ce qui suit est de la LECTURE de champs existants.
+//
+// Un mot sur `prochaine_action` : l'ancienne fiche lisait `c.prochaine_action`,
+// un champ que ChantierOut ne renvoie pas. La ligne affichait donc
+// "Aucune action planifiee" pour tous les chantiers, en permanence. Elle est
+// maintenant deduite (voir chProchaineAction) des taches, des dates et du
+// statut - c'est-a-dire des donnees qui existent vraiment.
+
+const CH_TERMINES = ["termine", "facture", "paye"];
+const CH_FACTURES = ["facture", "paye"];
+
+/** Minuit local pour une date ISO "YYYY-MM-DD" (jamais un parse UTC, qui
+ *  decalerait la comparaison d'un jour selon le fuseau). */
+function chJour(iso) {
+  if (!iso) return null;
+  const d = new Date(String(iso).slice(0, 10) + "T00:00:00");
+  return isNaN(d) ? null : d;
+}
+function chAujourdhui() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+/** Nombre de jours ecoules DEPUIS `iso` (positif = dans le passe). */
+function chJoursDepuis(iso) {
+  const d = chJour(iso);
+  if (!d) return null;
+  return Math.round((chAujourdhui() - d) / 86400000);
+}
+/** "12 sept." — assez court pour tenir dans une fiche, assez explicite
+ *  pour ne pas confondre 09/12 et 12/09. */
+function chDateCourte(iso) {
+  const d = chJour(iso);
+  if (!d) return null;
+  return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+}
+function chPluriel(n, singulier, pluriel) {
+  return `${n} ${n > 1 ? pluriel : singulier}`;
+}
+/** Euro sans centimes. Un cumul de portefeuille se lit "33 690 €" : les
+ *  centimes d'un total de cinq chiffres n'apportent rien et cassent la
+ *  lecture d'un grand chiffre. Le detail, lui, garde fmtEuro. */
+function chEuroCourt(n) {
+  if (n === null || n === undefined) return null;
+  return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n);
 }
 
-// Bande de KPI : agregee a partir des memes chantiers deja recus (aucun
-// nouvel appel, aucune donnee inventee).
-function chantiersKpiBandHtml(chantiers) {
-  const enCours = chantiers.filter((c) => !["a_preparer", "termine", "facture", "paye"].includes(c.statut));
+/** Lecture unique d'un chantier. Toutes les vues (tuiles, fil d'attention,
+ *  fiche, tableau, tiroir) partent d'ici : un seul endroit ou un seuil peut
+ *  etre change, donc jamais deux definitions de "en retard" qui divergent. */
+function chLecture(c) {
+  const estTermine = CH_TERMINES.includes(c.statut);
+  const estFacture = CH_FACTURES.includes(c.statut);
+  const estAPreparer = c.statut === "a_preparer";
+  const estActif = !estTermine && !estAPreparer;
+
+  const progression = Math.max(0, Math.min(100, Number(c.progression) || 0));
+  const depenses = Number(c.total_depenses) || 0;
+  const budget = c.budget !== null && c.budget !== undefined && c.budget > 0 ? Number(c.budget) : null;
+  const budgetPct = budget !== null ? Math.round((depenses / budget) * 100) : null;
+
+  // La derive : combien de points de budget ont ete consommes EN AVANCE sur
+  // le travail reellement fait. C'est la lecture centrale de la page.
+  // Elle n'a de sens qu'une fois le chantier demarre - sur un chantier a
+  // 0 % d'avancement, la moindre commande de materiaux afficherait une
+  // derive maximale alors que c'est le deroulement normal.
+  const derive = budgetPct !== null && progression >= 10 ? budgetPct - progression : null;
+
+  const marge = c.marge_reelle !== null && c.marge_reelle !== undefined ? c.marge_reelle : c.marge_estimee;
+
+  const joursRetard = !estTermine && c.date_fin_prevue ? Math.max(0, chJoursDepuis(c.date_fin_prevue)) : 0;
+  const joursAvantFin = !estTermine && c.date_fin_prevue ? -chJoursDepuis(c.date_fin_prevue) : null;
+
+  const taches = c.taches || [];
+  const tachesOuvertes = taches.filter((t) => t.statut !== "faite");
+  const tachesEnRetard = tachesOuvertes.filter((t) => t.echeance && chJoursDepuis(t.echeance) > 0);
+
+  return {
+    estTermine, estFacture, estAPreparer, estActif,
+    progression, depenses, budget, budgetPct, derive, marge,
+    joursRetard, joursAvantFin, taches, tachesOuvertes, tachesEnRetard,
+  };
+}
+
+// ---------------------------------------------------------------------
+// LES SIGNAUX
+// ---------------------------------------------------------------------
+// Un signal = une phrase que l'artisan doit lire, avec le geste qui la
+// resout. Ils sont classes par gravite, et c'est cet ordre qui pilote a la
+// fois le trait de niveau des fiches, le fil d'attention et le tri par
+// defaut. Chaque signal porte un TEXTE : la couleur n'est jamais le seul
+// porteur de l'information (regle d'accessibilite "color only").
+const CH_GRAVITE = { critique: 3, attention: 2, info: 1 };
+
+function chSignaux(c) {
+  const l = chLecture(c);
+  const s = [];
+  const pousse = (niveau, code, texte, cta, action) => s.push({ niveau, code, texte, cta, action });
+
+  if (l.joursRetard > 0) {
+    pousse("critique", "retard", `En retard de ${chPluriel(l.joursRetard, "jour", "jours")}`, "Replanifier", "edit-chantier");
+  }
+  if (l.budget !== null && l.depenses > l.budget) {
+    pousse("critique", "budget_depasse", `Budget dépassé de ${chEuroCourt(l.depenses - l.budget)}`, "Voir les dépenses");
+  } else if (l.budgetPct !== null && l.budgetPct >= 85 && l.estActif) {
+    pousse("attention", "budget_tendu", `Budget consommé à ${l.budgetPct} %`, "Voir les dépenses");
+  }
+  if (l.derive !== null && l.derive >= 20 && l.estActif) {
+    pousse("attention", "derive", `Dépenses en avance de ${l.derive} points sur l'avancement`);
+  }
+  if (l.tachesEnRetard.length) {
+    pousse("attention", "taches", `${chPluriel(l.tachesEnRetard.length, "tâche en retard", "tâches en retard")}`, "Voir les tâches");
+  }
+  if (c.statut === "termine") {
+    pousse("attention", "a_facturer", "Terminé, pas encore facturé", "Clôturer", "toggle-cloturer-form");
+  }
+  if (l.estTermine && !c.date_reception) {
+    pousse("attention", "reception", "Réception non enregistrée", "Enregistrer", "toggle-reception-form");
+  }
+  if (c.reserves && c.statut !== "paye") {
+    pousse("info", "reserves", "Réserves à lever");
+  }
+  if (l.joursAvantFin !== null && l.joursAvantFin >= 0 && l.joursAvantFin <= 7) {
+    pousse("info", "echeance", l.joursAvantFin === 0 ? "Livraison prévue aujourd'hui" : `Livraison dans ${chPluriel(l.joursAvantFin, "jour", "jours")}`);
+  }
+  if (l.budget === null && l.estActif) {
+    pousse("info", "sans_budget", "Budget non renseigné", "Renseigner", "edit-chantier");
+  }
+  if (l.estActif && !l.tachesOuvertes.length && !c.date_fin_prevue) {
+    pousse("info", "sans_suite", "Aucune échéance ni tâche planifiée", "Planifier", "planifier-intervention");
+  }
+
+  return s.sort((a, b) => CH_GRAVITE[b.niveau] - CH_GRAVITE[a.niveau]);
+}
+
+/** Le niveau qui colore le trait de niveau de la fiche. Un chantier fini et
+ *  sans reserve merite son propre etat : ce n'est ni une alerte, ni un
+ *  chantier a piloter. */
+function chNiveau(c) {
+  const sig = chSignaux(c);
+  if (sig.some((x) => x.niveau === "critique")) return "critique";
+  if (sig.some((x) => x.niveau === "attention")) return "attention";
+  if (CH_TERMINES.includes(c.statut)) return "fini";
+  return "calme";
+}
+
+/** Score d'urgence pour le tri par defaut. La gravite domine ; a gravite
+ *  egale, c'est le retard puis la tension budgetaire qui departagent. */
+function chScore(c) {
+  const l = chLecture(c);
+  const sig = chSignaux(c);
+  let score = sig.reduce((t, x) => t + CH_GRAVITE[x.niveau] * 10, 0);
+  score += Math.min(l.joursRetard, 60);
+  if (l.budgetPct !== null) score += Math.max(0, l.budgetPct - 80) / 2;
+  if (l.estTermine) score -= 15;
+  return score;
+}
+
+/** La prochaine action. Une seule, la plus proche du geste reel, avec sa
+ *  date quand elle en a une. L'ordre des cas est l'ordre de la vie du
+ *  chantier : ce qui bloque la cloture passe avant ce qui reste a faire. */
+function chProchaineAction(c) {
+  const l = chLecture(c);
+
+  if (c.statut === "termine") {
+    return { texte: "Clôturer le chantier", action: "toggle-cloturer-form" };
+  }
+  if (l.estFacture && !c.date_reception) {
+    return { texte: "Enregistrer la réception", action: "toggle-reception-form" };
+  }
+  if (l.tachesOuvertes.length) {
+    // La tache datee la plus proche ; a defaut la premiere tache ouverte.
+    const datees = l.tachesOuvertes.filter((t) => t.echeance).sort((a, b) => a.echeance.localeCompare(b.echeance));
+    const t = datees[0] || l.tachesOuvertes[0];
+    const retard = t.echeance ? chJoursDepuis(t.echeance) : null;
+    return {
+      texte: t.titre,
+      quand: t.echeance ? (retard > 0 ? `retard ${retard} j` : chDateCourte(t.echeance)) : null,
+      enRetard: retard > 0,
+    };
+  }
+  if (l.estAPreparer && c.date_debut) {
+    return { texte: "Démarrage du chantier", quand: chDateCourte(c.date_debut) };
+  }
+  if (l.estAPreparer) {
+    return { texte: "Planifier le démarrage", action: "edit-chantier" };
+  }
+  if (c.date_fin_prevue && !l.estTermine) {
+    return { texte: "Livraison prévue", quand: chDateCourte(c.date_fin_prevue), enRetard: l.joursRetard > 0 };
+  }
+  if (l.estTermine) {
+    return { texte: "Dossier clôturé", vide: true };
+  }
+  return { texte: "Aucune action planifiée", vide: true, action: "planifier-intervention" };
+}
+
+// ---------------------------------------------------------------------
+// ICONES — un signal ne doit jamais reposer sur la seule couleur
+// ---------------------------------------------------------------------
+const CH_ICONES = {
+  critique: '<svg viewBox="0 0 24 24" class="nav-icon" aria-hidden="true"><path d="M12 8v5"/><circle cx="12" cy="16.5" r="1"/><path d="M10.3 3.9 2.5 17.4A1.9 1.9 0 0 0 4.2 20.3h15.6a1.9 1.9 0 0 0 1.7-2.9L13.7 3.9a1.9 1.9 0 0 0-3.4 0z"/></svg>',
+  attention: '<svg viewBox="0 0 24 24" class="nav-icon" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5"/><circle cx="12" cy="16.2" r="1"/></svg>',
+  info: '<svg viewBox="0 0 24 24" class="nav-icon" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><circle cx="12" cy="7.8" r="1"/></svg>',
+};
+
+// ---------------------------------------------------------------------
+// 1. SITUATION — quatre tuiles qui sont aussi les quatre filtres
+// ---------------------------------------------------------------------
+// Le compteur et la porte d'entree sont le meme objet : lire "2 en retard"
+// puis devoir chercher lesquels etait le defaut principal de l'ancienne
+// bande de KPI.
+function chSituationHtml(chantiers) {
+  const actifs = chantiers.filter((c) => chLecture(c).estActif);
   const aPreparer = chantiers.filter((c) => c.statut === "a_preparer");
-  const aSurveiller = chantiers.filter(chantierEstASurveiller);
-  const margeTotale = chantiers.reduce((s, c) => s + (c.marge_estimee || c.marge_reelle || 0), 0);
+  const enCours = actifs.filter((c) => c.statut === "en_cours" || c.statut === "planifie");
+  const enPause = actifs.filter((c) => c.statut === "en_pause");
+  const enRetard = chantiers.filter((c) => chLecture(c).joursRetard > 0);
+  const tendus = chantiers.filter((c) => {
+    const l = chLecture(c);
+    return l.estActif && l.budgetPct !== null && l.budgetPct >= 85;
+  });
+
+  const retardMax = enRetard.reduce((m, c) => Math.max(m, chLecture(c).joursRetard), 0);
+
+  // Marge : la reelle des que le chantier est facture, l'estimee sinon -
+  // exactement la regle deja utilisee sur la fiche, pour que le cumul et le
+  // detail ne se contredisent jamais.
+  const margeTotale = chantiers.reduce((s, c) => s + (chLecture(c).marge || 0), 0);
+  const budgetTotal = chantiers.reduce((s, c) => s + (Number(c.budget) || 0), 0);
+  const margePct = budgetTotal > 0 ? Math.round((margeTotale / budgetTotal) * 100) : null;
+
+  // Le chiffre de tete est le portefeuille OUVERT : les chantiers en cours
+  // plus ceux a preparer. Un chantier qui demarre dans neuf jours pese deja
+  // sur la charge de l'artisan, et la repartition juste en dessous doit
+  // s'additionner au chiffre affiche - sinon on lit "5" au-dessus de trois
+  // nombres qui font 6.
+  const ouverts = actifs.length + aPreparer.length;
+  const seg = (n, cls) => (n ? `<span class="${cls}" style="flex:${n}" title="${n}"></span>` : "");
+
+  const tuile = (filtre, label, valeur, sub, opts = {}) => `
+    <button type="button" class="ch-tuile${opts.signal ? " is-signal" : ""}${opts.critique ? " is-critique" : ""}"
+            data-signal="${filtre}" aria-pressed="false">
+      <span class="ch-tuile-label">${label}</span>
+      <span class="ch-tuile-valeur">${valeur}</span>
+      ${sub}
+    </button>`;
+
   return `
-  <div class="kpi-band">
-    <div class="kpi-card">
-      <div class="kpi-card-label">Chantiers en cours</div>
-      <div class="kpi-card-value">${enCours.length}</div>
-      <div class="kpi-card-sub">${chantiers.length ? Math.round((enCours.length / chantiers.length) * 100) : 0}% du total</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-card-label">À préparer</div>
-      <div class="kpi-card-value">${aPreparer.length}</div>
-      <div class="kpi-card-sub">Démarrage à planifier</div>
-    </div>
-    <div class="kpi-card${aSurveiller.length ? " is-highlight" : ""}">
-      <div class="kpi-card-label">À surveiller</div>
-      <div class="kpi-card-value">${aSurveiller.length}</div>
-      <div class="kpi-card-sub${aSurveiller.length ? " is-alert" : ""}">Budget consommé ≥ 85%</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-card-label">Marge prévisionnelle</div>
-      <div class="kpi-card-value">${fmtEuro(margeTotale)}</div>
-      <div class="kpi-card-sub">Cumul, tous chantiers</div>
-    </div>
+  <div class="ch-situation" role="group" aria-label="Situation des chantiers">
+    ${tuile("ouverts", "Chantiers ouverts", ouverts, `
+      <span class="ch-tuile-sub">${enCours.length} en cours · ${aPreparer.length} à préparer${enPause.length ? ` · ${enPause.length} en pause` : ""}</span>
+      <span class="ch-repartition" aria-hidden="true">${seg(enCours.length, "seg-cours")}${seg(aPreparer.length, "seg-preparer")}${seg(enPause.length, "seg-pause")}</span>`)}
+
+    ${tuile("retard", "En retard", enRetard.length, `<span class="ch-tuile-sub">${enRetard.length ? `jusqu'à ${chPluriel(retardMax, "jour", "jours")}` : "Aucune livraison dépassée"}</span>`,
+      { signal: enRetard.length > 0, critique: enRetard.length > 0 })}
+
+    ${tuile("budget", "Budget sous tension", tendus.length, `<span class="ch-tuile-sub">${tendus.length ? "85 % du budget atteint" : "Tous dans les clous"}</span>`,
+      { signal: tendus.length > 0 })}
+
+    ${tuile("", "Marge prévisionnelle", chEuroCourt(margeTotale) || "—", `<span class="ch-tuile-sub">${margePct !== null ? `${margePct} % du budget engagé` : "Budgets non renseignés"}</span>`)}
   </div>`;
 }
 
-let currentChantierFilter = ""; // "" | a_preparer | en_cours | a_surveiller | termine
+// ---------------------------------------------------------------------
+// 2. FIL D'ATTENTION — lequel, et quoi faire
+// ---------------------------------------------------------------------
+// Les tuiles disent combien ; ce bloc dit lequel. Il disparait entierement
+// quand il n'y a rien a traiter : une section qui affiche "rien a signaler"
+// occupe l'ecran sans jamais rien apprendre.
+const CH_ATTENTION_VISIBLE = 4;
+let chAttentionDeployee = false;
 
-// Certains onglets regroupent plusieurs vrais statuts (ex. "En cours" =
-// planifie+en_cours+en_pause, "Terminés" = termine+facture+paye) ou une
-// condition calculee ("À surveiller", voir chantierEstASurveiller) plutot
-// qu'un statut unique - comme le fait deja la bande de KPI juste au-dessus.
+function chAttentionHtml(chantiers) {
+  const lignes = [];
+  for (const c of chantiers) {
+    for (const sig of chSignaux(c)) {
+      if (sig.niveau === "info") continue; // le fil ne porte que ce qui appelle un geste
+      lignes.push({ chantier: c, sig });
+    }
+  }
+  if (!lignes.length) return "";
+
+  lignes.sort((a, b) => CH_GRAVITE[b.sig.niveau] - CH_GRAVITE[a.sig.niveau] || chScore(b.chantier) - chScore(a.chantier));
+  const visibles = chAttentionDeployee ? lignes : lignes.slice(0, CH_ATTENTION_VISIBLE);
+  const reste = lignes.length - visibles.length;
+
+  const rangs = visibles.map(({ chantier: c, sig }) => `
+    <button type="button" class="ch-alerte${sig.niveau === "critique" ? " is-critique" : ""}"
+            data-action="ouvrir-chantier" data-id="${c.id}"${sig.action ? ` data-suite="${sig.action}"` : ""}>
+      <span class="ch-alerte-icone">${CH_ICONES[sig.niveau]}</span>
+      <span class="ch-alerte-texte">
+        <span class="ch-alerte-quoi">${escapeHtml(sig.texte)}</span>
+        <span class="ch-alerte-ou">${escapeHtml(c.titre)}${c.client_nom ? " · " + escapeHtml(c.client_nom) : ""}</span>
+      </span>
+      <span class="ch-alerte-cta">${escapeHtml(sig.cta || "Ouvrir")}</span>
+    </button>`).join("");
+
+  return `
+  <section class="ch-attention" aria-labelledby="ch-attention-titre">
+    <div class="ch-attention-tete">
+      <h3 class="ch-attention-titre" id="ch-attention-titre">À traiter</h3>
+      <span class="ch-attention-compte">${chPluriel(lignes.length, "point", "points")} sur ${chPluriel(new Set(lignes.map((x) => x.chantier.id)).size, "chantier", "chantiers")}</span>
+    </div>
+    ${rangs}
+    ${reste > 0 ? `<button type="button" class="ch-attention-plus" data-action="deployer-attention">Voir les ${reste} autres points</button>` : ""}
+    ${chAttentionDeployee && lignes.length > CH_ATTENTION_VISIBLE ? '<button type="button" class="ch-attention-plus" data-action="replier-attention">Réduire</button>' : ""}
+  </section>`;
+}
+
+// ---------------------------------------------------------------------
+// 3. LA JAUGE DE DERIVE — element de signature de la page
+// ---------------------------------------------------------------------
+// Deux barres sur le meme axe 0-100, empilees et alignees : le regard lit
+// l'ECART entre elles sans avoir a comparer deux nombres. Sur la barre du
+// budget, la part consommee AU-DELA de l'avancement est peinte a part -
+// la derive n'est pas annoncee, elle se voit.
+//
+// Le verdict sous les barres redit la meme chose en toutes lettres : un
+// utilisateur qui distingue mal les couleurs, ou qui lit vite, obtient
+// l'information par le texte.
+function chJaugesHtml(c) {
+  const l = chLecture(c);
+  const largeurBudget = l.budgetPct === null ? 0 : Math.min(l.budgetPct, 100);
+  const base = Math.min(largeurBudget, l.progression);
+  const surplus = Math.max(0, largeurBudget - l.progression);
+
+  let verdict = '<span class="ch-verdict">Budget non renseigné</span>';
+  if (l.budgetPct !== null) {
+    if (l.budget !== null && l.depenses > l.budget) {
+      verdict = `<span class="ch-verdict est-derive">Dépassement de ${chEuroCourt(l.depenses - l.budget)}</span>`;
+    } else if (l.derive !== null && l.derive >= 20) {
+      verdict = `<span class="ch-verdict est-derive">+${l.derive} points de dérive</span>`;
+    } else if (l.derive !== null && l.derive >= 8) {
+      verdict = `<span class="ch-verdict est-tendue">+${l.derive} points d'avance sur le budget</span>`;
+    } else if (l.progression >= 10) {
+      verdict = '<span class="ch-verdict est-saine">Dans les clous</span>';
+    } else {
+      verdict = `<span class="ch-verdict">${chEuroCourt(l.depenses)} engagés sur ${chEuroCourt(l.budget)}</span>`;
+    }
+  }
+
+  return `
+    <div class="ch-jauges">
+      <div class="ch-jauge">
+        <span class="ch-jauge-label">Avancement</span>
+        <span class="ch-piste">
+          <span class="ch-remplissage est-avancement" style="width:${l.progression}%"></span>
+        </span>
+        <span class="ch-jauge-valeur">${l.progression} %</span>
+      </div>
+      <div class="ch-jauge">
+        <span class="ch-jauge-label">Budget</span>
+        <span class="ch-piste">
+          <span class="ch-remplissage est-budget" style="width:${base}%"></span>
+          ${surplus > 0 ? `<span class="ch-remplissage est-derive${l.derive < 20 ? " est-tendue" : ""}" style="left:${l.progression}%;width:${surplus}%"></span>` : ""}
+        </span>
+        <span class="ch-jauge-valeur">${l.budgetPct === null ? "—" : l.budgetPct + " %"}</span>
+      </div>
+      ${verdict}
+    </div>`;
+}
+
+// ---------------------------------------------------------------------
+// 4. LA FICHE
+// ---------------------------------------------------------------------
+// Ordre de lecture impose par la priorite metier : urgence, prochaine
+// action, avancement, budget, echeance. Tout le reste (notes, depenses,
+// heures, documents, reception) vit dans le tiroir - le garder ici forcait
+// a deplier une carte pour comprendre un chantier.
+function chFicheHtml(c) {
+  const l = chLecture(c);
+  const sig = chSignaux(c);
+  const majeur = sig.find((x) => x.niveau !== "info");
+  const action = chProchaineAction(c);
+  const statut = CHANTIER_STATUT_META[c.statut] || { label: c.statut };
+
+  const ligneSignal = majeur
+    ? `<p class="ch-signal${majeur.niveau === "critique" ? " is-critique" : ""}">
+         ${CH_ICONES[majeur.niveau]}
+         <span>${escapeHtml(majeur.texte)}</span>
+         ${sig.filter((x) => x.niveau !== "info").length > 1 ? `<span class="ch-signal-plus">+${sig.filter((x) => x.niveau !== "info").length - 1}</span>` : ""}
+       </p>`
+    : "";
+
+  const finPrevue = c.date_fin_prevue
+    ? `<span class="ch-pied-valeur${l.joursRetard > 0 ? " est-retard" : ""}">${chDateCourte(c.date_fin_prevue)}</span>`
+    : '<span class="ch-pied-valeur ch-pied-label">non fixée</span>';
+
+  return `
+  <article class="ch-fiche niveau-${chNiveau(c)}" data-chantier-id="${c.id}"
+           data-action="ouvrir-chantier" data-id="${c.id}" tabindex="0" role="button"
+           aria-label="Ouvrir le dossier ${escapeHtml(c.titre)}">
+    <div class="ch-fiche-tete">
+      <div class="ch-fiche-identite">
+        <h3 class="ch-fiche-titre">${escapeHtml(c.titre)}</h3>
+        <p class="ch-fiche-sous">
+          <span class="ch-fiche-client">${escapeHtml(c.client_nom || "Client non renseigné")}${c.adresse ? " · " + escapeHtml(c.adresse) : ""}</span>
+          <span class="ch-fiche-statut">${escapeHtml(statut.label)}</span>
+        </p>
+      </div>
+    </div>
+
+    ${ligneSignal}
+
+    <div class="ch-action${action.vide ? " is-vide" : ""}">
+      <span class="ch-action-fleche" aria-hidden="true">→</span>
+      <span class="ch-action-texte">${escapeHtml(action.texte)}</span>
+      ${action.quand ? `<span class="ch-action-quand${action.enRetard ? " est-retard" : ""}">${escapeHtml(action.quand)}</span>` : ""}
+    </div>
+
+    ${chJaugesHtml(c)}
+
+    <div class="ch-fiche-pied">
+      <span class="ch-pied-item"><span class="ch-pied-label">Fin prévue</span> ${finPrevue}</span>
+      <span class="ch-pied-item">
+        <span class="ch-pied-label">${l.estTermine ? "Marge réelle" : "Marge estimée"}</span>
+        <span class="ch-pied-valeur${l.marge !== null && l.marge !== undefined && l.marge < 0 ? " est-negatif" : ""}">${l.marge === null || l.marge === undefined ? "—" : chEuroCourt(l.marge)}</span>
+      </span>
+    </div>
+  </article>`;
+}
+
+// ---------------------------------------------------------------------
+// 5. LA VUE LISTE — la meme lecture, en dense
+// ---------------------------------------------------------------------
+// Trois chantiers se lisent en fiches, quinze se lisent en tableau. Ce
+// n'est pas une seconde vue "pour faire riche" : c'est le meme artisan a
+// deux moments de sa croissance. Les colonnes sont exactement les reperes
+// de la fiche, dans le meme ordre.
+function chTableauHtml(liste) {
+  const lignes = liste.map((c) => {
+    const l = chLecture(c);
+    const sig = chSignaux(c);
+    const majeur = sig.find((x) => x.niveau !== "info");
+    const action = chProchaineAction(c);
+    const largeurBudget = l.budgetPct === null ? 0 : Math.min(l.budgetPct, 100);
+    const surplus = Math.max(0, largeurBudget - l.progression);
+
+    return `
+      <tr class="ch-ligne niveau-${chNiveau(c)}" data-chantier-id="${c.id}" data-action="ouvrir-chantier" data-id="${c.id}" tabindex="0">
+        <td>
+          <div class="ch-ligne-titre">${escapeHtml(c.titre)}</div>
+          <div class="ch-ligne-client">${escapeHtml(c.client_nom || "Client non renseigné")}</div>
+        </td>
+        <td>${majeur ? `<span class="ch-ligne-signal${majeur.niveau === "critique" ? " is-critique" : ""}">${escapeHtml(majeur.texte)}</span>` : '<span class="ch-pied-label">—</span>'}</td>
+        <td>${escapeHtml(action.texte)}${action.quand ? ` <span class="ch-pied-label ch-ligne-num">${escapeHtml(action.quand)}</span>` : ""}</td>
+        <td class="ch-ligne-num">
+          <span class="ch-piste" style="display:inline-block;vertical-align:middle">
+            <span class="ch-remplissage est-avancement" style="width:${l.progression}%"></span>
+          </span>
+          <span style="margin-left:8px">${l.progression} %</span>
+        </td>
+        <td class="ch-ligne-num">
+          <span class="ch-piste" style="display:inline-block;vertical-align:middle">
+            <span class="ch-remplissage est-budget" style="width:${Math.min(largeurBudget, l.progression)}%"></span>
+            ${surplus > 0 ? `<span class="ch-remplissage est-derive${l.derive < 20 ? " est-tendue" : ""}" style="left:${l.progression}%;width:${surplus}%"></span>` : ""}
+          </span>
+          <span style="margin-left:8px">${l.budgetPct === null ? "—" : l.budgetPct + " %"}</span>
+        </td>
+        <td class="ch-ligne-num">${c.date_fin_prevue ? `<span class="${l.joursRetard > 0 ? "ch-pied-valeur est-retard" : ""}">${chDateCourte(c.date_fin_prevue)}</span>` : '<span class="ch-pied-label">—</span>'}</td>
+        <td class="ch-ligne-num">${l.marge === null || l.marge === undefined ? "—" : `<span class="${l.marge < 0 ? "ch-pied-valeur est-negatif" : ""}">${chEuroCourt(l.marge)}</span>`}</td>
+      </tr>`;
+  }).join("");
+
+  return `
+    <div class="ch-tableau-wrap">
+      <table class="ch-tableau">
+        <thead>
+          <tr>
+            <th scope="col">Chantier</th>
+            <th scope="col">Signal</th>
+            <th scope="col">Prochaine action</th>
+            <th scope="col">Avancement</th>
+            <th scope="col">Budget</th>
+            <th scope="col">Fin prévue</th>
+            <th scope="col">Marge</th>
+          </tr>
+        </thead>
+        <tbody>${lignes}</tbody>
+      </table>
+    </div>`;
+}
+
+// ---------------------------------------------------------------------
+// 6. FILTRES, TRI, RECHERCHE
+// ---------------------------------------------------------------------
+// L'ancienne page avait deux listes de tri concurrentes (`chantiers-sort`
+// et `chantiers-priorite-tri`) dont la seconde ecrasait silencieusement la
+// premiere. Elles sont fusionnees en une seule dimension : aucune option
+// n'est perdue, mais le resultat correspond enfin a ce qui est affiche.
+let chSegment = "actifs";              // actifs | a_preparer | termine | ""
+let chSegmentAvantSignal = "actifs";   // memoire, pour que les tuiles basculent
+let chSignalFiltre = "";               // "" | ouverts | retard | budget
+let chVue = "fiches";                  // fiches | liste
+let chRecherche = "";
+let currentChantierSort = "urgence";
+let currentChantierAvancement = "";
+let currentChantierClient = "";
+
+/** Segment de statut. "actifs" regroupe planifie + en_cours + en_pause,
+ *  "termine" regroupe termine + facture + paye : les statuts techniques du
+ *  backend restent intacts, seule leur presentation est groupee. */
 function chantierMatchesFilter(c, filtre) {
   if (!filtre) return true;
   if (filtre === "a_preparer") return c.statut === "a_preparer";
-  if (filtre === "en_cours") return !["a_preparer", "termine", "facture", "paye"].includes(c.statut);
+  if (filtre === "actifs" || filtre === "en_cours") return chLecture(c).estActif;
   if (filtre === "a_surveiller") return chantierEstASurveiller(c);
-  if (filtre === "termine") return ["termine", "facture", "paye"].includes(c.statut);
+  if (filtre === "termine") return CH_TERMINES.includes(c.statut);
   return true;
 }
 
-let currentChantierSort = "date_debut_desc";
-let currentChantierAvancement = "";
-let currentChantierClient = "";
-let currentChantierPriorite = "";
-
-// Tri purement client sur des champs deja recus (c.date_debut, c.budget,
-// c.titre) - aucune donnee nouvelle, juste un reordonnancement de
-// chantiersCache avant le rendu. .slice() : ne jamais trier le tableau
-// source en place (chantiersKpiBandHtml et le compteur par onglet lisent
-// le meme chantiersCache juste avant).
-function chantierSort(chantiers) {
-  const c = chantiers.slice();
-  if (currentChantierPriorite === "risque") return c.sort((a, b) => Number(chantierEstASurveiller(b)) - Number(chantierEstASurveiller(a)));
-  if (currentChantierPriorite === "progression") return c.sort((a, b) => (b.progression || 0) - (a.progression || 0));
-  if (currentChantierSort === "budget_desc") return c.sort((a, b) => (b.budget || 0) - (a.budget || 0));
-  if (currentChantierSort === "titre_asc") return c.sort((a, b) => a.titre.localeCompare(b.titre, "fr"));
-  if (currentChantierSort === "date_debut_asc") return c.sort((a, b) => (a.date_debut || "").localeCompare(b.date_debut || ""));
-  return c.sort((a, b) => (b.date_debut || "").localeCompare(a.date_debut || "")); // date_debut_desc, par defaut
+/** Conserve pour compatibilite : meme seuil de 85 % qu'avant la refonte,
+ *  desormais aussi exprime par le signal "budget_tendu". */
+function chantierEstASurveiller(c) {
+  const l = chLecture(c);
+  return l.estActif && l.budgetPct !== null && l.budgetPct >= 85;
 }
 
-function renderChantiersListFiltered() {
-  const list = document.getElementById("chantiers-list");
-  ["", "a_preparer", "en_cours", "a_surveiller", "termine"].forEach((f) => {
-    const el = document.querySelector(`#chantier-filters [data-statut="${f}"] .filter-chip-count`);
-    if (el) el.textContent = `(${chantiersCache.filter((c) => chantierMatchesFilter(c, f)).length})`;
-  });
-  const filtres = chantierSort(chantiersCache.filter((c) => {
-    if (!chantierMatchesFilter(c, currentChantierFilter)) return false;
+function chantierSort(chantiers) {
+  const t = chantiers.slice();
+  if (currentChantierSort === "progression") return t.sort((a, b) => (Number(b.progression) || 0) - (Number(a.progression) || 0));
+  if (currentChantierSort === "budget_desc") return t.sort((a, b) => (b.budget || 0) - (a.budget || 0));
+  if (currentChantierSort === "titre_asc") return t.sort((a, b) => a.titre.localeCompare(b.titre, "fr"));
+  if (currentChantierSort === "date_debut_asc") return t.sort((a, b) => (a.date_debut || "").localeCompare(b.date_debut || ""));
+  if (currentChantierSort === "date_debut_desc") return t.sort((a, b) => (b.date_debut || "").localeCompare(a.date_debut || ""));
+  return t.sort((a, b) => chScore(b) - chScore(a)); // urgence, par defaut
+}
+
+/** La recherche porte sur ce que l'utilisateur a sous les yeux : le nom du
+ *  chantier, le client et l'adresse. L'ancienne version filtrait sur le
+ *  textContent de la carte, donc aussi sur "Budget consomme" ou sur un
+ *  libelle de bouton - taper "note" masquait des chantiers au hasard. */
+function chCorrespondRecherche(c, q) {
+  if (!q) return true;
+  return [c.titre, c.client_nom, c.adresse].filter(Boolean).join(" ").toLowerCase().includes(q);
+}
+
+function chFiltrer() {
+  const q = chRecherche.trim().toLowerCase();
+  return chantierSort(chantiersCache.filter((c) => {
+    if (!chantierMatchesFilter(c, chSegment)) return false;
+    if (chSignalFiltre === "retard" && chLecture(c).joursRetard === 0) return false;
+    if (chSignalFiltre === "budget" && !chantierEstASurveiller(c)) return false;
+    if (chSignalFiltre === "ouverts" && CH_TERMINES.includes(c.statut)) return false;
     const progression = Number(c.progression) || 0;
     if (currentChantierAvancement === "debut" && progression > 25) return false;
     if (currentChantierAvancement === "milieu" && (progression <= 25 || progression > 75)) return false;
     if (currentChantierAvancement === "fin" && progression <= 75) return false;
     if (currentChantierClient && String(c.client_id) !== currentChantierClient) return false;
-    return true;
+    return chCorrespondRecherche(c, q);
   }));
-  list.innerHTML = filtres.length ? filtres.map(renderChantierCard).join("") : '<div class="empty-state">Aucun chantier dans cet onglet.</div>';
+}
+
+function chNbFiltresSecondaires() {
+  return (currentChantierClient ? 1 : 0) + (currentChantierAvancement ? 1 : 0);
+}
+
+// ---------------------------------------------------------------------
+// 7. ETATS VIDES
+// ---------------------------------------------------------------------
+// Un ecran vide est une invitation a agir : il dit pourquoi il est vide et
+// propose le geste suivant, jamais un simple "aucun resultat".
+function chEtatHtml({ titre, texte, actions = "" }) {
+  return `<div class="ch-etat">
+    <h3 class="ch-etat-titre">${titre}</h3>
+    <p class="ch-etat-texte">${texte}</p>
+    ${actions ? `<div class="ch-etat-actions">${actions}</div>` : ""}
+  </div>`;
+}
+
+function chEtatAucunResultat() {
+  const filtres = [];
+  if (chRecherche.trim()) filtres.push(`la recherche « ${escapeHtml(chRecherche.trim())} »`);
+  if (chSegment && chSegment !== "actifs") filtres.push("le filtre d'état");
+  if (chSignalFiltre) filtres.push("le filtre de signal");
+  if (currentChantierClient) filtres.push("le filtre client");
+  if (currentChantierAvancement) filtres.push("le filtre d'avancement");
+  return chEtatHtml({
+    titre: "Aucun chantier ne correspond",
+    texte: filtres.length
+      ? `Aucun chantier ne passe ${filtres.join(", ")}. Élargissez la sélection pour retrouver le reste du portefeuille.`
+      : "Aucun chantier dans cette sélection.",
+    actions: '<button type="button" class="btn-sm btn-sm-primary" data-action="reinitialiser-filtres">Réinitialiser les filtres</button>',
+  });
+}
+
+// ---------------------------------------------------------------------
+// 8. LE TIROIR — le dossier complet, sans quitter la page
+// ---------------------------------------------------------------------
+// Le detail s'ouvre A COTE de la liste, pas a sa place : l'utilisateur
+// garde ses filtres, sa position de defilement et sa vue d'ensemble. Toutes
+// les actions de l'ancienne carte depliable vivent ici, sous les memes
+// `data-action` : le gestionnaire delegue est simplement branche sur les
+// deux conteneurs.
+let chTiroirId = null;
+let chTiroirRetourFocus = null;
+
+function chActionsTiroirHtml(c) {
+  const l = chLecture(c);
+  const principales = [];
+  const menu = [];
+
+  // L'action principale est celle que le chantier appelle a cet instant -
+  // pas un bouton generique identique pour les sept statuts.
+  if (c.statut === "termine") {
+    principales.push({ attrs: `data-action="toggle-cloturer-form" data-id="${c.id}"`, label: "Clôturer le chantier", primaire: true });
+  } else if (l.estFacture && !c.date_reception) {
+    principales.push({ attrs: `data-action="toggle-reception-form" data-id="${c.id}"`, label: "Enregistrer la réception", primaire: true });
+  } else if (!l.estTermine) {
+    principales.push({ attrs: `data-action="toggle-note-form" data-id="${c.id}"`, label: "+ Note ou photo", primaire: true });
+  }
+
+  if (!c.finances_verrouillees) {
+    principales.push({ attrs: `data-action="toggle-depense-form" data-id="${c.id}"`, label: "+ Dépense" });
+    principales.push({ attrs: `data-action="toggle-heures-form" data-id="${c.id}"`, label: "+ Heures" });
+  }
+  if (l.estTermine && c.statut !== "termine") {
+    principales.push({ attrs: `data-action="toggle-note-form" data-id="${c.id}"`, label: "+ Note" });
+  }
+  principales.push({ attrs: `data-action="planifier-intervention" data-id="${c.id}"`, label: "Planifier" });
+
+  menu.push({ attrs: `data-action="edit-chantier" data-id="${c.id}"`, label: "Modifier le chantier" });
+  menu.push({ attrs: `data-action="chantier-document" data-id="${c.id}"`, label: "+ Ajouter un document" });
+  if (!l.estTermine) menu.push({ attrs: `data-action="terminer-chantier" data-id="${c.id}"`, label: "Marquer terminé" });
+  if (l.estTermine) menu.push({ attrs: `data-action="toggle-reception-form" data-id="${c.id}"`, label: c.date_reception ? "Modifier la réception" : "Enregistrer la réception" });
+  if (c.statut === "termine") menu.push({ attrs: `data-action="toggle-cloturer-form" data-id="${c.id}"`, label: "Clôturer le chantier" });
+  menu.push({ attrs: `data-action="rapport-chantier" data-id="${c.id}"`, label: "Télécharger le rapport" });
+  menu.push({ divider: true });
+  menu.push({ attrs: `data-action="delete-chantier" data-id="${c.id}"`, label: "Archiver", danger: true });
+
+  return `
+    <div class="ch-tiroir-actions">
+      ${principales.map((b) => `<button type="button" class="btn-sm${b.primaire ? " btn-sm-primary" : ""}" ${b.attrs}>${b.label}</button>`).join("")}
+      <div class="action-menu">
+        <button type="button" class="action-menu-trigger" data-action="toggle-action-menu" aria-haspopup="true" aria-expanded="false" aria-label="Plus d'actions sur ce chantier">
+          <svg viewBox="0 0 24 24" class="nav-icon"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg>
+        </button>
+        <div class="action-menu-panel" role="menu">
+          ${menu.map((it) => it.divider
+            ? '<div class="action-menu-divider"></div>'
+            : `<button type="button"${it.danger ? ' class="is-danger"' : ""} ${it.attrs}>${it.label}</button>`).join("")}
+        </div>
+      </div>
+    </div>`;
+}
+
+/** Les fragments repris de l'ancienne carte (checklist, heures,
+ *  rentabilite) portent leurs propres `<h3 style="font-size:0.88rem">`.
+ *  Dans le tiroir, ou le titre du dossier est deja un h3, cela donnait un
+ *  niveau de titre incoherent et une typographie qui jurait avec les blocs
+ *  voisins. On les aligne sur la grammaire du tiroir sans toucher a leur
+ *  code : ces fonctions restent utilisables telles quelles ailleurs. */
+function chHarmoniserTitres(html) {
+  return html
+    .replace(/<h3 style="font-size:0\.88rem;">/g, '<h4 class="ch-bloc-titre">')
+    .replace(/<\/h3>/g, "</h4>");
+}
+
+function chTiroirCorpsHtml(c) {
+  const l = chLecture(c);
+  const sig = chSignaux(c);
+
+  const synthese = (label, valeur, cls = "") =>
+    `<div class="ch-synthese-item"><div class="ch-synthese-label">${label}</div><div class="ch-synthese-valeur ${cls}">${valeur}</div></div>`;
+
+  const notesHtml = (c.notes || []).slice().reverse().map((n) => `
+    <div class="note-item">
+      <span class="badge badge-blue">${PHASE_LABELS[n.phase] || n.phase}</span>
+      <div style="margin-top:6px;">${escapeHtml(n.texte || "")}</div>
+      ${n.photo_url ? `<img class="note-photo" src="${escapeHtml(n.photo_url)}" alt="Photo du chantier" onerror="this.remove()">` : ""}
+      <div class="item-sub" style="margin-top:6px;">${fmtDateTime(n.created_at)}</div>
+    </div>`).join("");
+
+  const depensesHtml = (c.depenses || []).slice().reverse().map((d) => `
+    <div class="item-sub" style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+      <span>${fmtDate(d.date_depense)} · ${escapeHtml(d.libelle)} · ${fmtEuro(d.montant)}${d.fournisseur_nom ? " · " + escapeHtml(d.fournisseur_nom) : ""}</span>
+      ${c.finances_verrouillees ? "" : `<button type="button" class="btn-sm" style="padding:2px 8px;flex-shrink:0;" data-action="edit-depense" data-id="${c.id}" data-depense-id="${d.id}">Modifier</button>`}
+    </div>`).join("");
+
+  return `
+    ${sig.length ? `<div class="ch-bloc">
+      <h4 class="ch-bloc-titre">Ce qui demande une décision</h4>
+      ${sig.map((x) => `<p class="ch-signal${x.niveau === "critique" ? " is-critique" : ""}" style="${x.niveau === "info" ? "color:var(--sa-text-muted)" : ""}">
+        ${CH_ICONES[x.niveau]}<span>${escapeHtml(x.texte)}</span></p>`).join("")}
+    </div>` : ""}
+
+    ${chJaugesHtml(c)}
+
+    <!-- Le bandeau ne repete PAS les jauges : l'avancement et le budget
+         consomme sont juste au-dessus, en pourcentage et en barre. Il porte
+         les quatre reperes qu'elles ne peuvent pas donner - la date, ce
+         qu'il reste a depenser, la marge et le temps passe. -->
+    <div class="ch-tiroir-synthese">
+      ${synthese("Fin prévue", c.date_fin_prevue ? chDateCourte(c.date_fin_prevue) : "—", l.joursRetard > 0 ? "est-negatif" : "")}
+      ${synthese("Reste au budget", l.budget === null ? "—" : chEuroCourt(l.budget - l.depenses), l.budget !== null && l.depenses > l.budget ? "est-negatif" : "")}
+      ${synthese(l.estTermine ? "Marge réelle" : "Marge estimée", l.marge === null || l.marge === undefined ? "—" : chEuroCourt(l.marge), l.marge < 0 ? "est-negatif" : "")}
+      ${synthese("Heures passées", c.total_heures ? `${String(c.total_heures).replace(/\.00$/, "")} h` : "—")}
+    </div>
+
+    ${chActionsTiroirHtml(c)}
+
+    ${c.statut === "termine" ? '<div class="moment-banner"><span>Chantier terminé ! Clôturez-le pour générer la facture finale, demander un avis client et archiver le dossier.</span></div>' : ""}
+    ${c.finances_verrouillees ? '<div class="moment-banner"><span>Les données financières sont verrouillées depuis la création de la facture finale.</span></div>' : ""}
+    ${aujourdhuiChantierHtml(c)}
+
+    <div class="ch-bloc">
+      <h4 class="ch-bloc-titre">Repères</h4>
+      <div class="item-sub">Client : ${escapeHtml(c.client_nom || "non renseigné")}</div>
+      <div class="item-sub">Début : ${fmtDate(c.date_debut)}${c.date_fin_prevue ? ` · Fin prévue : ${fmtDate(c.date_fin_prevue)}` : ""}</div>
+      ${c.adresse ? `<div class="item-sub">Adresse : ${escapeHtml(c.adresse)}</div>` : ""}
+      ${c.devis_id ? '<div class="item-sub">Issu d\'un devis signé.</div>' : ""}
+    </div>
+
+    ${chHarmoniserTitres(checklistHtml(c)) || '<div class="ch-bloc"><h4 class="ch-bloc-titre">Préparation et tâches</h4><p class="ch-bloc-vide">Aucune tâche sur ce chantier.</p></div>'}
+
+    <div class="ch-bloc">
+      <h4 class="ch-bloc-titre">Rentabilité</h4>
+      ${rentabiliteHtml(c) || '<p class="ch-bloc-vide">Aucune dépense ni facture enregistrée pour le moment.</p>'}
+      ${depensesHtml || '<p class="ch-bloc-vide">Aucune dépense saisie.</p>'}
+    </div>
+
+    ${chHarmoniserTitres(heuresHtml(c)) || '<div class="ch-bloc"><h4 class="ch-bloc-titre">Heures de main d\'oeuvre</h4><p class="ch-bloc-vide">Aucune heure saisie.</p></div>'}
+
+    <div class="ch-bloc">
+      <h4 class="ch-bloc-titre">Journal de chantier</h4>
+      <div class="notes-list">${notesHtml || '<p class="ch-bloc-vide">Aucune note pour le moment. Une photo avant / pendant / après vaut souvent un long rapport.</p>'}</div>
+    </div>
+
+    ${receptionHtml(c)}
+
+    <div id="chantier-edit-form-${c.id}"></div>
+    <div id="note-form-${c.id}"></div>
+    <div id="depense-form-${c.id}"></div>
+    <div id="heures-form-${c.id}"></div>
+    <div id="reception-form-${c.id}"></div>
+    <div id="cloturer-form-${c.id}"></div>`;
+}
+
+function chRendreTiroir() {
+  const c = chantiersCache.find((x) => x.id === chTiroirId);
+  const tiroir = document.getElementById("chantier-tiroir");
+  if (!tiroir) return;
+  if (!c) { chFermerTiroir(); return; }
+  const statut = CHANTIER_STATUT_META[c.statut] || { label: c.statut };
+  document.getElementById("chantier-tiroir-titre").textContent = c.titre;
+  document.getElementById("chantier-tiroir-sous").textContent =
+    `${c.client_nom || "Client non renseigné"} · ${statut.label}${c.adresse ? " · " + c.adresse : ""}`;
+  document.getElementById("chantier-tiroir-corps").innerHTML = chTiroirCorpsHtml(c);
+}
+
+function chOuvrirTiroir(id, suite) {
+  chTiroirId = Number(id);
+  const tiroir = document.getElementById("chantier-tiroir");
+  if (!tiroir) return;
+  chTiroirRetourFocus = document.activeElement;
+  chRendreTiroir();
+  tiroir.hidden = false;
+  document.body.style.overflow = "hidden";
+  tiroir.querySelector(".ch-tiroir-fermer").focus();
+  // Une alerte du fil d'attention peut demander d'ouvrir directement le
+  // formulaire qui la resout : un clic sur "Enregistrer la reception" doit
+  // amener sur le formulaire de reception, pas sur le sommaire du dossier.
+  if (suite) {
+    const cible = tiroir.querySelector(`[data-action="${suite}"][data-id="${chTiroirId}"]`);
+    if (cible) cible.click();
+  }
+}
+
+function chFermerTiroir() {
+  const tiroir = document.getElementById("chantier-tiroir");
+  if (!tiroir || tiroir.hidden) return;
+  tiroir.hidden = true;
+  document.getElementById("chantier-tiroir-corps").innerHTML = "";
+  document.body.style.overflow = "";
+  chTiroirId = null;
+  if (chTiroirRetourFocus && document.contains(chTiroirRetourFocus)) chTiroirRetourFocus.focus();
+  chTiroirRetourFocus = null;
+}
+
+// ---------------------------------------------------------------------
+// 9. RENDU DE LA PAGE
+// ---------------------------------------------------------------------
+function renderChantiersListFiltered() {
+  const liste = document.getElementById("chantiers-list");
+  if (!liste) return;
+
+  // Compteurs des segments : calcules sur le portefeuille complet, pas sur
+  // la selection courante - sinon "Terminés (0)" s'afficherait simplement
+  // parce qu'on regarde les chantiers actifs.
+  document.querySelectorAll("#chantiers-segments .ch-segment").forEach((btn) => {
+    const n = chantiersCache.filter((c) => chantierMatchesFilter(c, btn.dataset.segment)).length;
+    btn.querySelector(".ch-segment-compte").textContent = n;
+    btn.setAttribute("aria-pressed", String(btn.dataset.segment === chSegment));
+  });
+  document.querySelectorAll(".ch-tuile").forEach((t) => {
+    t.setAttribute("aria-pressed", String(!!t.dataset.signal && t.dataset.signal === chSignalFiltre));
+  });
+  document.querySelectorAll(".ch-vue-btn").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.vue === chVue)));
+
+  const badge = document.getElementById("chantiers-filtres-actifs");
+  if (badge) {
+    const n = chNbFiltresSecondaires();
+    badge.hidden = n === 0;
+    badge.textContent = n;
+  }
+
+  const selection = chFiltrer();
+  liste.innerHTML = selection.length
+    ? (chVue === "liste" ? chTableauHtml(selection) : `<div class="ch-grille">${selection.map(chFicheHtml).join("")}</div>`)
+    : chEtatAucunResultat();
+
   focusChantierCard();
-  reapplyListSearch("chantiers-search", "#chantiers-list .chantier-card");
+}
+
+/** Un chantier ouvert depuis le planning : on ouvre directement son
+ *  dossier plutot que de le faire clignoter au milieu d'une liste. */
+function focusChantierCard() {
+  if (!chantierFocusId) return;
+  const id = chantierFocusId;
+  chantierFocusId = null;
+  const carte = document.querySelector(`[data-chantier-id="${id}"]`);
+  if (carte) {
+    carte.classList.add("is-focused");
+    carte.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+  if (chantiersCache.some((c) => c.id === id)) chOuvrirTiroir(id);
+}
+
+function ouvrirChantierDepuisPlanning(chantierId) {
+  chantierFocusId = Number(chantierId);
+  switchView("chantiers");
 }
 
 async function loadChantiers() {
-  const kpiBand = document.getElementById("chantiers-kpi-band");
-  const list = document.getElementById("chantiers-list");
+  const situation = document.getElementById("chantiers-situation");
+  const attention = document.getElementById("chantiers-attention");
+  const controls = document.getElementById("chantiers-controls");
+  const liste = document.getElementById("chantiers-list");
   const newBtn = document.querySelector('[data-action="show-chantier-form"]');
   const formContainer = document.getElementById("chantier-form-container");
 
+  const vider = () => {
+    situation.innerHTML = "";
+    attention.innerHTML = "";
+    controls.hidden = true;
+  };
+
   if (!hasPlan("essentiel")) {
-    if (kpiBand) kpiBand.innerHTML = "";
+    vider();
     newBtn.hidden = true;
     formContainer.hidden = true;
     formContainer.innerHTML = "";
-    list.innerHTML = renderUpgradeCard(
+    liste.innerHTML = renderUpgradeCard(
       "Chantiers réservés aux abonnés",
       "Le suivi de chantier (photos et notes avant/pendant/après) fait partie de l'abonnement mensuel Suite Artisan."
     );
@@ -4827,41 +5575,519 @@ async function loadChantiers() {
   }
   newBtn.hidden = false;
 
-  list.innerHTML = skeletonCards();
+  liste.innerHTML = '<div class="ch-squelette">' + '<div class="ch-squelette-fiche"></div>'.repeat(6) + "</div>";
   try {
     const chantiers = await Api.listChantiers();
     chantiersCache = chantiers;
+
     const clientSelect = document.getElementById("chantiers-client-filtre");
     if (clientSelect) {
       const clients = [...new Map(chantiers.filter((c) => c.client_id).map((c) => [c.client_id, c.client_nom || `Client ${c.client_id}`])).entries()];
-      clientSelect.innerHTML = '<option value="">Client</option>' + clients.map(([id, nom]) => `<option value="${id}">${escapeHtml(nom)}</option>`).join("");
+      clientSelect.innerHTML = '<option value="">Tous les clients</option>' +
+        clients.map(([id, nom]) => `<option value="${id}">${escapeHtml(nom)}</option>`).join("");
       clientSelect.value = currentChantierClient;
     }
-    if (kpiBand) kpiBand.innerHTML = chantiers.length ? chantiersKpiBandHtml(chantiers) : "";
+
     if (chantiers.length === 0) {
-      list.innerHTML = '<div class="empty-state">Aucun chantier pour le moment.</div>';
+      vider();
+      liste.innerHTML = chEtatHtml({
+        titre: "Aucun chantier pour le moment",
+        texte: "Un chantier naît de deux façons : vous le créez à la main, ou un devis signé se transforme en chantier depuis la page Devis &amp; relances.",
+        actions: `<button type="button" class="btn-sm btn-sm-primary" data-action="show-chantier-form">+ Créer un chantier</button>
+                  <button type="button" class="btn-sm" data-action="aller-devis">Voir mes devis</button>`,
+      });
       return;
     }
+
+    situation.innerHTML = chSituationHtml(chantiers);
+    attention.innerHTML = chAttentionHtml(chantiers);
+    controls.hidden = false;
     renderChantiersListFiltered();
+    if (chTiroirId) chRendreTiroir();
   } catch (err) {
-    list.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
+    vider();
+    liste.innerHTML = chEtatHtml({
+      titre: "Les chantiers n'ont pas pu être chargés",
+      texte: escapeHtml(err.message),
+      actions: '<button type="button" class="btn-sm btn-sm-primary" data-action="recharger-chantiers">Réessayer</button>',
+    });
   }
 }
 
-function focusChantierCard() {
-  if (!chantierFocusId) return;
-  const card = document.querySelector(`[data-chantier-id="${chantierFocusId}"]`);
-  if (!card) return;
-  chantierFocusId = null;
-  card.classList.add("is-focused");
-  card.scrollIntoView({ behavior: "smooth", block: "center" });
-  setTimeout(() => card.classList.remove("is-focused"), 3000);
+// ---------------------------------------------------------------------
+// 10. CREATION D'UN CHANTIER
+// ---------------------------------------------------------------------
+// Extrait dans sa propre fonction : le bouton de l'en-tete ET celui de
+// l'etat vide ouvrent le meme formulaire, sans dupliquer le balisage.
+async function chOuvrirFormulaireCreation() {
+  const container = document.getElementById("chantier-form-container");
+  await ensureClientsCache();
+
+  if (clientsCache.length === 0) {
+    container.innerHTML = `<div class="form-box"><p>Vous n'avez pas encore de client. Ajoutez d'abord un contact dans l'onglet <strong>Clients &amp; prospects</strong>.</p>
+      <div class="form-actions"><button type="button" class="btn-sm" data-action="cancel-chantier-form">Fermer</button></div></div>`;
+    container.hidden = false;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="form-box">
+      <h3>Nouveau chantier</h3>
+      <form id="chantier-form">
+        <div class="form-section">
+          <div class="form-section-title">Chantier</div>
+          <div class="form-grid">
+            <div><label for="cf-titre">Titre *</label><input type="text" id="cf-titre" required></div>
+            <div><label for="cf-client">Client *</label><select id="cf-client" required><option value="">Choisir...</option>${clientOptionsHtml()}</select></div>
+            <div><label for="cf-adresse">Adresse</label><input type="text" id="cf-adresse"></div>
+          </div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">Planification</div>
+          <div class="form-grid">
+            <div><label for="cf-date">Date de début</label><input type="date" id="cf-date"></div>
+            <div><label for="cf-fin">Fin prévue</label><input type="date" id="cf-fin"></div>
+            <div><label for="cf-budget">Budget prévu (euros)</label><input type="number" step="0.01" min="0" id="cf-budget"></div>
+          </div>
+          <p class="section-hint">La fin prévue et le budget alimentent les alertes de retard et de dérive : sans eux, le chantier reste muet sur ces deux points.</p>
+        </div>
+        <p class="field-error" id="chantier-form-error" hidden></p>
+        <div class="form-actions">
+          <button type="submit" class="btn-sm btn-sm-primary">Créer</button>
+          <button type="button" class="btn-sm" data-action="cancel-chantier-form">Annuler</button>
+        </div>
+      </form>
+    </div>`;
+  container.hidden = false;
+  container.scrollIntoView({ behavior: "smooth", block: "start" });
+  document.getElementById("cf-titre").focus();
+
+  document.getElementById("chantier-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const errorBox = document.getElementById("chantier-form-error");
+    errorBox.hidden = true;
+    const budgetRaw = document.getElementById("cf-budget").value;
+    try {
+      await Api.createChantier({
+        titre: document.getElementById("cf-titre").value,
+        client_id: parseInt(document.getElementById("cf-client").value, 10),
+        adresse: emptyToNull(document.getElementById("cf-adresse").value),
+        date_debut: emptyToNull(document.getElementById("cf-date").value),
+        date_fin_prevue: emptyToNull(document.getElementById("cf-fin").value),
+        budget: budgetRaw === "" ? null : parseFloat(budgetRaw),
+      });
+      showToast("Chantier créé.");
+      container.hidden = true;
+      container.innerHTML = "";
+      loadChantiers();
+    } catch (err) {
+      errorBox.hidden = false;
+      errorBox.textContent = err.message;
+    }
+  });
 }
 
-function ouvrirChantierDepuisPlanning(chantierId) {
-  chantierFocusId = Number(chantierId);
-  switchView("chantiers");
+// ---------------------------------------------------------------------
+// 11. GESTIONNAIRE D'ACTIONS
+// ---------------------------------------------------------------------
+// Un seul gestionnaire, branche sur la liste, le fil d'attention et le
+// tiroir. C'est ce qui permet de deplacer le detail dans un panneau lateral
+// sans renommer une seule action : `data-action="submit-depense"` fait
+// exactement la meme chose qu'avant, ou qu'il se trouve.
+async function chGererAction(e) {
+  const btn = e.target.closest("[data-action]");
+  if (!btn) return;
+  const action = btn.dataset.action;
+
+  // ----- Navigation de la page -----
+  if (action === "ouvrir-chantier") {
+    chOuvrirTiroir(btn.dataset.id, btn.dataset.suite);
+    return;
+  }
+  if (action === "fermer-tiroir") { chFermerTiroir(); return; }
+  if (action === "deployer-attention") { chAttentionDeployee = true; document.getElementById("chantiers-attention").innerHTML = chAttentionHtml(chantiersCache); return; }
+  if (action === "replier-attention") { chAttentionDeployee = false; document.getElementById("chantiers-attention").innerHTML = chAttentionHtml(chantiersCache); return; }
+  if (action === "reinitialiser-filtres") { chReinitialiserFiltres(); return; }
+  if (action === "recharger-chantiers") { loadChantiers(); return; }
+  if (action === "aller-devis") { switchView("devis"); return; }
+  if (action === "show-chantier-form") { await chOuvrirFormulaireCreation(); return; }
+
+  if (action === "toggle-tache-chantier") {
+    const chantierId = parseInt(btn.dataset.chantierId, 10);
+    const tacheId = parseInt(btn.dataset.tacheId, 10);
+    const checked = btn.checked;
+    try {
+      await Api.updateTache(tacheId, { statut: checked ? "faite" : "a_faire" });
+      loadChantiers();
+    } catch (err) {
+      btn.checked = !checked;
+      showToast(err.message, true);
+    }
+    return;
+  }
+
+  const id = parseInt(btn.dataset.id, 10);
+  if (Number.isNaN(id)) return;
+
+  if (action === "edit-chantier") {
+    const chantier = chantiersCache.find((c) => c.id === id);
+    if (chantier) await showChantierEditForm(chantier);
+  } else if (action === "cancel-chantier-edit") {
+    document.getElementById(`chantier-edit-form-${id}`).innerHTML = "";
+  } else if (action === "submit-chantier-edit") {
+    const chantier = chantiersCache.find((c) => c.id === id);
+    const errorBox = document.getElementById(`chantier-edit-error-${id}`);
+    const titre = document.getElementById(`chantier-titre-${id}`).value.trim();
+    if (!titre) {
+      errorBox.hidden = false;
+      errorBox.textContent = "Le titre est obligatoire.";
+      return;
+    }
+    const payload = {
+      titre,
+      adresse: emptyToNull(document.getElementById(`chantier-adresse-${id}`).value),
+      date_debut: emptyToNull(document.getElementById(`chantier-date-${id}`).value),
+      date_fin_prevue: emptyToNull(document.getElementById(`chantier-fin-${id}`).value),
+    };
+    if (chantier && !chantier.finances_verrouillees && !chantier.devis_id) {
+      payload.client_id = parseInt(document.getElementById(`chantier-client-${id}`).value, 10);
+    }
+    if (chantier && !chantier.finances_verrouillees) {
+      const budget = document.getElementById(`chantier-budget-${id}`).value;
+      payload.budget = budget === "" ? null : parseFloat(budget);
+    }
+    try {
+      await Api.updateChantier(id, payload);
+      showToast("Chantier mis à jour.");
+      loadChantiers();
+    } catch (err) {
+      errorBox.hidden = false;
+      errorBox.textContent = err.message;
+    }
+  } else if (action === "chantier-document") {
+    chFermerTiroir();
+    switchView("documents");
+    setTimeout(() => showDocumentForm(id), 50);
+  } else if (action === "planifier-intervention") {
+    const chantier = chantiersCache.find((c) => c.id === id);
+    chFermerTiroir();
+    switchView("planning");
+    setTimeout(() => window.showEvenementForm({
+      titre: `Intervention - ${chantier ? chantier.titre : ""}`,
+      type: "intervention",
+      chantierId: id,
+      clientId: chantier ? chantier.client_id : null,
+    }), 100);
+  } else if (action === "toggle-reception-form") {
+    const chantier = chantiersCache.find((c) => c.id === id);
+    showReceptionForm(id, chantier);
+    document.getElementById(`reception-form-${id}`).scrollIntoView({ behavior: "smooth", block: "nearest" });
+  } else if (action === "cancel-reception-form") {
+    document.getElementById(`reception-form-${id}`).innerHTML = "";
+  } else if (action === "submit-reception") {
+    const dateReception = document.getElementById(`recep-date-${id}`).value;
+    const reserves = document.getElementById(`recep-reserves-${id}`).value;
+    try {
+      await Api.updateChantier(id, { date_reception: emptyToNull(dateReception), reserves: emptyToNull(reserves) });
+      showToast("Réception enregistrée.");
+      loadChantiers();
+    } catch (err) {
+      const errorBox = document.getElementById(`reception-error-${id}`);
+      errorBox.hidden = false;
+      errorBox.textContent = err.message;
+    }
+  } else if (action === "toggle-note-form") {
+    showNoteForm(id);
+    document.getElementById(`note-form-${id}`).scrollIntoView({ behavior: "smooth", block: "nearest" });
+  } else if (action === "cancel-note-form") {
+    document.getElementById(`note-form-${id}`).innerHTML = "";
+  } else if (action === "submit-note") {
+    const texte = document.getElementById(`note-texte-${id}`).value;
+    const phase = document.getElementById(`note-phase-${id}`).value;
+    const photoUrl = document.getElementById(`note-photo-${id}`).value;
+    try {
+      await Api.addChantierNote(id, { phase, texte: emptyToNull(texte), photo_url: emptyToNull(photoUrl) });
+      showToast("Note ajoutée.");
+      loadChantiers();
+    } catch (err) {
+      const errorBox = document.getElementById(`note-error-${id}`);
+      errorBox.hidden = false;
+      errorBox.textContent = err.message;
+    }
+  } else if (action === "toggle-depense-form") {
+    await ensureFournisseursCache();
+    showDepenseForm(id);
+    document.getElementById(`depense-form-${id}`).scrollIntoView({ behavior: "smooth", block: "nearest" });
+  } else if (action === "edit-depense") {
+    await ensureFournisseursCache();
+    const chantier = chantiersCache.find((c) => c.id === id);
+    const depense = chantier && chantier.depenses.find((d) => d.id === parseInt(btn.dataset.depenseId, 10));
+    if (depense) showDepenseForm(id, depense);
+  } else if (action === "cancel-depense-form") {
+    document.getElementById(`depense-form-${id}`).innerHTML = "";
+  } else if (action === "submit-depense") {
+    const libelle = document.getElementById(`dep-libelle-${id}`).value.trim();
+    const montant = document.getElementById(`dep-montant-${id}`).value;
+    const dateDepense = document.getElementById(`dep-date-${id}`).value;
+    const fournisseurId = document.getElementById(`dep-fournisseur-${id}`).value;
+    const errorBox = document.getElementById(`depense-error-${id}`);
+    if (!libelle || !montant) {
+      errorBox.hidden = false;
+      errorBox.textContent = "Libellé et montant sont obligatoires.";
+      return;
+    }
+    try {
+      const payload = {
+        libelle, montant: parseFloat(montant), date_depense: dateDepense,
+        fournisseur_id: fournisseurId ? parseInt(fournisseurId, 10) : null,
+      };
+      if (btn.dataset.depenseId) {
+        await Api.updateChantierDepense(id, parseInt(btn.dataset.depenseId, 10), payload);
+        showToast("Dépense mise à jour.");
+      } else {
+        await Api.addChantierDepense(id, payload);
+        showToast("Dépense ajoutée.");
+      }
+      loadChantiers();
+    } catch (err) {
+      errorBox.hidden = false;
+      errorBox.textContent = err.message;
+    }
+  } else if (action === "toggle-heures-form") {
+    if (hasPlan("business")) await ensureEquipeCache();
+    else equipeCache = [];
+    showHeuresForm(id);
+    document.getElementById(`heures-form-${id}`).scrollIntoView({ behavior: "smooth", block: "nearest" });
+  } else if (action === "edit-heure") {
+    if (hasPlan("business")) await ensureEquipeCache();
+    else equipeCache = [];
+    const chantier = chantiersCache.find((c) => c.id === id);
+    const heure = chantier && chantier.heures.find((h) => h.id === parseInt(btn.dataset.heureId, 10));
+    if (heure) showHeuresForm(id, heure);
+  } else if (action === "cancel-heures-form") {
+    document.getElementById(`heures-form-${id}`).innerHTML = "";
+  } else if (action === "submit-heures") {
+    const membreSelect = document.getElementById(`heure-membre-${id}`);
+    const membreId = membreSelect.value;
+    const nomLibre = document.getElementById(`heure-nom-${id}`).value.trim();
+    const nomIntervenant = membreId
+      ? membreSelect.options[membreSelect.selectedIndex].dataset.nom
+      : nomLibre;
+    const duree = document.getElementById(`heure-duree-${id}`).value;
+    const dateTravail = document.getElementById(`heure-date-${id}`).value;
+    const taux = document.getElementById(`heure-taux-${id}`).value;
+    const note = document.getElementById(`heure-note-${id}`).value.trim();
+    const errorBox = document.getElementById(`heures-error-${id}`);
+    if (!nomIntervenant || !duree) {
+      errorBox.hidden = false;
+      errorBox.textContent = "Intervenant (ou nom) et durée sont obligatoires.";
+      return;
+    }
+    try {
+      const payload = {
+        membre_id: membreId ? parseInt(membreId, 10) : null,
+        nom_intervenant: nomIntervenant,
+        duree_heures: parseFloat(duree), date_travail: dateTravail,
+        taux_horaire: taux ? parseFloat(taux) : null,
+        note: emptyToNull(note),
+      };
+      if (btn.dataset.heureId) {
+        await Api.updateChantierHeures(id, parseInt(btn.dataset.heureId, 10), payload);
+        showToast("Heures mises à jour.");
+      } else {
+        await Api.addChantierHeures(id, payload);
+        showToast("Heures ajoutées.");
+      }
+      loadChantiers();
+    } catch (err) {
+      errorBox.hidden = false;
+      errorBox.textContent = err.message;
+    }
+  } else if (action === "delete-heure") {
+    const heureId = parseInt(btn.dataset.heureId, 10);
+    await withErrorToast(async () => {
+      await Api.deleteChantierHeures(id, heureId);
+      showToast("Heures supprimées.");
+      loadChantiers();
+    });
+  } else if (action === "terminer-chantier") {
+    await withErrorToast(async () => {
+      await Api.updateChantier(id, { statut: "termine" });
+      showToast("Chantier marqué terminé.");
+      loadChantiers();
+    });
+  } else if (action === "toggle-cloturer-form") {
+    showCloturerForm(id);
+    document.getElementById(`cloturer-form-${id}`).scrollIntoView({ behavior: "smooth", block: "nearest" });
+  } else if (action === "cancel-cloturer-form") {
+    document.getElementById(`cloturer-form-${id}`).innerHTML = "";
+  } else if (action === "confirmer-cloturer") {
+    const errorBox = document.getElementById(`cloturer-error-${id}`);
+    errorBox.hidden = true;
+    try {
+      const res = await Api.cloturerChantier(id, {
+        generer_facture_finale: document.getElementById(`clot-facture-${id}`).checked,
+        demander_avis: document.getElementById(`clot-avis-${id}`).checked,
+      });
+      let msg = "Chantier clôturé.";
+      if (res.facture_finale) {
+        const statutTxt = res.facture_finale_email_statut === "envoye" ? "envoyée par email" : "créée (email non envoyé, copiez le lien pour la transmettre)";
+        msg += ` Facture finale de ${fmtEuro(res.facture_finale.montant_ttc)} ${statutTxt}.`;
+      } else if (res.facture_finale_raison_absence) {
+        msg += ` Pas de facture finale : ${res.facture_finale_raison_absence}.`;
+      }
+      if (res.avis_demande) {
+        msg += res.avis_email_statut === "envoye" ? " Demande d'avis envoyée." : " Demande d'avis générée (email non envoyé, lien à transmettre manuellement).";
+      }
+      showToast(msg);
+      loadChantiers();
+    } catch (err) {
+      errorBox.hidden = false;
+      errorBox.textContent = err.message;
+    }
+  } else if (action === "rapport-chantier") {
+    await withErrorToast(() => ouvrirPdf(`/chantiers/${id}/rapport-pdf`));
+  } else if (action === "delete-chantier") {
+    if (!(await confirmDialog("Archiver ce chantier ? Il disparaîtra de vos listes actives. Ses notes, dépenses, heures et factures liées restent intactes.", { confirmLabel: "Archiver", danger: true }))) return;
+    await withErrorToast(async () => {
+      await Api.deleteChantier(id);
+      showToast("Chantier archivé.");
+      chFermerTiroir();
+      loadChantiers();
+    });
+  }
 }
+
+function chReinitialiserFiltres() {
+  chSegment = "actifs";
+  chSegmentAvantSignal = "actifs";
+  chSignalFiltre = "";
+  chRecherche = "";
+  currentChantierClient = "";
+  currentChantierAvancement = "";
+  const recherche = document.getElementById("chantiers-search");
+  if (recherche) recherche.value = "";
+  const client = document.getElementById("chantiers-client-filtre");
+  if (client) client.value = "";
+  const avancement = document.getElementById("chantiers-avancement-filtre");
+  if (avancement) avancement.value = "";
+  renderChantiersListFiltered();
+}
+
+// ---------------------------------------------------------------------
+// 12. BRANCHEMENT
+// ---------------------------------------------------------------------
+function setupChantiersView() {
+  const vue = document.getElementById("view-chantiers");
+  const tiroir = document.getElementById("chantier-tiroir");
+
+  // Le meme gestionnaire des deux cotes : c'est ce qui garantit qu'aucune
+  // action n'a change de comportement en changeant d'endroit.
+  vue.addEventListener("click", chGererAction);
+  tiroir.addEventListener("click", chGererAction);
+
+  // Les fiches et les lignes sont des zones cliquables : au clavier, Entree
+  // et Espace doivent les ouvrir comme un bouton.
+  vue.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    const cible = e.target.closest('[data-action="ouvrir-chantier"]');
+    if (!cible || cible.tagName === "BUTTON") return;
+    e.preventDefault();
+    chOuvrirTiroir(cible.dataset.id);
+  });
+
+  // Fermeture du tiroir : la croix, le fond, ou Echap.
+  tiroir.addEventListener("mousedown", (e) => { if (e.target === tiroir) chFermerTiroir(); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !tiroir.hidden) chFermerTiroir();
+  });
+
+  // Les tuiles de situation sont des filtres : un second clic annule.
+  document.getElementById("chantiers-situation").addEventListener("click", (e) => {
+    const tuile = e.target.closest(".ch-tuile");
+    if (!tuile || !tuile.dataset.signal) return;
+    const activation = chSignalFiltre !== tuile.dataset.signal;
+    if (activation) {
+      // Un filtre de signal n'a de sens que sur l'ensemble du portefeuille :
+      // chercher les retards uniquement parmi les chantiers "à préparer" ne
+      // renverrait jamais rien. On met donc le segment de cote - et on le
+      // remet en place au second clic, pour que la tuile se comporte comme
+      // une bascule et non comme un aller sans retour.
+      chSegmentAvantSignal = chSegment;
+      chSegment = "";
+      chSignalFiltre = tuile.dataset.signal;
+    } else {
+      chSignalFiltre = "";
+      chSegment = chSegmentAvantSignal;
+    }
+    renderChantiersListFiltered();
+  });
+
+  document.getElementById("chantiers-segments").addEventListener("click", (e) => {
+    const seg = e.target.closest(".ch-segment");
+    if (!seg) return;
+    chSegment = seg.dataset.segment;
+    chSignalFiltre = "";
+    renderChantiersListFiltered();
+  });
+
+  document.querySelector(".ch-vues").addEventListener("click", (e) => {
+    const btn = e.target.closest(".ch-vue-btn");
+    if (!btn) return;
+    chVue = btn.dataset.vue;
+    renderChantiersListFiltered();
+  });
+
+  document.getElementById("chantiers-search").addEventListener("input", (e) => {
+    chRecherche = e.target.value;
+    renderChantiersListFiltered();
+  });
+
+  document.getElementById("chantiers-sort").addEventListener("change", (e) => {
+    currentChantierSort = e.target.value;
+    renderChantiersListFiltered();
+  });
+  document.getElementById("chantiers-avancement-filtre").addEventListener("change", (e) => {
+    currentChantierAvancement = e.target.value;
+    renderChantiersListFiltered();
+  });
+  document.getElementById("chantiers-client-filtre").addEventListener("change", (e) => {
+    currentChantierClient = e.target.value;
+    renderChantiersListFiltered();
+  });
+  document.getElementById("chantiers-filtres-reset").addEventListener("click", chReinitialiserFiltres);
+
+  // Panneau de filtres secondaires : ouverture au clic, fermeture au clic
+  // ailleurs ou a Echap - le comportement attendu d'un menu.
+  const filtresBtn = document.getElementById("chantiers-filtres-btn");
+  const filtresPanneau = document.getElementById("chantiers-filtres-panneau");
+  const fermerFiltres = () => { filtresPanneau.hidden = true; filtresBtn.setAttribute("aria-expanded", "false"); };
+  filtresBtn.addEventListener("click", () => {
+    const ouvert = !filtresPanneau.hidden;
+    filtresPanneau.hidden = ouvert;
+    filtresBtn.setAttribute("aria-expanded", String(!ouvert));
+  });
+  document.addEventListener("click", (e) => {
+    if (!filtresPanneau.hidden && !e.target.closest(".ch-filtres")) fermerFiltres();
+  });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") fermerFiltres(); });
+
+  document.getElementById("chantier-form-container").addEventListener("click", (e) => {
+    if (e.target.closest('[data-action="cancel-chantier-form"]')) {
+      const container = document.getElementById("chantier-form-container");
+      container.hidden = true;
+      container.innerHTML = "";
+    }
+  });
+}
+
+// ---------------------------------------------------------------------
+// 13. FORMULAIRES ET FRAGMENTS DU DOSSIER
+// ---------------------------------------------------------------------
+// Repris tels quels de la version precedente : ce sont eux qui portent la
+// logique metier (verrou de facturation, phases de note, taux horaire...).
+// Ils vivent desormais dans le tiroir au lieu de la carte depliable, mais
+// leur code, leurs identifiants et leurs appels API sont inchanges.
 
 function rentabiliteHtml(c) {
   if (c.total_depenses === 0 && c.montant_facture === null && !c.total_heures) return "";
@@ -4905,64 +6131,6 @@ function heuresHtml(c) {
     <div class="item-sub" style="font-weight:700;margin-bottom:4px;">${totalTxt}</div>
     ${detail}
   </div>`;
-}
-
-function showHeuresForm(chantierId, heure = null) {
-  const container = document.getElementById(`heures-form-${chantierId}`);
-  if (!container) return;
-  const today = new Date().toISOString().slice(0, 10);
-  const membreOptions = equipeCache.map((m) => `<option value="${m.id}" data-nom="${escapeHtml(m.nom)}" ${heure && heure.membre_id === m.id ? "selected" : ""}>${escapeHtml(m.nom)}</option>`).join("");
-  container.innerHTML = `
-    <div class="form-box" style="margin-top:12px;">
-      <div class="form-grid">
-        <div>
-          <label for="heure-membre-${chantierId}">Intervenant</label>
-          <select id="heure-membre-${chantierId}">
-            <option value="" ${!heure || !heure.membre_id ? "selected" : ""}>Autre / vous-même...</option>
-            ${membreOptions}
-          </select>
-        </div>
-        <div id="heure-nom-libre-wrap-${chantierId}">
-          <label for="heure-nom-${chantierId}">Nom (si "Autre")</label>
-          <input type="text" id="heure-nom-${chantierId}" value="${escapeHtml(heure && !heure.membre_id ? heure.nom_intervenant : "")}" placeholder="Ex: Vous-même, sous-traitant...">
-        </div>
-        <div><label for="heure-duree-${chantierId}">Durée (heures) *</label><input type="number" step="0.25" min="0.25" id="heure-duree-${chantierId}" value="${heure ? escapeHtml(heure.duree_heures) : ""}" placeholder="Ex: 6.5"></div>
-        <div><label for="heure-date-${chantierId}">Date</label><input type="date" id="heure-date-${chantierId}" value="${heure ? escapeHtml(heure.date_travail) : today}"></div>
-        <div><label for="heure-taux-${chantierId}">Coût horaire chargé (optionnel)</label><input type="number" step="0.01" min="0" id="heure-taux-${chantierId}" value="${heure && heure.taux_horaire !== null ? escapeHtml(heure.taux_horaire) : ""}" placeholder="Ex: 35"></div>
-        <div><label for="heure-note-${chantierId}">Note (optionnel)</label><input type="text" id="heure-note-${chantierId}" value="${escapeHtml(heure && heure.note ? heure.note : "")}" placeholder="Ex: pose carrelage"></div>
-      </div>
-      <p class="field-error" id="heures-error-${chantierId}" hidden></p>
-      <div class="form-actions">
-        <button type="button" class="btn-sm btn-sm-primary" data-action="submit-heures" data-id="${chantierId}" ${heure ? `data-heure-id="${heure.id}"` : ""}>${heure ? "Enregistrer" : "Ajouter"}</button>
-        <button type="button" class="btn-sm" data-action="cancel-heures-form" data-id="${chantierId}">Annuler</button>
-      </div>
-    </div>`;
-}
-
-// Meme paire de champs et meme seuil (85%) que "A surveiller" dans
-// chantiersKpiBandHtml (bande de KPI de la page Chantiers) - ici affiche par
-// chantier au lieu d'etre agrege. Le sens des couleurs est invense de
-// progressionHtml() : un budget CONSOMME eleve est un signal d'alerte
-// (rouge), pas un signal positif.
-function budgetConsommeHtml(c) {
-  if (!c.budget || c.total_depenses === null || c.total_depenses === undefined) return "";
-  const pct = Math.round((c.total_depenses / c.budget) * 100);
-  const niveau = pct >= 85 ? "bas" : pct >= 60 ? "moyen" : "haut";
-  return `
-    <div class="chantier-progress">
-      <div class="chantier-progress-row"><span>Budget consommé</span><strong>${pct}%</strong></div>
-      <div class="sante-barre"><div class="remplissage niveau-${niveau}" style="width:${Math.min(pct, 100)}%;"></div></div>
-    </div>`;
-}
-
-function progressionHtml(c) {
-  if (c.progression === null || c.progression === undefined) return "";
-  const niveau = c.progression >= 70 ? "haut" : c.progression >= 40 ? "moyen" : "bas";
-  return `
-    <div class="chantier-progress">
-      <div class="chantier-progress-row"><span>Avancement</span><strong>${c.progression}%</strong></div>
-      <div class="sante-barre"><div class="remplissage niveau-${niveau}" style="width:${c.progression}%;"></div></div>
-    </div>`;
 }
 
 function aujourdhuiChantierHtml(c) {
@@ -5052,8 +6220,14 @@ async function showChantierEditForm(c) {
         <div><label for="chantier-client-${c.id}">Client *</label><select id="chantier-client-${c.id}" ${clientVerrouille ? "disabled" : ""}>${clientOptionsHtml(c.client_id)}</select></div>
         <div><label for="chantier-adresse-${c.id}">Adresse</label><input type="text" id="chantier-adresse-${c.id}" value="${escapeHtml(c.adresse || "")}"></div>
         <div><label for="chantier-date-${c.id}">Date de début</label><input type="date" id="chantier-date-${c.id}" value="${escapeHtml(c.date_debut || "")}"></div>
+        <div><label for="chantier-fin-${c.id}">Fin prévue</label><input type="date" id="chantier-fin-${c.id}" value="${escapeHtml(c.date_fin_prevue || "")}"></div>
         <div><label for="chantier-budget-${c.id}">Budget prévu (euros)</label><input type="number" step="0.01" min="0" id="chantier-budget-${c.id}" value="${c.budget !== null ? escapeHtml(c.budget) : ""}" ${verrou ? "disabled" : ""}></div>
       </div>
+      <!-- La fin prevue existait dans l'API (ChantierUpdate.date_fin_prevue)
+           mais n'etait exposee nulle part dans l'interface : c'est elle qui
+           declenche l'alerte de retard, donc sans elle un chantier ne peut
+           jamais etre signale comme en retard. -->
+      <p class="section-hint">La fin prévue alimente l'alerte de retard ; le budget alimente la jauge de dérive.</p>
       ${verrou ? '<div class="item-sub" style="margin-top:8px;">Le client et le budget sont verrouillés car la facture finale a été créée.</div>' : ""}
       ${c.devis_id && !verrou ? '<div class="item-sub" style="margin-top:8px;">Le client reste celui du devis associé.</div>' : ""}
       <p class="field-error" id="chantier-edit-error-${c.id}" hidden></p>
@@ -5062,134 +6236,6 @@ async function showChantierEditForm(c) {
         <button type="button" class="btn-sm" data-action="cancel-chantier-edit" data-id="${c.id}">Annuler</button>
       </div>
     </div>`;
-}
-
-// Une action principale visible + le reste dans le menu "•••" (meme systeme
-// que renderDevisCard) : memes data-action/data-id qu'avant, seule leur
-// repartition entre bouton primaire et menu change.
-function chantierActionsHtml(c) {
-  const items = [];
-  items.push({ attrs: `data-action="edit-chantier" data-id="${c.id}"`, label: "Modifier le chantier" });
-  items.push({ primaire: c.statut !== "termine", attrs: `data-action="toggle-note-form" data-id="${c.id}"`, label: "+ Ajouter une note" });
-  if (!c.finances_verrouillees) {
-    items.push({ attrs: `data-action="toggle-depense-form" data-id="${c.id}"`, label: "+ Ajouter une dépense" });
-    items.push({ attrs: `data-action="toggle-heures-form" data-id="${c.id}"`, label: "+ Ajouter des heures" });
-  }
-  items.push({ attrs: `data-action="chantier-document" data-id="${c.id}"`, label: "+ Ajouter un document" });
-  items.push({ attrs: `data-action="planifier-intervention" data-id="${c.id}"`, label: "Planifier une intervention" });
-  if (!["termine", "facture", "paye"].includes(c.statut)) {
-    items.push({ attrs: `data-action="terminer-chantier" data-id="${c.id}"`, label: "Marquer terminé" });
-  }
-  if (["termine", "facture", "paye"].includes(c.statut)) {
-    items.push({ attrs: `data-action="toggle-reception-form" data-id="${c.id}"`, label: c.date_reception ? "Modifier la réception" : "Enregistrer la réception" });
-  }
-  if (c.statut === "termine") {
-    items.push({ primaire: true, attrs: `data-action="toggle-cloturer-form" data-id="${c.id}"`, label: "Clôturer le chantier" });
-  }
-  items.push({ attrs: `data-action="rapport-chantier" data-id="${c.id}"`, label: "Télécharger le rapport" });
-  items.push({ divider: true });
-  items.push({ attrs: `data-action="delete-chantier" data-id="${c.id}"`, label: "Archiver", danger: true });
-
-  const primaireHtml = `<button type="button" class="btn-sm btn-sm-primary" data-action="toggle-chantier-details" data-id="${c.id}" aria-expanded="false">Voir le chantier</button>`;
-  const menuHtml = items
-    .map((it) => it.divider
-      ? '<div class="action-menu-divider"></div>'
-      : `<button type="button"${it.danger ? ' class="is-danger"' : ""} ${it.attrs}>${it.label}</button>`)
-    .join("");
-
-  return `
-    <div class="item-actions">
-      ${primaireHtml}
-      <div class="action-menu">
-        <button type="button" class="action-menu-trigger" data-action="toggle-action-menu" aria-haspopup="true" aria-expanded="false" aria-label="Plus d'actions sur ce chantier">
-          <svg viewBox="0 0 24 24" class="nav-icon"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg>
-        </button>
-        <div class="action-menu-panel" role="menu">${menuHtml}</div>
-      </div>
-    </div>`;
-}
-
-function renderChantierCard(c) {
-  const notesHtml = (c.notes || [])
-    .slice()
-    .reverse()
-    .map(
-      (n) => `
-    <div class="note-item">
-      <span class="badge badge-blue">${PHASE_LABELS[n.phase] || n.phase}</span>
-      <div style="margin-top:6px;">${escapeHtml(n.texte || "")}</div>
-      ${n.photo_url ? `<img class="note-photo" src="${escapeHtml(n.photo_url)}" alt="Photo du chantier" onerror="this.remove()">` : ""}
-      <div class="item-sub" style="margin-top:6px;">${fmtDateTime(n.created_at)}</div>
-    </div>`
-    )
-    .join("");
-
-  const depensesHtml = (c.depenses || [])
-    .slice()
-    .reverse()
-    .map((d) => `<div class="item-sub" style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-      <span>${fmtDate(d.date_depense)} · ${escapeHtml(d.libelle)} · ${fmtEuro(d.montant)}${d.fournisseur_nom ? " · " + escapeHtml(d.fournisseur_nom) : ""}</span>
-      ${c.finances_verrouillees ? "" : `<button type="button" class="btn-sm" style="padding:2px 8px;flex-shrink:0;" data-action="edit-depense" data-id="${c.id}" data-depense-id="${d.id}">Modifier</button>`}
-    </div>`)
-    .join("");
-
-  const progression = Math.max(0, Math.min(100, Number(c.progression) || 0));
-  const budgetPct = c.budget ? Math.round(((c.total_depenses || 0) / c.budget) * 100) : null;
-  const marge = c.marge_reelle !== null && c.marge_reelle !== undefined ? c.marge_reelle : c.marge_estimee;
-  const estTermine = ["termine", "facture", "paye"].includes(c.statut);
-  const estASurveiller = chantierEstASurveiller(c);
-  const prochaineAction = c.prochaine_action
-    || (c.statut === "a_preparer" && c.date_debut ? `Démarrage ${fmtDate(c.date_debut)}` : "Aucune action planifiée");
-  const rowClass = estASurveiller ? " is-warning" : estTermine ? " is-complete" : "";
-  const statutMeta = CHANTIER_STATUT_META[c.statut] || { badge: "badge-gray", label: c.statut };
-
-  return `
-  <div class="chantier-card chantier-row${rowClass}" data-chantier-id="${c.id}">
-    <div class="chantier-row-identity">
-      <div class="crm-avatar">${escapeHtml(monogram(c.client_nom || c.titre))}</div>
-      <div class="chantier-row-identity-text">
-        <div class="chantier-row-client">${escapeHtml(c.client_nom || "Client non renseigné")}</div>
-        <div class="chantier-row-title">${escapeHtml(c.titre)}</div>
-        <span class="badge ${statutMeta.badge}">${escapeHtml(statutMeta.label)}</span>
-      </div>
-    </div>
-    <div class="chantier-row-progress-block">
-      <div class="chantier-row-label">Avancement <strong>${progression}%</strong></div>
-      <div class="sante-barre"><div class="remplissage niveau-${progression >= 70 ? "haut" : progression >= 40 ? "moyen" : "bas"}" style="width:${progression}%;"></div></div>
-    </div>
-    <div class="chantier-row-metric">
-      <span>Budget consommé</span>
-      <strong>${budgetPct === null ? "—" : `${budgetPct}%`}</strong>
-      <small>${c.budget !== null ? `${fmtEuro(c.total_depenses || 0)} sur ${fmtEuro(c.budget)}` : "Budget non renseigné"}</small>
-    </div>
-    <div class="chantier-row-metric chantier-row-margin">
-      <span>${estTermine ? "Marge réelle" : "Marge estimée"}</span>
-      <strong>${marge === null || marge === undefined ? "—" : fmtEuro(marge)}</strong>
-    </div>
-    <div class="chantier-row-next">
-      <span>Prochaine action</span>
-      <strong>${escapeHtml(prochaineAction)}</strong>
-    </div>
-    <div class="chantier-row-actions">${chantierActionsHtml(c)}</div>
-    <div class="chantier-details" id="chantier-details-${c.id}" hidden>
-      ${c.statut === "termine" ? `<div class="moment-banner"><span>Chantier terminé ! Clôturez-le pour générer la facture finale, demander un avis client et archiver le dossier.</span></div>` : ""}
-      ${aujourdhuiChantierHtml(c)}
-      <div class="item-meta">Début : ${fmtDate(c.date_debut)}${c.adresse ? ` · ${escapeHtml(c.adresse)}` : ""}</div>
-      ${checklistHtml(c)}
-      ${rentabiliteHtml(c)}
-      ${c.finances_verrouillees ? '<div class="moment-banner"><span>Les données financières sont verrouillées depuis la création de la facture finale.</span></div>' : ""}
-      ${depensesHtml ? `<div class="item-meta">${depensesHtml}</div>` : ""}
-      ${heuresHtml(c)}
-      <div class="notes-list">${notesHtml || '<div class="item-sub">Aucune note pour le moment.</div>'}</div>
-      ${receptionHtml(c)}
-      <div id="chantier-edit-form-${c.id}"></div>
-      <div id="note-form-${c.id}"></div>
-      <div id="depense-form-${c.id}"></div>
-      <div id="heures-form-${c.id}"></div>
-      <div id="reception-form-${c.id}"></div>
-      <div id="cloturer-form-${c.id}"></div>
-    </div>
-  </div>`;
 }
 
 function showDepenseForm(chantierId, depense = null) {
@@ -5241,356 +6287,36 @@ function showNoteForm(chantierId) {
     </div>`;
 }
 
-function setupChantiersView() {
-  document.getElementById("chantier-filters").addEventListener("click", (e) => {
-    const chip = e.target.closest(".filter-chip");
-    if (!chip) return;
-    document.querySelectorAll("#chantier-filters .filter-chip").forEach((c) => c.classList.remove("active"));
-    chip.classList.add("active");
-    currentChantierFilter = chip.dataset.statut;
-    document.getElementById("chantiers-statut-filtre").value = currentChantierFilter;
-    renderChantiersListFiltered();
-  });
-
-  document.getElementById("chantiers-sort").addEventListener("change", (e) => {
-    currentChantierSort = e.target.value;
-    renderChantiersListFiltered();
-  });
-  document.getElementById("chantiers-statut-filtre").addEventListener("change", (e) => {
-    currentChantierFilter = e.target.value;
-    document.querySelectorAll("#chantier-filters .filter-chip").forEach((chip) => chip.classList.toggle("active", chip.dataset.statut === currentChantierFilter));
-    renderChantiersListFiltered();
-  });
-  document.getElementById("chantiers-avancement-filtre").addEventListener("change", (e) => {
-    currentChantierAvancement = e.target.value;
-    renderChantiersListFiltered();
-  });
-  document.getElementById("chantiers-client-filtre").addEventListener("change", (e) => {
-    currentChantierClient = e.target.value;
-    renderChantiersListFiltered();
-  });
-  document.getElementById("chantiers-priorite-tri").addEventListener("change", (e) => {
-    currentChantierPriorite = e.target.value;
-    renderChantiersListFiltered();
-  });
-
-  document.querySelector('[data-action="show-chantier-form"]').addEventListener("click", async () => {
-    const container = document.getElementById("chantier-form-container");
-    await ensureClientsCache();
-
-    if (clientsCache.length === 0) {
-      container.innerHTML = `<div class="form-box"><p>Vous n'avez pas encore de client. Ajoutez d'abord un contact dans l'onglet <strong>Clients &amp; prospects</strong>.</p>
-        <div class="form-actions"><button type="button" class="btn-sm" data-action="cancel-chantier-form">Fermer</button></div></div>`;
-      container.hidden = false;
-      return;
-    }
-
-    container.innerHTML = `
-      <div class="form-box">
-        <h3>Nouveau chantier</h3>
-        <form id="chantier-form">
-          <div class="form-section">
-            <div class="form-section-title">Chantier</div>
-            <div class="form-grid">
-              <div><label for="cf-titre">Titre *</label><input type="text" id="cf-titre" required></div>
-              <div><label for="cf-client">Client *</label><select id="cf-client" required><option value="">Choisir...</option>${clientOptionsHtml()}</select></div>
-              <div><label for="cf-adresse">Adresse</label><input type="text" id="cf-adresse"></div>
-            </div>
-          </div>
-          <div class="form-section">
-            <div class="form-section-title">Planification</div>
-            <div class="form-grid">
-              <div><label for="cf-date">Date de début</label><input type="date" id="cf-date"></div>
-              <div><label for="cf-budget">Budget prévu (euros)</label><input type="number" step="0.01" min="0" id="cf-budget"></div>
-            </div>
-          </div>
-          <p class="field-error" id="chantier-form-error" hidden></p>
-          <div class="form-actions">
-            <button type="submit" class="btn-sm btn-sm-primary">Créer</button>
-            <button type="button" class="btn-sm" data-action="cancel-chantier-form">Annuler</button>
-          </div>
-        </form>
-      </div>`;
-    container.hidden = false;
-    container.scrollIntoView({ behavior: "smooth", block: "start" });
-
-    document.getElementById("chantier-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const errorBox = document.getElementById("chantier-form-error");
-      errorBox.hidden = true;
-      const budgetRaw = document.getElementById("cf-budget").value;
-      try {
-        await Api.createChantier({
-          titre: document.getElementById("cf-titre").value,
-          client_id: parseInt(document.getElementById("cf-client").value, 10),
-          adresse: emptyToNull(document.getElementById("cf-adresse").value),
-          date_debut: emptyToNull(document.getElementById("cf-date").value),
-          budget: budgetRaw === "" ? null : parseFloat(budgetRaw),
-        });
-        showToast("Chantier créé.");
-        container.hidden = true;
-        container.innerHTML = "";
-        loadChantiers();
-      } catch (err) {
-        errorBox.hidden = false;
-        errorBox.textContent = err.message;
-      }
-    });
-  });
-
-  document.getElementById("chantier-form-container").addEventListener("click", (e) => {
-    if (e.target.closest('[data-action="cancel-chantier-form"]')) {
-      const container = document.getElementById("chantier-form-container");
-      container.hidden = true;
-      container.innerHTML = "";
-    }
-  });
-
-  document.getElementById("chantiers-list").addEventListener("click", async (e) => {
-    const btn = e.target.closest("[data-action]");
-    if (!btn) return;
-
-    if (btn.dataset.action === "toggle-tache-chantier") {
-      const chantierId = parseInt(btn.dataset.chantierId, 10);
-      const tacheId = parseInt(btn.dataset.tacheId, 10);
-      const checked = btn.checked;
-      try {
-        await Api.updateTache(tacheId, { statut: checked ? "faite" : "a_faire" });
-        loadChantiers();
-      } catch (err) {
-        btn.checked = !checked;
-        showToast(err.message, true);
-      }
-      return;
-    }
-
-    const id = parseInt(btn.dataset.id, 10);
-
-    if (btn.dataset.action === "toggle-chantier-details") {
-      const details = document.getElementById(`chantier-details-${id}`);
-      if (!details) return;
-      details.hidden = !details.hidden;
-      btn.setAttribute("aria-expanded", String(!details.hidden));
-      btn.textContent = details.hidden ? "Voir le chantier" : "Masquer le détail";
-    } else if (btn.dataset.action === "edit-chantier") {
-      const chantier = chantiersCache.find((c) => c.id === id);
-      if (chantier) await showChantierEditForm(chantier);
-    } else if (btn.dataset.action === "cancel-chantier-edit") {
-      document.getElementById(`chantier-edit-form-${id}`).innerHTML = "";
-    } else if (btn.dataset.action === "submit-chantier-edit") {
-      const chantier = chantiersCache.find((c) => c.id === id);
-      const errorBox = document.getElementById(`chantier-edit-error-${id}`);
-      const titre = document.getElementById(`chantier-titre-${id}`).value.trim();
-      if (!titre) {
-        errorBox.hidden = false;
-        errorBox.textContent = "Le titre est obligatoire.";
-        return;
-      }
-      const payload = {
-        titre,
-        adresse: emptyToNull(document.getElementById(`chantier-adresse-${id}`).value),
-        date_debut: emptyToNull(document.getElementById(`chantier-date-${id}`).value),
-      };
-      if (chantier && !chantier.finances_verrouillees && !chantier.devis_id) {
-        payload.client_id = parseInt(document.getElementById(`chantier-client-${id}`).value, 10);
-      }
-      if (chantier && !chantier.finances_verrouillees) {
-        const budget = document.getElementById(`chantier-budget-${id}`).value;
-        payload.budget = budget === "" ? null : parseFloat(budget);
-      }
-      try {
-        await Api.updateChantier(id, payload);
-        showToast("Chantier mis à jour.");
-        loadChantiers();
-      } catch (err) {
-        errorBox.hidden = false;
-        errorBox.textContent = err.message;
-      }
-    } else if (btn.dataset.action === "chantier-document") {
-      switchView("documents");
-      setTimeout(() => showDocumentForm(id), 50);
-    } else if (btn.dataset.action === "planifier-intervention") {
-      const chantier = chantiersCache.find((c) => c.id === id);
-      switchView("planning");
-      setTimeout(() => window.showEvenementForm({
-        titre: `Intervention - ${chantier ? chantier.titre : ""}`,
-        type: "intervention",
-        chantierId: id,
-        clientId: chantier ? chantier.client_id : null,
-      }), 100);
-    } else if (btn.dataset.action === "toggle-reception-form") {
-      const chantier = chantiersCache.find((c) => c.id === id);
-      showReceptionForm(id, chantier);
-    } else if (btn.dataset.action === "cancel-reception-form") {
-      document.getElementById(`reception-form-${id}`).innerHTML = "";
-    } else if (btn.dataset.action === "submit-reception") {
-      const dateReception = document.getElementById(`recep-date-${id}`).value;
-      const reserves = document.getElementById(`recep-reserves-${id}`).value;
-      try {
-        await Api.updateChantier(id, { date_reception: emptyToNull(dateReception), reserves: emptyToNull(reserves) });
-        showToast("Réception enregistrée.");
-        loadChantiers();
-      } catch (err) {
-        const errorBox = document.getElementById(`reception-error-${id}`);
-        errorBox.hidden = false;
-        errorBox.textContent = err.message;
-      }
-    } else if (btn.dataset.action === "toggle-note-form") {
-      showNoteForm(id);
-    } else if (btn.dataset.action === "cancel-note-form") {
-      document.getElementById(`note-form-${id}`).innerHTML = "";
-    } else if (btn.dataset.action === "submit-note") {
-      const texte = document.getElementById(`note-texte-${id}`).value;
-      const phase = document.getElementById(`note-phase-${id}`).value;
-      const photoUrl = document.getElementById(`note-photo-${id}`).value;
-      try {
-        await Api.addChantierNote(id, { phase, texte: emptyToNull(texte), photo_url: emptyToNull(photoUrl) });
-        showToast("Note ajoutée.");
-        loadChantiers();
-      } catch (err) {
-        const errorBox = document.getElementById(`note-error-${id}`);
-        errorBox.hidden = false;
-        errorBox.textContent = err.message;
-      }
-    } else if (btn.dataset.action === "toggle-depense-form") {
-      await ensureFournisseursCache();
-      showDepenseForm(id);
-    } else if (btn.dataset.action === "edit-depense") {
-      await ensureFournisseursCache();
-      const chantier = chantiersCache.find((c) => c.id === id);
-      const depense = chantier && chantier.depenses.find((d) => d.id === parseInt(btn.dataset.depenseId, 10));
-      if (depense) showDepenseForm(id, depense);
-    } else if (btn.dataset.action === "cancel-depense-form") {
-      document.getElementById(`depense-form-${id}`).innerHTML = "";
-    } else if (btn.dataset.action === "submit-depense") {
-      const libelle = document.getElementById(`dep-libelle-${id}`).value.trim();
-      const montant = document.getElementById(`dep-montant-${id}`).value;
-      const dateDepense = document.getElementById(`dep-date-${id}`).value;
-      const fournisseurId = document.getElementById(`dep-fournisseur-${id}`).value;
-      const errorBox = document.getElementById(`depense-error-${id}`);
-      if (!libelle || !montant) {
-        errorBox.hidden = false;
-        errorBox.textContent = "Libellé et montant sont obligatoires.";
-        return;
-      }
-      try {
-        const payload = {
-          libelle, montant: parseFloat(montant), date_depense: dateDepense,
-          fournisseur_id: fournisseurId ? parseInt(fournisseurId, 10) : null,
-        };
-        if (btn.dataset.depenseId) {
-          await Api.updateChantierDepense(id, parseInt(btn.dataset.depenseId, 10), payload);
-          showToast("Dépense mise à jour.");
-        } else {
-          await Api.addChantierDepense(id, payload);
-          showToast("Dépense ajoutée.");
-        }
-        loadChantiers();
-      } catch (err) {
-        errorBox.hidden = false;
-        errorBox.textContent = err.message;
-      }
-    } else if (btn.dataset.action === "toggle-heures-form") {
-      if (hasPlan("business")) await ensureEquipeCache();
-      else equipeCache = [];
-      showHeuresForm(id);
-    } else if (btn.dataset.action === "edit-heure") {
-      if (hasPlan("business")) await ensureEquipeCache();
-      else equipeCache = [];
-      const chantier = chantiersCache.find((c) => c.id === id);
-      const heure = chantier && chantier.heures.find((h) => h.id === parseInt(btn.dataset.heureId, 10));
-      if (heure) showHeuresForm(id, heure);
-    } else if (btn.dataset.action === "cancel-heures-form") {
-      document.getElementById(`heures-form-${id}`).innerHTML = "";
-    } else if (btn.dataset.action === "submit-heures") {
-      const membreSelect = document.getElementById(`heure-membre-${id}`);
-      const membreId = membreSelect.value;
-      const nomLibre = document.getElementById(`heure-nom-${id}`).value.trim();
-      const nomIntervenant = membreId
-        ? membreSelect.options[membreSelect.selectedIndex].dataset.nom
-        : nomLibre;
-      const duree = document.getElementById(`heure-duree-${id}`).value;
-      const dateTravail = document.getElementById(`heure-date-${id}`).value;
-      const taux = document.getElementById(`heure-taux-${id}`).value;
-      const note = document.getElementById(`heure-note-${id}`).value.trim();
-      const errorBox = document.getElementById(`heures-error-${id}`);
-      if (!nomIntervenant || !duree) {
-        errorBox.hidden = false;
-        errorBox.textContent = "Intervenant (ou nom) et durée sont obligatoires.";
-        return;
-      }
-      try {
-        const payload = {
-          membre_id: membreId ? parseInt(membreId, 10) : null,
-          nom_intervenant: nomIntervenant,
-          duree_heures: parseFloat(duree), date_travail: dateTravail,
-          taux_horaire: taux ? parseFloat(taux) : null,
-          note: emptyToNull(note),
-        };
-        if (btn.dataset.heureId) {
-          await Api.updateChantierHeures(id, parseInt(btn.dataset.heureId, 10), payload);
-          showToast("Heures mises à jour.");
-        } else {
-          await Api.addChantierHeures(id, payload);
-          showToast("Heures ajoutées.");
-        }
-        loadChantiers();
-      } catch (err) {
-        errorBox.hidden = false;
-        errorBox.textContent = err.message;
-      }
-    } else if (btn.dataset.action === "delete-heure") {
-      const heureId = parseInt(btn.dataset.heureId, 10);
-      await withErrorToast(async () => {
-        await Api.deleteChantierHeures(id, heureId);
-        showToast("Heures supprimées.");
-        loadChantiers();
-      });
-    } else if (btn.dataset.action === "terminer-chantier") {
-      await withErrorToast(async () => {
-        await Api.updateChantier(id, { statut: "termine" });
-        showToast("Chantier marqué terminé.");
-        loadChantiers();
-      });
-    } else if (btn.dataset.action === "toggle-cloturer-form") {
-      showCloturerForm(id);
-    } else if (btn.dataset.action === "cancel-cloturer-form") {
-      document.getElementById(`cloturer-form-${id}`).innerHTML = "";
-    } else if (btn.dataset.action === "confirmer-cloturer") {
-      const errorBox = document.getElementById(`cloturer-error-${id}`);
-      errorBox.hidden = true;
-      try {
-        const res = await Api.cloturerChantier(id, {
-          generer_facture_finale: document.getElementById(`clot-facture-${id}`).checked,
-          demander_avis: document.getElementById(`clot-avis-${id}`).checked,
-        });
-        let msg = "Chantier clôturé.";
-        if (res.facture_finale) {
-          const statutTxt = res.facture_finale_email_statut === "envoye" ? "envoyée par email" : "créée (email non envoyé, copiez le lien pour la transmettre)";
-          msg += ` Facture finale de ${fmtEuro(res.facture_finale.montant_ttc)} ${statutTxt}.`;
-        } else if (res.facture_finale_raison_absence) {
-          msg += ` Pas de facture finale : ${res.facture_finale_raison_absence}.`;
-        }
-        if (res.avis_demande) {
-          msg += res.avis_email_statut === "envoye" ? " Demande d'avis envoyée." : " Demande d'avis générée (email non envoyé, lien à transmettre manuellement).";
-        }
-        showToast(msg);
-        loadChantiers();
-      } catch (err) {
-        errorBox.hidden = false;
-        errorBox.textContent = err.message;
-      }
-    } else if (btn.dataset.action === "rapport-chantier") {
-      await withErrorToast(() => ouvrirPdf(`/chantiers/${id}/rapport-pdf`));
-    } else if (btn.dataset.action === "delete-chantier") {
-      if (!(await confirmDialog("Archiver ce chantier ? Il disparaîtra de vos listes actives. Ses notes, dépenses, heures et factures liées restent intactes.", { confirmLabel: "Archiver", danger: true }))) return;
-      await withErrorToast(async () => {
-        await Api.deleteChantier(id);
-        showToast("Chantier archivé.");
-        loadChantiers();
-      });
-    }
-  });
+function showHeuresForm(chantierId, heure = null) {
+  const container = document.getElementById(`heures-form-${chantierId}`);
+  if (!container) return;
+  const today = new Date().toISOString().slice(0, 10);
+  const membreOptions = equipeCache.map((m) => `<option value="${m.id}" data-nom="${escapeHtml(m.nom)}" ${heure && heure.membre_id === m.id ? "selected" : ""}>${escapeHtml(m.nom)}</option>`).join("");
+  container.innerHTML = `
+    <div class="form-box" style="margin-top:12px;">
+      <div class="form-grid">
+        <div>
+          <label for="heure-membre-${chantierId}">Intervenant</label>
+          <select id="heure-membre-${chantierId}">
+            <option value="" ${!heure || !heure.membre_id ? "selected" : ""}>Autre / vous-même...</option>
+            ${membreOptions}
+          </select>
+        </div>
+        <div id="heure-nom-libre-wrap-${chantierId}">
+          <label for="heure-nom-${chantierId}">Nom (si "Autre")</label>
+          <input type="text" id="heure-nom-${chantierId}" value="${escapeHtml(heure && !heure.membre_id ? heure.nom_intervenant : "")}" placeholder="Ex: Vous-même, sous-traitant...">
+        </div>
+        <div><label for="heure-duree-${chantierId}">Durée (heures) *</label><input type="number" step="0.25" min="0.25" id="heure-duree-${chantierId}" value="${heure ? escapeHtml(heure.duree_heures) : ""}" placeholder="Ex: 6.5"></div>
+        <div><label for="heure-date-${chantierId}">Date</label><input type="date" id="heure-date-${chantierId}" value="${heure ? escapeHtml(heure.date_travail) : today}"></div>
+        <div><label for="heure-taux-${chantierId}">Coût horaire chargé (optionnel)</label><input type="number" step="0.01" min="0" id="heure-taux-${chantierId}" value="${heure && heure.taux_horaire !== null ? escapeHtml(heure.taux_horaire) : ""}" placeholder="Ex: 35"></div>
+        <div><label for="heure-note-${chantierId}">Note (optionnel)</label><input type="text" id="heure-note-${chantierId}" value="${escapeHtml(heure && heure.note ? heure.note : "")}" placeholder="Ex: pose carrelage"></div>
+      </div>
+      <p class="field-error" id="heures-error-${chantierId}" hidden></p>
+      <div class="form-actions">
+        <button type="button" class="btn-sm btn-sm-primary" data-action="submit-heures" data-id="${chantierId}" ${heure ? `data-heure-id="${heure.id}"` : ""}>${heure ? "Enregistrer" : "Ajouter"}</button>
+        <button type="button" class="btn-sm" data-action="cancel-heures-form" data-id="${chantierId}">Annuler</button>
+      </div>
+    </div>`;
 }
 
 // ===================== Taches =====================
@@ -6823,7 +7549,10 @@ function setupListesSearch() {
   setupListeSearch("clients-search", "#clients-directory .crm-row");
   setupListeSearch("devis-search", "#devis-list .list-row");
   setupListeSearch("factures-search", "#factures-list .list-row");
-  setupListeSearch("chantiers-search", "#chantiers-list .chantier-card");
+  // Chantiers : la recherche est geree par la page elle-meme (voir
+  // chCorrespondRecherche). Le masquage generique par textContent filtrait
+  // aussi sur les libelles de boutons - taper "note" faisait disparaitre des
+  // chantiers au hasard - et laissait la liste vide sans rien expliquer.
   setupListeSearch("documents-search", "#documents-list .doc-row");
   setupListeSearch("avis-search", "#avis-list .avis-card");
   setupListeSearch("notifications-search", "#notifications-list .notif-row");

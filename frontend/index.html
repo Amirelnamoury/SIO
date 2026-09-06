@@ -7,12 +7,17 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260906-polish">
+<link rel="stylesheet" href="style.css?v=20260906-chantiers2">
 <!-- Identite chromatique du SaaS. Charge APRES style.css, il redefinit les
      tokens de couleur et habille les ascenseurs : aucune regle de mise en
      page, aucune dimension de composant.
      Retirer cette ligne rend l'interface a son etat precedent. -->
 <link rel="stylesheet" href="theme.css?v=4">
+<!-- Cockpit de la page Chantiers. Charge APRES style.css et theme.css.
+     Tous ses selecteurs sont prefixes .ch- et ancres sous #view-chantiers
+     ou le tiroir : aucune autre vue n'est touchee.
+     Retirer cette ligne rend la page a son etat precedent. -->
+<link rel="stylesheet" href="chantiers.css?v=6">
 <!-- Habillage de l'ecran connexion/inscription. Charge APRES style.css,
      tous ses selecteurs sont ancres sous .auth-screen : rien ne fuit vers
      le SaaS. Supprimer cette ligne rend l'ecran a son etat precedent. -->
@@ -311,6 +316,23 @@
       </div>
     </div>
 
+    <!-- Tiroir de chantier. Place hors des vues pour survivre au
+         changement d'onglet, et rempli a l'ouverture par app.js. Il porte
+         les memes data-action que la liste : le meme gestionnaire delegue
+         est branche sur les deux, donc aucune action n'a change de nom. -->
+    <div id="chantier-tiroir" class="ch ch-tiroir" hidden role="dialog" aria-modal="true" aria-labelledby="chantier-tiroir-titre">
+      <div class="ch-tiroir-boite">
+        <div class="ch-tiroir-tete">
+          <div class="ch-tiroir-tete-texte">
+            <h3 class="ch-tiroir-titre" id="chantier-tiroir-titre"></h3>
+            <p class="ch-tiroir-sous" id="chantier-tiroir-sous"></p>
+          </div>
+          <button type="button" class="ch-tiroir-fermer" data-action="fermer-tiroir" aria-label="Fermer le dossier">&times;</button>
+        </div>
+        <div class="ch-tiroir-corps" id="chantier-tiroir-corps"></div>
+      </div>
+    </div>
+
     <!-- ---------- Section Tableau de bord ---------- -->
     <section id="view-dashboard" class="view">
       <div id="dashboard-content"></div>
@@ -529,12 +551,17 @@
     </section>
 
     <!-- ---------- Section Chantiers ---------- -->
-    <section id="view-chantiers" class="view" hidden>
+    <!-- ---------- Section Chantiers — le cockpit ----------
+         Structure : situation (4 tuiles-filtres) > fil d'attention >
+         barre de controle > plateau (fiches ou tableau) > tiroir.
+         Chaque bloc repond a une question de l'utilisateur ; aucun n'est
+         la pour remplir l'ecran. Voir chantiers.css pour le raisonnement. -->
+    <section id="view-chantiers" class="view ch" hidden>
       <div class="view-header">
         <div class="view-header-text">
           <p class="view-header-eyebrow">Gestion</p>
           <h2>Chantiers</h2>
-          <p class="view-header-desc">Le suivi de vos chantiers en cours et à venir.</p>
+          <p class="view-header-desc">Ce qui avance, ce qui derape, et ce qu'il faut faire ensuite.</p>
         </div>
         <div class="view-header-actions">
           <button type="button" class="btn-archives" data-action="voir-archives" data-entite="chantier">Archives</button>
@@ -544,51 +571,71 @@
 
       <div id="chantier-form-container" hidden></div>
 
-      <div id="chantiers-kpi-band"></div>
+      <!-- Combien : quatre tuiles qui sont aussi les quatre filtres. -->
+      <div id="chantiers-situation"></div>
 
-      <div class="filters" id="chantier-filters">
-        <button type="button" class="filter-chip active" data-statut="">Tous <span class="filter-chip-count"></span></button>
-        <button type="button" class="filter-chip" data-statut="a_preparer">À préparer <span class="filter-chip-count"></span></button>
-        <button type="button" class="filter-chip" data-statut="en_cours">En cours <span class="filter-chip-count"></span></button>
-        <button type="button" class="filter-chip" data-statut="a_surveiller">À surveiller <span class="filter-chip-count"></span></button>
-        <button type="button" class="filter-chip" data-statut="termine">Terminés <span class="filter-chip-count"></span></button>
-      </div>
+      <!-- Lequel et quoi faire : masque tant qu'il n'y a rien a traiter. -->
+      <div id="chantiers-attention"></div>
 
-      <div class="list-toolbar">
-        <div class="list-search">
-          <svg viewBox="0 0 24 24" class="nav-icon list-search-icon"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-          <input type="text" id="chantiers-search" placeholder="Rechercher un chantier, un client...">
+      <div class="ch-controls" id="chantiers-controls" hidden>
+        <div class="ch-recherche">
+          <svg viewBox="0 0 24 24" class="nav-icon ch-recherche-icone" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input type="text" id="chantiers-search" placeholder="Rechercher un chantier, un client, une adresse..." aria-label="Rechercher un chantier">
         </div>
-        <select id="chantiers-statut-filtre" aria-label="Filtrer par statut">
-          <option value="">Statut</option>
-          <option value="a_preparer">À préparer</option>
-          <option value="en_cours">En cours</option>
-          <option value="a_surveiller">À surveiller</option>
-          <option value="termine">Terminés</option>
-        </select>
-        <select id="chantiers-avancement-filtre" aria-label="Filtrer par avancement">
-          <option value="">Avancement</option>
-          <option value="debut">0 à 25 %</option>
-          <option value="milieu">26 à 75 %</option>
-          <option value="fin">76 à 100 %</option>
-        </select>
-        <select id="chantiers-client-filtre" aria-label="Filtrer par client">
-          <option value="">Client</option>
-        </select>
-        <select id="chantiers-sort" aria-label="Trier les chantiers">
-          <option value="date_debut_desc">Date de début</option>
-          <option value="date_debut_asc">Date croissante</option>
-          <option value="budget_desc">Budget</option>
-          <option value="titre_asc">Nom</option>
-        </select>
-        <select id="chantiers-priorite-tri" aria-label="Trier par priorité">
-          <option value="">Trier par Priorité</option>
-          <option value="risque">À surveiller d'abord</option>
-          <option value="progression">Avancement décroissant</option>
-        </select>
+
+        <div class="ch-segments" id="chantiers-segments" role="group" aria-label="Filtrer par etat">
+          <button type="button" class="ch-segment" data-segment="actifs" aria-pressed="true">Actifs <span class="ch-segment-compte"></span></button>
+          <button type="button" class="ch-segment" data-segment="a_preparer" aria-pressed="false">À préparer <span class="ch-segment-compte"></span></button>
+          <button type="button" class="ch-segment" data-segment="termine" aria-pressed="false">Terminés <span class="ch-segment-compte"></span></button>
+          <button type="button" class="ch-segment" data-segment="" aria-pressed="false">Tous <span class="ch-segment-compte"></span></button>
+        </div>
+
+        <div class="ch-controls-fin">
+          <!-- Filtres secondaires : replies, car ils servent rarement.
+               Les identifiants d'origine sont conserves. -->
+          <div class="ch-filtres">
+            <button type="button" class="ch-filtres-btn" id="chantiers-filtres-btn" aria-expanded="false" aria-controls="chantiers-filtres-panneau">
+              <svg viewBox="0 0 24 24" class="nav-icon" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+              Filtrer
+              <span class="ch-filtres-actifs" id="chantiers-filtres-actifs" hidden></span>
+            </button>
+            <div class="ch-filtres-panneau" id="chantiers-filtres-panneau" hidden>
+              <label for="chantiers-client-filtre">Client</label>
+              <select id="chantiers-client-filtre">
+                <option value="">Tous les clients</option>
+              </select>
+              <label for="chantiers-avancement-filtre">Avancement</label>
+              <select id="chantiers-avancement-filtre">
+                <option value="">Tous les avancements</option>
+                <option value="debut">0 à 25 %</option>
+                <option value="milieu">26 à 75 %</option>
+                <option value="fin">76 à 100 %</option>
+              </select>
+              <button type="button" class="ch-filtres-reset" id="chantiers-filtres-reset">Tout effacer</button>
+            </div>
+          </div>
+
+          <select id="chantiers-sort" aria-label="Trier les chantiers">
+            <option value="urgence">Trier : urgence</option>
+            <option value="progression">Avancement</option>
+            <option value="date_debut_desc">Début le plus récent</option>
+            <option value="date_debut_asc">Début le plus ancien</option>
+            <option value="budget_desc">Budget</option>
+            <option value="titre_asc">Nom</option>
+          </select>
+
+          <div class="ch-vues" role="group" aria-label="Mode d'affichage">
+            <button type="button" class="ch-vue-btn" data-vue="fiches" aria-pressed="true" aria-label="Affichage en fiches" title="Fiches">
+              <svg viewBox="0 0 24 24" class="nav-icon" aria-hidden="true"><rect x="3" y="3" width="7.5" height="7.5" rx="1"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1"/></svg>
+            </button>
+            <button type="button" class="ch-vue-btn" data-vue="liste" aria-pressed="false" aria-label="Affichage en liste" title="Liste">
+              <svg viewBox="0 0 24 24" class="nav-icon" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div id="chantiers-list" class="list"></div>
+      <div id="chantiers-list"></div>
     </section>
 
     <!-- ---------- Section Planning ---------- -->
@@ -1063,7 +1110,7 @@
 <script src="env.js"></script>
 <script src="config.js"></script>
 <script src="pricing.js"></script>
-<script src="api.js?v=20260906-polish"></script>
-<script src="app.js?v=20260906-polish"></script>
+<script src="api.js?v=20260906-chantiers2"></script>
+<script src="app.js?v=20260906-chantiers2"></script>
 </body>
 </html>
