@@ -6416,54 +6416,66 @@ function sortTachesForDisplay(taches) {
   return taches.slice().sort((a, b) => (poids[b.priorite] || 0) - (poids[a.priorite] || 0));
 }
 
-function renderTachesFiltered() {
-  const list = document.getElementById("taches-list");
-  if (tachesCache.length === 0) {
-    list.innerHTML = '<div class="empty-state">Aucune tâche ici.</div>';
-    return;
-  }
-  if (currentTacheFilter !== "a_faire") {
-    list.innerHTML = sortTachesForDisplay(tachesCache).map(renderTacheRow).join("");
-    reapplyListSearch("taches-search", "#taches-list .tache-row");
-    return;
-  }
-  const parGroupe = {};
-  tachesCache.forEach((t) => { (parGroupe[tacheGroupe(t)] = parGroupe[tacheGroupe(t)] || []).push(t); });
-  const groupesAffiches = currentTacheSousFiltre ? [currentTacheSousFiltre] : TACHE_GROUPE_ORDRE;
-  const html = groupesAffiches
-    .filter((g) => parGroupe[g] && parGroupe[g].length)
-    .map((g) => `
-      <div class="tache-groupe-label">${TACHE_GROUPE_LABELS[g]}</div>
-      ${sortTachesForDisplay(parGroupe[g]).map(renderTacheRow).join("")}
-    `).join("");
-  list.innerHTML = html || '<div class="empty-state">Aucune tâche dans ce filtre.</div>';
-  reapplyListSearch("taches-search", "#taches-list .tache-row");
-}
+// ---------------------------------------------------------------------
+// TACHES — rendre le contexte visible
+// ---------------------------------------------------------------------
+// Le regroupement par echeance (En retard / Aujourd'hui / Cette semaine /
+// Plus tard) etait deja la bonne composition pour une liste d'execution,
+// et il est conserve. Deux choses lui manquaient.
+//
+// LE CONTEXTE. TacheOut porte `chantier_id` et `client_id` depuis
+// toujours, et ni l'un ni l'autre n'etait affiche. « Commander le
+// carrelage » sans savoir pour quel chantier n'est pas une tache, c'est
+// une devinette - et l'artisan qui a trois chantiers en cours devait
+// ouvrir la fiche pour savoir de quoi il s'agissait.
+//
+// LE BRUIT. Chaque ligne portait deux pastilles, l'echeance et la
+// priorite, y compris quand elles n'avaient rien a dire : « Priorite
+// normale » sur une tache sans urgence occupe la place sans jamais rien
+// apprendre. Elles ne s'affichent plus que lorsqu'elles signalent
+// quelque chose.
 
-async function loadTaches() {
-  const list = document.getElementById("taches-list");
-  list.innerHTML = skeletonCards();
-  try {
-    tachesCache = await Api.listTaches(currentTacheFilter);
-    renderTachesFiltered();
-  } catch (err) {
-    list.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
+/** Le contexte d'une tache : le chantier s'il y en a un, le client
+ *  sinon. Les deux listes sont celles que le produit charge deja
+ *  ailleurs ; on ne demande rien de plus, et l'absence de cache se
+ *  traduit simplement par une ligne sans contexte. */
+function tacheContexte(t) {
+  if (t.chantier_id) {
+    const c = (typeof chantiersCache !== "undefined" ? chantiersCache : []).find((x) => x.id === t.chantier_id);
+    if (c) return { label: c.titre, type: "Chantier", action: "ouvrir-chantier-depuis-tache", id: c.id };
   }
+  if (t.client_id) {
+    const c = (typeof clientsCache !== "undefined" ? clientsCache : []).find((x) => x.id === t.client_id);
+    if (c) return { label: c.nom, type: "Client", action: "voir-timeline", id: c.id };
+  }
+  return null;
 }
 
 function renderTacheRow(t) {
   const estFaite = t.statut === "faite";
   const echeance = tacheEcheanceMeta(t);
+  const contexte = tacheContexte(t);
+  // La priorite ne s'affiche que si elle sort de l'ordinaire : une
+  // pastille « Priorite normale » sur chaque ligne ne dit rien.
+  const prioriteVisible = !estFaite && ["haute", "urgente"].includes(t.priorite);
+  // L'echeance ne s'affiche que si elle presse ou si elle est passee -
+  // le regroupement par periode porte deja l'information du « quand ».
+  const echeanceVisible = echeance && !estFaite && ["pill-red", "pill-accent"].includes(echeance.pill);
+
   return `
   <div class="tache-row">
     <input type="checkbox" class="tache-row-check" ${estFaite ? "checked" : ""}
       data-action="${estFaite ? "reouvrir-tache" : "terminer-tache"}" data-id="${t.id}" aria-label="${estFaite ? "Réouvrir la tâche" : "Marquer la tâche faite"}">
     <div class="tache-row-body">
       <div class="tache-row-titre${estFaite ? " is-done" : ""}">${escapeHtml(t.titre)}</div>
-      ${t.description ? `<div class="tache-row-sub">${escapeHtml(t.description)}</div>` : ""}
+      ${contexte
+        ? `<button type="button" class="tache-row-contexte" data-action="${contexte.action}" data-id="${contexte.id}">
+             <span class="tache-row-contexte-type">${contexte.type}</span>${escapeHtml(contexte.label)}
+           </button>`
+        : (t.description ? `<div class="tache-row-sub">${escapeHtml(t.description)}</div>` : "")}
     </div>
-    ${echeance ? `<span class="pill ${echeance.pill}">${echeance.label}</span>` : "<span></span>"}
-    <span class="pill ${TACHE_PRIORITE_PILL[t.priorite] || "pill-gray"}">${TACHE_PRIORITE_LABELS[t.priorite] || t.priorite}</span>
+    ${echeanceVisible ? `<span class="pill ${echeance.pill}">${echeance.label}</span>` : "<span></span>"}
+    ${prioriteVisible ? `<span class="pill ${TACHE_PRIORITE_PILL[t.priorite] || "pill-gray"}">${TACHE_PRIORITE_LABELS[t.priorite] || t.priorite}</span>` : "<span></span>"}
     <div class="action-menu">
       <button type="button" class="action-menu-trigger" data-action="toggle-action-menu" aria-haspopup="true" aria-expanded="false" aria-label="Plus d'actions sur cette tâche">
         <svg viewBox="0 0 24 24" class="nav-icon"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg>
@@ -6474,6 +6486,56 @@ function renderTacheRow(t) {
     </div>
   </div>`;
 }
+
+function renderTachesFiltered() {
+  const list = document.getElementById("taches-list");
+  if (tachesCache.length === 0) {
+    list.innerHTML = `<div class="empty-state">${currentTacheFilter === "faite"
+      ? "Aucune tâche terminée pour le moment."
+      : "<strong>Rien à faire.</strong><br><br>Les tâches créées depuis un chantier ou un devis signé viendront se ranger ici automatiquement."}</div>`;
+    return;
+  }
+  if (currentTacheFilter !== "a_faire") {
+    list.innerHTML = sortTachesForDisplay(tachesCache).map(renderTacheRow).join("");
+    return;
+  }
+  const parGroupe = {};
+  tachesCache.forEach((t) => { (parGroupe[tacheGroupe(t)] = parGroupe[tacheGroupe(t)] || []).push(t); });
+  const groupesAffiches = currentTacheSousFiltre ? [currentTacheSousFiltre] : TACHE_GROUPE_ORDRE;
+  const html = groupesAffiches
+    .filter((g) => parGroupe[g] && parGroupe[g].length)
+    .map((g) => `
+      <div class="tache-groupe-label${g === "en_retard" ? " est-retard" : ""}">
+        ${TACHE_GROUPE_LABELS[g]} <span>${parGroupe[g].length}</span>
+      </div>
+      ${sortTachesForDisplay(parGroupe[g]).map(renderTacheRow).join("")}
+    `).join("");
+  list.innerHTML = html || '<div class="empty-state">Aucune tâche dans ce filtre.</div>';
+}
+
+async function loadTaches() {
+  const list = document.getElementById("taches-list");
+  list.innerHTML = '<div class="repertoire-squelette"><span></span><span></span><span></span></div>';
+  try {
+    // Les chantiers et les clients servent a nommer le contexte de chaque
+    // tache. Repli silencieux : sans eux la liste s'affiche, simplement
+    // sans le nom du chantier.
+    const [taches] = await Promise.all([
+      Api.listTaches(currentTacheFilter),
+      (typeof chantiersCache !== "undefined" && chantiersCache.length)
+        ? Promise.resolve()
+        : Api.listChantiers().then((c) => { chantiersCache = c; }).catch(() => {}),
+      (typeof clientsCache !== "undefined" && clientsCache.length)
+        ? Promise.resolve()
+        : ensureClientsCache().catch(() => {}),
+    ]);
+    tachesCache = taches;
+    renderTachesFiltered();
+  } catch (err) {
+    list.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
+  }
+}
+
 
 function showTacheForm() {
   const container = document.getElementById("tache-form-container");
@@ -6569,6 +6631,17 @@ function setupTachesView() {
     const btn = e.target.closest("[data-action]");
     if (!btn) return;
     const id = parseInt(btn.dataset.id, 10);
+
+    // Le contexte d'une tache mene a sa piece : « Commander le carrelage »
+    // ouvre le chantier concerne, et non plus une devinette.
+    if (btn.dataset.action === "ouvrir-chantier-depuis-tache") {
+      ouvrirChantierDepuisPlanning(id);
+      return;
+    }
+    if (btn.dataset.action === "voir-timeline") {
+      showTimeline(id);
+      return;
+    }
 
     if (btn.dataset.action === "terminer-tache") {
       await withErrorToast(async () => {

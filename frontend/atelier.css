@@ -1150,3 +1150,51 @@ label { color: var(--sa-text-muted); }
 .sante-barre .remplissage.niveau-bas { background: var(--sa-danger); }
 .chantier-action-fleche { color: var(--sa-accent); }
 .chantier-card-echeance { border-left-color: var(--sa-border); }
+
+/* =====================================================================
+   TACHES — le contexte, et moins de pastilles
+   ---------------------------------------------------------------------
+   Le regroupement par echeance etait deja la bonne composition pour une
+   liste d'execution ; il est conserve. Deux choses lui manquaient : le
+   contexte de chaque tache (« Commander le carrelage » sans savoir pour
+   quel chantier n'est pas une tache, c'est une devinette), et un peu de
+   silence - chaque ligne portait deux pastilles y compris quand elles
+   n'avaient rien a dire.
+   ===================================================================== */
+.tache-groupe-label {
+  display: flex; align-items: baseline; gap: 8px;
+  margin: var(--sa-space-6) 0 var(--sa-space-2);
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--sa-border-strong);
+  font-size: 0.6875rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--sa-text-faint);
+}
+.tache-groupe-label:first-child { margin-top: 0; }
+.tache-groupe-label span { font-family: var(--sa-font-display); font-size: var(--sa-text-sm); letter-spacing: 0; color: var(--sa-text-muted); }
+/* Un seul groupe est colore : celui qui est en retard. */
+.tache-groupe-label.est-retard { color: var(--sa-danger); border-bottom-color: var(--sa-danger); }
+.tache-groupe-label.est-retard span { color: var(--sa-danger); }
+
+.tache-row { border-bottom: 1px solid var(--sa-border); background: transparent; border-radius: 0; }
+.tache-row:hover { background: var(--sa-surface); }
+.tache-row-titre { color: var(--sa-text); }
+.tache-row-titre.is-done { color: var(--sa-text-faint); text-decoration: line-through; }
+.tache-row-sub { font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
+
+/* Le contexte est cliquable : il mene au chantier ou au client. */
+.tache-row-contexte {
+  display: inline-flex; align-items: baseline; gap: 6px;
+  margin-top: 2px; padding: 0;
+  border: 0; background: none;
+  font: inherit; font-size: var(--sa-text-xs);
+  color: var(--sa-accent); cursor: pointer;
+  text-align: left;
+}
+.tache-row-contexte:hover { text-decoration: underline; text-underline-offset: 3px; }
+.tache-row-contexte-type {
+  font-size: var(--sa-text-2xs); font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--sa-text-faint);
+}
+.tache-row-check { accent-color: var(--sa-accent); }
