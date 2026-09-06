@@ -957,3 +957,87 @@ label { color: var(--sa-text-muted); }
   .ligne-description { grid-column: 1 / -1; }
   .ligne-total { grid-column: 1 / 4; text-align: left; }
 }
+
+/* =====================================================================
+   DETAIL D'UN DEVIS — « lire le document »
+   ---------------------------------------------------------------------
+   Cet ecran n'existait pas. On pouvait editer un devis, l'envoyer, le
+   dupliquer, telecharger son PDF - mais pas le LIRE. Pour voir ce qu'on
+   avait vendu, il fallait ouvrir le PDF ou le portail client.
+   ===================================================================== */
+.side-panel-box-devis { max-width: 760px; }
+.devis-detail-entete { margin-bottom: var(--sa-space-4); padding-right: 40px; }
+.devis-detail-titre {
+  margin: 0 0 4px;
+  font-family: var(--sa-font-display);
+  font-size: var(--sa-text-xl); font-weight: 600; color: var(--sa-text);
+  font-variant-numeric: tabular-nums;
+}
+.devis-detail-sous { margin: 0; font-size: var(--sa-text-sm); color: var(--sa-text-muted); }
+.devis-detail-etat {
+  display: flex; align-items: center; gap: var(--sa-space-3); flex-wrap: wrap;
+  padding-bottom: var(--sa-space-4);
+}
+.devis-detail-suivi { font-size: var(--sa-text-sm); }
+.devis-detail-suivi.is-alerte { color: var(--sa-danger); font-weight: 500; }
+.devis-detail-suivi.is-accent { color: var(--sa-laiton); font-weight: 500; }
+.devis-detail-suivi.is-success { color: var(--sa-success); }
+.devis-detail-suivi.is-muted { color: var(--sa-text-muted); }
+
+/* ---------- Le tableau, en lecture ----------
+   Memes colonnes et meme alignement qu'a la saisie : on relit le document
+   tel qu'on l'a construit, et tel que le client le recevra. */
+.devis-lecture { width: 100%; border-collapse: collapse; font-size: var(--sa-text-sm); }
+.devis-lecture th {
+  padding: 0 10px 7px; text-align: left;
+  font-size: var(--sa-text-2xs); font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.05em; color: var(--sa-text-faint);
+  border-bottom: 1px solid var(--sa-border-strong);
+}
+.devis-lecture td { padding: 9px 10px; border-bottom: 1px solid var(--sa-border); color: var(--sa-text-muted); vertical-align: top; }
+.devis-lecture td:first-child { color: var(--sa-text); }
+.devis-lecture tr:last-child td { border-bottom: 0; }
+.devis-lecture .est-nombre { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.devis-lecture .est-total { font-family: var(--sa-font-display); font-weight: 500; color: var(--sa-text); }
+
+.devis-detail-totaux { display: flex; justify-content: flex-end; padding-top: var(--sa-space-5); }
+.devis-detail-totaux .totalisateur { min-width: 280px; }
+.devis-detail-notes { margin: 0; font-size: var(--sa-text-sm); color: var(--sa-text-muted); white-space: pre-line; }
+
+/* ---------- La vie du devis ----------
+   La liste ne pouvait en montrer qu'une ligne de resume. Ici on voit le
+   parcours entier - et donc POURQUOI une relance est due. */
+.devis-vie { list-style: none; margin: 0; padding: 0; }
+.devis-vie-etape {
+  display: grid; grid-template-columns: 132px minmax(0, 1fr);
+  gap: var(--sa-space-4);
+  padding: 8px 0;
+  border-bottom: 1px solid var(--sa-border);
+  font-size: var(--sa-text-sm);
+}
+.devis-vie-etape:last-child { border-bottom: 0; }
+.devis-vie-etape time { font-size: var(--sa-text-2xs); color: var(--sa-text-faint); font-variant-numeric: tabular-nums; padding-top: 2px; }
+.devis-vie-etape span { color: var(--sa-text-muted); }
+/* Les deux moments qui comptent - le client a ouvert, le client a signe -
+   sont les seuls a passer en encre pleine. */
+.devis-vie-etape.est-forte span { color: var(--sa-text); font-weight: 500; }
+.devis-vie-attente {
+  margin: var(--sa-space-4) 0 0;
+  padding: 11px 13px;
+  border-left: 2px solid var(--sa-warning);
+  background: var(--sa-warning-soft);
+  border-radius: 0 var(--sa-radius-sm) var(--sa-radius-sm) 0;
+  font-size: var(--sa-text-xs); color: var(--sa-text-muted);
+}
+
+.list-row-primary.est-cliquable { cursor: pointer; border-radius: var(--sa-radius-sm); }
+.list-row-primary.est-cliquable:hover .list-row-title { color: var(--sa-accent); }
+.list-row-primary.est-cliquable:focus-visible { outline: 2px solid var(--sa-accent); outline-offset: 2px; }
+
+@media (max-width: 760px) {
+  .side-panel-box-devis { max-width: none; }
+  .devis-vie-etape { grid-template-columns: 1fr; gap: 2px; }
+  .devis-detail-totaux { justify-content: stretch; }
+  .devis-detail-totaux .totalisateur { min-width: 0; width: 100%; }
+  .devis-lecture th:nth-child(3), .devis-lecture td:nth-child(3) { display: none; }
+}

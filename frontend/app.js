@@ -4090,7 +4090,10 @@ function renderDevisCard(d) {
 
   return `
   <div class="list-row list-row-devis ${isDue ? "is-due" : ""}">
-    <div class="list-row-primary">
+    <!-- Le bloc d'identite ouvre le devis en LECTURE. C'etait le geste
+         manquant : on pouvait tout faire d'un devis sauf le consulter. -->
+    <div class="list-row-primary est-cliquable" data-action="voir-devis" data-id="${d.id}"
+         role="button" tabindex="0" aria-label="Lire le devis ${escapeHtml(d.numero || "")} de ${escapeHtml(d.client_nom)}">
       <span class="crm-avatar">${escapeHtml(monogram(d.client_nom))}</span>
       <div class="list-row-primary-copy">
         <div class="list-row-title">${escapeHtml(d.client_nom)}</div>
@@ -4113,6 +4116,151 @@ function renderDevisCard(d) {
     ${d.statut === "signe" ? `<div class="list-row-banner moment-banner"><span>Devis accepté ! ${fmtEuro(d.montant_ttc)}${d.nom_signataire ? " · signé par " + escapeHtml(d.nom_signataire) : ""} — prêt à démarrer le projet avec « Tout préparer ».</span></div>` : ""}
     <div id="preparer-form-${d.id}" class="list-row-expand"></div>
   </div>`;
+}
+
+// ---------------------------------------------------------------------
+// DETAIL D'UN DEVIS — « lire le document »
+// ---------------------------------------------------------------------
+// Il n'existait AUCUN ecran pour lire un devis dans l'application. On
+// pouvait l'editer, l'envoyer, le dupliquer, telecharger son PDF - mais
+// pour voir ce qu'on avait vendu, il fallait ouvrir le PDF ou le portail
+// client. Les lignes, les quantites, les prix et les totaux etaient
+// inaccessibles depuis le produit lui-meme.
+//
+// Aucun appel supplementaire n'est necessaire : `listDevis` renvoie deja
+// les lignes de chaque devis, et toutes les dates de son parcours.
+//
+// L'ecran repose sur deux blocs que le reste du produit connait deja - le
+// tableau des prestations et le totalisateur, les memes qu'a la saisie -
+// plus un troisieme, propre a la lecture : la vie du devis.
+
+/** La vie du devis, reconstituee a partir des dates deja presentes sur
+ *  l'objet. La liste ne pouvait en montrer qu'une ligne de resume ; ici on
+ *  voit le parcours entier, et donc pourquoi une relance est due. */
+function devisVieHtml(d) {
+  const etapes = [];
+  if (d.created_at) etapes.push({ date: d.created_at, label: "Devis créé" });
+  if (d.date_envoi) etapes.push({ date: d.date_envoi, label: "Envoyé au client" });
+  if (d.date_consultation) etapes.push({ date: d.date_consultation, label: "Ouvert par le client", fort: true });
+  if (d.date_derniere_relance) {
+    etapes.push({
+      date: d.date_derniere_relance,
+      label: d.nb_relances > 1 ? `Dernière relance (${d.nb_relances} au total)` : "Relance envoyée",
+    });
+  }
+  if (d.date_signature) {
+    etapes.push({
+      date: d.date_signature,
+      label: d.nom_signataire ? `Accepté par ${escapeHtml(d.nom_signataire)}` : "Accepté",
+      fort: true,
+    });
+  }
+  if (!etapes.length) return `<p class="fiche-vide">Ce devis n'a pas encore d'histoire : il n'a pas été envoyé.</p>`;
+
+  etapes.sort((a, b) => new Date(a.date) - new Date(b.date));
+  // Un devis envoye et jamais ouvert est la seule chose que les dates ne
+  // disent pas d'elles-memes : on l'ecrit.
+  const attente = d.date_envoi && !d.date_consultation && !d.date_signature
+    ? `<p class="devis-vie-attente">Jamais ouvert depuis l'envoi. Le devis n'est peut-être pas arrivé — vérifiez l'adresse du client avant de relancer une fois de plus.</p>`
+    : "";
+
+  return `
+    <ol class="devis-vie">
+      ${etapes.map((e) => `
+        <li class="devis-vie-etape${e.fort ? " est-forte" : ""}">
+          <time>${fmtDateTime(e.date)}</time>
+          <span>${e.label}</span>
+        </li>`).join("")}
+    </ol>
+    ${attente}`;
+}
+
+/** Le tableau des prestations, en LECTURE. Meme colonnes qu'a la saisie,
+ *  meme alignement des chiffres : on relit le document tel qu'on l'a
+ *  construit, et tel que le client le recevra. */
+function devisLignesLectureHtml(lignes) {
+  if (!lignes || !lignes.length) {
+    return `<p class="fiche-vide">Aucune prestation n'a encore été chiffrée sur ce devis.</p>`;
+  }
+  return `
+  <table class="devis-lecture">
+    <thead>
+      <tr>
+        <th scope="col">Désignation</th>
+        <th scope="col" class="est-nombre">Qté</th>
+        <th scope="col">Unité</th>
+        <th scope="col" class="est-nombre">Prix HT</th>
+        <th scope="col" class="est-nombre">Total HT</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${lignes.map((l) => `
+        <tr>
+          <td>${escapeHtml(l.description)}</td>
+          <td class="est-nombre">${l.quantite}</td>
+          <td>${escapeHtml(l.unite || "")}</td>
+          <td class="est-nombre">${fmtEuro(l.prix_unitaire_ht)}</td>
+          <td class="est-nombre est-total">${fmtEuro(Math.round((l.quantite * l.prix_unitaire_ht + Number.EPSILON) * 100) / 100)}</td>
+        </tr>`).join("")}
+    </tbody>
+  </table>`;
+}
+
+function showDevisDetail(devisId) {
+  const d = devisListCache.find((x) => x.id === devisId)
+    || (window.__devisTousCache || []).find((x) => x.id === devisId);
+  const panneau = document.getElementById("panel-devis");
+  if (!panneau || !d) return;
+
+  const meta = DEVIS_STATUT_META[d.statut] || { label: d.statut, badge: "badge-gray" };
+  const suivi = devisSuivi(d, devisDueIds.has(d.id));
+  // Les memes totaux qu'a la saisie, recalcules depuis les lignes : le
+  // document se relit exactement comme il a ete construit.
+  const totaux = devisTotaux(d.lignes || [], d.taux_tva, d.remise_pourcentage || 0, d.acompte_pourcentage || 0);
+
+  document.getElementById("devis-detail-titre").textContent = d.numero || `Devis #${d.id}`;
+  document.getElementById("devis-detail-sous").innerHTML =
+    `${escapeHtml(d.client_nom)}${d.titre ? " · " + escapeHtml(d.titre) : ""}`;
+
+  document.getElementById("devis-detail-corps").innerHTML = `
+    <div class="devis-detail-etat">
+      <span class="badge ${meta.badge}">${escapeHtml(meta.label)}</span>
+      <span class="devis-detail-suivi ${suivi.cls}">${escapeHtml(suivi.texte)}</span>
+    </div>
+
+    ${chantierActionsDevisHtml(d)}
+
+    ${ficheSection("Prestations", devisLignesLectureHtml(d.lignes))}
+
+    ${totaux ? `<div class="devis-detail-totaux">${devisTotalisateurHtml(totaux)}</div>` : ""}
+
+    ${d.description ? ficheSection("Notes au client", `<p class="devis-detail-notes">${escapeHtml(d.description)}</p>`) : ""}
+
+    ${ficheSection("La vie de ce devis", devisVieHtml(d))}
+  `;
+  panneau.hidden = false;
+  panneau.dataset.devisId = devisId;
+  panneau.querySelector(".side-panel-close").focus();
+}
+
+/** Les actions du devis, reprises telles quelles de la ligne de liste :
+ *  memes `data-action`, memes conditions. Le gestionnaire delegue de la
+ *  vue Devis est branche sur le panneau, donc rien n'a change de nom. */
+function chantierActionsDevisHtml(d) {
+  const actions = [];
+  if (d.statut === "nouveau" && d.montant_ht !== null) actions.push({ p: true, a: `data-action="envoyer-devis" data-id="${d.id}"`, l: "Envoyer le devis" });
+  if (d.statut === "nouveau") actions.push({ p: d.montant_ht === null, a: `data-action="edit-devis" data-id="${d.id}"`, l: "Éditer / chiffrer" });
+  if (["envoye", "consulte", "relance_j3", "relance_j7"].includes(d.statut) && hasPlan("essentiel") && d.relance_manuelle_possible !== false) {
+    actions.push({ p: true, a: `data-action="relancer-devis" data-id="${d.id}"`, l: "Relancer" });
+  }
+  if (d.statut === "signe") actions.push({ p: true, a: `data-action="preparer-chantier" data-id="${d.id}"`, l: "Tout préparer" });
+  if (d.lignes && d.lignes.length) actions.push({ a: `data-action="pdf-devis" data-id="${d.id}"`, l: "Télécharger le PDF" });
+  if (d.token && d.statut !== "nouveau") actions.push({ a: `data-action="copier-lien-devis" data-token="${escapeHtml(d.token)}"`, l: "Copier le lien client" });
+  actions.push({ a: `data-action="dupliquer-devis" data-id="${d.id}"`, l: "Dupliquer" });
+
+  return `<div class="fiche-actions">${actions
+    .map((x) => `<button type="button" class="btn-sm${x.p ? " btn-sm-primary" : ""}" ${x.a}>${x.l}</button>`)
+    .join("")}</div>`;
 }
 
 async function showDevisForm(devis, preselectClientId) {
@@ -4307,10 +4455,22 @@ function setupDevisView() {
     renderDevisListFiltered();
   });
 
-  document.getElementById("devis-list").addEventListener("click", async (e) => {
+  // Le meme gestionnaire est branche sur la liste ET sur le panneau de
+  // lecture : les actions d'un devis se comportent pareil des deux cotes,
+  // sans qu'aucune ait change de nom.
+  const surActionDevis = async (e) => {
     const btn = e.target.closest("[data-action]");
     if (!btn) return;
     const id = parseInt(btn.dataset.id, 10);
+
+    if (btn.dataset.action === "voir-devis") {
+      showDevisDetail(id);
+      return;
+    }
+    if (btn.dataset.action === "close-devis-detail") {
+      document.getElementById("panel-devis").hidden = true;
+      return;
+    }
 
     if (btn.dataset.action === "edit-devis") {
       const devis = (await Api.listDevis(currentDevisFilter)).find((d) => d.id === id);
@@ -4400,6 +4560,25 @@ function setupDevisView() {
         loadDevis();
       });
     }
+  };
+  document.getElementById("devis-list").addEventListener("click", surActionDevis);
+  const panneauDevis = document.getElementById("panel-devis");
+  panneauDevis.addEventListener("click", (e) => {
+    // Clic sur le fond du panneau : on ferme, comme les autres panneaux.
+    if (e.target === panneauDevis) { panneauDevis.hidden = true; return; }
+    surActionDevis(e);
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !panneauDevis.hidden) panneauDevis.hidden = true;
+  });
+  // La ligne de liste est une zone cliquable : au clavier, Entree et
+  // Espace doivent l'ouvrir comme un bouton.
+  document.getElementById("devis-list").addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    const cible = e.target.closest('[data-action="voir-devis"]');
+    if (!cible) return;
+    e.preventDefault();
+    showDevisDetail(parseInt(cible.dataset.id, 10));
   });
 
   document.querySelector('[data-action="show-devis-form"]').addEventListener("click", () => showDevisForm(null));
