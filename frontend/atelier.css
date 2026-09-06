@@ -1369,3 +1369,58 @@ label { color: var(--sa-text-muted); }
 .stats-commercial-step.est-etape-2 { border-bottom-color: #7E9686; }
 .stats-commercial-step.est-etape-3 { border-bottom-color: var(--sa-accent); }
 .stats-commercial-arrow { color: var(--sa-text-faint); }
+
+/* =====================================================================
+   ENTREPRISE — l'onglet actif
+   ---------------------------------------------------------------------
+   Un audit systematique des treize vues n'a leve qu'UN defaut de
+   contraste apres l'inversion clair/sombre, et c'est celui-ci : l'onglet
+   actif d'Entreprise ecrivait en `--sa-accent-on-dark` sur un fond
+   `--sa-accent-soft`. Les deux sont clairs dans la nouvelle palette -
+   1.7:1, illisible. Le token « sur fond sombre » n'avait plus de sens la.
+   ===================================================================== */
+#view-entreprise .entreprise-tabs .filter-chip.active {
+  background: var(--sa-accent-soft);
+  color: var(--sa-accent);        /* 8.28:1 sur cette pastille */
+  border-bottom-color: var(--sa-accent);
+}
+.filter-chip.active { border-bottom-color: var(--sa-laiton); color: var(--sa-text); }
+.filter-chip { color: var(--sa-text-muted); }
+.filter-chip-count { color: var(--sa-text-faint); }
+.subfilter-link.active { color: var(--sa-text); }
+.entreprise-tabs { border-bottom-color: var(--sa-border); }
+
+/* =====================================================================
+   DOCUMENTS — ranges par rattachement
+   ---------------------------------------------------------------------
+   On ne cherche pas « un document », on cherche « la photo du chantier
+   Ducros » ou « l'attestation de M. Martin ». Le rattachement est donc
+   l'axe de rangement naturel, et la liste plate le cachait : il fallait
+   lire chaque sous-titre un par un pour retrouver une piece.
+
+   Le regroupement reprend le geste du repertoire des clients - une
+   en-tete quand la cle change - applique a un autre axe. Meme grammaire,
+   autre composition.
+   ===================================================================== */
+.doc-groupe + .doc-groupe { margin-top: var(--sa-space-6); }
+.doc-groupe-titre {
+  display: flex; align-items: baseline; gap: 8px;
+  margin: 0 0 var(--sa-space-2);
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--sa-border-strong);
+  font-family: var(--sa-font-display);
+  font-size: var(--sa-text-md); font-weight: 600; color: var(--sa-text);
+}
+.doc-groupe-type {
+  font-family: var(--sa-font);
+  font-size: 0.6875rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.07em;
+  color: var(--sa-text-faint);
+}
+.doc-groupe-compte { margin-left: auto; font-size: var(--sa-text-sm); font-weight: 400; color: var(--sa-text-faint); font-variant-numeric: tabular-nums; }
+
+.doc-row { border-bottom: 1px solid var(--sa-border); background: transparent; border-radius: 0; }
+.doc-row:hover { background: var(--sa-surface); }
+.doc-row-icon { color: var(--sa-text-faint); }
+.doc-row-title { color: var(--sa-text); font-weight: 500; }
+.doc-row-sub, .doc-row-meta { color: var(--sa-text-muted); font-size: var(--sa-text-xs); }

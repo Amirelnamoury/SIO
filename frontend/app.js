@@ -6717,10 +6717,52 @@ function renderDocumentsListFiltered() {
     return true;
   }));
   if (affichees.length === 0) {
-    list.innerHTML = '<div class="empty-state">Aucun document dans cet onglet.</div>';
+    list.innerHTML = `<div class="empty-state">${
+      currentDocumentFilter || currentDocumentClient || currentDocumentChantier || currentDocumentDate
+        ? "Aucun document ne correspond à ces filtres."
+        : "<strong>Aucun document pour le moment.</strong><br><br>Les photos de chantier, attestations et plans déposés ici restent rattachés à leur client ou à leur chantier."
+    }</div>`;
     return;
   }
-  list.innerHTML = affichees.map(renderDocumentCard).join("");
+
+  // On ne cherche pas « un document », on cherche « la photo du chantier
+  // Ducros » ou « l'attestation de M. Martin ». Le rattachement est donc
+  // l'axe de rangement naturel, et la liste plate le cachait : il fallait
+  // lire chaque sous-titre un par un pour retrouver une piece.
+  //
+  // Le regroupement reprend le geste du repertoire des clients (une
+  // en-tete quand la cle change), applique a un autre axe. Meme
+  // grammaire, autre composition.
+  const groupes = new Map();
+  for (const d of affichees) {
+    const chantier = d.chantier_id ? documentsChantiersCache.find((c) => c.id === d.chantier_id) : null;
+    const client = d.client_id ? clientsCache.find((c) => c.id === d.client_id) : null;
+    const cle = chantier ? `ch-${chantier.id}` : client ? `cl-${client.id}` : "aucun";
+    if (!groupes.has(cle)) {
+      groupes.set(cle, {
+        titre: chantier ? chantier.titre : client ? client.nom : "Sans rattachement",
+        type: chantier ? "Chantier" : client ? "Client" : null,
+        items: [],
+      });
+    }
+    groupes.get(cle).items.push(d);
+  }
+  // « Sans rattachement » ferme la marche : c'est le fourre-tout, il ne
+  // doit pas ouvrir la page.
+  const ordonnes = [...groupes.entries()].sort((a, b) => {
+    if (a[0] === "aucun") return 1;
+    if (b[0] === "aucun") return -1;
+    return a[1].titre.localeCompare(b[1].titre, "fr");
+  });
+
+  list.innerHTML = ordonnes.map(([, g]) => `
+    <div class="doc-groupe">
+      <h4 class="doc-groupe-titre">
+        ${g.type ? `<span class="doc-groupe-type">${g.type}</span>` : ""}${escapeHtml(g.titre)}
+        <span class="doc-groupe-compte">${g.items.length}</span>
+      </h4>
+      ${g.items.map(renderDocumentCard).join("")}
+    </div>`).join("");
   reapplyListSearch("documents-search", "#documents-list .doc-row");
 }
 
