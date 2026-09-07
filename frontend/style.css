@@ -578,6 +578,12 @@ input[readonly] { background: var(--sa-surface-2); }
 
 /* ---------- Kanban (pipeline prospects) ---------- */
 .kanban { display: flex; gap: var(--sa-space-6); overflow-x: auto; padding-bottom: var(--sa-space-3); align-items: flex-start; scroll-snap-type: x proximity; }
+/* `display: flex` bat l'attribut `hidden`, dont le `display: none` ne vient
+   que de la feuille du navigateur. Sans ces deux regles, masquer le pipeline
+   ou la liste de travail en JavaScript ne masquait rien du tout : les deux
+   s'affichaient l'un sous l'autre. Meme piege pour toute regle de display
+   posee sur un conteneur qu'on masque ensuite. */
+.kanban[hidden], .list[hidden] { display: none; }
 .kanban-column { width: 258px; flex-shrink: 0; scroll-snap-align: start; }
 .kanban-column-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 45px; margin-bottom: 8px; padding: 6px 18px 6px 10px; border-top: 1px solid var(--sa-border); position: relative; clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 0 100%, 10px 50%); }
 .kanban-column:first-child .kanban-column-header { clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 0 100%); padding-left: 2px; }
@@ -1325,8 +1331,10 @@ input[type="checkbox"], input[type="radio"] { width: 24px; height: 24px; flex-sh
 @media (max-width: 760px) { .planning-filters select { flex: 1 1 130px; } }
 .planning-nav { display: flex; align-items: center; gap: 4px; }
 .planning-label { position: absolute; left: 50%; transform: translateX(-50%); text-transform: uppercase; margin-left: 0; font-size: var(--sa-text-sm); white-space: nowrap; }
-.planning-modes { display: flex; gap: 2px; padding: 2px; }
-.planning-modes .btn-sm { border: none; background: transparent; }
+/* Segments Jour/Semaine/Mois et Liste de travail/Pipeline : meme grammaire,
+   donc memes regles - un seul endroit a faire evoluer. */
+.planning-modes, .prospects-modes { display: flex; gap: 2px; padding: 2px; }
+.planning-modes .btn-sm, .prospects-modes .btn-sm { border: none; background: transparent; }
 /* Vues jour/semaine : une colonne de gutter (heures) fixe + N colonnes de
    jour (1 en vue jour, 7 en vue semaine) - le gutter est un enfant du meme
    conteneur grid que les .planning-day-cell (voir renderPlanning), donc il
@@ -1692,6 +1700,10 @@ input[type="checkbox"], input[type="radio"] { width: 24px; height: 24px; flex-sh
 .notif-row.est-lue .notif-title { font-weight: 400; color: var(--sa-text-muted); }
 .notif-row.is-urgent .notif-title { font-weight: var(--sa-weight-semibold); }
 .notif-sub { overflow: hidden; font-size: var(--sa-text-xs); color: var(--sa-text-muted); text-overflow: ellipsis; white-space: nowrap; }
+/* La regle qui a fait apparaitre la ligne. Elle se lit apres le contexte,
+   d'un ton en dessous : c'est une explication, pas une information de plus a
+   traiter. En italique, pour qu'elle ne se confonde pas avec la donnee. */
+.notif-raison { display: block; margin-top: 2px; font-size: var(--sa-text-2xs); font-style: italic; color: var(--sa-text-faint); }
 .notif-date { color: var(--sa-text-faint); font-size: var(--sa-text-2xs); text-align: right; white-space: nowrap; }
 /* Le groupe « A traiter » se distingue par son filet de marge, en rouge :
    le meme geste que le trait de tete sur l'accueil. Aucune boite, aucun
@@ -3036,8 +3048,8 @@ label { color: var(--sa-text-muted); }
 
 /* Le selecteur Jour / Semaine / Mois : meme grammaire que les segments
    d'etat ailleurs dans le produit. */
-.planning-modes { background: var(--sa-surface-2); border-radius: var(--sa-radius-sm); }
-.planning-modes .btn-sm-primary { background: var(--sa-accent); color: var(--sa-text-on-accent); border-color: var(--sa-accent); }
+.planning-modes, .prospects-modes { background: var(--sa-surface-2); border-radius: var(--sa-radius-sm); }
+.planning-modes .btn-sm-primary, .prospects-modes .btn-sm-primary { background: var(--sa-accent); color: var(--sa-text-on-accent); border-color: var(--sa-accent); }
 .planning-label { font-family: var(--sa-font-display); font-weight: 600; letter-spacing: 0.02em; color: var(--sa-text); }
 
 /* =====================================================================
@@ -3423,3 +3435,40 @@ label { color: var(--sa-text-muted); }
 .fact-jauge-part { display: block; height: 100%; background: var(--sa-success); border-radius: 4px; }
 .fact-reglement-note { margin: 10px 0 0; font-size: var(--sa-text-sm); color: var(--sa-text-muted); }
 .fact-reglement-note .est-retard { color: var(--sa-danger); font-weight: 600; }
+/* ---------- Prospects : la liste de travail ----------
+   Le pipeline dit comment se repartit le commerce ; cette liste dit qui
+   rappeler ce matin. Une ligne par contact, ordonnee par l'anciennete du
+   dernier mouvement - celui qu'on n'a pas touche depuis trois semaines
+   remonte de lui-meme, sans qu'on ait a le chercher dans une colonne. */
+.prospects-modes { margin-bottom: var(--sa-space-4); width: fit-content; }
+.travail-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.6fr) minmax(180px, 1fr) 110px auto;
+  align-items: center; gap: var(--sa-space-4);
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--sa-border);
+}
+.travail-row:last-child { border-bottom: 0; }
+.travail-row-titre { font-weight: var(--sa-weight-semibold); }
+.travail-row-societe { font-weight: 400; color: var(--sa-text-muted); }
+.travail-row-action { font-size: var(--sa-text-sm); margin-top: 2px; }
+.travail-row-contact { font-size: var(--sa-text-xs); margin-top: 3px; }
+.travail-row-contexte { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; font-size: var(--sa-text-xs); }
+.travail-row-montant { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.travail-row-actions { display: flex; gap: 6px; justify-content: flex-end; }
+@media (max-width: 900px) {
+  /* Sur telephone, la ligne se replie : identite et prochaine action d'abord,
+     le contexte ensuite, les actions en bas et en pleine largeur. */
+  .travail-row { grid-template-columns: 1fr; gap: var(--sa-space-2); }
+  .travail-row-montant { text-align: left; }
+  .travail-row-actions { justify-content: flex-start; }
+  .travail-row-actions .btn-sm { flex: 1; }
+}
+
+/* Encre de la liste de travail : elle suit celle des listes du produit. */
+.travail-row { background: var(--sa-surface); }
+.travail-row.est-dormant { box-shadow: inset 2px 0 0 var(--sa-warning); padding-left: 12px; }
+.travail-row-action { color: var(--sa-text); }
+.travail-row-adecider { color: var(--sa-text-muted); font-style: italic; }
+.travail-row-source, .travail-row-mouvement { color: var(--sa-text-faint); }
+.travail-row.est-dormant .travail-row-mouvement { color: var(--sa-warning); font-weight: var(--sa-weight-medium); }

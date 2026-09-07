@@ -11,7 +11,7 @@
      DIRECTION-ARTISTIQUE.md. Les deux feuilles superposees d'avant ont ete
      fondues ici, verification faite par comparaison des styles calcules
      sur les douze vues (voir outils/empreinte-styles.js). -->
-<link rel="stylesheet" href="style.css?v=20260907-astra9a">
+<link rel="stylesheet" href="style.css?v=20260907-astra9b">
 <!-- Habillage de l'ecran connexion/inscription. Charge APRES style.css,
      tous ses selecteurs sont ancres sous .auth-screen : rien ne fuit vers
      le SaaS. Supprimer cette ligne rend l'ecran a son etat precedent. -->
@@ -175,7 +175,7 @@
       <button type="button" id="btn-open-search-mobile" class="mobile-icon-btn" aria-label="Rechercher">
         <svg viewBox="0 0 24 24" class="nav-icon"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
       </button>
-      <button type="button" id="btn-profil-mobile" class="mobile-icon-btn" aria-label="Mon profil">
+      <button type="button" id="btn-profil-mobile" class="mobile-icon-btn" aria-label="Mon compte et mon entreprise">
         <svg viewBox="0 0 24 24" class="nav-icon"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-3.4 3.1-5.8 7-5.8s7 2.4 7 5.8"/></svg>
       </button>
     </div>
@@ -249,7 +249,7 @@
       </button>
     </nav>
     <div class="sidebar-footer">
-      <button type="button" id="btn-profil" class="btn-ghost-small">Mon profil</button>
+      <button type="button" id="btn-profil" class="btn-ghost-small">Mon compte</button>
       <button type="button" id="btn-logout" class="btn-ghost-small">Déconnexion</button>
     </div>
   </aside>
@@ -273,7 +273,12 @@
           <svg viewBox="0 0 24 24" class="nav-icon"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>
           <span id="badge-notifications-topbar" class="badge-count badge-alert topbar-badge" hidden>0</span>
         </button>
-        <button type="button" id="btn-profil-topbar" class="topbar-avatar" aria-label="Mon profil">
+        <!-- La photo appartient a l'ENTREPRISE (Artisan.photo_url), pas a la
+             personne connectee : un salarie verrait sinon la photo de la
+             societe a la place de la sienne, sous un intitule « Mon profil ».
+             L'intitule nomme donc les deux, et l'alt de l'image dit de qui
+             elle est (rempli par applyProfilePhoto). -->
+        <button type="button" id="btn-profil-topbar" class="topbar-avatar" aria-label="Mon compte et mon entreprise">
           <svg viewBox="0 0 24 24" class="nav-icon" id="topbar-profile-fallback"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-3.4 3.1-5.8 7-5.8s7 2.4 7 5.8"/></svg>
           <img id="topbar-profile-photo" class="topbar-profile-photo" alt="" hidden>
         </button>
@@ -286,7 +291,7 @@
     <div id="panel-profil" class="side-panel" hidden role="dialog" aria-modal="true" aria-labelledby="profil-titre">
       <div class="side-panel-box">
         <button type="button" class="side-panel-close" data-action="close-profil" aria-label="Fermer">&times;</button>
-        <p class="side-panel-eyebrow" id="profil-titre">Mon profil</p>
+        <p class="side-panel-eyebrow" id="profil-titre">Mon compte</p>
         <div id="profil-content"></div>
       </div>
     </div>
@@ -356,7 +361,7 @@
         <div class="view-header-text">
           <p class="view-header-eyebrow">Commercial</p>
           <h2>Prospects</h2>
-          <p class="view-header-desc">Votre pipeline, du premier contact au devis envoyé.</p>
+          <p class="view-header-desc">Qui rappeler, qui qualifier, pour qui chiffrer — du premier contact au devis envoyé.</p>
         </div>
         <button type="button" class="btn-primary" data-action="show-client-form">+ Nouveau contact</button>
       </div>
@@ -365,7 +370,16 @@
 
       <div id="prospects-kpi-band"></div>
 
-      <div class="kanban" id="clients-kanban"></div>
+      <!-- La LISTE DE TRAVAIL est la vue principale : elle repond a « qui
+           dois-je relancer maintenant ». Le pipeline reste disponible pour
+           comparer les etapes entre elles, ce a quoi il sert vraiment. -->
+      <div class="prospects-modes" id="prospects-modes" role="tablist" aria-label="Affichage des prospects">
+        <button type="button" class="btn-sm btn-sm-primary" data-mode="travail" role="tab" aria-selected="true">Liste de travail</button>
+        <button type="button" class="btn-sm" data-mode="pipeline" role="tab" aria-selected="false">Pipeline</button>
+      </div>
+
+      <div id="prospects-travail" class="list"></div>
+      <div class="kanban" id="clients-kanban" hidden></div>
     </section>
 
     <!-- ---------- Section Clients (annuaire des affaires gagnees) ---------- -->
@@ -835,17 +849,17 @@
         <div class="enterprise-profile-summary">
           <div class="enterprise-profile-avatar">
             <span class="enterprise-profile-monogram" id="enterprise-profile-monogram">SA</span>
-            <img id="enterprise-profile-photo" alt="Photo du compte" hidden>
+            <img id="enterprise-profile-photo" alt="Photo de l'entreprise" hidden>
           </div>
           <div class="enterprise-profile-identity">
             <strong id="enterprise-profile-name">Suite Artisan</strong>
             <span id="enterprise-profile-trade"></span>
             <form id="profile-photo-form" class="enterprise-profile-photo-form">
               <input id="profile-photo-file" name="file" type="file" accept="image/png,image/jpeg,image/webp" hidden>
-              <button type="button" class="btn-sm" id="profile-photo-choose">Ajouter une photo</button>
+              <button type="button" class="btn-sm" id="profile-photo-choose">Ajouter la photo de l'entreprise</button>
               <button type="button" class="btn-sm btn-sm-danger" id="profile-photo-delete" hidden>Supprimer</button>
             </form>
-            <small class="enterprise-profile-photo-hint">PNG, JPG ou WEBP</small>
+            <small class="enterprise-profile-photo-hint">PNG, JPG ou WEBP. Cette photo représente l'entreprise : elle est la même pour toutes les personnes qui s'y connectent.</small>
             <p class="field-error" id="profile-photo-error" hidden></p>
           </div>
           <div class="enterprise-profile-completion">
@@ -1117,7 +1131,7 @@
 <script src="env.js"></script>
 <script src="config.js"></script>
 <script src="pricing.js"></script>
-<script src="api.js?v=20260907-astra9a"></script>
-<script src="app.js?v=20260907-astra9a"></script>
+<script src="api.js?v=20260907-astra9b"></script>
+<script src="app.js?v=20260907-astra9b"></script>
 </body>
 </html>

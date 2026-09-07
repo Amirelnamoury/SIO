@@ -1070,6 +1070,12 @@ function applyProfilePhoto(url) {
   if (topbarPhoto) {
     topbarPhoto.hidden = !hasPhoto;
     topbarPhoto.src = url || "";
+    // L'image est celle de l'ENTREPRISE : son texte de remplacement doit le
+    // dire, sinon un lecteur d'ecran l'annonce comme la photo de la personne
+    // connectee - ce qu'elle n'est pas, et ne peut pas etre tant que le
+    // modele ne porte pas d'identite individuelle.
+    const entreprise = (currentArtisan && currentArtisan.nom_entreprise) || "l'entreprise";
+    topbarPhoto.alt = `Photo de ${entreprise}`;
   }
   if (topbarFallback) topbarFallback.hidden = hasPhoto;
 }
@@ -2183,6 +2189,21 @@ function setupAvisView() {
 }
 
 // ===================== Notifications =====================
+// POURQUOI cette ligne est la. Une notification disait quoi (« Impaye :
+// Bertrand ») et sur quoi (« FA-2026-014 · 1 840 € restant »), jamais en vertu
+// de quelle regle elle etait apparue. Sans cela, une alerte qui revient ou qui
+// manque est incomprehensible : on ne sait pas quel reglage la gouverne.
+// Chaque phrase decrit la condition reellement evaluee par le serveur
+// (routers/devis.py relance_due, routers/factures.py relance_facture_due,
+// routers/conformite.py SEUIL_ALERTE_JOURS, routers/notifications.py).
+const NOTIFICATION_RAISONS = {
+  devis_relance: "Ce devis a été envoyé et le délai de relance réglé dans votre profil est atteint, sans réponse du client.",
+  facture_relance: "Cette facture a dépassé son échéance sans être entièrement réglée.",
+  conformite: "Ce document arrive à échéance dans moins de 30 jours, ou l'a déjà dépassée.",
+  message_client: "Votre client vous a écrit depuis son espace et le message n'a pas encore été ouvert.",
+  nouvelle_demande_devis: "Une demande est arrivée depuis votre site vitrine.",
+};
+
 const NOTIFICATION_TYPE_LABELS = {
   devis_relance: "Devis", facture_relance: "Facture", conformite: "Conformité", message_client: "Message",
   nouvelle_demande_devis: "Prospect",
@@ -2314,6 +2335,7 @@ function notificationRowHtml(n) {
     <div class="notif-main">
       <span class="notif-title">${escapeHtml(n.titre)}</span>
       ${n.sous_titre ? `<span class="notif-sub">${escapeHtml(n.sous_titre)}</span>` : ""}
+      ${NOTIFICATION_RAISONS[n.type] ? `<span class="notif-raison">${escapeHtml(NOTIFICATION_RAISONS[n.type])}</span>` : ""}
     </div>
     <time class="notif-date" datetime="${escapeHtml(n.date)}">${fmtNotificationDate(n.date)}</time>
     <button type="button" class="btn-sm" ${cible}>${actionLabels[n.view] || "Ouvrir"}</button>
@@ -3509,6 +3531,82 @@ function renderClientCard(c) {
   </div>`;
 }
 
+// LISTE DE TRAVAIL — la vue principale de Prospects.
+//
+// Le pipeline en colonnes repond a « comment se repartit mon commerce » ;
+// c'est une question de bilan, pas de journee. La question du matin est
+// « qui dois-je rappeler ». Elle se lit sur une liste ordonnee par
+// l'anciennete du dernier mouvement : celui qu'on n'a pas touche depuis
+// trois semaines remonte de lui-meme. Le pipeline reste a un clic, pour ce
+// a quoi il sert vraiment - comparer les etapes entre elles.
+let prospectsMode = "travail";
+
+function prospectsTravailHtml(clients) {
+  // Ni gagnes ni perdus : ceux-la ne demandent plus rien.
+  const actifs = clients.filter((c) => !["gagne", "perdu"].includes(c.statut));
+  if (!actifs.length) {
+    return etatVide(
+      "Aucun prospect en cours.",
+      "Les contacts gagnés et perdus restent consultables dans le pipeline.",
+    );
+  }
+  // Le plus longtemps sans mouvement en tete. Un contact sans date de mise a
+  // jour passe devant : on ignore depuis quand il attend.
+  const ordonnes = actifs.slice().sort((a, b) => {
+    const ja = clientJoursSansMouvement(a), jb = clientJoursSansMouvement(b);
+    if (ja === null) return -1;
+    if (jb === null) return 1;
+    return jb - ja;
+  });
+  return ordonnes.map((c) => {
+    const jours = clientJoursSansMouvement(c);
+    const meta = CLIENT_STATUT_META[c.statut] || { label: c.statut, badge: "badge-gray" };
+    // Le contact est une ACTION, pas une donnee a recopier : le telephone
+    // compose, l'email ouvre le courrier.
+    const contacts = [];
+    if (c.telephone) contacts.push(`<a class="lien-action" href="tel:${escapeHtml(c.telephone.replace(/\s/g, ""))}">${escapeHtml(c.telephone)}</a>`);
+    if (c.email) contacts.push(`<a class="lien-action" href="mailto:${escapeHtml(c.email)}">${escapeHtml(c.email)}</a>`);
+    return `
+    <div class="travail-row${clientDort(c) ? " est-dormant" : ""}" data-id="${c.id}">
+      <div class="travail-row-principal">
+        <div class="travail-row-titre">${escapeHtml(c.nom)}${c.societe ? ` <span class="travail-row-societe">${escapeHtml(c.societe)}</span>` : ""}</div>
+        <div class="travail-row-action">${c.prochaine_action
+          ? `<span aria-hidden="true">→</span> ${escapeHtml(c.prochaine_action)}`
+          : '<span class="travail-row-adecider">Prochaine action à définir</span>'}</div>
+        ${contacts.length ? `<div class="travail-row-contact">${contacts.join(" · ")}</div>` : ""}
+      </div>
+      <div class="travail-row-contexte">
+        <span class="badge ${meta.badge}">${escapeHtml(meta.label)}</span>
+        <span class="travail-row-source">${escapeHtml(CLIENT_SOURCE_LABELS[c.source] || c.source || "")}</span>
+        <span class="travail-row-mouvement">${jours === null
+          ? "Aucun mouvement enregistré"
+          : jours === 0 ? "Mis à jour aujourd'hui" : `Sans mouvement depuis ${jours} j`}</span>
+      </div>
+      <div class="travail-row-montant">${c.montant_estime ? fmtEuro(c.montant_estime) : ""}</div>
+      <div class="travail-row-actions">
+        <button type="button" class="btn-sm" data-action="voir-timeline" data-id="${c.id}">Qualifier</button>
+        <button type="button" class="btn-sm btn-sm-primary" data-action="quick-devis" data-client-id="${c.id}">Devis</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function renderProspects(clients) {
+  const board = document.getElementById("clients-kanban");
+  const travail = document.getElementById("prospects-travail");
+  const enTravail = prospectsMode === "travail";
+  if (travail) {
+    travail.hidden = !enTravail;
+    if (enTravail) travail.innerHTML = prospectsTravailHtml(clients);
+  }
+  board.hidden = enTravail;
+  document.querySelectorAll("#prospects-modes [data-mode]").forEach((btn) => {
+    const actif = btn.dataset.mode === prospectsMode;
+    btn.classList.toggle("btn-sm-primary", actif);
+    btn.setAttribute("aria-selected", actif ? "true" : "false");
+  });
+}
+
 async function loadClients() {
   const kpiBand = document.getElementById("prospects-kpi-band");
   const board = document.getElementById("clients-kanban");
@@ -3518,6 +3616,9 @@ async function loadClients() {
     clientsCache = clients;
     if (kpiBand) kpiBand.innerHTML = clients.length ? prospectsRegletteHtml(clients) : "";
     if (clients.length === 0) {
+      const travail = document.getElementById("prospects-travail");
+      if (travail) travail.innerHTML = "";
+      board.hidden = false;
       board.innerHTML = `<div class="empty-state">
         <strong>Aucun contact pour le moment.</strong><br><br>
         Les demandes venant de votre site vitrine arrivent automatiquement ici.
@@ -3561,7 +3662,9 @@ async function loadClients() {
         <div class="kanban-cards">${items.map(renderClientCard).join("")}</div>
       </div>`;
     }).join("");
+    renderProspects(clients);
   } catch (err) {
+    board.hidden = false;
     board.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
   }
 }
@@ -3871,6 +3974,25 @@ async function showTimeline(clientId) {
 
 function setupClientsView() {
   document.querySelector('[data-action="show-client-form"]').addEventListener("click", showClientForm);
+
+  // Bascule liste de travail / pipeline. Aucun rechargement : les deux vues
+  // lisent le meme clientsCache, seul l'affichage change.
+  document.getElementById("prospects-modes")?.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-mode]");
+    if (!btn || btn.dataset.mode === prospectsMode) return;
+    prospectsMode = btn.dataset.mode;
+    renderProspects(clientsCache);
+  });
+
+  document.getElementById("prospects-travail")?.addEventListener("click", (e) => {
+    const fiche = e.target.closest('[data-action="voir-timeline"]');
+    if (fiche) { showTimeline(parseInt(fiche.dataset.id, 10)); return; }
+    const devis = e.target.closest('[data-action="quick-devis"]');
+    if (devis) {
+      const clientId = parseInt(devis.dataset.clientId, 10);
+      switchView("devis").then(() => showDevisForm(null, clientId));
+    }
+  });
   document.getElementById("client-form-container").addEventListener("click", (e) => {
     if (e.target.closest('[data-action="cancel-client-form"]')) {
       const container = document.getElementById("client-form-container");

@@ -176,4 +176,47 @@ assert.match(groupes, /échéance \$\{f\.date_echeance \? fmtDate\(f\.date_echea
 assert.match(groupes, /envoyé le \$\{fmtDate\(dv\.date_envoi\)\}/, "un devis à relancer doit dire depuis quand il attend");
 assert.match(groupes, /t\.echeance \? `échéance \$\{fmtDate\(t\.echeance\)\}` : "sans échéance"/);
 
+// ---------------------------------------------------------------------
+// §9-2 — la liste de travail est la vue principale de Prospects
+// ---------------------------------------------------------------------
+// Le pipeline repond a « comment se repartit mon commerce », question de
+// bilan. La question du matin est « qui dois-je rappeler » : elle se lit sur
+// une liste ordonnee par l'anciennete du dernier mouvement.
+assert.match(appSource, /let prospectsMode = "travail"/, "la liste de travail doit etre le mode par defaut");
+assert.match(appSource, /function prospectsTravailHtml/);
+assert.match(appSource, /const enTravail = prospectsMode === "travail"/);
+const indexSource = fs.readFileSync(path.join(frontendDir, "index.html"), "utf8");
+assert.match(indexSource, /id="prospects-travail"/, "la liste doit avoir son conteneur");
+assert.match(indexSource, /<div class="kanban" id="clients-kanban" hidden>/,
+  "le pipeline demarre masque : c'est la liste qui s'ouvre en premier");
+// `display: flex` bat l'attribut hidden : sans cette regle les deux vues
+// s'affichaient l'une sous l'autre, defaut vu a l'ecran avant correction.
+const styleSource = fs.readFileSync(path.join(frontendDir, "style.css"), "utf8");
+assert.match(styleSource, /\.kanban\[hidden\], \.list\[hidden\] \{ display: none; \}/,
+  "masquer un conteneur en flex demande une regle explicite");
+
+// ---------------------------------------------------------------------
+// §9-21 — la photo est celle de l'entreprise, pas de la personne
+// ---------------------------------------------------------------------
+// Artisan.photo_url appartient a l'entreprise : la montrer sous « Mon profil »
+// ferait croire a un salarie qu'il regarde la sienne.
+assert.match(appSource, /Photo de \$\{entreprise\}/, "le texte de remplacement doit nommer l'entreprise");
+assert.match(indexSource, /alt="Photo de l'entreprise"/);
+assert.match(indexSource, /Cette photo représente l'entreprise/,
+  "le formulaire doit dire qu'elle est commune a toute l'entreprise");
+assert.doesNotMatch(indexSource, /aria-label="Mon profil"/, "l'intitule ne doit plus promettre un profil personnel");
+
+// ---------------------------------------------------------------------
+// §9-22 — une notification dit pourquoi elle apparait
+// ---------------------------------------------------------------------
+const raisons = appSource.slice(appSource.indexOf("const NOTIFICATION_RAISONS"), appSource.indexOf("const NOTIFICATION_TYPE_LABELS"));
+for (const type of ["devis_relance", "facture_relance", "conformite", "message_client", "nouvelle_demande_devis"]) {
+  assert.match(raisons, new RegExp(`${type}:`), `le type ${type} doit expliquer sa presence`);
+}
+assert.match(appSource, /NOTIFICATION_RAISONS\[n\.type\]/, "la raison doit etre rendue sur la ligne");
+// La phrase decrit la regle REELLE du serveur, pas une paraphrase inventee.
+const conformitePy = fs.readFileSync(path.resolve(frontendDir, "..", "backend", "app", "routers", "conformite.py"), "utf8");
+assert.match(conformitePy, /SEUIL_ALERTE_JOURS = 30/,
+  "la phrase annonce 30 jours : ce seuil doit rester celui du serveur");
+
 console.log("OK - astra-section-9.test.mjs");
