@@ -1011,9 +1011,166 @@ function setupProfilPanel() {
   });
   document.getElementById("btn-logout").addEventListener("click", () => {
     clearToken();
-    currentArtisan = null;
+    viderCaches();
     showAuthScreen();
   });
+}
+
+// ===================== Le clavier dans les fenetres modales =====================
+//
+// Onze elements portent role="dialog" aria-modal="true". Ils annoncent donc a
+// un lecteur d'ecran que le reste de la page est hors d'atteinte - mais rien
+// ne le rendait vrai : la tabulation sortait de la fenetre et continuait dans
+// la page derriere, et refermer une fiche laissait le focus au neant, si bien
+// qu'une frappe suivante repartait du haut du document. Astra §13, et le
+// motif « dialog (modal) » des pratiques ARIA.
+//
+// Un observateur sur l'attribut `hidden` plutot qu'un appel dans chaque
+// ouverture : les onze fenetres s'ouvrent et se ferment a une quinzaine
+// d'endroits differents, et la prochaine n'aurait pas ete branchee.
+const SELECTEUR_FOCUSABLE = [
+  "a[href]", "button:not([disabled])", "input:not([disabled]):not([type=hidden])",
+  "select:not([disabled])", "textarea:not([disabled])", '[tabindex]:not([tabindex="-1"])',
+].join(", ");
+
+// Empilement : une confirmation peut s'ouvrir PAR-DESSUS un detail de
+// rendez-vous. Seule la fenetre du dessus retient le clavier.
+const pileModales = [];
+const declencheurs = new WeakMap();
+
+// QUI a ouvert la fenetre. Certaines fenetres deplacent le focus
+// SYNCHRONEMENT a leur ouverture (le bouton Fermer d'un panneau) : quand
+// l'observateur passe, l'element actif est deja dedans et le declencheur
+// serait perdu. On retient donc le dernier GESTE fait hors d'une fenetre.
+//
+// Le geste, et non l'evenement `focusin` : celui-ci ne se declenche pas quand
+// le document n'a pas le focus systeme - ce qui arrive dans un navigateur
+// pilote, mais aussi chez un utilisateur dont la fenetre vient de perdre la
+// main. Un clic et une touche, eux, arrivent toujours. Capture, pour passer
+// avant le gestionnaire qui ouvre la fenetre.
+let dernierGeste = null;
+const noterGeste = (e) => {
+  const cible = e.target instanceof Element ? e.target.closest("button, a, [role=\"button\"], input, select, textarea, [tabindex]") : null;
+  if (cible && !cible.closest('[role="dialog"]')) dernierGeste = cible;
+};
+document.addEventListener("pointerdown", noterGeste, true);
+document.addEventListener("keydown", noterGeste, true);
+document.addEventListener("focusin", noterGeste, true);
+
+function focusablesDe(dialogue) {
+  return [...dialogue.querySelectorAll(SELECTEUR_FOCUSABLE)]
+    .filter((el) => !el.hidden && el.offsetParent !== null);
+}
+
+function modaleOuverte(dialogue) {
+  if (pileModales.includes(dialogue)) return;
+  const candidats = [document.activeElement, dernierGeste];
+  const declencheur = candidats.find((el) => el && el !== document.body && el.isConnected && !dialogue.contains(el));
+  if (declencheur) declencheurs.set(dialogue, declencheur);
+  pileModales.push(dialogue);
+  // Certaines fenetres placent deja leur focus (le bouton Fermer d'un
+  // panneau) : on ne le deplace pas si elles l'ont fait.
+  if (!dialogue.contains(document.activeElement)) focusablesDe(dialogue)[0]?.focus();
+}
+
+function modaleFermee(dialogue) {
+  const rang = pileModales.indexOf(dialogue);
+  if (rang === -1) return;
+  pileModales.splice(rang, 1);
+  const declencheur = declencheurs.get(dialogue);
+  declencheurs.delete(dialogue);
+  // On ne rend le focus que s'il etait reste dans la fenetre qu'on ferme :
+  // sinon on l'arracherait a l'endroit ou l'artisan vient de le poser.
+  if (!declencheur || !declencheur.isConnected) return;
+  if (document.activeElement && document.activeElement !== document.body
+      && !dialogue.contains(document.activeElement)) return;
+  declencheur.focus();
+}
+
+function surveillerModales() {
+  document.querySelectorAll('[role="dialog"]').forEach((dialogue) => {
+    new MutationObserver(() => (dialogue.hidden ? modaleFermee(dialogue) : modaleOuverte(dialogue)))
+      .observe(dialogue, { attributes: true, attributeFilter: ["hidden"] });
+    if (!dialogue.hidden) modaleOuverte(dialogue);
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Tab" || !pileModales.length) return;
+    const dialogue = pileModales[pileModales.length - 1];
+    const focusables = focusablesDe(dialogue);
+    if (!focusables.length) { e.preventDefault(); return; }
+    const premier = focusables[0], dernier = focusables[focusables.length - 1];
+    // Le focus a pu sortir (clic dans la page derriere) : on le ramene.
+    if (!dialogue.contains(document.activeElement)) {
+      e.preventDefault();
+      (e.shiftKey ? dernier : premier).focus();
+      return;
+    }
+    if (!e.shiftKey && document.activeElement === dernier) { e.preventDefault(); premier.focus(); }
+    else if (e.shiftKey && document.activeElement === premier) { e.preventDefault(); dernier.focus(); }
+  });
+}
+
+/** Efface TOUT ce qui appartenait au compte qui vient de partir.
+ *
+ *  La deconnexion ne faisait qu'effacer le jeton et `currentArtisan` : les
+ *  dix-sept caches de donnees survivaient en memoire. Sur un poste partage -
+ *  un artisan et son conjoint, un patron et son administratif - la personne
+ *  suivante se connectait sur un onglet qui contenait encore les clients, les
+ *  devis et les factures de la precedente, et les listes pouvaient les rendre
+ *  avant que le premier appel reseau n'ait repondu. Une expiration de session
+ *  posait exactement le meme probleme.
+ *
+ *  Les filtres et la pagination partent avec : ils decrivent la lecture d'une
+ *  personne, pas l'etat du produit. Rien ici ne touche au serveur - c'est du
+ *  menage de memoire, et la seule facon sure de ne rien laisser filtrer d'un
+ *  compte a l'autre est de tout remettre a la valeur de depart. */
+function viderCaches() {
+  currentArtisan = null;
+  currentUtilisateur = null;
+
+  clientsCache = [];
+  chantiersCache = [];
+  dashboardEvenementsCache = [];
+  prestationsCache = [];
+  fournisseursCache = [];
+  equipeCache = [];
+  avisCache = [];
+  notificationsCache = [];
+  clientsDirectoryCache = { clients: [], chantiers: [], factures: [], devis: [] };
+  devisListCache = [];
+  facturesCache = [];
+  contratsCache = [];
+  tachesCache = [];
+  documentsCache = [];
+  documentsChantiersCache = [];
+  documentsParChantier = new Map();
+  planningChantiersCache = [];
+  planningItemsCache = [];
+  // Cache des devis archives, pose sur window par la vue Archives.
+  delete window.__devisTousCache;
+
+  devisDueIds = new Set();
+  facturesDueIds = new Set();
+  chantierFocusId = null;
+  tacheFocusId = null;
+
+  prospectsMode = "travail";
+  currentClientsPage = 1;
+  clientsRecherche = "";
+  currentDevisFilter = "";
+  currentDevisSort = "date_desc";
+  currentFactureFilter = "";
+  currentChantierFilter = "";
+  currentChantierSort = "risque";
+  currentChantierAvancement = "";
+  currentChantierClient = "";
+  currentChantierRecherche = "";
+  currentNotificationsFilter = "toutes";
+  currentNotificationModule = "";
+  planningViewMode = "semaine";
+  planningAnchorDate = new Date();
+  planningFilters = { q: "", type: "", clientId: "", chantierId: "" };
 }
 
 // ===================== Entreprise (infos + conformite) =====================
@@ -2628,6 +2785,8 @@ const SEARCH_TYPE_META = {
 };
 
 let searchDebounceTimer = null;
+// Numero de la derniere recherche lancee : voir runSearch().
+let rechercheEnCours = 0;
 
 // Palette de commandes (section "actions rapides") : creer quelque chose en
 // un seul geste depuis n'importe quel ecran, au lieu de naviguer puis
@@ -2668,6 +2827,9 @@ async function runSearch(q) {
   const resultsBox = document.getElementById("search-results");
   const query = (q || "").trim();
   if (!query) {
+    // Vider le champ perime aussi ce qui est encore en vol : sans cela, une
+    // reponse tardive repeuplait une recherche que l'artisan venait d'effacer.
+    rechercheEnCours += 1;
     resultsBox.innerHTML = quickActionsHtml(QUICK_ACTIONS);
     return;
   }
@@ -2676,8 +2838,15 @@ async function runSearch(q) {
     resultsBox.innerHTML = quickActionsHtml(actionsMatch) || '<div class="search-empty">Tapez au moins 2 caracteres pour chercher...</div>';
     return;
   }
+  // Les reponses n'arrivent pas dans l'ordre ou elles sont parties. En tapant
+  // « ber » puis « bertrand », la reponse de « ber » pouvait revenir APRES et
+  // ecraser la bonne : la liste affichait alors le resultat d'une requete que
+  // personne n'avait plus a l'ecran. On numerote chaque appel et on n'ecrit
+  // que si le dernier parti est bien celui qui revient.
+  const numero = ++rechercheEnCours;
   try {
     const results = await Api.search(query);
+    if (numero !== rechercheEnCours) return;
     const parGroupe = {};
     results.forEach((r) => { (parGroupe[r.type] = parGroupe[r.type] || []).push(r); });
     const resultsHtml = Object.keys(parGroupe).map((type) => {
@@ -2692,6 +2861,7 @@ async function runSearch(q) {
     const combined = quickActionsHtml(actionsMatch) + resultsHtml;
     resultsBox.innerHTML = combined || '<div class="search-empty">Aucun résultat.</div>';
   } catch (err) {
+    if (numero !== rechercheEnCours) return;
     resultsBox.innerHTML = quickActionsHtml(actionsMatch) + `<div class="search-empty">Erreur : ${escapeHtml(err.message)}</div>`;
   }
 }
@@ -9126,10 +9296,13 @@ function setupListesSearch() {
 // ===================== Initialisation =====================
 document.addEventListener("DOMContentLoaded", async () => {
   onUnauthorized = () => {
+    // Une session expiree laisse la meme trace en memoire qu'une deconnexion.
+    viderCaches();
     showAuthScreen();
     showToast("Votre session a expiré, merci de vous reconnecter.", true);
   };
 
+  surveillerModales();
   setupAuthScreen();
   setupTabs();
   setupMobileNav();
@@ -9189,6 +9362,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     } catch (err) {
       clearToken();
+      viderCaches();
     }
   }
   showAuthScreen();
