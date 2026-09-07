@@ -132,10 +132,24 @@ async function withErrorToast(promiseFn) {
   try {
     return await promiseFn();
   } catch (err) {
-    // Une issue incertaine reste affichee plus longtemps : le message demande
-    // une verification, il ne peut pas disparaitre au bout de trois secondes
-    // comme une confirmation ordinaire.
-    showToast(err.message || "Une erreur est survenue.", true, err.issueIncertaine ? 12000 : undefined);
+    // Trois registres, pas un seul :
+    //   - un REFUS DE DROITS (403) : le serveur a compris et refuse.
+    //     Recommencer ne changera rien ; on dit a qui s'adresser plutot que
+    //     de laisser croire a une panne du produit.
+    //   - une ISSUE INCERTAINE : le message demande d'aller verifier, il ne
+    //     peut pas disparaitre au bout de trois secondes.
+    //   - une erreur ordinaire.
+    if (err.accesInterdit) {
+      // Le serveur nomme deja qui a le droit (« Reserve aux administrateurs de
+      // l'equipe ») : reciter « demandez a un administrateur » derriere ferait
+      // dire deux fois la meme chose. On ne complete que si le refus reste
+      // muet sur la personne a qui s'adresser.
+      const texte = err.message.replace(/\s*$/, "").replace(/([^.!?])$/, "$1.");
+      const nommeQui = /administrateur|propriétaire|proprietaire/i.test(texte);
+      showToast(nommeQui ? texte : `${texte} Demandez à un administrateur de votre équipe.`, true, 9000);
+    } else {
+      showToast(err.message || "Une erreur est survenue.", true, err.issueIncertaine ? 12000 : undefined);
+    }
     // Un 402 "plan requis" (voir app/deps.py, require_plan) est un moment
     // d'upgrade, pas juste une erreur : on ouvre directement la modale des
     // tarifs a la place de laisser l'utilisateur deviner ou aller (section
@@ -1595,7 +1609,16 @@ async function loadEquipe() {
     );
     return;
   }
+  // Les commandes d'invitation et de retrait disparaissent pour qui n'est pas
+  // administrateur. Disparaitre sans un mot, c'est laisser croire que la
+  // fonction n'existe pas : l'ecran dit desormais ce qu'on peut y faire et
+  // qui peut faire le reste (Astra §11, « acces interdit » est un etat).
   addBtn.hidden = !estAdministrateur();
+  const mention = document.getElementById("equipe-role-mention");
+  if (mention) {
+    mention.hidden = estAdministrateur();
+    mention.textContent = "Vous consultez l'équipe. Seul le propriétaire du compte ou un administrateur peut inviter, désactiver ou retirer quelqu'un.";
+  }
   debutChargement(list);
   try {
     const equipe = await Api.listEquipe();

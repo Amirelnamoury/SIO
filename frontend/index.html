@@ -11,7 +11,7 @@
      DIRECTION-ARTISTIQUE.md. Les deux feuilles superposees d'avant ont ete
      fondues ici, verification faite par comparaison des styles calcules
      sur les douze vues (voir outils/empreinte-styles.js). -->
-<link rel="stylesheet" href="style.css?v=20260907-dossier">
+<link rel="stylesheet" href="style.css?v=20260907-interdit">
 <!-- Habillage de l'ecran connexion/inscription. Charge APRES style.css,
      tous ses selecteurs sont ancres sous .auth-screen : rien ne fuit vers
      le SaaS. Supprimer cette ligne rend l'ecran a son etat precedent. -->
@@ -987,6 +987,11 @@
           <button type="button" class="btn-primary" data-action="show-membre-form" id="btn-show-membre-form">+ Ajouter un membre</button>
         </div>
         <p class="section-hint">Donnez accès à Suite Artisan à vos salariés. Un "administrateur" peut gérer l'équipe, un "salarié" non.</p>
+        <!-- Etat « acces interdit » : les commandes d'invitation et de retrait
+             disparaissent pour qui n'est pas administrateur. Disparaitre sans
+             un mot laisse croire que la fonction n'existe pas ; cette mention
+             dit ce qu'on peut faire ici, et a qui s'adresser pour le reste. -->
+        <p class="etat-interdit" id="equipe-role-mention" role="status" hidden></p>
 
         <div id="membre-form-container" hidden></div>
 
@@ -1141,7 +1146,7 @@
 <script src="env.js"></script>
 <script src="config.js"></script>
 <script src="pricing.js"></script>
-<script src="api.js?v=20260907-dossier"></script>
-<script src="app.js?v=20260907-dossier"></script>
+<script src="api.js?v=20260907-interdit"></script>
+<script src="app.js?v=20260907-interdit"></script>
 </body>
 </html>

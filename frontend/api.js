@@ -79,7 +79,12 @@ async function apiFetch(path, { method = "GET", body, auth = true } = {}) {
     } catch (e) {
       /* pas de corps JSON */
     }
-    throw new Error(formatApiError(data));
+    const erreur = new Error(formatApiError(data));
+    // 403 n'est PAS une panne : le serveur a compris, et il refuse. Recommencer
+    // ne changera rien, et le presenter comme une erreur laisse croire a un
+    // defaut du produit. C'est un etat a part entiere (Astra §11).
+    erreur.accesInterdit = response.status === 403;
+    throw erreur;
   }
 
   if (response.status === 204) return null;

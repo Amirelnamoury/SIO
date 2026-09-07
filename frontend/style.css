@@ -3512,3 +3512,16 @@ body.est-dossier-ouvert .view { display: none; }
 /* Le contenu du dossier reprend la gouttiere des pages composees : intitules
    dans la marge, contenu a droite. Il en avait la matiere, pas la place. */
 #timeline-content { max-width: 1100px; }
+
+/* ---------- Acces interdit ----------
+   Un refus de droits n'est pas une panne : le serveur a compris et refuse,
+   recommencer ne changera rien. Il ne prend donc ni l'encre ni le filet de
+   l'erreur - il se lit comme une precision sur ce qu'on peut faire ici. */
+.etat-interdit {
+  margin: var(--sa-space-3) 0 0;
+  padding-left: 12px;
+  border-left: 2px solid var(--sa-border-strong);
+  font-size: var(--sa-text-sm);
+  color: var(--sa-text-muted);
+  max-width: 68ch;
+}

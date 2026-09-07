@@ -112,4 +112,29 @@ assert.match(apiSource, /\/\/ Un envoi de fichier est toujours une ecriture\.\s*
 assert.match(appSource, /function showToast\(message, isError = false, duree = 3500\)/);
 assert.match(appSource, /err\.issueIncertaine \? 12000 : undefined/);
 
+// ---------------------------------------------------------------------
+// 3. Un refus de droits n'est pas une panne
+// ---------------------------------------------------------------------
+// 403 : le serveur a compris, et il refuse. Recommencer ne changera rien, et
+// le présenter comme une erreur laisse croire à un défaut du produit. C'est un
+// état à part entière (Astra §11, « accès interdit »).
+assert.match(apiSource, /erreur\.accesInterdit = response\.status === 403;/);
+assert.match(appSource, /if \(err\.accesInterdit\) \{/);
+// Le serveur nomme déjà qui a le droit : on ne le récite pas derrière.
+assert.match(appSource, /const nommeQui = \/administrateur\|propriétaire\|proprietaire\/i\.test\(texte\)/);
+assert.match(appSource, /showToast\(nommeQui \? texte : `\$\{texte\} Demandez à un administrateur/);
+
+const indexEtats = fs.readFileSync(path.join(frontendDir, "index.html"), "utf8");
+// Les commandes disparaissent pour qui n'est pas administrateur. Disparaître
+// SANS UN MOT laisse croire que la fonction n'existe pas.
+assert.match(indexEtats, /<p class="etat-interdit" id="equipe-role-mention" role="status" hidden><\/p>/);
+assert.match(appSource, /mention\.hidden = estAdministrateur\(\);/);
+assert.match(appSource, /Seul le propriétaire du compte ou un administrateur peut inviter/);
+// Il ne prend ni l'encre ni le filet de l'erreur : c'est une précision, pas
+// une panne à corriger.
+const styleEtats = fs.readFileSync(path.join(frontendDir, "style.css"), "utf8");
+assert.match(styleEtats, /\.etat-interdit \{/);
+assert.doesNotMatch(styleEtats.slice(styleEtats.indexOf(".etat-interdit {"), styleEtats.indexOf(".etat-interdit {") + 260),
+  /--sa-danger/, "un refus de droits ne se peint pas en rouge");
+
 console.log("OK - etats-chargement.test.mjs");
