@@ -1,5 +1,6 @@
 import secrets
 from datetime import date, datetime, timedelta, timezone
+from typing import Optional
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
@@ -94,17 +95,26 @@ def _to_out(chantier: Chantier) -> ChantierOut:
 @router.get("", response_model=list[ChantierOut])
 def lister_chantiers(
     archive: bool = False,
+    client_id: Optional[int] = None,
     db: Session = Depends(get_db),
     artisan: Artisan = Depends(require_active_subscription),
 ):
-    chantiers = (
+    """Les chantiers de l'artisan, filtrables par client.
+
+    `client_id` existait deja sur /devis et /factures ; il manquait ici. Le
+    dossier d'un client devait donc telecharger TOUS les chantiers du compte
+    pour n'en afficher qu'un ou deux - avec leurs notes, depenses, heures et
+    taches chargees en meme temps. Parametre optionnel : sans lui, la reponse
+    est exactement celle d'avant.
+    """
+    query = (
         db.query(Chantier)
         .options(joinedload(Chantier.notes), joinedload(Chantier.depenses).joinedload(Depense.fournisseur), joinedload(Chantier.heures), joinedload(Chantier.client), joinedload(Chantier.factures), joinedload(Chantier.taches))
         .filter(Chantier.artisan_id == artisan.id, Chantier.archive.is_(archive))
-        .order_by(Chantier.created_at.desc())
-        .all()
     )
-    return [_to_out(c) for c in chantiers]
+    if client_id:
+        query = query.filter(Chantier.client_id == client_id)
+    return [_to_out(c) for c in query.order_by(Chantier.created_at.desc()).all()]
 
 
 @router.post("", response_model=ChantierOut, status_code=status.HTTP_201_CREATED)
