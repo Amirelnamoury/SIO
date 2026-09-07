@@ -3486,3 +3486,14 @@ label { color: var(--sa-text-muted); }
 .stats-source:hover { color: var(--sa-accent); }
 .stats-source:focus-visible { outline: 2px solid var(--sa-accent); outline-offset: 2px; border-radius: 2px; }
 .stats-commercial-step .stats-source { display: block; margin: 4px 0 0; }
+
+/* ---------- Actualisation ----------
+   Une liste deja affichee ne disparait pas pendant qu'on la rafraichit : elle
+   recule d'un ton, le temps de l'aller-retour. On garde sa place, sa lecture
+   et son defilement, au lieu de trois lignes de squelette a la place de ce
+   qu'on regardait. `aria-busy` porte la meme information au lecteur d'ecran.
+   Transition courte et sur la seule opacite : aucune commande ne bouge. */
+.est-en-actualisation { opacity: 0.55; transition: opacity var(--sa-duration-base) ease; }
+@media (prefers-reduced-motion: reduce) {
+  .est-en-actualisation { transition: none; }
+}

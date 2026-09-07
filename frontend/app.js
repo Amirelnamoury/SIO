@@ -68,14 +68,56 @@ function skeletonCards(n = 3) {
   return Array.from({ length: n }).map(() => '<div class="skeleton skeleton-card"></div>').join("");
 }
 
+/** Debut d'un chargement, selon qu'il y a deja quelque chose a l'ecran.
+ *
+ *  Un ECRAN VIDE recoit un squelette : il n'y a rien a conserver.
+ *  Un ECRAN DEJA REMPLI le garde. Cocher une tache, enregistrer un paiement,
+ *  changer un statut : chacun de ces gestes rechargeait sa liste, et la liste
+ *  disparaissait le temps de l'aller-retour pour revenir presque identique.
+ *  Trois lignes de squelette a la place de la liste qu'on regardait, c'est
+ *  perdre sa place et sa lecture pour une donnee qu'on avait deja. Le contenu
+ *  reste donc affiche, en retrait, avec aria-busy pour que ce soit dit aussi
+ *  aux lecteurs d'ecran (Astra §11 : « conserver les informations deja
+ *  chargees en indiquant leur etat »).
+ *
+ *  Le voile se leve DE LUI-MEME des que le conteneur recoit son nouveau
+ *  contenu : aucun appel de fin a ajouter dans les quatorze chargeurs - donc
+ *  aucun oubli possible le jour ou un quinzieme apparait. */
+function debutChargement(conteneur, squelette = skeletonCards) {
+  if (!conteneur) return;
+  if (!conteneur.children.length) {
+    conteneur.innerHTML = typeof squelette === "function" ? squelette() : squelette;
+    return;
+  }
+  if (conteneur.dataset.actualisation === "1") return;
+  conteneur.dataset.actualisation = "1";
+  conteneur.classList.add("est-en-actualisation");
+  conteneur.setAttribute("aria-busy", "true");
+  const finir = () => {
+    observateur.disconnect();
+    clearTimeout(secours);
+    delete conteneur.dataset.actualisation;
+    conteneur.classList.remove("est-en-actualisation");
+    conteneur.removeAttribute("aria-busy");
+  };
+  const observateur = new MutationObserver(finir);
+  observateur.observe(conteneur, { childList: true });
+  // Filet : si le chargement n'aboutit jamais et ne remplace rien, on rend
+  // sa lisibilite au contenu plutot que de le laisser en retrait pour
+  // toujours. Il reste juste : ce sont les dernieres donnees recues.
+  const secours = setTimeout(finir, 15000);
+}
+
 let toastTimer = null;
-function showToast(message, isError = false) {
+// `duree` : trois secondes et demie suffisent pour une confirmation, pas pour
+// un message qui demande de VERIFIER quelque chose avant de recommencer.
+function showToast(message, isError = false, duree = 3500) {
   const toast = document.getElementById("toast");
   toast.innerHTML = `<span class="toast-icon"></span><span>${escapeHtml(message)}</span>`;
   toast.classList.toggle("toast-error", isError);
   toast.classList.add("show");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toast.classList.remove("show"), 3500);
+  toastTimer = setTimeout(() => toast.classList.remove("show"), duree);
 }
 
 function feedbackRelanceDevis(result) {
@@ -90,7 +132,10 @@ async function withErrorToast(promiseFn) {
   try {
     return await promiseFn();
   } catch (err) {
-    showToast(err.message || "Une erreur est survenue.", true);
+    // Une issue incertaine reste affichee plus longtemps : le message demande
+    // une verification, il ne peut pas disparaitre au bout de trois secondes
+    // comme une confirmation ordinaire.
+    showToast(err.message || "Une erreur est survenue.", true, err.issueIncertaine ? 12000 : undefined);
     // Un 402 "plan requis" (voir app/deps.py, require_plan) est un moment
     // d'upgrade, pas juste une erreur : on ouvre directement la modale des
     // tarifs a la place de laisser l'utilisateur deviner ou aller (section
@@ -1523,7 +1568,7 @@ async function loadEquipe() {
     return;
   }
   addBtn.hidden = !estAdministrateur();
-  list.innerHTML = skeletonCards();
+  debutChargement(list);
   try {
     const equipe = await Api.listEquipe();
     if (equipe.length === 0) {
@@ -1646,7 +1691,7 @@ const PRESTATION_CATEGORIE_DEFAUT = "Sans catégorie";
 
 async function loadPrestations() {
   const list = document.getElementById("prestations-list");
-  list.innerHTML = skeletonCards();
+  debutChargement(list);
   try {
     const prestations = await Api.listPrestations();
     prestationsCache = prestations;
@@ -1774,7 +1819,7 @@ async function ensureEquipeCache() {
 
 async function loadFournisseurs() {
   const list = document.getElementById("fournisseurs-list");
-  list.innerHTML = skeletonCards();
+  debutChargement(list);
   try {
     const fournisseurs = await Api.listFournisseurs();
     fournisseursCache = fournisseurs;
@@ -1979,7 +2024,7 @@ function mixHexColors(hexA, hexB, t) {
 
 async function loadStatistiques() {
   const container = document.getElementById("statistiques-content");
-  container.innerHTML = skeletonCards();
+  debutChargement(container);
   if (!hasPlan("essentiel")) {
     container.innerHTML = renderUpgradeCard(
       "Statistiques réservées aux abonnés",
@@ -2217,7 +2262,7 @@ let avisCache = [];
 async function loadAvis() {
   const list = document.getElementById("avis-list");
   const resume = document.getElementById("avis-resume");
-  list.innerHTML = skeletonCards();
+  debutChargement(list);
   try {
     const [avis, clients] = await Promise.all([Api.listAvis(), ensureClientsCache()]);
     avisCache = avis;
@@ -2450,7 +2495,7 @@ let currentNotificationModule = "";
 
 async function loadNotifications() {
   const list = document.getElementById("notifications-list");
-  list.innerHTML = skeletonCards();
+  debutChargement(list);
   try {
     const notifications = await Api.listNotifications();
     notificationsCache = notifications;
@@ -4399,7 +4444,7 @@ async function openArchivesPanel(entite) {
   document.getElementById("archives-titre").textContent = config.titre;
   panel.dataset.entite = entite;
   panel.hidden = false;
-  content.innerHTML = skeletonCards();
+  debutChargement(content);
   try {
     const items = await config.lister();
     content.innerHTML = items.length
@@ -4864,7 +4909,7 @@ function renderDevisListFiltered() {
 async function loadDevis() {
   const kpiBand = document.getElementById("devis-kpi-band");
   const list = document.getElementById("devis-list");
-  list.innerHTML = skeletonCards();
+  debutChargement(list);
   try {
     const [devis, tousDevis, aRelancer] = await Promise.all([
       Api.listDevis(currentDevisFilter), Api.listDevis(), Api.devisARelancer(),
@@ -5873,7 +5918,7 @@ async function loadFactures() {
   }
   if (newBtn) newBtn.hidden = false;
 
-  list.innerHTML = skeletonCards();
+  debutChargement(list);
   try {
     const [factures, aRelancer] = await Promise.all([Api.listFactures(), Api.facturesARelancer()]);
     facturesDueIds = new Set(aRelancer.map((f) => f.id));
@@ -6471,7 +6516,7 @@ async function loadContrats() {
     return;
   }
   newBtn.hidden = false;
-  list.innerHTML = skeletonCards();
+  debutChargement(list);
   try {
     const contrats = await Api.listContrats();
     contratsCache = contrats;
@@ -6881,7 +6926,7 @@ async function loadChantiers() {
   }
   newBtn.hidden = false;
 
-  list.innerHTML = skeletonCards();
+  debutChargement(list);
   try {
     // Les documents accompagnent les chantiers : la fiche montre les siens.
     // `tolerant` plutot qu'un Promise.all strict - si les documents ne
@@ -8205,7 +8250,7 @@ function renderDocumentsListFiltered() {
 async function loadDocuments() {
   const list = document.getElementById("documents-list");
   const compteur = document.getElementById("documents-compteur");
-  list.innerHTML = skeletonCards();
+  debutChargement(list);
   try {
     // Conformite : seule entite reelle qui porte une date d'expiration
     // (ConformiteOut.alerte/.jours_restants, voir backend/app/schemas.py) -
@@ -8821,7 +8866,7 @@ let planningItemsCache = [];
 
 async function loadPlanning() {
   const container = document.getElementById("planning-content");
-  container.innerHTML = skeletonCards();
+  debutChargement(container);
   try {
     const [debut, fin] = planningRange();
     planningRangeDebut = debut;
@@ -9164,7 +9209,7 @@ async function loadConformite() {
   }
   newBtn.hidden = false;
 
-  list.innerHTML = skeletonCards();
+  debutChargement(list);
   try {
     const [items, alertes] = await Promise.all([Api.listConformite(), Api.conformiteAlertes()]);
 

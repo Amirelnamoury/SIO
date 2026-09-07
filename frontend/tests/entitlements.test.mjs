@@ -27,6 +27,9 @@ const context = {
   },
   renderUpgradeCard: () => "LOCKED PRO",
   skeletonCards: () => "LOADING",
+  // Les chargeurs passent par debutChargement : ecran vide -> squelette,
+  // ecran deja rempli -> on garde ce qui est affiche. Ici l'ecran est vide.
+  debutChargement: (conteneur) => { if (conteneur) conteneur.innerHTML = "LOADING"; },
   Api: { listContrats: async () => [] },
 };
 vm.runInNewContext(

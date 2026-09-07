@@ -28,6 +28,21 @@ function formatApiError(data) {
   return "Une erreur est survenue.";
 }
 
+/** La requete est PARTIE sans qu'on sache ce qu'elle est devenue.
+ *
+ *  Pour une lecture, c'est sans consequence : on retente. Pour une ecriture,
+ *  non - le serveur a pu enregistrer, et c'est la reponse qui s'est perdue en
+ *  route. Un second envoi « pour voir » cree alors un doublon : deux factures,
+ *  deux paiements sur la meme facture. On le dit, au lieu de laisser
+ *  l'utilisateur recommencer a l'aveugle. */
+function erreurReseau(ecriture) {
+  const erreur = new Error(ecriture
+    ? "La reponse du serveur ne nous est pas parvenue. L'enregistrement a peut-etre abouti : verifiez avant de recommencer."
+    : "Impossible de contacter le serveur. Verifiez votre connexion.");
+  erreur.issueIncertaine = Boolean(ecriture);
+  return erreur;
+}
+
 /**
  * Appelle le backend. Ajoute automatiquement le token JWT si present.
  * Ne stocke JAMAIS les donnees metier (devis, chantiers...) en local :
@@ -48,7 +63,7 @@ async function apiFetch(path, { method = "GET", body, auth = true } = {}) {
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
   } catch (networkError) {
-    throw new Error("Impossible de contacter le serveur. Verifiez votre connexion.");
+    throw erreurReseau(method !== "GET");
   }
 
   if (response.status === 401 && auth) {
@@ -294,7 +309,8 @@ async function uploadFetch(path, formData) {
       body: formData,
     });
   } catch (networkError) {
-    throw new Error("Impossible de contacter le serveur. Verifiez votre connexion.");
+    // Un envoi de fichier est toujours une ecriture.
+    throw erreurReseau(true);
   }
   if (response.status === 401) {
     clearToken();
