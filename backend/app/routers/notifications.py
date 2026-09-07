@@ -104,7 +104,11 @@ def lister_notifications(
     )
     for m in messages_non_lus:
         notifications.append(NotificationOut(
-            type="message_client", id=m.id,
+            # client_id etait laisse vide : le front ne pouvait donc pas ouvrir
+            # la conversation et deposait l'artisan sur la liste des clients.
+            # Champ deja declare (Optional) dans NotificationOut - on le
+            # renseigne, le contrat ne change pas.
+            type="message_client", id=m.id, client_id=m.client_id,
             titre=f"Message de {m.client.nom}",
             sous_titre=m.texte[:80],
             urgent=False,
