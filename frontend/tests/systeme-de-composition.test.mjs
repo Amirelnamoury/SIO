@@ -89,6 +89,23 @@ assert.match(style, /@media \(pointer: coarse\)[\s\S]{0,400}min-height: var\(--s
 assert.doesNotMatch(style, /\.sa-section-titre \{[^}]*text-transform: uppercase/,
   "les intitules de marge ne sont pas en capitales espacees");
 
+// ---------------------------------------------------------------------
+// LE PLANCHER DE LISIBILITE
+// ---------------------------------------------------------------------
+// Huit tailles vivaient sous 11 px : 0.58, 0.62, 0.64, 0.65, 0.66, 0.68 rem
+// et un 10 px en SVG. La plus grave etait l'HEURE d'un rendez-vous, a
+// 9,9 px - la donnee la plus importante d'un agenda, ecrite sous le seuil
+// de ce qu'on lit sans effort a bout de bras dans un fourgon. Aucune de ces
+// derives ne se voit sur une capture d'ecran ; elles se mesurent.
+//
+// L'agenda a le droit d'etre plus dense que le reste du produit. Il n'a pas
+// le droit d'etre illisible.
+const tropPetit = [...style.matchAll(/font-size:\s*(0\.\d+)rem/g)]
+  .map((m) => Number(m[1]))
+  .filter((v) => v < 0.6875);
+assert.deepEqual(tropPetit, [], `tailles sous le plancher de 11 px : ${tropPetit.join(", ")}`);
+assert.match(style, /--sa-text-2xs: 0\.6875rem;/, "le plancher du systeme est 11 px");
+
 // Un etat s'ecrit, un compte s'encadre : aucun badge d'etat ne doit
 // reprendre un aplat de couleur, sinon un registre redevient une guirlande
 // et la couleur cesse d'etre un signal.

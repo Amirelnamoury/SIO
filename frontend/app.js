@@ -2457,9 +2457,19 @@ function taskRowHtml(item) {
   const actionBtn = item.action
     ? `<button type="button" class="btn-sm btn-sm-primary" data-action="${item.action}" data-id="${item.actionId}">${item.actionLabel}</button>`
     : "";
-  const voirBtn = item.view
-    ? `<button type="button" class="btn-sm" data-action="voir-notification" data-view="${item.view}" data-objet-type="${item.objet || ""}" data-objet-id="${item.objetId || ""}">Voir</button>`
-    : "";
+  // « VOIR » N'EST PAS UNE ACTION, C'EST LA LIGNE ELLE-MEME.
+  //
+  // Quatre boutons « Voir » identiques s'alignaient au bord droit du poste
+  // de travail, a trois cents pixels de la ligne qu'ils ouvraient, et deux
+  // d'entre eux doublaient un « Relancer » place juste a cote. Sur un
+  // ecran dont toute la raison d'etre est de designer LA prochaine chose a
+  // faire, c'est exactement le contraire de ce qu'il faut : cinq cibles de
+  // meme poids n'en designent aucune.
+  //
+  // La ligne entiere ouvre desormais la piece - meme geste que la carte de
+  // chantier et que la ligne de registre - et il ne reste par ligne que
+  // l'action qui fait avancer les choses, quand elle existe.
+  const voirBtn = "";
   // Composition en champs distincts (type / titre / contexte / montant)
   // plutot qu'une seule chaine concatenee : memes donnees deja calculees
   // par prioriteItems, juste reparties pour rester scannable d'un coup
@@ -2467,8 +2477,14 @@ function taskRowHtml(item) {
   // Le type (Facture/Devis/...) n'est plus affiche en ligne : chaque ligne
   // vit desormais sous un en-tete de categorie (voir dashTaskGroupsHtml) qui
   // joue deja ce role, comme sur la reference.
+  // La ligne porte l'ouverture. Le meme `data-action` que le bouton
+  // disparu : le gestionnaire delegue du poste de travail n'a pas change,
+  // il est simplement branche sur un element plus large.
+  const ouvre = item.view
+    ? `data-action="voir-notification" data-view="${item.view}" data-objet-type="${item.objet || ""}" data-objet-id="${item.objetId || ""}" role="button" tabindex="0" aria-label="Ouvrir ${escapeHtml(String(item.label || item.titre || "").replace(/<[^>]*>/g, ""))}"`
+    : "";
   return `
-  <div class="task-row ${classe}">
+  <div class="task-row ${classe}${item.view ? " est-ouvrable" : ""}" ${ouvre}>
     <span class="task-dot"></span>
     <div class="task-row-body">
       <div class="task-row-top">

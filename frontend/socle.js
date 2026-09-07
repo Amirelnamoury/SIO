@@ -489,3 +489,29 @@ function actionsPiece(actions) {
       .join("")}</div>` : ""}
   </div>`;
 }
+
+/* =====================================================================
+   UNE ZONE CLIQUABLE S'ACTIVE AUSSI AU CLAVIER
+   ---------------------------------------------------------------------
+   Le produit compte une douzaine de zones portant `role="button"` : la
+   ligne d'un registre, la carte d'un chantier, la ligne du poste de
+   travail. Chacune declarait son propre ecouteur de touche, ou n'en
+   declarait pas - et une zone annoncee comme un bouton qui ne repond pas
+   a Entree ment a qui navigue au clavier ou au lecteur d'ecran.
+
+   Un seul ecouteur, en phase de capture sur le document, les couvre
+   toutes et couvrira celles qu'on ajoutera. Il ne vise QUE l'attribut
+   `role="button"` : un vrai <button> a deja ce comportement, et le
+   declencher une seconde fois ouvrirait deux fois la meme piece.
+   ===================================================================== */
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  const zone = e.target instanceof Element ? e.target.closest('[role="button"][data-action]') : null;
+  if (!zone) return;
+  // Une zone cliquable peut contenir un vrai controle - un bouton
+  // d'action, une liste deroulante de statut, une case a cocher. La barre
+  // d'espace dans un champ de saisie doit rester une espace.
+  if (e.target !== zone && e.target.closest("button, a, input, select, textarea")) return;
+  e.preventDefault();
+  zone.click();
+});

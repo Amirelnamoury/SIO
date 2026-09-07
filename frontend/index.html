@@ -11,7 +11,7 @@
      DIRECTION-ARTISTIQUE.md. Les deux feuilles superposees d'avant ont ete
      fondues ici, verification faite par comparaison des styles calcules
      sur les douze vues (voir outils/empreinte-styles.js). -->
-<link rel="stylesheet" href="style.css?v=20260907-ui12">
+<link rel="stylesheet" href="style.css?v=20260907-ui18">
 <!-- Habillage de l'ecran connexion/inscription. Charge APRES style.css,
      tous ses selecteurs sont ancres sous .auth-screen : rien ne fuit vers
      le SaaS. Supprimer cette ligne rend l'ecran a son etat precedent. -->
@@ -688,14 +688,24 @@
         <button type="button" class="filter-chip" data-statut="faite">Faites</button>
       </div>
 
-      <div class="subfilters" id="tache-subfilters">
-        <button type="button" class="subfilter-link active" data-groupe="">Toutes</button>
-        <button type="button" class="subfilter-link" data-groupe="aujourdhui">Aujourd'hui</button>
-        <button type="button" class="subfilter-link" data-groupe="en_retard">En retard</button>
-        <button type="button" class="subfilter-link" data-groupe="cette_semaine">Cette semaine</button>
-      </div>
+      <!-- La barre de la file : les groupes a gauche, la recherche et les
+           outils a droite, sur une SEULE rangee.
 
-      <div class="taches-search-tools">
+           Les outils etaient poses en `position: absolute; top: 159px` -
+           une distance mesuree a la main sur la hauteur d'en-tete de
+           l'epoque. Cet en-tete a change, et la recherche s'est retrouvee
+           par-dessus la premiere tache, en recouvrant l'intitule du groupe
+           « En retard ». Une position absolue calee sur un pixel finit
+           toujours par se decaler ; ici c'est un flux normal qui tient. -->
+      <div class="file-barre">
+        <div class="subfilters" id="tache-subfilters">
+          <button type="button" class="subfilter-link active" data-groupe="">Toutes</button>
+          <button type="button" class="subfilter-link" data-groupe="aujourdhui">Aujourd'hui</button>
+          <button type="button" class="subfilter-link" data-groupe="en_retard">En retard</button>
+          <button type="button" class="subfilter-link" data-groupe="cette_semaine">Cette semaine</button>
+        </div>
+
+        <div class="taches-search-tools">
         <div class="list-search">
           <svg viewBox="0 0 24 24" class="nav-icon list-search-icon"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
           <input type="text" id="taches-search" placeholder="Rechercher une tâche, un client...">
@@ -706,6 +716,7 @@
         <button type="button" class="task-tool-button" id="taches-sort-priority" aria-pressed="false" aria-label="Trier par priorité" title="Trier par priorité">
           <svg viewBox="0 0 24 24" class="nav-icon"><path d="M4 7h10M4 12h7M4 17h4"/><path d="M17 6v12m0 0-3-3m3 3 3-3"/></svg>
         </button>
+        </div>
       </div>
 
       <div id="taches-list" class="list"></div>
@@ -1154,11 +1165,11 @@
      d'abord - formats, etats d'ecran, messages, confirmations, clavier des
      fenetres - puis la navigation et l'adressage. Scripts classiques charges dans l'ordre : les declarations de
      premier niveau restent partagees, comme lorsque tout tenait dans app.js. -->
-<script src="api.js?v=20260907-ui12"></script>
-<script src="socle.js?v=20260907-ui12"></script>
-<script src="navigation.js?v=20260907-ui12"></script>
-<script src="planning.js?v=20260907-ui12"></script>
-<script src="statistiques.js?v=20260907-ui12"></script>
-<script src="app.js?v=20260907-ui12"></script>
+<script src="api.js?v=20260907-ui18"></script>
+<script src="socle.js?v=20260907-ui18"></script>
+<script src="navigation.js?v=20260907-ui18"></script>
+<script src="planning.js?v=20260907-ui18"></script>
+<script src="statistiques.js?v=20260907-ui18"></script>
+<script src="app.js?v=20260907-ui18"></script>
 </body>
 </html>
