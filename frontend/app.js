@@ -507,26 +507,42 @@ function setupProfilPanel() {
     // lien a copier : cette URL attend un POST, un artisan qui la colle dans
     // son navigateur (GET) recoit une 405 Method Not Allowed. Ce n'est pas
     // une page publique partageable.
+    // DEUX PARTIES, ET ELLES NE SE MELANGENT PAS (Astra §21 : « separer
+    // preferences personnelles et entreprise »). Le panneau ne montrait que
+    // l'entreprise - nom, metier, SIRET, ville, abonnement - sous un intitule
+    // « Mon profil ». Un salarie y lisait donc le SIRET de la societe comme
+    // si c'etait sa fiche, et ne voyait nulle part sous quelle identite il
+    // etait connecte.
+    const roles = { proprietaire: "Propriétaire du compte", administrateur: "Administrateur", collaborateur: "Salarié" };
+    const moi = currentUtilisateur || {};
     content.innerHTML = `
-      <div class="profil-identity">
-        ${profilePhotoObjectUrl
-          ? `<img class="crm-avatar profil-identity-avatar profil-identity-avatar-photo" src="${escapeHtml(profilePhotoObjectUrl)}" alt="Photo du compte">`
-          : `<div class="crm-avatar profil-identity-avatar">${escapeHtml(monogram(currentArtisan.nom_entreprise))}</div>`}
-        <div>
-          <div class="profil-identity-name">${escapeHtml(currentArtisan.nom_entreprise)}</div>
-          <div class="profil-identity-sub">${escapeHtml(METIER_LABELS[currentArtisan.metier] || currentArtisan.metier)}</div>
-        </div>
+      <div class="profil-row-group">
+        <p class="profil-groupe-titre">Vous</p>
+        <div class="profil-row"><div class="label">Connecté en tant que</div><div class="value">${escapeHtml(moi.nom || currentArtisan.nom_entreprise)}</div></div>
+        <div class="profil-row"><div class="label">Email</div><div class="value">${escapeHtml(moi.email || currentArtisan.email)}</div></div>
+        <div class="profil-row"><div class="label">Rôle</div><div class="value">${escapeHtml(roles[moi.role] || "Propriétaire du compte")}</div></div>
       </div>
       <div class="profil-row-group">
-        <div class="profil-row"><div class="label">Email</div><div class="value">${escapeHtml(currentArtisan.email)}</div></div>
-        <div class="profil-row"><div class="label">Ville</div><div class="value">${escapeHtml(currentArtisan.ville || "-")}</div></div>
-        <div class="profil-row"><div class="label">SIRET</div><div class="value">${escapeHtml(currentArtisan.siret || "-")}</div></div>
+        <p class="profil-groupe-titre">L'entreprise</p>
+        <div class="profil-identity">
+          ${profilePhotoObjectUrl
+            ? `<img class="crm-avatar profil-identity-avatar profil-identity-avatar-photo" src="${escapeHtml(profilePhotoObjectUrl)}" alt="Photo de ${escapeHtml(currentArtisan.nom_entreprise)}">`
+            : `<div class="crm-avatar profil-identity-avatar">${escapeHtml(monogram(currentArtisan.nom_entreprise))}</div>`}
+          <div>
+            <div class="profil-identity-name">${escapeHtml(currentArtisan.nom_entreprise)}</div>
+            <div class="profil-identity-sub">${escapeHtml(METIER_LABELS[currentArtisan.metier] || currentArtisan.metier)}</div>
+          </div>
+        </div>
+        <div class="profil-row"><div class="label">Email du compte</div><div class="value">${escapeHtml(currentArtisan.email)}</div></div>
+        <div class="profil-row"><div class="label">Ville</div><div class="value">${escapeHtml(currentArtisan.ville || "—")}</div></div>
+        <div class="profil-row"><div class="label">SIRET</div><div class="value">${escapeHtml(currentArtisan.siret || "—")}</div></div>
         <div class="profil-row">
           <div class="label">Abonnement Suite Artisan</div>
           <div class="value">
             <span class="badge ${isBillingSubscriptionActive() ? "badge-green" : "badge-gray"}">${isBillingSubscriptionActive() ? "Actif" : "Inactif"}</span>
           </div>
         </div>
+        <p class="profil-groupe-note">Ces informations sont celles de l'entreprise, communes à toutes les personnes qui s'y connectent. Elles se modifient dans <strong>Entreprise</strong>.</p>
       </div>
       ${!isBillingSubscriptionActive() ? '<button type="button" class="btn-primary profil-upgrade-btn" data-action="upgrade-subscription">Voir les tarifs</button>' : ""}
       <div class="form-section">

@@ -3525,3 +3525,16 @@ body.est-dossier-ouvert .view { display: none; }
   color: var(--sa-text-muted);
   max-width: 68ch;
 }
+
+/* ---------- Mon compte : vous, puis l'entreprise ----------
+   Le panneau ne montrait que l'entreprise sous un intitule « Mon profil ».
+   Les deux parties portent maintenant leur nom : ce qui vous concerne, et ce
+   qui est commun a toutes les personnes du compte. */
+.profil-groupe-titre {
+  margin: 0 0 var(--sa-space-2);
+  font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-bold);
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--sa-text-faint);
+}
+.profil-row-group + .profil-row-group { margin-top: var(--sa-space-6); }
+.profil-groupe-note { margin: var(--sa-space-3) 0 0; font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
