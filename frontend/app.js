@@ -1691,6 +1691,37 @@ function fmtMoisCourt(moisIso) {
 // Graphique en aire (SVG inline) du CA par mois : memes points que
 // l'ancienne liste .dash-row (a.ca_par_mois), juste trace au lieu
 // d'enumere. Echelle lineaire simple, pas de librairie.
+// OUVRIR LES ELEMENTS SOURCES D'UN CHIFFRE.
+//
+// Un indicateur qu'on ne peut pas ouvrir est un indicateur qu'on ne peut pas
+// verifier : « 21 devis signés » ne se recoupe qu'en allant voir lesquels.
+// Chaque entree ci-dessous nomme une population EXACTE, atteignable avec un
+// filtre qui existe deja dans la liste visee. Les chiffres dont la population
+// n'a pas de filtre equivalent - le taux de signature porte sur les devis
+// « decides », les clients acquis sur un statut absent de l'annuaire - ne
+// recoivent volontairement aucun lien : ouvrir un sur-ensemble en pretendant
+// montrer la source serait pire que de ne rien ouvrir.
+const SOURCES_STATISTIQUES = {
+  "devis-crees": { vue: "devis", ouvrir: () => activerDevisFiltreStatut("") },
+  "devis-signes": { vue: "devis", ouvrir: () => activerDevisFiltreStatut("signe") },
+  "factures-dues": { vue: "factures", ouvrir: () => activerFactureFiltreStatut("a_encaisser") },
+  "factures-payees": { vue: "factures", ouvrir: () => activerFactureFiltreStatut("payee") },
+};
+
+/** Bouton discret « voir les N pièces » accroché à un chiffre. */
+function lienSource(cle, libelle) {
+  return SOURCES_STATISTIQUES[cle]
+    ? ` <button type="button" class="stats-source" data-action="ouvrir-source" data-source="${cle}">${escapeHtml(libelle)}</button>`
+    : "";
+}
+
+async function ouvrirSourceStatistique(cle) {
+  const source = SOURCES_STATISTIQUES[cle];
+  if (!source) return;
+  await switchView(source.vue);
+  await source.ouvrir();
+}
+
 function caAreaChartSvg(caParMois, { dernierEnCours = false } = {}) {
   // PAD_R tient compte de l'etiquette du dernier mois, centree sous son
   // point : a 8 px, « sept. » sortait du cadre et se retrouvait rognee.
@@ -1795,8 +1826,10 @@ async function loadStatistiques() {
     // dessous s'en trouvait fausse. Le libelle dit maintenant ce que le
     // nombre contient.
     const commercialSteps = [
-      { label: "Devis créés", nb: a.nb_devis_total, population: "devis" },
-      { label: "Devis signés", nb: a.nb_devis_signes, population: "devis" },
+      { label: "Devis créés", nb: a.nb_devis_total, population: "devis", source: "devis-crees" },
+      { label: "Devis signés", nb: a.nb_devis_signes, population: "devis", source: "devis-signes" },
+      // « Clients acquis » compte les clients au statut « gagné » : l'annuaire
+      // ne filtre pas sur ce statut, aucun lien ne peut donc etre honnete.
       { label: "Clients acquis", nb: a.nb_clients_acquis, population: "clients" },
     ];
     // Le pourcentage n'est calcule qu'entre deux etapes qui comptent LA MEME
@@ -1819,6 +1852,7 @@ async function loadStatistiques() {
         <div class="stats-commercial-step est-etape-${i + 1}">
           <span>${escapeHtml(etape.label)}</span>
           <strong>${etape.nb}${conversion !== null ? ` (${conversion} %)` : ""}</strong>
+          ${etape.source ? lienSource(etape.source, "Voir ces devis") : ""}
         </div>`;
     }).join("");
 
@@ -1857,7 +1891,7 @@ async function loadStatistiques() {
           ${moisEnCours ? `<p class="stats-note">Le dernier point (${escapeHtml(fmtMoisCourt(moisEnCours.mois))}) est le mois en cours : il n'est pas encore comparable aux autres, et son trait reste en pointillé.</p>` : ""}
           <div class="stats-ca-legende">
             <span>Pipeline <strong>${fmtEuro(a.valeur_pipeline)}</strong></span>
-            <span>Encore à encaisser <strong>${fmtEuro(a.montant_impayes)}</strong></span>
+            <span>Encore à encaisser <strong>${fmtEuro(a.montant_impayes)}</strong>${lienSource("factures-dues", "Voir ces factures")}</span>
             <span class="stats-ca-legende-note">à aujourd'hui, pas sur douze mois</span>
           </div>
         </div>`, "douze derniers mois")}
@@ -1870,7 +1904,7 @@ async function loadStatistiques() {
         <div class="stats-commercial-funnel">${commercialFunnelHtml}</div>
         <div class="stats-metric-list">
           <div><span>Taux de signature</span><strong>${a.taux_acceptation === null || a.taux_acceptation === undefined ? "—" : a.taux_acceptation + " %"}</strong></div>
-          <div><span>Panier moyen</span><strong>${fmtEuro(a.panier_moyen)}</strong></div>
+          <div><span>Panier moyen</span><strong>${fmtEuro(a.panier_moyen)}</strong>${lienSource("devis-signes", "Voir ces devis")}</div>
           <div><span>Valeur du pipeline</span><strong>${fmtEuro(a.valeur_pipeline)}</strong></div>
         </div>`, "depuis l'ouverture du compte")}
 
@@ -1880,8 +1914,8 @@ async function loadStatistiques() {
       ${saSection("Clients et paiements", `
         <div class="stats-metric-list">
           <div><span>Clients avec plusieurs devis signés</span><strong>${a.nb_clients_recurrents}</strong></div>
-          <div><span>Délai moyen de paiement</span><strong>${a.delai_moyen_paiement_jours !== null ? a.delai_moyen_paiement_jours + " j" : "—"}</strong></div>
-          <div><span>Montant impayé</span><strong>${fmtEuro(a.montant_impayes)}</strong></div>
+          <div><span>Délai moyen de paiement</span><strong>${a.delai_moyen_paiement_jours !== null ? a.delai_moyen_paiement_jours + " j" : "—"}</strong>${a.delai_moyen_paiement_jours !== null ? lienSource("factures-payees", "Voir ces factures") : ""}</div>
+          <div><span>Montant impayé</span><strong>${fmtEuro(a.montant_impayes)}</strong>${lienSource("factures-dues", "Voir ces factures")}</div>
         </div>`, "depuis l'ouverture du compte")}
     `;
   } catch (err) {
@@ -5255,14 +5289,20 @@ async function showDevisForm(devis, preselectClientId) {
   });
 }
 
+// Pendant de activerFactureFiltreStatut() : un seul point d'entree pour
+// choisir le statut affiche, que le geste vienne d'un onglet ou d'un chiffre
+// des statistiques qui ouvre ses elements sources.
+function activerDevisFiltreStatut(statut) {
+  currentDevisFilter = statut;
+  document.querySelectorAll("#devis-filters .filter-chip").forEach((c) => c.classList.toggle("active", c.dataset.statut === statut));
+  return loadDevis();
+}
+
 function setupDevisView() {
   document.getElementById("devis-filters").addEventListener("click", (e) => {
     const chip = e.target.closest(".filter-chip");
     if (!chip) return;
-    document.querySelectorAll("#devis-filters .filter-chip").forEach((c) => c.classList.remove("active"));
-    chip.classList.add("active");
-    currentDevisFilter = chip.dataset.statut;
-    loadDevis();
+    activerDevisFiltreStatut(chip.dataset.statut);
   });
 
   document.getElementById("devis-sort").addEventListener("change", (e) => {
@@ -9061,6 +9101,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupContratsView();
   setupDevisView();
   setupFacturesView();
+  // Un chiffre des statistiques ouvre les pieces qu'il compte.
+  document.getElementById("statistiques-content")?.addEventListener("click", (e) => {
+    const btn = e.target.closest('[data-action="ouvrir-source"]');
+    if (btn) ouvrirSourceStatistique(btn.dataset.source);
+  });
   setupChantiersView();
   setupPlanningView();
   setupTachesView();

@@ -67,11 +67,15 @@ Api.listDevis = async () => [
 // preparer » et « Convertir en facture ». Avec un unique devis « consulte »,
 // les deux enchainements les plus structurants du produit n'existaient sur
 // aucun ecran auditable.
+// Le serveur FILTRE cote base : listDevis(statut) ne renvoie que ce statut.
+// Le jeu d'essai renvoyait tout quel que soit l'argument, si bien qu'un onglet
+// « Signés » affichait aussi les devis consultes - une vue qui paraissait
+// cassee alors que seul le simulacre l'etait.
 Api.listDevis = (function (base) {
-  return async (...a) => [
-    ...(await base(...a)),
+  return async (statut, ...a) => [
+    ...(await base(statut, ...a)),
     { id: 90, client_id: 2, client_nom: "Roussel", numero: "DV-2026-090", titre: "Remplacement de chauffe-eau", description: null, taux_tva: 10, acompte_pourcentage: 40, remise_pourcentage: 0, montant_ht: 2180, montant_ttc: 2398, statut: "signe", date_envoi: tg(14), date_consultation: tg(12), date_derniere_relance: null, date_signature: tg(5), nom_signataire: "M. Roussel", nb_relances: 0, source: "site_vitrine", token: "t90", relance_manuelle_possible: false, created_at: tg(16), lignes: [{ id: 2, description: "Chauffe-eau thermodynamique 200 L, pose comprise", quantite: 1, unite: "u", prix_unitaire_ht: 2180 }] },
-  ];
+  ].filter((d) => !statut || d.statut === statut);
 })(Api.listDevis);
 Api.devisARelancer = async () => [];
 Api.listFactures = async () => [
@@ -261,7 +265,17 @@ const archivés = {
   chantiers: [{ id: 5, titre: "Cuisine Marchand", client_nom: "Marchand", statut: "termine", created_at: tg(400) }],
   documents: [{ id: 4, nom: "Ancienne attestation décennale", type: "attestation", created_at: tg(500) }],
 };
-const listerOuArchives = (vivants, cle) => async (_id, archive) => (archive ? archivés[cle] : vivants());
+// Deux defauts dans une seule ligne, et tous deux faisaient passer une vue
+// saine pour cassee :
+//   - le premier argument etait ignore. Pour les devis, les factures et les
+//     clients c'est le STATUT : l'onglet « Signés » recevait donc la liste
+//     entiere, et le filtre paraissait sans effet.
+//   - la signature supposait (statut, archive). listChantiers(archive) ne
+//     passe qu'un seul argument : le drapeau tombait dans `_id`, et le
+//     panneau Archives des chantiers renvoyait les chantiers vivants.
+// On transmet tout, et on reconnait le drapeau a sa valeur.
+const listerOuArchives = (vivants, cle) => async (...args) =>
+  (args.some((a) => a === true) ? archivés[cle] : vivants(...args));
 Api.listClients = listerOuArchives(Api.listClients, "clients");
 Api.listDevis = listerOuArchives(Api.listDevis, "devis");
 Api.listFactures = listerOuArchives(Api.listFactures, "factures");

@@ -219,4 +219,39 @@ const conformitePy = fs.readFileSync(path.resolve(frontendDir, "..", "backend", 
 assert.match(conformitePy, /SEUIL_ALERTE_JOURS = 30/,
   "la phrase annonce 30 jours : ce seuil doit rester celui du serveur");
 
+// ---------------------------------------------------------------------
+// §9-14 (suite) — chaque résultat ouvre ses éléments sources
+// ---------------------------------------------------------------------
+// Un indicateur qu'on ne peut pas ouvrir est un indicateur qu'on ne peut pas
+// vérifier. Mais ouvrir un SUR-ENSEMBLE en prétendant montrer la source
+// serait pire : les chiffres dont la population n'a pas de filtre équivalent
+// n'ont volontairement aucun lien.
+const sourcesDebut = appSource.indexOf("const SOURCES_STATISTIQUES");
+const sourcesFin = appSource.indexOf("function caAreaChartSvg");
+const sources = appSource.slice(sourcesDebut, sourcesFin);
+for (const [cle, vue, filtre] of [
+  ["devis-crees", "devis", '""'],
+  ["devis-signes", "devis", '"signe"'],
+  ["factures-dues", "factures", '"a_encaisser"'],
+  ["factures-payees", "factures", '"payee"'],
+]) {
+  assert.ok(sources.includes(`"${cle}": { vue: "${vue}"`), `${cle} doit viser la vue ${vue}`);
+  assert.ok(sources.includes(`(${filtre})`), `${cle} doit appliquer le filtre ${filtre}`);
+}
+// « Clients acquis » compte un statut que l'annuaire ne filtre pas : pas de lien.
+assert.doesNotMatch(sources, /clients-acquis/,
+  "aucun lien ne doit exister pour une population sans filtre équivalent");
+assert.match(appSource, /{ label: "Clients acquis", nb: a\.nb_clients_acquis, population: "clients" }/,
+  "l'étape Clients acquis reste sans source, et c'est délibéré");
+// Un seul point d'entrée par liste, partagé avec ses propres onglets.
+assert.match(appSource, /function activerDevisFiltreStatut/);
+assert.match(appSource, /activerDevisFiltreStatut\(chip\.dataset\.statut\)/,
+  "les onglets Devis doivent passer par le même point d'entrée que les statistiques");
+
+// Le jeu d'essai doit HONORER le filtre, sinon un audit croit le filtre cassé.
+const jeu = fs.readFileSync(path.join(frontendDir, "outils", "jeu-essai.js"), "utf8");
+assert.match(jeu, /args\.some\(\(a\) => a === true\) \? archivés\[cle\] : vivants\(\.\.\.args\)/,
+  "le simulacre doit transmettre statut et drapeau d'archive");
+assert.match(jeu, /\.filter\(\(d\) => !statut \|\| d\.statut === statut\)/);
+
 console.log("OK - astra-section-9.test.mjs");

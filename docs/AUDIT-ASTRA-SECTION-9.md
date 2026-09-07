@@ -166,17 +166,23 @@ sur des éléments déclarés pour cela.
 
 ## 14. Statistiques
 
-**Écart.**
+**Corrigé.**
 
 Conforme : périodes annoncées par section ; mois sans paiement présents ; mois
 en cours distingué ; base et population nommées.
 
-Écarts :
+Les deux écarts sont traités :
 
-1. **Un pourcentage entre deux populations différentes.** L'entonnoir affiche
-   « Clients acquis 18 (86 %) » : 18 clients rapportés à 21 devis signés. Astra
-   l'interdit explicitement pour cet écran.
-2. **Aucun résultat n'ouvre ses éléments sources.**
+1. Le pourcentage entre populations différentes a disparu. « Clients acquis
+   18 (86 %) » rapportait 18 clients à 21 devis signés ; le taux ne se calcule
+   plus qu'entre deux étapes qui comptent la même chose.
+2. Quatre chiffres ouvrent leurs éléments sources, avec le filtre exact :
+   devis créés, devis signés, montants à encaisser, factures payées. Les
+   chiffres dont la population n'a pas de filtre équivalent — le taux de
+   signature porte sur les devis « décidés », les clients acquis sur un statut
+   absent de l'annuaire — n'ont volontairement aucun lien : ouvrir un
+   sur-ensemble en prétendant montrer la source serait pire que de ne rien
+   ouvrir.
 
 ## 15. Avis
 
