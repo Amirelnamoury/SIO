@@ -2714,12 +2714,66 @@ function etatFiltre(phrase) {
    Plutot que de rebrancher chaque formulaire, on delegue : un clic dans un
    etat vide releve le bouton d'en-tete correspondant et le declenche. Une
    seule source de verite pour l'ouverture des formulaires. */
+/* « Réessayer » d'un chargement incomplet : on relance la vue courante par
+   son propre chargeur, plutot que de recharger la page - la saisie en cours
+   ailleurs dans l'ecran survit. */
+document.addEventListener("click", (e) => {
+  if (!e.target.closest('[data-action="recharger-vue"]')) return;
+  const vue = document.body.dataset.view;
+  if (vue) switchView(vue);
+});
+
 document.addEventListener("click", (e) => {
   const bouton = e.target.closest(".empty-state [data-action]");
   if (!bouton) return;
   const cible = document.querySelector(`.view-header [data-action="${bouton.dataset.action}"], .subsection-header [data-action="${bouton.dataset.action}"]`);
   if (cible && cible !== bouton) { e.preventDefault(); cible.click(); }
 });
+
+/* =====================================================================
+   UN ECHEC DE CHARGEMENT N'EST PAS UNE ABSENCE DE DONNEES
+   ---------------------------------------------------------------------
+   Douze appels du produit etaient ecrits `Api.listFactures().catch(() =>
+   [])`. Le repli silencieux evitait qu'une source en panne casse toute la
+   page - l'intention etait bonne - mais il produisait un mensonge : le
+   dossier d'un client affichait « aucune facture » alors que l'appel avait
+   echoue. Un artisan pouvait en conclure que ce client ne lui doit rien.
+
+   `tolerant()` garde le repli et ENREGISTRE la panne. La vue peut alors
+   dire ce qu'elle ne sait pas, au lieu d'affirmer qu'il n'y a rien.
+   ===================================================================== */
+function journalDeCharge() { return { manquants: [] }; }
+
+async function tolerant(journal, etiquette, promesse, repli = []) {
+  try {
+    return await promesse;
+  } catch (err) {
+    journal.manquants.push(etiquette);
+    return repli;
+  }
+}
+
+/** Le bandeau qui annonce ce qui manque. Il ne remplace pas le contenu
+ *  charge : le reste de la page reste utilisable, on signale seulement
+ *  qu'elle est incomplete. */
+function bandeauCharge(journal) {
+  if (!journal.manquants.length) return "";
+  const liste = journal.manquants.length === 1
+    ? journal.manquants[0]
+    : `${journal.manquants.slice(0, -1).join(", ")} et ${journal.manquants[journal.manquants.length - 1]}`;
+  // Le verbe s'accorde avec le SUJET, pas avec le nombre de sources en
+  // panne. Une seule source manquante donnait « Les chantiers n'a pas pu
+  // etre charge » : le compteur valait un, mais le sujet reste pluriel.
+  // Toutes les etiquettes du produit sont des groupes nominaux pluriels
+  // (« les devis », « les factures », « les elements de conformite ») ;
+  // l'accord est donc au pluriel, et la seule chose que le nombre de
+  // sources change est l'enumeration.
+  return `<p class="charge-incomplete" role="status">
+    ${escapeHtml(liste.charAt(0).toUpperCase() + liste.slice(1))} n'ont pas pu être chargés.
+    Ce qui s'affiche ci-dessous est donc incomplet.
+    <button type="button" class="btn-sm" data-action="recharger-vue">Réessayer</button>
+  </p>`;
+}
 
 function saSection(titre, corps, note = "", classe = "") {
   if (!corps) return "";
@@ -2758,12 +2812,15 @@ async function loadDashboard() {
   const container = document.getElementById("dashboard-content");
   container.innerHTML = '<div class="dash-squelette"><span></span><span></span><span></span></div>';
   try {
+    const journal = journalDeCharge();
     const [d, recommandations, sante, activation, chantiers] = await Promise.all([
       Api.dashboard(), Api.dashboardRecommandations(), Api.dashboardSante(), Api.dashboardActivation(),
       // "Chantiers en cours" n'existe pas dans DashboardOut (voir backend/app/
-      // schemas.py) : meme endpoint que la page Chantiers, avec le meme
-      // repli silencieux qu'ailleurs si le plan ne l'autorise pas.
-      Api.listChantiers().catch(() => []),
+      // schemas.py) : meme endpoint que la page Chantiers. L'echec est
+      // tolere - il ne doit pas emporter tout l'accueil - mais il est
+      // desormais ANNONCE : « 0 chantier ouvert » et « je n'ai pas pu lire
+      // les chantiers » ne sont pas la meme information.
+      tolerant(journal, "les chantiers", Api.listChantiers()),
     ]);
 
     const dateBrut = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
@@ -2862,6 +2919,7 @@ async function loadDashboard() {
         <h2 class="dash-lede${lede.alerte ? " est-alerte" : ""}">${lede.titre}</h2>
         <p class="dash-lede-detail">${lede.detail}</p>
       </header>
+      ${bandeauCharge(journal)}
 
       ${saSection(
         "À faire",
@@ -3358,18 +3416,22 @@ async function showTimeline(clientId) {
     // la page Clients ; sinon on les demande, avec le meme repli silencieux
     // qu'ailleurs si le plan ne les autorise pas.
     const cache = clientsDirectoryCache;
+    // Le dossier d'un client parle d'argent : « aucune facture » et « je
+    // n'ai pas pu lire les factures » ne peuvent pas s'afficher pareil.
+    const journal = journalDeCharge();
     const [entries, resume, messages, chantiers, devis, factures] = await Promise.all([
       Api.clientTimeline(clientId),
       Api.clientResume(clientId),
-      Api.listClientMessages(clientId).catch(() => []),
-      cache.chantiers?.length ? cache.chantiers : Api.listChantiers().catch(() => []),
-      cache.devis?.length ? cache.devis : Api.listDevis().catch(() => []),
-      cache.factures?.length ? cache.factures : Api.listFactures().catch(() => []),
+      tolerant(journal, "les messages", Api.listClientMessages(clientId)),
+      cache.chantiers?.length ? cache.chantiers : tolerant(journal, "les chantiers", Api.listChantiers()),
+      cache.devis?.length ? cache.devis : tolerant(journal, "les devis", Api.listDevis()),
+      cache.factures?.length ? cache.factures : tolerant(journal, "les factures", Api.listFactures()),
     ]);
 
     content.innerHTML = `
       ${client ? clientDetailHeaderHtml(client) : ""}
       ${client ? clientQuickActionsHtml(client) : ""}
+      ${bandeauCharge(journal)}
       ${clientResumeHtml(resume)}
       ${ficheSection("Affaires", clientAffairesHtml(clientId, chantiers, devis, factures))}
       ${ficheSection("Chronologie", clientChronologieHtml(entries, messages) + messagesPanelHtml())}
@@ -3754,13 +3816,18 @@ async function loadClientsDirectory() {
   const synthese = document.getElementById("clients-kpi-band");
   container.innerHTML = '<div class="repertoire-squelette"><span></span><span></span><span></span><span></span><span></span></div>';
   try {
+    // Le repertoire chiffre l'activite de chaque client a partir de ces
+    // trois listes : si l'une manque, les colonnes « affaires » et « solde »
+    // sont fausses, pas vides. On le dit.
+    const journal = journalDeCharge();
     const [clients, chantiers, factures, devis] = await Promise.all([
       Api.listClients("gagne"),
-      Api.listChantiers().catch(() => []),
-      Api.listFactures().catch(() => []),
-      Api.listDevis().catch(() => []),
+      tolerant(journal, "les chantiers", Api.listChantiers()),
+      tolerant(journal, "les factures", Api.listFactures()),
+      tolerant(journal, "les devis", Api.listDevis()),
     ]);
     clientsDirectoryCache = { clients, chantiers, factures, devis };
+    window.__chargeIncomplete = journal;
     if (clients.length === 0) {
       synthese.innerHTML = "";
       container.innerHTML = `<div class="empty-state">
@@ -3769,7 +3836,7 @@ async function loadClientsDirectory() {
       </div>`;
       return;
     }
-    synthese.innerHTML = clientsSyntheseHtml(clients, chantiers, factures);
+    synthese.innerHTML = bandeauCharge(journal) + clientsSyntheseHtml(clients, chantiers, factures);
     currentClientsPage = 1;
     renderClientsDirectoryPage();
   } catch (err) {
@@ -7191,11 +7258,14 @@ async function loadDocuments() {
     // (ConformiteOut.alerte/.jours_restants, voir backend/app/schemas.py) -
     // Document lui-meme n'en a aucune. Recuperee ici uniquement pour ce
     // deuxieme compteur, pas pour en faire une echeance "par document".
+    // La conformite alimente le compteur « Echeances a surveiller » : si
+    // elle manque, ce compteur vaut zero alors qu'il est simplement inconnu.
+    const journal = journalDeCharge();
     const [documents, clients, chantiers, conformite] = await Promise.all([
       Api.listDocuments(),
       ensureClientsCache(),
-      Api.listChantiers().catch(() => []),
-      Api.listConformite().catch(() => []),
+      tolerant(journal, "les chantiers", Api.listChantiers()),
+      tolerant(journal, "les éléments de conformité", Api.listConformite()),
     ]);
     documentsCache = documents;
     documentsChantiersCache = chantiers;
@@ -7207,11 +7277,11 @@ async function loadDocuments() {
     chantierSelect.value = currentDocumentChantier;
     const echeances = conformite.filter((c) => c.alerte).length;
     if (compteur) {
-      compteur.innerHTML = documents.length
+      compteur.innerHTML = bandeauCharge(journal) + (documents.length
         ? `<span class="doc-compteur-label">Documents</span><span class="pill pill-gray">${documents.length}</span>${
             echeances ? `<span class="doc-compteur-label">Échéances à surveiller</span><span class="pill pill-orange">${echeances}</span>` : ""
           }`
-        : "";
+        : "");
     }
     if (documents.length === 0) {
       list.innerHTML = etatVide(
@@ -7261,10 +7331,16 @@ function renderDocumentCard(d) {
 function showDocumentForm(preselectChantierId) {
   const container = document.getElementById("document-form-container");
   container.innerHTML = "";
-  Promise.all([ensureClientsCache(), Api.listChantiers().catch(() => [])]).then(([clients, chantiers]) => {
-    const chantierOptions = chantiers
-      .map((c) => `<option value="${c.id}" ${preselectChantierId && c.id === preselectChantierId ? "selected" : ""}>${escapeHtml(c.titre)}</option>`)
-      .join("");
+  Promise.all([ensureClientsCache(), Api.listChantiers().catch(() => "echec")]).then(([clients, chantiersOuEchec]) => {
+    // « echec » plutot qu'un tableau vide : sans chantier a rattacher, le
+    // client doit savoir si sa liste est vide ou indisponible.
+    const chantiersIndisponibles = chantiersOuEchec === "echec";
+    const chantiers = chantiersIndisponibles ? [] : chantiersOuEchec;
+    const chantierOptions = chantiersIndisponibles
+      ? `<option value="" disabled>Liste des chantiers indisponible</option>`
+      : chantiers
+        .map((c) => `<option value="${c.id}" ${preselectChantierId && c.id === preselectChantierId ? "selected" : ""}>${escapeHtml(c.titre)}</option>`)
+        .join("");
     container.innerHTML = `
       <div class="form-box">
         <h3>Ajouter un document</h3>
@@ -7687,6 +7763,8 @@ async function loadPlanning() {
     planningItemsCache = items;
     // Chantiers pour le filtre uniquement (repli silencieux comme ailleurs
     // si le plan ne les autorise pas) - meme endpoint que la page Chantiers.
+    // Filtre uniquement : un echec y retire une possibilite de tri, il ne
+    // fausse aucun rendez-vous affiche.
     planningChantiersCache = await Api.listChantiers().catch(() => []);
     renderPlanningFiltered();
   } catch (err) {

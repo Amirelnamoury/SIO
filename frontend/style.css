@@ -1968,6 +1968,24 @@ label { color: var(--sa-text-muted); }
   *::-webkit-scrollbar-thumb:hover { background: #A69F8E; }
 }
 
+/* ---------------------------------------------------------------------
+   CHARGEMENT INCOMPLET
+   ---------------------------------------------------------------------
+   Ni une erreur bloquante, ni un silence : une partie de la page a bien
+   ete chargee, une autre non. Le bandeau le dit et propose de reessayer,
+   sans effacer ce qui est deja la. Teinte « vigilance » plutot que rouge -
+   rien n'est casse, il manque une source.
+   --------------------------------------------------------------------- */
+.charge-incomplete {
+  display: flex; align-items: center; gap: var(--sa-space-3); flex-wrap: wrap;
+  margin: 0 0 var(--sa-space-5);
+  padding: 10px 0;
+  border-top: 2px solid var(--sa-warning);
+  border-bottom: 1px solid var(--sa-border);
+  font-size: var(--sa-text-sm); color: var(--sa-text);
+}
+.charge-incomplete .btn-sm { margin-left: auto; }
+
 /* =====================================================================
    ETATS VIDES — le premier ecran d'un artisan
    ---------------------------------------------------------------------
