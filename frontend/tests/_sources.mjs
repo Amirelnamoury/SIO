@@ -24,13 +24,15 @@ const lire = (nom) => fs.readFileSync(path.join(frontendDir, nom), "utf8");
 export const api = lire("api.js");
 export const socle = lire("socle.js");
 export const navigation = lire("navigation.js");
+export const planning = lire("planning.js");
+export const statistiques = lire("statistiques.js");
 export const app = lire("app.js");
 export const index = lire("index.html");
 export const style = lire("style.css");
 export const jeuEssai = lire(path.join("outils", "jeu-essai.js"));
 
 /** Tous les scripts du produit, dans leur ordre de chargement. */
-export const tout = [api, socle, navigation, app].join("\n");
+export const tout = [api, socle, navigation, planning, statistiques, app].join("\n");
 
 /** Un fichier du backend, par son chemin relatif a backend/app. */
 export const backend = (relatif) => fs.readFileSync(path.join(backendDir, ...relatif.split("/")), "utf8");

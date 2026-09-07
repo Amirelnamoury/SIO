@@ -16,10 +16,12 @@ import fs from "node:fs";
 import path from "node:path";
 import vm from "node:vm";
 import { fileURLToPath } from "node:url";
+import * as sources from "./_sources.mjs";
 
 const frontendDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const appPath = path.join(frontendDir, "app.js");
-const appSource = fs.readFileSync(appPath, "utf8");
+// Le graphique et la vue vivent dans statistiques.js depuis le decoupage §16.
+const appSource = sources.statistiques;
 const indexSource = fs.readFileSync(path.join(frontendDir, "index.html"), "utf8");
 const analyticsSource = fs.readFileSync(path.resolve(frontendDir, "..", "backend", "app", "routers", "analytics.py"), "utf8");
 
@@ -38,7 +40,10 @@ assert.doesNotMatch(analyticsSource, /timedelta\(days=365\)/,
 //    partagent pas.
 // ---------------------------------------------------------------------
 assert.doesNotMatch(indexSource, /stats-period-control/, "la pastille de periode globale doit avoir disparu");
-const vue = appSource.slice(appSource.indexOf("async function loadStatistiques"), appSource.indexOf("// ===================== Avis clients"));
+// Les statistiques sont un fichier a elles depuis le decoupage §16 : le
+// marqueur de fin (« Avis clients ») est reste dans app.js, la tranche
+// n'a donc plus lieu d'etre - le fichier entier EST la vue.
+const vue = sources.statistiques;
 for (const [section, periode] of [
   ["Chiffre d'affaires", "douze derniers mois"],
   ["Performance commerciale", "depuis l'ouverture du compte"],

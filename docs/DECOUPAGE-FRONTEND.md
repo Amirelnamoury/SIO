@@ -13,6 +13,16 @@ dans l'ordre où elles étaient. Un découpage qui range *et* réécrit en même
 n'est pas vérifiable : à la première régression, on ne sait plus si elle vient
 du rangement ou de la réécriture.
 
+### Un piège rencontré
+
+Le script d'extraction prend ses marqueurs en argument. Sous Git Bash, un
+argument qui commence par `//` — et tous les marqueurs de section en
+commencent — subit la conversion de chemin MSYS, qui **mange une barre
+oblique**. Le bloc extrait emportait alors le `/` de la ligne suivante, et le
+fichier produit finissait par un `/` orphelin. `MSYS_NO_PATHCONV=1` règle la
+question, et la mesure de longueur l'aurait de toute façon révélé : c'est
+exactement ce qu'elle a fait.
+
 La preuve se fait par comparaison : code avant et code après, commentaires et
 espaces ignorés, doivent faire **exactement la même longueur**, et les seules
 différences doivent être aux coutures — les fragments qui chevauchent un point
@@ -59,15 +69,28 @@ Ce fichier ne sait rien du contenu des écrans. Les fonctions d'ouverture
 (`showTimeline`, `showDevisDetail`…) vivent dans `app.js` et sont appelées par
 leur nom.
 
+### `planning.js` — la grille horaire (742 lignes)
+
+Le domaine le plus autonome du produit : il ne parle que du planning et de ses
+trois vues. Il porte la règle des **trois niveaux de certitude** — durée connue,
+début seul, aucune heure — qui empêche la grille d'affirmer une occupation que
+personne n'a saisie.
+
+### `statistiques.js` — le rapport et son graphique (256 lignes)
+
+Un rapport, pas un tableau de bord : chaque section annonce **sa** période,
+chaque chiffre dit sur quelle population il porte, et ceux dont la population a
+un filtre équivalent dans une liste ouvrent leurs pièces.
+
 ## Reste à extraire
 
-Dans l'ordre où Astra le suggère, et par lots séparés :
+**`devis.js`** et **`chantier.js`** — les deux compositions les plus lourdes.
+Astra demande justement de leur « garder des compositions spécifiques ». Ce sont
+aussi les deux plus couplées au reste : à faire quand le besoin s'en fera
+sentir, pas par symétrie.
 
-1. **`planning.js`** — la grille horaire, les durées, le glisser-déposer.
-   Fortement autonome : peu de couplage avec le reste.
-3. **`statistiques.js`** — le rapport et son graphique.
-4. **`devis.js`** et **`chantier.js`** — les deux compositions les plus lourdes.
-   Astra demande justement de leur « garder des compositions spécifiques ».
+`app.js` est passé de **9 518 à 7 815 lignes**. Il contient encore la coquille,
+les constantes d'affichage, et les écrans qui n'ont pas de logique propre.
 
 Après ces extractions, `app.js` ne devrait plus contenir que la coquille, les
 constantes d'affichage et les écrans qui n'ont pas de logique propre.
