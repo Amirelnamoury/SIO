@@ -100,6 +100,11 @@ const Api = {
   updateClient: (id, payload) => apiFetch(`/clients/${id}`, { method: "PATCH", body: payload }),
   deleteClient: (id) => apiFetch(`/clients/${id}`, { method: "DELETE" }),
   restaurerClient: (id) => apiFetch(`/clients/${id}/restaurer`, { method: "POST" }),
+  // Une fiche par son identifiant. Les quatre routes existaient deja cote
+  // serveur ; le frontend ne les appelait jamais et cherchait la piece dans
+  // la liste chargee - une fiche archivee, filtree ou simplement absente de
+  // la page courante ne s'ouvrait donc pas, sans un mot.
+  getClient: (id) => apiFetch(`/clients/${id}`),
   clientTimeline: (id) => apiFetch(`/clients/${id}/timeline`),
   clientResume: (id) => apiFetch(`/clients/${id}/resume`),
 
@@ -117,6 +122,7 @@ const Api = {
     const qs = params.toString();
     return apiFetch("/devis" + (qs ? `?${qs}` : ""));
   },
+  getDevis: (id) => apiFetch(`/devis/${id}`),
   devisARelancer: () => apiFetch("/devis/a-relancer"),
   createDevis: (payload) => apiFetch("/devis", { method: "POST", body: payload }),
   updateDevis: (id, payload) => apiFetch(`/devis/${id}`, { method: "PATCH", body: payload }),
@@ -128,6 +134,7 @@ const Api = {
 
   // ---------- Chantiers ----------
   listChantiers: (archive) => apiFetch("/chantiers" + (archive ? "?archive=true" : "")),
+  getChantier: (id) => apiFetch(`/chantiers/${id}`),
   createChantier: (payload) => apiFetch("/chantiers", { method: "POST", body: payload }),
   updateChantier: (id, payload) => apiFetch(`/chantiers/${id}`, { method: "PATCH", body: payload }),
   deleteChantier: (id) => apiFetch(`/chantiers/${id}`, { method: "DELETE" }),
@@ -168,6 +175,7 @@ const Api = {
     const qs = params.toString();
     return apiFetch("/factures" + (qs ? `?${qs}` : ""));
   },
+  getFacture: (id) => apiFetch(`/factures/${id}`),
   facturesARelancer: () => apiFetch("/factures/a-relancer"),
   createFacture: (payload) => apiFetch("/factures", { method: "POST", body: payload }),
   factureDepuisDevis: (devisId, type) => apiFetch(`/factures/depuis-devis/${devisId}?type=${encodeURIComponent(type || "standard")}`, { method: "POST" }),

@@ -641,16 +641,103 @@ async function ouvrirObjet(type, id) {
   return ouvrirFiche(type, identifiant);
 }
 
+/** Registre des fiches : ou trouver une piece, et comment aller la chercher.
+ *
+ *  Les panneaux de detail lisaient DIRECTEMENT le cache de la liste affichee
+ *  (devisListCache, facturesCache, clientsCache) et sortaient en silence
+ *  quand la piece n'y etait pas. Un devis archive, une facture filtree par
+ *  statut, un client sur une autre page de la liste : rien ne s'ouvrait, et
+ *  rien ne le disait. Le serveur expose pourtant GET /devis/{id},
+ *  /factures/{id}, /clients/{id} et /chantiers/{id} depuis le debut - le
+ *  frontend ne les appelait simplement jamais.
+ *
+ *  On garde les caches de liste tels quels : ce sont eux que lisent les
+ *  fonctions de rendu, et les reecrire toucherait a tout. On y INSERE la
+ *  piece manquante apres etre alle la chercher. */
+const REGISTRE_FICHES = {
+  devis: {
+    dansCache: (id) => devisListCache.some((x) => x.id === id) || (window.__devisTousCache || []).some((x) => x.id === id),
+    charger: (id) => Api.getDevis(id),
+    memoriser: (piece) => { devisListCache = [...devisListCache, piece]; },
+  },
+  facture: {
+    dansCache: (id) => facturesCache.some((x) => x.id === id),
+    charger: (id) => Api.getFacture(id),
+    memoriser: (piece) => { facturesCache = [...facturesCache, piece]; },
+  },
+  client: {
+    dansCache: (id) => clientsCache.some((x) => x.id === id),
+    charger: (id) => Api.getClient(id),
+    memoriser: (piece) => { clientsCache = [...clientsCache, piece]; },
+  },
+};
+
+/** Signale, une fois la fiche ouverte, qu'elle ne figure pas dans la liste. */
+async function avecAvertissement(horsListe, promesse) {
+  const ouvert = await promesse;
+  if (ouvert && horsListe) {
+    showToast("Cette fiche n'apparaît pas dans la liste affichée : elle est archivée, filtrée, ou sur une autre page.");
+  }
+  return ouvert;
+}
+
+/** S'assure que la piece est connue du cache que lit son panneau.
+ *  Rend faux seulement si le SERVEUR ne la connait pas non plus. */
+async function assurerFiche(type, identifiant) {
+  const entree = REGISTRE_FICHES[type];
+  if (!entree) return true;
+  if (entree.dansCache(identifiant)) return true;
+  try {
+    const piece = await entree.charger(identifiant);
+    if (!piece || piece.id !== identifiant) return false;
+    entree.memoriser(piece);
+    return true;
+  } catch (err) {
+    // 404, 403, reseau : dans tous les cas la fiche ne peut pas s'ouvrir.
+    // L'appelant le dira, au lieu de laisser une liste muette.
+    return false;
+  }
+}
+
+// Ou se trouve, dans la page, la ligne qui represente une piece. Sert a
+// savoir si la fiche qu'on ouvre est VISIBLE dans la liste derriere elle.
+const LIGNE_DE_LISTE = {
+  devis: (id) => `#devis-list [data-id="${id}"]`,
+  facture: (id) => `#factures-list [data-id="${id}"]`,
+  // Un client se regarde depuis deux ecrans : le pipeline en colonnes
+  // (Prospects) et l'annuaire (Clients). Ne chercher que dans l'un des deux
+  // ferait croire, depuis l'autre, que la fiche est hors liste.
+  client: (id) => `#clients-directory [data-id="${id}"], #clients-kanban [data-id="${id}"]`,
+};
+
 async function ouvrirFiche(type, identifiant) {
+  if (!(await assurerFiche(type, identifiant))) return false;
+  // La fiche peut s'ouvrir alors que la liste derriere elle ne la montre pas
+  // (filtre en cours, autre page, piece archivee). Sans un mot, la refermer
+  // donne l'impression que la piece a disparu.
+  const selecteur = LIGNE_DE_LISTE[type]?.(identifiant);
+  const horsListe = selecteur && !document.querySelector(selecteur);
   switch (type) {
-    case "client": return showTimeline(identifiant);
-    case "devis": return showDevisDetail(identifiant);
-    case "facture": return showFactureDetail(identifiant);
+    case "client": return avecAvertissement(horsListe, showTimeline(identifiant));
+    case "devis": return avecAvertissement(horsListe, showDevisDetail(identifiant));
+    case "facture": return avecAvertissement(horsListe, showFactureDetail(identifiant));
     case "chantier": {
-      // Le chantier n'a pas de panneau : il se deplie dans sa carte. On
-      // reutilise le mecanisme de mise en avant deja en place.
-      const carte = document.querySelector(`[data-chantier-id="${identifiant}"]`);
-      if (!carte) return false;
+      // Le chantier n'a pas de panneau : il se deplie dans SA CARTE. Si la
+      // carte n'est pas la, c'est un filtre en cours qui la masque - le
+      // chantier existe, il est juste hors du tri courant. On leve les
+      // filtres une fois, plutot que d'annoncer un chantier introuvable.
+      if (!document.querySelector(`[data-chantier-id="${identifiant}"]`)) {
+        if (!chantiersCache.some((c) => c.id === identifiant)) return false;
+        currentChantierFilter = "";
+        currentChantierAvancement = "";
+        currentChantierClient = "";
+        currentChantierRecherche = "";
+        const champ = document.getElementById("chantiers-search");
+        if (champ) champ.value = "";
+        renderChantiersListFiltered();
+        if (!document.querySelector(`[data-chantier-id="${identifiant}"]`)) return false;
+        showToast("Les filtres de la liste ont été levés pour afficher ce chantier.");
+      }
       chantierFocusId = identifiant;
       focusChantierCard();
       // Le bouton BASCULE : cliquer sur un dossier deja ouvert le refermerait.
@@ -779,7 +866,9 @@ window.addEventListener("popstate", appliquerAdresse);
  *  doivent donc l'ouvrir, pas se contenter du rayon. */
 async function ouvrirCible(donnees) {
   if (donnees.objetType && (await ouvrirObjet(donnees.objetType, parseInt(donnees.objetId, 10)))) return;
-  if (donnees.view) await switchView(donnees.view);
+  // ouvrirObjet a pu basculer sur la vue avant d'echouer a ouvrir la fiche :
+  // sans ce test, on rechargeait la meme vue une seconde fois.
+  if (donnees.view && document.body.dataset.view !== donnees.view) await switchView(donnees.view);
 }
 
 /** Ouvre ce qu'une notification designe.

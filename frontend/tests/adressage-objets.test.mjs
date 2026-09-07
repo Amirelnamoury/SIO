@@ -53,7 +53,7 @@ const contexte = {
     client: { view: "prospects" }, devis: { view: "devis" },
     facture: { view: "factures" }, chantier: { view: "chantiers" },
   },
-  switchView: async (view) => { journal.push(`vue:${view}`); },
+  switchView: async (view) => { journal.push(`vue:${view}`); contexte.document.body.dataset.view = view; },
   // Les vrais ouvreurs rendent VRAI quand la fiche s'affiche, FAUX quand la
   // piece n'est plus dans la liste (archivee, supprimee) : `absent` permet
   // d'eprouver ce second cas, celui d'une adresse recue par message.
@@ -72,9 +72,25 @@ const contexte = {
   // sauf pour le chantier - qui n'a pas de fonction d'ouverture a lui.
   ecrireAdresse: () => {},
   adresseFiche: (type, id) => `#/${type}/${id}`,
+  // Les caches de liste que consulte le registre des fiches. Ici toutes les
+  // pieces demandees y sont deja : l'aller-retour serveur a son propre test
+  // plus bas.
+  // `window.__devisTousCache` : le cache des devis archives, consulte par le
+  // registre avant de solliciter le serveur.
+  window: {},
+  devisListCache: [{ id: 7 }], facturesCache: [{ id: 7 }, { id: 14 }], clientsCache: [{ id: 7 }],
+  chantiersCache: [{ id: 7 }],
+  renderChantiersListFiltered: () => {},
+  showToast: (m) => journal.push(`message:${m.slice(0, 20)}`),
+  // Le serveur connait le devis 900, pas le 901 : les deux cas du registre.
+  Api: {
+    getDevis: async (id) => { journal.push(`serveur:devis:${id}`); if (id !== 900) throw new Error("404"); return { id }; },
+    getFacture: async (id) => { if (id !== 900) throw new Error("404"); return { id }; },
+    getClient: async (id) => { if (id !== 900) throw new Error("404"); return { id }; },
+  },
 };
 vm.runInNewContext(
-  `let chantierFocusId = null;\n${appSource.slice(ouvreStart, ouvreEnd)}\n${appSource.slice(cibleStart, cibleEnd)}\nglobalThis.__ouvre = { ouvrirObjet, ouvrirCible };`,
+  `let chantierFocusId = null;\nlet currentChantierFilter = "", currentChantierAvancement = "", currentChantierClient = "", currentChantierRecherche = "";\n${appSource.slice(ouvreStart, ouvreEnd)}\n${appSource.slice(cibleStart, cibleEnd)}\nglobalThis.__ouvre = { ouvrirObjet, ouvrirCible, assurerFiche };`,
   contexte,
   { filename: appPath },
 );
@@ -147,7 +163,40 @@ assert.match(appSource, /await ouvrirObjet\("chantier", res\.chantier\.id\)/,
   "preparer un chantier doit ouvrir le chantier cree");
 
 // ---------------------------------------------------------------------
-// 5. Atteindre un objet au clavier autant qu'a la souris.
+// 5. Une fiche absente de la liste chargee est demandee au serveur.
+// ---------------------------------------------------------------------
+// Les panneaux de detail lisaient directement le cache de la liste affichee
+// et sortaient en silence quand la piece n'y etait pas : un devis archive,
+// une facture filtree par statut, un client sur une autre page. Les quatre
+// routes GET /<type>/{id} existaient pourtant deja cote serveur.
+const { assurerFiche } = contexte.__ouvre;
+journal.length = 0;
+assert.equal(await assurerFiche("devis", 7), true, "une piece deja en cache ne redemande rien");
+assert.deepEqual(journal, [], "aucun appel serveur quand la piece est la");
+
+journal.length = 0;
+assert.equal(await assurerFiche("devis", 900), true, "une piece absente du cache est demandee au serveur");
+assert.deepEqual(journal, ["serveur:devis:900"]);
+assert.equal(await assurerFiche("devis", 900), true, "et elle est memorisee : un seul aller-retour");
+assert.deepEqual(journal, ["serveur:devis:900"], "la seconde ouverture ne rappelle pas le serveur");
+
+journal.length = 0;
+assert.equal(await assurerFiche("devis", 901), false, "le serveur ne la connait pas non plus : c'est un vrai echec");
+// Un type sans registre (le chantier vit dans sa carte) n'est jamais bloque ici.
+assert.equal(await assurerFiche("chantier", 12345), true);
+
+// L'ouverture doit prevenir quand la fiche ne figure pas dans la liste
+// affichee : sans un mot, la refermer donne l'impression qu'elle a disparu.
+assert.match(appSource, /Cette fiche n'apparaît pas dans la liste affichée/,
+  "ouvrir une fiche hors de la liste visible doit etre signale");
+assert.match(appSource, /const horsListe = selecteur && !document\.querySelector\(selecteur\)/);
+// Le chantier, lui, EST sa ligne de liste : on leve les filtres au lieu de
+// pretendre qu'il n'existe pas.
+assert.match(appSource, /currentChantierFilter = "";[\s\S]*?renderChantiersListFiltered\(\)/,
+  "un chantier masque par un filtre doit faire lever le filtre, pas disparaitre");
+
+// ---------------------------------------------------------------------
+// 6. Atteindre un objet au clavier autant qu'a la souris.
 // ---------------------------------------------------------------------
 // Onze elements portent role="button" tabindex="0" sans etre des <button> :
 // ils prennent le focus et s'annoncent comme des boutons. Seul le planning
