@@ -1454,8 +1454,10 @@ function fmtMoisCourt(moisIso) {
 // Graphique en aire (SVG inline) du CA par mois : memes points que
 // l'ancienne liste .dash-row (a.ca_par_mois), juste trace au lieu
 // d'enumere. Echelle lineaire simple, pas de librairie.
-function caAreaChartSvg(caParMois) {
-  const W = 760, H = 220, PAD_L = 44, PAD_R = 8, PAD_T = 12, PAD_B = 24;
+function caAreaChartSvg(caParMois, { dernierEnCours = false } = {}) {
+  // PAD_R tient compte de l'etiquette du dernier mois, centree sous son
+  // point : a 8 px, « sept. » sortait du cadre et se retrouvait rognee.
+  const W = 760, H = 220, PAD_L = 44, PAD_R = 22, PAD_T = 12, PAD_B = 24;
   const values = caParMois.map((m) => m.ca);
   const max = Math.max(1, ...values);
   const innerW = W - PAD_L - PAD_R, innerH = H - PAD_T - PAD_B;
@@ -1464,8 +1466,16 @@ function caAreaChartSvg(caParMois) {
     x: PAD_L + stepX * i,
     y: PAD_T + innerH - (v / max) * innerH,
   }));
-  const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
-  const areaPath = `${linePath} L${points[points.length - 1].x.toFixed(1)},${PAD_T + innerH} L${points[0].x.toFixed(1)},${PAD_T + innerH} Z`;
+  // Le dernier mois de la fenetre est le mois EN COURS : il n'est pas
+  // comparable aux autres, et trace plein il ressemble a un effondrement le
+  // 3 du mois. Son segment est pointille et l'aplat s'arrete avant lui.
+  const dernier = points.length - 1;
+  const finPleine = dernierEnCours && points.length > 1 ? dernier - 1 : dernier;
+  const chemin = (deb, fin) => points.slice(deb, fin + 1)
+    .map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+  const linePath = chemin(0, finPleine);
+  const segmentEnCours = finPleine < dernier ? chemin(finPleine, dernier) : "";
+  const areaPath = `${linePath} L${points[finPleine].x.toFixed(1)},${PAD_T + innerH} L${points[0].x.toFixed(1)},${PAD_T + innerH} Z`;
   const gridLines = [0, 0.25, 0.5, 0.75, 1].map((f) => {
     const y = PAD_T + innerH * (1 - f);
     return `<line x1="${PAD_L}" y1="${y.toFixed(1)}" x2="${W - PAD_R}" y2="${y.toFixed(1)}" class="chart-gridline"/>
@@ -1486,6 +1496,7 @@ function caAreaChartSvg(caParMois) {
     ${gridLines}
     <path d="${areaPath}" fill="url(#chartFade)"/>
     <path d="${linePath}" fill="none" stroke="var(--sa-accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    ${segmentEnCours ? `<path d="${segmentEnCours}" fill="none" stroke="var(--sa-accent)" stroke-width="2" stroke-dasharray="4 3" stroke-linecap="round" opacity="0.6"/>` : ""}
     ${moisLabels}
   </svg>`;
 }
@@ -1513,16 +1524,21 @@ async function loadStatistiques() {
   try {
     const a = await Api.analytics();
     const caTotal = a.ca_par_mois.reduce((s, m) => s + m.ca, 0);
-    // Delta honnete : dernier mois vs precedent (mêmes points deja recus),
-    // pas une periode fabriquee.
+    // Le dernier point de la serie est le mois EN COURS. Comparer un mois
+    // commence il y a trois jours au mois complet qui le precede produisait
+    // une chute mecanique, annoncee comme un recul reel. La comparaison porte
+    // donc sur les deux derniers mois COMPLETS, et le libelle le dit.
     const nbMois = a.ca_par_mois.length;
-    const dernierMois = nbMois ? a.ca_par_mois[nbMois - 1].ca : 0;
-    const moisPrecedent = nbMois > 1 ? a.ca_par_mois[nbMois - 2].ca : null;
-    const deltaPct = moisPrecedent ? Math.round(((dernierMois - moisPrecedent) / moisPrecedent) * 100) : null;
+    const moisEnCours = nbMois ? a.ca_par_mois[nbMois - 1] : null;
+    const dernierComplet = nbMois > 1 ? a.ca_par_mois[nbMois - 2] : null;
+    const avantDernierComplet = nbMois > 2 ? a.ca_par_mois[nbMois - 3] : null;
+    const deltaPct = dernierComplet && avantDernierComplet && avantDernierComplet.ca
+      ? Math.round(((dernierComplet.ca - avantDernierComplet.ca) / avantDernierComplet.ca) * 100)
+      : null;
 
-    const chartHtml = a.ca_par_mois.length
-      ? caAreaChartSvg(a.ca_par_mois)
-      : '<div class="dash-empty">Pas encore de paiement enregistré.</div>';
+    const chartHtml = a.ca_par_mois.some((m) => m.ca > 0)
+      ? caAreaChartSvg(a.ca_par_mois, { dernierEnCours: true })
+      : '<div class="dash-empty">Aucun paiement encaissé sur les douze derniers mois.</div>';
 
     const sourcesHtml = a.sources_acquisition.length
       ? a.sources_acquisition.map((s) => {
@@ -1536,8 +1552,13 @@ async function loadStatistiques() {
         }).join("")
       : '<div class="dash-empty">Pas encore de contact enregistré.</div>';
 
+    // « Devis envoyés » comptait en realite TOUS les devis, brouillons
+    // compris (nb_devis_total). Un devis jamais sorti du bureau etait
+    // presente comme envoye au client, et le taux de conversion affiche en
+    // dessous s'en trouvait fausse. Le libelle dit maintenant ce que le
+    // nombre contient.
     const commercialSteps = [
-      { label: "Devis envoyés", nb: a.nb_devis_total },
+      { label: "Devis créés", nb: a.nb_devis_total },
       { label: "Devis signés", nb: a.nb_devis_signes },
       { label: "Clients acquis", nb: a.nb_clients_acquis },
     ];
@@ -1558,14 +1579,11 @@ async function loadStatistiques() {
         </div>`;
     }).join("");
 
-    const recurrentPct = a.nb_clients_acquis
-      ? Math.round((a.nb_clients_recurrents / a.nb_clients_acquis) * 100)
-      : 0;
     const topSource = a.sources_acquisition.slice().sort((x, y) => y.nb_gagnes - x.nb_gagnes || y.ca - x.ca)[0] || null;
     const pointsCles = [
       deltaPct === null
-        ? "Le suivi mensuel sera comparable après deux mois de paiements."
-        : `Le chiffre d'affaires du dernier mois ${deltaPct >= 0 ? "progresse" : "recule"} de ${Math.abs(deltaPct)}% par rapport au mois précédent.`,
+        ? "Le suivi mensuel sera comparable après deux mois complets de paiements."
+        : `Sur les deux derniers mois complets, le chiffre d'affaires ${deltaPct >= 0 ? "progresse" : "recule"} de ${Math.abs(deltaPct)} % (${fmtMoisCourt(dernierComplet.mois)} contre ${fmtMoisCourt(avantDernierComplet.mois)}).`,
       topSource
         ? `${CLIENT_SOURCE_LABELS[topSource.source] || topSource.source} est la première source d'acquisition avec ${topSource.nb_gagnes} client${topSource.nb_gagnes > 1 ? "s" : ""} gagné${topSource.nb_gagnes > 1 ? "s" : ""}.`
         : "Aucune source d'acquisition n'est encore mesurable.",
@@ -1590,32 +1608,38 @@ async function loadStatistiques() {
         <div class="stats-ca">
           <div class="stats-ca-tete">
             <span class="stats-ca-valeur">${fmtEuro(caTotal)}</span>
-            <span class="stats-ca-note">encaissé${deltaPct !== null ? ` · <span class="${deltaPct >= 0 ? "est-hausse" : "est-baisse"}">${deltaPct >= 0 ? "+" : ""}${deltaPct} % sur le dernier mois</span>` : ""}</span>
+            <span class="stats-ca-note">encaissé${deltaPct !== null ? ` · <span class="${deltaPct >= 0 ? "est-hausse" : "est-baisse"}">${deltaPct >= 0 ? "+" : ""}${deltaPct} % entre les deux derniers mois complets</span>` : ""}</span>
           </div>
           <div class="stats-chart-wrap">${chartHtml}</div>
+          ${moisEnCours ? `<p class="stats-note">Le dernier point (${escapeHtml(fmtMoisCourt(moisEnCours.mois))}) est le mois en cours : il n'est pas encore comparable aux autres, et son trait reste en pointillé.</p>` : ""}
           <div class="stats-ca-legende">
             <span>Pipeline <strong>${fmtEuro(a.valeur_pipeline)}</strong></span>
             <span>Encore à encaisser <strong>${fmtEuro(a.montant_impayes)}</strong></span>
+            <span class="stats-ca-legende-note">à aujourd'hui, pas sur douze mois</span>
           </div>
         </div>`, "douze derniers mois")}
 
+      ${/* Chacune des trois sections suivantes porte enfin sa periode. Elles
+            comptent depuis l'ouverture du compte, quand celle du dessus couvre
+            douze mois : rien ne le disait, et les quatre blocs se lisaient
+            comme un seul tableau de bord du moment. */""}
       ${saSection("Performance commerciale", `
         <div class="stats-commercial-funnel">${commercialFunnelHtml}</div>
         <div class="stats-metric-list">
           <div><span>Taux de signature</span><strong>${a.taux_acceptation === null || a.taux_acceptation === undefined ? "—" : a.taux_acceptation + " %"}</strong></div>
           <div><span>Panier moyen</span><strong>${fmtEuro(a.panier_moyen)}</strong></div>
           <div><span>Valeur du pipeline</span><strong>${fmtEuro(a.valeur_pipeline)}</strong></div>
-        </div>`)}
+        </div>`, "depuis l'ouverture du compte")}
 
       ${saSection("Acquisition", `<div class="acq-source-list">${sourcesHtml}</div>`,
-        "d'où viennent vos clients")}
+        "tous vos contacts, depuis l'ouverture")}
 
       ${saSection("Clients et paiements", `
         <div class="stats-metric-list">
-          <div><span>Clients récurrents</span><strong>${recurrentPct} %</strong></div>
+          <div><span>Clients avec plusieurs devis signés</span><strong>${a.nb_clients_recurrents}</strong></div>
           <div><span>Délai moyen de paiement</span><strong>${a.delai_moyen_paiement_jours !== null ? a.delai_moyen_paiement_jours + " j" : "—"}</strong></div>
           <div><span>Montant impayé</span><strong>${fmtEuro(a.montant_impayes)}</strong></div>
-        </div>`)}
+        </div>`, "depuis l'ouverture du compte")}
     `;
   } catch (err) {
     container.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;

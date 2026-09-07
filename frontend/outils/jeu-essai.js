@@ -119,7 +119,13 @@ Api.planning = async () => {
     { date: demain(8), date_fin: null, type: "chantier_debut", titre: "Début chantier : Villa Ducros", reference_id: 2, client_id: 1, chantier_id: 2, lieu: null },
   ];
 };
-Api.analytics = async () => ({ ca_par_mois: [4200, 5100, 6400, 8100, 9200, 11650].map((ca, i) => { const d = new Date(); d.setMonth(d.getMonth() - (5 - i)); return { mois: d.toISOString().slice(0, 7), ca }; }), valeur_pipeline: 42100, montant_impayes: 13340, nb_devis_total: 48, nb_devis_signes: 21, nb_clients_acquis: 18, nb_clients_recurrents: 7, taux_acceptation: 58, panier_moyen: 6420, delai_moyen_paiement_jours: 34, sources_acquisition: [{ source: "site_vitrine", nb_clients: 15, nb_gagnes: 5, ca: 31200 }] });
+// Le serveur renvoie DOUZE mois pleins, mois en cours compris et mois sans
+// encaissement a zero (routers/analytics.py). Les creux comptent autant que
+// les pics : c'est justement ce que l'ancienne serie - construite sur les
+// seuls mois encaissants - effacait du graphique. Le dernier mois est
+// volontairement bas : il est en cours, et la vue doit le montrer comme tel
+// plutot que comme un effondrement.
+Api.analytics = async () => ({ ca_par_mois: [3100, 0, 4200, 5100, 0, 0, 6400, 8100, 7300, 9200, 11650, 1480].map((ca, i) => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - (11 - i)); return { mois: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`, ca }; }), valeur_pipeline: 42100, montant_impayes: 13340, nb_devis_total: 48, nb_devis_signes: 21, nb_clients_acquis: 18, nb_clients_recurrents: 7, taux_acceptation: 58, panier_moyen: 6420, delai_moyen_paiement_jours: 34, sources_acquisition: [{ source: "site_vitrine", nb_clients: 15, nb_gagnes: 5, ca: 31200 }] });
 // AvisOut : la source est requise et porte un libelle (AVIS_SOURCE_LABELS),
 // l'etat de publication s'appelle `publie_site`. Le jeu d'essai disait
 // `publie` et omettait `source` : la carte affichait « undefined » a cote de

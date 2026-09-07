@@ -11,7 +11,7 @@
      DIRECTION-ARTISTIQUE.md. Les deux feuilles superposees d'avant ont ete
      fondues ici, verification faite par comparaison des styles calcules
      sur les douze vues (voir outils/empreinte-styles.js). -->
-<link rel="stylesheet" href="style.css?v=20260907-planning">
+<link rel="stylesheet" href="style.css?v=20260907-stats">
 <!-- Habillage de l'ecran connexion/inscription. Charge APRES style.css,
      tous ses selecteurs sont ancres sous .auth-screen : rien ne fuit vers
      le SaaS. Supprimer cette ligne rend l'ecran a son etat precedent. -->
@@ -757,7 +757,12 @@
           <h2>Statistiques</h2>
           <p class="view-header-desc">Analysez les performances et l'évolution de votre activité.</p>
         </div>
-        <span class="stats-period-control" aria-label="Période analysée">12 derniers mois</span>
+        <!-- La pastille « 12 derniers mois » annoncait cette periode pour TOUTE
+             la page, alors que seul le chiffre d'affaires est mensuel : le taux
+             de signature, l'acquisition et les delais de paiement comptent
+             depuis l'ouverture du compte. Elle avait de surcroit l'allure d'un
+             selecteur de periode, sans rien selectionner. Chaque section porte
+             desormais sa propre portee, a cote de son intitule. -->
       </div>
       <div id="statistiques-content"></div>
     </section>
@@ -1112,7 +1117,7 @@
 <script src="env.js"></script>
 <script src="config.js"></script>
 <script src="pricing.js"></script>
-<script src="api.js?v=20260907-planning"></script>
-<script src="app.js?v=20260907-planning"></script>
+<script src="api.js?v=20260907-stats"></script>
+<script src="app.js?v=20260907-stats"></script>
 </body>
 </html>

@@ -823,7 +823,6 @@ input[readonly] { background: var(--sa-surface-2); }
 .pill-green { background: var(--sa-success-soft); color: var(--sa-success); }
 
 /* ---------- Statistiques : composition dense, toujours alimentee par Api.analytics(). ---------- */
-.stats-period-control { display: inline-flex; align-items: center; min-height: 30px; padding: 5px 10px; border: 1px solid var(--sa-border); border-radius: var(--sa-radius-sm); }
 .stats-panel, .stats-ca-panel { background: var(--sa-surface); border: 1px solid var(--sa-border); border-radius: var(--sa-radius-lg); }
 .stats-panel { padding: 12px 14px; }
 .stats-panel h4 { margin: 0 0 9px; color: var(--sa-text); font-size: var(--sa-text-xs); font-weight: var(--sa-weight-bold); text-transform: uppercase; }
@@ -3075,6 +3074,13 @@ label { color: var(--sa-text-muted); }
   font-size: var(--sa-text-sm); color: var(--sa-text-muted);
 }
 .stats-ca-legende strong { color: var(--sa-text); font-family: var(--sa-font-display); font-weight: 500; font-variant-numeric: tabular-nums; }
+/* Pipeline et impayes sont des soldes A CET INSTANT, pas des cumuls sur
+   douze mois comme le CA au-dessus. Sous un intitule « douze derniers mois »,
+   ils se lisaient pourtant comme tels : la mention corrige la portee, a la
+   fin de la ligne ou elle sera lue au meme moment que les deux montants. */
+.stats-ca-legende-note { margin-left: auto; font-style: italic; color: var(--sa-text-faint); }
+/* Une precision sur la lecture du graphique, sous le graphique. */
+.stats-note { margin-top: var(--sa-space-3); font-size: var(--sa-text-xs); color: var(--sa-text-muted); max-width: 68ch; }
 
 /* Le graphique : une courbe a l'encre sur du papier reglé. Les reglures
    sont sous le seuil de contraste - elles reperent, elles ne structurent
@@ -3119,7 +3125,6 @@ label { color: var(--sa-text-muted); }
 .acq-source-bar .remplissage { height: 100%; background: var(--sa-accent); border-radius: 3px; }
 .acq-source-value { font-size: var(--sa-text-xs); color: var(--sa-text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
-.stats-period-control { font-size: var(--sa-text-xs); color: var(--sa-text-faint); }
 
 @media (max-width: 760px) {
   .stats-lecture p { font-size: var(--sa-text-md); }

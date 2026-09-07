@@ -1,0 +1,103 @@
+/* Les statistiques doivent dire de QUOI elles parlent, et sur quelle periode.
+ *
+ * Trois defauts de presentation, tous invisibles a l'oeil parce que les
+ * chiffres eux-memes etaient exacts :
+ *   1. la page portait une pastille « 12 derniers mois » valable pour le seul
+ *      chiffre d'affaires ; le taux de signature, l'acquisition et les delais
+ *      de paiement comptent depuis l'ouverture du compte ;
+ *   2. le dernier point de la courbe est le mois EN COURS. Compare au mois
+ *      complet qui le precede, il produisait un recul mecanique annonce comme
+ *      un recul reel - et trace plein, il ressemblait a un effondrement ;
+ *   3. l'etape « Devis envoyés » comptait en realite tous les devis,
+ *      brouillons compris.
+ */
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import vm from "node:vm";
+import { fileURLToPath } from "node:url";
+
+const frontendDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const appPath = path.join(frontendDir, "app.js");
+const appSource = fs.readFileSync(appPath, "utf8");
+const indexSource = fs.readFileSync(path.join(frontendDir, "index.html"), "utf8");
+const analyticsSource = fs.readFileSync(path.resolve(frontendDir, "..", "backend", "app", "routers", "analytics.py"), "utf8");
+
+// ---------------------------------------------------------------------
+// 1. Le serveur renvoie la fenetre entiere, trous compris.
+// ---------------------------------------------------------------------
+assert.match(analyticsSource, /for i in range\(NB_MOIS_FENETRE\)/,
+  "la serie doit etre construite sur la fenetre, pas sur les mois encaissants");
+assert.doesNotMatch(analyticsSource, /sorted\(ca_par_mois_dict\.items\(\)\)/,
+  "iterer le dictionnaire des paiements laisserait retomber les mois vides");
+assert.doesNotMatch(analyticsSource, /timedelta\(days=365\)/,
+  "un recul de 365 jours tronque le premier mois de la fenetre");
+
+// ---------------------------------------------------------------------
+// 2. La page ne porte plus une periode unique pour des blocs qui n'en
+//    partagent pas.
+// ---------------------------------------------------------------------
+assert.doesNotMatch(indexSource, /stats-period-control/, "la pastille de periode globale doit avoir disparu");
+const vue = appSource.slice(appSource.indexOf("async function loadStatistiques"), appSource.indexOf("// ===================== Avis clients"));
+for (const [section, periode] of [
+  ["Chiffre d'affaires", "douze derniers mois"],
+  ["Performance commerciale", "depuis l'ouverture du compte"],
+  ["Acquisition", "depuis l'ouverture"],
+  ["Clients et paiements", "depuis l'ouverture du compte"],
+]) {
+  const bloc = vue.slice(vue.indexOf(`saSection("${section}"`));
+  assert.ok(bloc.slice(0, 2200).includes(periode), `la section « ${section} » doit annoncer « ${periode} »`);
+}
+// Pipeline et impayes sont des soldes a l'instant, pas des cumuls sur un an.
+assert.match(vue, /stats-ca-legende-note/, "la legende du CA doit corriger la portee de ses deux soldes");
+
+// ---------------------------------------------------------------------
+// 3. La comparaison porte sur deux mois COMPLETS.
+// ---------------------------------------------------------------------
+assert.match(vue, /dernierComplet = nbMois > 1 \? a\.ca_par_mois\[nbMois - 2\]/,
+  "le mois de reference est l'avant-dernier point : le dernier est en cours");
+assert.match(vue, /avantDernierComplet = nbMois > 2 \? a\.ca_par_mois\[nbMois - 3\]/);
+assert.match(vue, /deux derniers mois complets/, "le libelle doit nommer la periode comparee");
+assert.match(vue, /caAreaChartSvg\(a\.ca_par_mois, \{ dernierEnCours: true \}\)/);
+
+// ---------------------------------------------------------------------
+// 4. Le libelle de l'entonnoir dit ce que le nombre contient.
+// ---------------------------------------------------------------------
+assert.match(vue, /label: "Devis créés", nb: a\.nb_devis_total/,
+  "nb_devis_total compte aussi les brouillons : il ne peut pas s'appeler « envoyés »");
+assert.doesNotMatch(vue, /"Devis envoyés", nb: a\.nb_devis_total/);
+// Un pourcentage bati sur deux populations differentes a disparu.
+assert.doesNotMatch(vue, /recurrentPct/, "le ratio clients recurrents / clients gagnes melait deux ensembles");
+assert.match(vue, /Clients avec plusieurs devis signés/, "le libelle doit decrire exactement ce qui est compte");
+
+// ---------------------------------------------------------------------
+// 5. Le graphique, execute : le mois en cours n'est pas trace comme les
+//    autres, et l'aplat s'arrete avant lui.
+// ---------------------------------------------------------------------
+const debut = appSource.indexOf("function caAreaChartSvg");
+const fin = appSource.indexOf("function mixHexColors");
+const contexte = {
+  fmtEuro: (v) => `${v} €`,
+  fmtMoisCourt: (m) => m,
+};
+vm.runInNewContext(
+  `${appSource.slice(debut, fin)}\nglobalThis.__c = { caAreaChartSvg };`,
+  contexte,
+  { filename: appPath },
+);
+const serie = Array.from({ length: 12 }, (_, i) => ({ mois: `2026-${String(i + 1).padStart(2, "0")}`, ca: 1000 * (i + 1) }));
+
+const complet = contexte.__c.caAreaChartSvg(serie);
+assert.doesNotMatch(complet, /stroke-dasharray/, "sans mois en cours, aucun trait pointille");
+
+const enCours = contexte.__c.caAreaChartSvg(serie, { dernierEnCours: true });
+assert.match(enCours, /stroke-dasharray/, "le mois en cours doit se distinguer du trace plein");
+const cheminPlein = /<path d="(M[^"]+)" fill="none" stroke="var\(--sa-accent\)" stroke-width="2" stroke-linejoin/.exec(enCours)[1];
+assert.equal((cheminPlein.match(/[ML]/g) || []).length, serie.length - 1,
+  "le trace plein doit s'arreter au dernier mois complet");
+// Les douze etiquettes de mois restent produites, y compris pour les mois a zero.
+const creux = serie.map((m, i) => ({ ...m, ca: i % 3 === 0 ? 0 : m.ca }));
+const avecCreux = contexte.__c.caAreaChartSvg(creux);
+assert.ok((avecCreux.match(/chart-axis-label/g) || []).length > 5, "un mois a zero reste un point du graphique");
+
+console.log("OK - statistiques-periodes.test.mjs");
