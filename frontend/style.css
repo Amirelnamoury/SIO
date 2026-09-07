@@ -206,7 +206,7 @@ p { margin: 0 0 var(--sa-space-3); }
 /* Nombres (montants, dates, quantites) : chiffres alignes sur une largeur
    fixe pour un vrai scan visuel en colonne. */
 .tabular-nums, .item-amount, .plan-price, .kpi-value, .list-row-amount,
-.item-meta, .sante-score-global .chiffre { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+.item-meta { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
@@ -799,12 +799,11 @@ input[readonly] { background: var(--sa-surface-2); }
 .recommandation-row-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
 /* ---------- Sante de l'entreprise ---------- */
-.sante-widget { display: flex; align-items: center; gap: var(--sa-space-8); flex-wrap: wrap; }
-.sante-score-global { text-align: left; flex-shrink: 0; }
-.sante-score-global .chiffre { font-family: var(--sa-font-display); font-size: 1.9rem; font-weight: var(--sa-weight-bold); color: var(--sa-accent); line-height: 1; }
-.sante-score-global .sur-cent { font-size: var(--sa-text-sm); color: var(--sa-text-muted); font-weight: var(--sa-weight-medium); }
-.sante-score-global .libelle { font-size: var(--sa-text-xs); color: var(--sa-text-muted); margin-top: 4px; }
-.sante-sous-scores { flex: 1; min-width: 240px; display: flex; flex-direction: column; gap: var(--sa-space-3); }
+/* Le grand chiffre du « score global » occupait la colonne de gauche ; il a
+   ete retire (voir santeWidgetHtml). Les cinq mesures prennent toute la
+   largeur, chacune suivie de ce qu'elle compte. */
+.sante-widget { display: block; }
+.sante-sous-scores { display: flex; flex-direction: column; gap: var(--sa-space-4); }
 .sante-sous-score .ligne { display: flex; align-items: center; justify-content: space-between; font-size: var(--sa-text-xs); margin-bottom: 4px; }
 .sante-sous-score .ligne .valeur { font-weight: var(--sa-weight-bold); }
 .sante-barre { height: 4px; border-radius: var(--sa-radius-full); overflow: hidden; }
@@ -978,6 +977,9 @@ input[type="checkbox"], input[type="radio"] { width: 24px; height: 24px; flex-sh
 .item-card.is-due { box-shadow: inset 2px 0 0 var(--sa-danger); padding-left: 14px; }
 .chantier-card { scroll-margin-block: 24px; }
 .chantier-card.is-focused { box-shadow: inset 2px 0 0 var(--sa-accent); padding-left: 14px; }
+/* Meme signe pour une tache atteinte depuis le planning : un cran dans la
+   marge, le temps de la retrouver des yeux. */
+.tache-row.is-focused { box-shadow: inset 2px 0 0 var(--sa-accent); }
 
 #view-chantiers .view-header { margin-bottom: 34px; }
 #view-chantiers .view-header-actions { margin-top: 20px; }
@@ -2173,6 +2175,9 @@ label { color: var(--sa-text-muted); }
    « Montant (euros) * · Solde 1 840,00 € », trois informations en une. */
 .form-box-titre { margin: 0 0 var(--sa-space-4); font-family: var(--sa-font-display); font-size: 1.05rem; font-weight: 600; color: var(--sa-text); }
 .champ-aide { margin: 5px 0 0; font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
+/* Un montant qui depasse le solde n'est pas une erreur de saisie tant que
+   rien n'est envoye : la mention prend l'encre d'alerte, sans bloquer. */
+.champ-aide.est-alerte { color: var(--sa-danger); font-weight: var(--sa-weight-medium); }
 .chantier-chiffres { margin: var(--sa-space-4) 0 var(--sa-space-5); }
 .chantier-chiffres .dash-chiffre-valeur { font-size: 1.12rem; }
 .chantier-chiffres .est-negatif { color: var(--sa-danger); }

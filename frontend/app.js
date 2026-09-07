@@ -1789,14 +1789,20 @@ async function loadStatistiques() {
     // dessous s'en trouvait fausse. Le libelle dit maintenant ce que le
     // nombre contient.
     const commercialSteps = [
-      { label: "Devis créés", nb: a.nb_devis_total },
-      { label: "Devis signés", nb: a.nb_devis_signes },
-      { label: "Clients acquis", nb: a.nb_clients_acquis },
+      { label: "Devis créés", nb: a.nb_devis_total, population: "devis" },
+      { label: "Devis signés", nb: a.nb_devis_signes, population: "devis" },
+      { label: "Clients acquis", nb: a.nb_clients_acquis, population: "clients" },
     ];
+    // Le pourcentage n'est calcule qu'entre deux etapes qui comptent LA MEME
+    // CHOSE. « Devis signés / Devis créés » compare des devis a des devis :
+    // c'est un taux. « Clients acquis / Devis signés » comparait 18 clients a
+    // 21 devis et affichait « 86 % » : deux populations differentes, un
+    // pourcentage qui ne veut rien dire. Astra l'interdit nommement pour cet
+    // ecran, et le nombre seul reste parfaitement utile.
     const commercialFunnelHtml = commercialSteps.map((etape, i) => {
-      const precedent = i > 0 ? commercialSteps[i - 1].nb : 0;
-      const conversion = i > 0 && precedent && etape.nb <= precedent
-        ? Math.round((etape.nb / precedent) * 100)
+      const precedent = i > 0 ? commercialSteps[i - 1] : null;
+      const conversion = precedent && precedent.population === etape.population && precedent.nb && etape.nb <= precedent.nb
+        ? Math.round((etape.nb / precedent.nb) * 100)
         : null;
       // Le degrade etait calcule en inline sur des valeurs de l'ancienne
       // identite sombre : sur du papier, le texte y tombait jusqu'a
@@ -2943,7 +2949,27 @@ function recommandationRowHtml(r) {
   </div>`;
 }
 
+// Ce que chaque sous-score MESURE, mot pour mot d'apres son calcul serveur
+// (routers/dashboard.py). Sans cette phrase, « Commercial 65/100 » est exact
+// et illisible : le chiffre n'a aucune source visible, et l'artisan ne peut ni
+// le verifier ni savoir quoi faire pour le bouger.
+const SANTE_MESURES = {
+  commercial: "devis signés parmi les devis décidés",
+  tresorerie: "part du montant à encaisser qui n'est pas en retard",
+  chantiers: "chantiers qui tiennent leur budget",
+  conformite: "25 points retirés par document expiré ou proche de l'échéance",
+  organisation: "tâches à échéance qui ne sont pas en retard",
+};
+
+// Les libelles arrivent du serveur sans accents (« Tresorerie ») : on
+// normalise avant de chercher, plutot que de dupliquer les deux graphies.
+function santeMesure(label) {
+  const cle = String(label || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  return SANTE_MESURES[cle] || "";
+}
+
 function sousScoreHtml(s) {
+  const mesure = santeMesure(s.label);
   if (s.valeur === null || s.valeur === undefined) {
     return `<div class="sante-sous-score">
       <div class="ligne"><span>${s.label}</span></div>
@@ -2961,18 +2987,26 @@ function sousScoreHtml(s) {
   return `<div class="sante-sous-score">
     <div class="ligne"><span>${s.label}</span><span class="valeur">${s.valeur}/100</span></div>
     <div class="sante-barre"><div class="remplissage" style="width:${s.valeur}%;background:${couleur};"></div></div>
+    ${mesure ? `<div class="raison">${escapeHtml(mesure)}</div>` : ""}
   </div>`;
 }
 
+// Le « Score global » a disparu de l'ecran. Le serveur le calcule toujours -
+// on ne touche pas au contrat d'API - mais c'etait la MOYENNE ARITHMETIQUE de
+// cinq echelles qui n'ont aucune unite commune : un taux de signature, une
+// part de montant non en retard, une part de chantiers dans leur budget, une
+// penalite de 25 points par document expire, une part de taches a l'heure.
+// « 72/100 » ne designait donc aucun fait d'entreprise, et personne ne pouvait
+// dire quoi faire pour le changer. Les cinq mesures, elles, sont vraies,
+// sourcees, et disent chacune ce qu'elle compte.
 function santeWidgetHtml(sante) {
   const sousScores = [sante.commercial, sante.tresorerie, sante.chantiers, sante.conformite, sante.organisation];
+  const mesurables = sousScores.filter((s) => s && s.valeur !== null && s.valeur !== undefined);
   return `
   <div class="sante-widget">
-    <div class="sante-score-global">
-      ${sante.score_global !== null && sante.score_global !== undefined
-        ? `<div class="chiffre">${sante.score_global}<span class="sur-cent">/100</span></div><div class="libelle">Score global</div>`
-        : `<div class="dash-empty" style="max-width:160px;">${escapeHtml(sante.raison_absence_globale || "Pas assez de données.")}</div>`}
-    </div>
+    ${mesurables.length
+      ? ""
+      : `<p class="dash-vide">${escapeHtml(sante.raison_absence_globale || "Pas encore assez de données pour mesurer quoi que ce soit.")}</p>`}
     <div class="sante-sous-scores">
       ${sousScores.map(sousScoreHtml).join("")}
     </div>
@@ -3210,7 +3244,10 @@ async function loadDashboard() {
         label: "Factures en retard",
         items: d.aujourdhui.factures_en_retard.map((f) => ({
           urgence: "haute", view: "factures", objet: "facture", objetId: f.id,
-          titre: escapeHtml(f.client_nom), meta: `${escapeHtml(f.numero)} · en retard`,
+          // L'echeance depassee EST l'information. « En retard » sans date
+          // oblige a ouvrir la facture pour savoir de combien.
+          titre: escapeHtml(f.client_nom),
+          meta: `${escapeHtml(f.numero)} · échéance ${f.date_echeance ? fmtDate(f.date_echeance) : "non fixée"}`,
           montant: fmtEuro(f.montant_restant),
           label: `${escapeHtml(f.numero)} · ${escapeHtml(f.client_nom)} · ${fmtEuro(f.montant_restant)} en retard`,
           ...(hasPlan("essentiel") ? { action: "relancer-facture", actionId: f.id, actionLabel: "Relancer" } : {}),
@@ -3220,7 +3257,8 @@ async function loadDashboard() {
         label: "Devis à relancer",
         items: d.aujourdhui.devis_a_relancer.map((dv) => ({
           urgence: "moyenne", view: "devis", objet: "devis", objetId: dv.id,
-          titre: escapeHtml(dv.client_nom), meta: escapeHtml(dv.numero || "Devis #" + dv.id),
+          titre: escapeHtml(dv.client_nom),
+          meta: `${escapeHtml(dv.numero || "Devis #" + dv.id)}${dv.date_envoi ? ` · envoyé le ${fmtDate(dv.date_envoi)}` : ""}`,
           label: `Relancer ${escapeHtml(dv.client_nom)} (${escapeHtml(dv.numero || "devis #" + dv.id)})`,
           ...(hasPlan("essentiel") && dv.relance_manuelle_possible !== false
             ? { action: "relancer-devis", actionId: dv.id, actionLabel: "Relancer" }
@@ -3240,6 +3278,7 @@ async function loadDashboard() {
         items: d.aujourdhui.taches.map((t) => ({
           urgence: "moyenne", view: "taches",
           titre: escapeHtml(t.titre),
+          meta: t.echeance ? `échéance ${fmtDate(t.echeance)}` : "sans échéance",
           label: `Tache du jour : ${escapeHtml(t.titre)}`,
         })),
       },
@@ -5021,6 +5060,12 @@ async function showDevisForm(devis, preselectClientId) {
   const formEl = document.getElementById("devis-form");
   attacherEditeurLignes(formEl);
   brancherTotalisateur(formEl, "df-lignes");
+  // Empreinte du formulaire A L'OUVERTURE : c'est elle qui dira, au moment
+  // d'annuler, si quelque chose a vraiment ete saisi. Un simple test « des
+  // champs sont non vides » se declenchait sur les valeurs par defaut (TVA,
+  // pourcentage d'acompte) et aurait reclame une confirmation sur un
+  // formulaire auquel personne n'avait touche.
+  container.dataset.empreinte = empreinteFormulaire(container);
 
   if (!isEdit) {
     const btnExistant = document.getElementById("df-client-existant");
@@ -5245,13 +5290,40 @@ function setupDevisView() {
   });
 
   document.querySelector('[data-action="show-devis-form"]').addEventListener("click", () => showDevisForm(null));
-  document.getElementById("devis-form-container").addEventListener("click", (e) => {
+  document.getElementById("devis-form-container").addEventListener("click", async (e) => {
     if (e.target.closest('[data-action="cancel-devis-form"]')) {
       const container = document.getElementById("devis-form-container");
+      // Un devis se chiffre ligne par ligne : Annuler pouvait effacer un quart
+      // d'heure de saisie sans un mot. On ne demande QUE si quelque chose a
+      // reellement ete saisi - une confirmation systematique sur un
+      // formulaire vide n'est qu'un obstacle de plus.
+      if (devisFormModifie(container) && !(await confirmDialog(
+        "Ce devis n'est pas enregistré. Ses lignes et son chiffrage seront perdus.",
+        { title: "Abandonner ce devis ?", confirmLabel: "Abandonner", danger: true },
+      ))) return;
       container.hidden = true;
       container.innerHTML = "";
     }
   });
+}
+
+/** Etat de tous les champs d'un formulaire, sous forme comparable. */
+function empreinteFormulaire(container) {
+  return [...container.querySelectorAll("input, select, textarea")]
+    .map((champ) => `${champ.id || champ.name || ""}=${champ.type === "checkbox" ? champ.checked : champ.value}`)
+    .join("");
+}
+
+/** Le formulaire a-t-il change depuis son ouverture ?
+ *
+ *  On compare a l'empreinte prise au rendu plutot que de chercher des champs
+ *  non vides : les valeurs par defaut (TVA, acompte) rendaient tout
+ *  formulaire « rempli » des la premiere seconde. Ajouter une ligne modifie
+ *  aussi l'empreinte, ce qui est exactement ce qu'on veut proteger. */
+function devisFormModifie(container) {
+  const initiale = container.dataset.empreinte;
+  if (initiale === undefined) return false;
+  return empreinteFormulaire(container) !== initiale;
 }
 
 // ===================== Factures =====================
@@ -5708,6 +5780,7 @@ function showPaiementForm(factureId, soldeRestant) {
           <label for="pay-montant-${factureId}">Montant (euros) *</label>
           <input type="number" step="0.01" min="0.01" max="${maximum}" id="pay-montant-${factureId}" value="${maximum}" required>
           <p class="champ-aide">Solde restant : ${fmtEuro(soldeRestant)}. Modifiable pour un règlement partiel.</p>
+          <p class="champ-aide" id="pay-apres-${factureId}" aria-live="polite"></p>
         </div>
         <div><label for="pay-date-${factureId}">Date</label><input type="date" id="pay-date-${factureId}" value="${today}"></div>
         <div>
@@ -5728,6 +5801,27 @@ function showPaiementForm(factureId, soldeRestant) {
         <button type="button" class="btn-sm" data-action="cancel-paiement-form" data-id="${factureId}">Annuler</button>
       </div>
     </div>`;
+
+  // Le troisieme chiffre : ce qu'il restera APRES. Le formulaire montrait le
+  // solde avant et le montant saisi, et laissait la soustraction a l'artisan -
+  // sur une facture reglee en trois fois, c'est justement le chiffre qu'il
+  // cherche. Purement local : aucune donnee nouvelle, la meme soustraction que
+  // le serveur refera a l'enregistrement.
+  const champMontant = document.getElementById(`pay-montant-${factureId}`);
+  const apres = document.getElementById(`pay-apres-${factureId}`);
+  const majApres = () => {
+    const montant = parseFloat(champMontant.value);
+    if (!Number.isFinite(montant) || montant <= 0) { apres.textContent = ""; return; }
+    const reste = Math.round((Number(soldeRestant) - montant) * 100) / 100;
+    apres.textContent = reste > 0
+      ? `Après ce règlement, il restera ${fmtEuro(reste)}.`
+      : reste === 0
+        ? "Après ce règlement, la facture sera soldée."
+        : `Ce montant dépasse le solde de ${fmtEuro(-reste)}.`;
+    apres.classList.toggle("est-alerte", reste < 0);
+  };
+  champMontant.addEventListener("input", majApres);
+  majApres();
 }
 
 function showFactureForm() {
@@ -6263,10 +6357,23 @@ function chantiersKpiBandHtml(chantiers) {
   const retardMax = enRetard.reduce((m, c) => Math.max(m, chantierJoursRetard(c)), 0);
   const depasses = chantiers.filter((c) => c.budget && (c.total_depenses || 0) > c.budget);
   const tendus = chantiers.filter((c) => chantierEstASurveiller(c) && !depasses.includes(c));
-  const margeTotale = chantiers.reduce((s, c) => {
-    const m = c.marge_reelle !== null && c.marge_reelle !== undefined ? c.marge_reelle : c.marge_estimee;
-    return s + (m || 0);
-  }, 0);
+  // Le total substituait la marge ESTIMEE a la marge REELLE des qu'elle
+  // manquait, et presentait la somme comme un seul chiffre. Un portefeuille ou
+  // un seul chantier est termine se lisait donc comme s'il etait tout mesure.
+  // On compte les deux natures, et le libelle dit de quoi le total est fait.
+  const marge = chantiers.reduce((acc, c) => {
+    if (c.marge_reelle !== null && c.marge_reelle !== undefined) {
+      acc.total += c.marge_reelle; acc.mesures += 1;
+    } else if (c.marge_estimee !== null && c.marge_estimee !== undefined) {
+      acc.total += c.marge_estimee; acc.estimes += 1;
+    }
+    return acc;
+  }, { total: 0, mesures: 0, estimes: 0 });
+  const margeLibelle = marge.estimes && marge.mesures
+    ? `marge <strong>${fmtEuro(marge.total)}</strong>, dont ${marge.estimes} chantier${marge.estimes > 1 ? "s" : ""} encore estimé${marge.estimes > 1 ? "s" : ""}`
+    : marge.estimes
+      ? `marge prévisionnelle <strong>${fmtEuro(marge.total)}</strong>`
+      : `marge réelle <strong>${fmtEuro(marge.total)}</strong>`;
 
   // La charge : de quoi est fait le portefeuille ouvert.
   const charge = [`<strong>${ouverts}</strong> chantier${ouverts > 1 ? "s" : ""} ouvert${ouverts > 1 ? "s" : ""}`];
@@ -6282,7 +6389,7 @@ function chantiersKpiBandHtml(chantiers) {
   }
   if (depasses.length) signaux.push(`<strong class="est-retard">${depasses.length}</strong> au-delà du budget`);
   if (tendus.length) signaux.push(`<strong class="est-tendu">${tendus.length}</strong> à surveiller`);
-  if (margeTotale) signaux.push(`marge prévisionnelle <strong>${fmtEuro(margeTotale)}</strong>`);
+  if (marge.mesures || marge.estimes) signaux.push(margeLibelle);
   if (!enRetard.length && !depasses.length && !tendus.length) signaux.unshift("Tous dans les clous");
 
   return `
@@ -6429,6 +6536,31 @@ function focusChantierCard() {
   card.classList.add("is-focused");
   card.scrollIntoView({ behavior: "smooth", block: "center" });
   setTimeout(() => card.classList.remove("is-focused"), 3000);
+}
+
+// Une tache vue dans le planning s'ouvre dans sa liste, mise en avant. Meme
+// geste que pour un chantier : la vue est chargee, PUIS la ligne est cherchee.
+let tacheFocusId = null;
+
+function focusTacheRow() {
+  if (!tacheFocusId) return false;
+  const ligne = document.querySelector(`[data-tache-id="${tacheFocusId}"]`);
+  tacheFocusId = null;
+  if (!ligne) return false;
+  ligne.classList.add("is-focused");
+  ligne.scrollIntoView({ behavior: "smooth", block: "center" });
+  setTimeout(() => ligne.classList.remove("is-focused"), 3000);
+  return true;
+}
+
+async function ouvrirTacheDepuisPlanning(tacheId) {
+  tacheFocusId = Number(tacheId);
+  await switchView("taches");
+  if (focusTacheRow()) return true;
+  // La tache existe (le planning l'affiche) mais un filtre de la liste la
+  // masque : on le dit plutot que de laisser un clic sans effet.
+  showToast("Cette tâche n'apparaît pas dans la liste affichée : un filtre est actif.");
+  return false;
 }
 
 function ouvrirChantierDepuisPlanning(chantierId) {
@@ -7243,14 +7375,20 @@ let currentTacheFilter = "a_faire";
 const TACHE_PRIORITE_BADGE = { basse: "badge-gray", normale: "badge-blue", haute: "badge-orange", urgente: "badge-red" };
 const TACHE_PRIORITE_LABELS = { basse: "Priorité basse", normale: "Priorité normale", haute: "Priorité haute", urgente: "Priorité urgente" };
 const TACHE_PRIORITE_PILL = { basse: "pill-green", normale: "pill-gray", haute: "pill-accent", urgente: "pill-red" };
-const TACHE_GROUPE_LABELS = { en_retard: "En retard", aujourdhui: "Aujourd'hui", cette_semaine: "Cette semaine", plus_tard: "Plus tard" };
-const TACHE_GROUPE_ORDRE = ["en_retard", "aujourdhui", "cette_semaine", "plus_tard"];
+// « Sans date » est un groupe A PART. Une tache sans echeance tombait dans
+// « Plus tard », ce qui sous-entend une date future qu'elle n'a pas - et la
+// noie parmi des taches reellement datees, ou elle ne remonte jamais.
+const TACHE_GROUPE_LABELS = { en_retard: "En retard", aujourdhui: "Aujourd'hui", cette_semaine: "Cette semaine", plus_tard: "Plus tard", sans_date: "Sans date" };
+const TACHE_GROUPE_ORDRE = ["en_retard", "aujourdhui", "cette_semaine", "plus_tard", "sans_date"];
 
 // Regroupement par echeance (En retard / Aujourd'hui / Cette semaine / Plus
 // tard) : simple lecture de t.echeance deja recu, aucun nouveau calcul
 // metier - juste une facon de presenter la meme liste plate.
 function tacheGroupe(t) {
-  if (!t.echeance || t.statut !== "a_faire") return "plus_tard";
+  if (!t.echeance) return "sans_date";
+  // Une tache deja faite ne reclame plus rien : elle sort de la file des
+  // echeances et se range en fin de liste.
+  if (t.statut !== "a_faire") return "plus_tard";
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const due = new Date(t.echeance + "T00:00:00");
   const diffJours = Math.round((due - today) / 86400000);
@@ -7329,7 +7467,7 @@ function renderTacheRow(t) {
   const echeanceVisible = echeance && !estFaite && ["pill-red", "pill-accent"].includes(echeance.pill);
 
   return `
-  <div class="tache-row">
+  <div class="tache-row" data-tache-id="${t.id}">
     <input type="checkbox" class="tache-row-check" ${estFaite ? "checked" : ""}
       data-action="${estFaite ? "reouvrir-tache" : "terminer-tache"}" data-id="${t.id}" aria-label="${estFaite ? "Réouvrir la tâche" : "Marquer la tâche faite"}">
     <div class="tache-row-body">
@@ -8018,7 +8156,10 @@ function planningItemChip(item, compact) {
   const heure = planningSansHeure(item)
     ? ""
     : `<span class="planning-item-heure">${planningHeureLocale(item.date)}${duree !== null ? `–${planningHeureLocale(item.date_fin)}` : ""}</span> `;
-  const ouvreFiche = item.type === "chantier_debut" || PLANNING_TYPES_EVENEMENT.has(item.type);
+  // La tache aussi ouvre sa source : c'est une echeance affichee ici, elle
+  // existe ailleurs. Une entree derivee qui ne mene pas a son origine oblige a
+  // retrouver la tache a la main dans une autre vue.
+  const ouvreFiche = item.type === "chantier_debut" || item.type === "tache" || PLANNING_TYPES_EVENEMENT.has(item.type);
   return `<div class="planning-item ${PLANNING_TYPE_CLASS[item.type] || ""} ${ouvreFiche ? "planning-item-clickable" : ""}" draggable="${item.type === "chantier_debut" ? "false" : "true"}" data-type="${item.type}" data-ref-id="${item.reference_id}" data-current-date="${item.date}" ${ouvreFiche ? 'role="button" tabindex="0"' : ""} title="${escapeHtml(item.titre)}">
     ${compact ? "" : heure}<span class="planning-item-titre">${escapeHtml(item.titre)}</span>
   </div>`;
@@ -8459,6 +8600,7 @@ function setupPlanningView() {
         (i) => String(i.reference_id) === chip.dataset.refId && i.type === chip.dataset.type,
       );
       if (item && item.type === "chantier_debut") ouvrirChantierDepuisPlanning(item.chantier_id || item.reference_id);
+      else if (item && item.type === "tache") ouvrirTacheDepuisPlanning(item.reference_id);
       else if (item && PLANNING_TYPES_EVENEMENT.has(item.type)) ouvrirDetailEvenement(item);
       return;
     }

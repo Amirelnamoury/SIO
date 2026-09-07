@@ -154,7 +154,11 @@ Api.listNotifications = async () => [
   { id: 2, type: "nouvelle_demande_devis", notification_id: 4, client_id: 2, titre: "Nouvelle demande depuis le site", sous_titre: "Roussel · remplacement de chauffe-eau", urgent: false, date: tg(1.3), view: "prospects", lu: true },
   { id: 5, type: "message_client", notification_id: 5, client_id: 1, titre: "Message de Bertrand", sous_titre: "« Peut-on décaler la visite de mardi ? »", urgent: false, date: tg(6), view: "prospects", lu: true },
 ];
-Api.dashboard = async () => ({ finances: { ca_mois: 18420, a_encaisser: 1840, paiements_recents: [{ date_paiement: jg(-2), moyen: "Virement", montant: 4200 }] }, commercial: { devis_en_attente: 7, valeur_pipeline: 42100 }, aujourdhui: { factures_en_retard: [{ id: 14, numero: "FA-2026-014", client_nom: "Bertrand", montant_restant: 1840 }], devis_a_relancer: [{ id: 89, numero: "DV-2026-089", client_nom: "Bertrand", relance_manuelle_possible: true }], taches: [{ id: 1, titre: "Commander le carrelage" }], chantiers_a_venir: [{ id: 2, titre: "Villa Ducros — extension côté jardin", date_debut: jg(4) }], evenements: [
+Api.dashboard = async () => ({ finances: { ca_mois: 18420, a_encaisser: 1840, paiements_recents: [{ date_paiement: jg(-2), moyen: "Virement", montant: 4200 }] }, commercial: { devis_en_attente: 7, valeur_pipeline: 42100 }, aujourdhui: { // DashboardAujourdhui transporte des FactureOut et des DevisOut COMPLETS.
+  // Reduits a quatre champs, le jeu d'essai faisait afficher « échéance non
+  // fixée » a une facture qui en a une, et privait la ligne « devis a
+  // relancer » de sa date d'envoi.
+  factures_en_retard: [{ id: 14, numero: "FA-2026-014", client_nom: "Bertrand", montant_restant: 1840, montant_ttc: 1840, montant_paye: 0, statut: "en_retard", est_en_retard: true, date_emission: jg(-40), date_echeance: jg(-12) }], devis_a_relancer: [{ id: 89, numero: "DV-2026-089", client_nom: "Bertrand", relance_manuelle_possible: true, statut: "consulte", montant_ttc: 1466.93, date_envoi: tg(9), date_consultation: tg(1), nb_relances: 2 }], taches: [{ id: 1, titre: "Commander le carrelage" }], chantiers_a_venir: [{ id: 2, titre: "Villa Ducros — extension côté jardin", date_debut: jg(4) }], evenements: [
   // EvenementOut complet : l'accueil ouvre desormais le rendez-vous lui-meme,
   // il lui faut donc type, client et lieu. Un avec duree, un sans : les deux
   // rendus de l'heure doivent etre visibles sur l'ecran d'accueil.

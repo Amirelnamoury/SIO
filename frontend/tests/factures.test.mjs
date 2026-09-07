@@ -12,7 +12,25 @@ const helpersStart = appSource.indexOf("function buildPublicFrontendUrl");
 const helpersEnd = appSource.indexOf("function renderFactureCard", helpersStart);
 assert.ok(helpersStart !== -1 && helpersEnd > helpersStart, "les helpers Factures sont introuvables");
 
-const containers = { "paiement-form-42": { innerHTML: "" } };
+// Le formulaire de paiement calcule desormais le solde ATTENDU APRES le
+// reglement : il lui faut donc le champ montant et la ligne ou l'ecrire.
+const champMontant = {
+  value: "80.00",
+  type: "number",
+  ecouteurs: {},
+  addEventListener(evenement, fn) { this.ecouteurs[evenement] = fn; },
+  saisir(valeur) { this.value = String(valeur); this.ecouteurs.input(); },
+};
+const ligneApres = {
+  textContent: "",
+  classes: new Set(),
+  classList: { toggle(nom, actif) { if (actif) ligneApres.classes.add(nom); else ligneApres.classes.delete(nom); } },
+};
+const containers = {
+  "paiement-form-42": { innerHTML: "" },
+  "pay-montant-42": champMontant,
+  "pay-apres-42": ligneApres,
+};
 const context = {
   URL,
   document: {
@@ -70,5 +88,27 @@ assert.match(formulairePaiement, /Solde restant : 80\.00 EUR/);
 // travail rendu a la main et une occasion de faute de frappe comptable.
 assert.match(formulairePaiement, /value="80\.00"/,
   "le montant doit etre pre-rempli au solde restant, tout en restant modifiable");
+
+// LE TROISIEME CHIFFRE. Le formulaire montrait le solde avant et le montant
+// saisi, et laissait la soustraction a l'artisan - sur une facture reglee en
+// plusieurs fois, c'est justement le chiffre qu'il cherche.
+assert.equal(ligneApres.textContent, "Après ce règlement, la facture sera soldée.",
+  "pre-rempli au solde, le formulaire annonce une facture soldee");
+assert.equal(ligneApres.classes.has("est-alerte"), false);
+
+champMontant.saisir(30);
+assert.equal(ligneApres.textContent, "Après ce règlement, il restera 50.00 EUR.",
+  "un reglement partiel doit annoncer ce qui restera");
+assert.equal(ligneApres.classes.has("est-alerte"), false);
+
+// Depasser le solde se voit AVANT l'envoi. Le serveur refuse deja le
+// surpaiement ; l'artisan n'a pas a decouvrir le refus apres coup.
+champMontant.saisir(100);
+assert.equal(ligneApres.textContent, "Ce montant dépasse le solde de 20.00 EUR.");
+assert.equal(ligneApres.classes.has("est-alerte"), true, "un depassement doit se voir");
+
+// Un champ vide n'affirme rien.
+champMontant.saisir("");
+assert.equal(ligneApres.textContent, "", "sans montant saisi, aucune projection");
 
 console.log("OK - factures.test.mjs");
