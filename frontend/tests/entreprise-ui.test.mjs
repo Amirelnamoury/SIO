@@ -28,6 +28,16 @@ assert.match(app, /setupProfilePhoto\(\)/);
 assert.match(style, /#view-entreprise \.entreprise-tabs \{[\s\S]*background: var\(--sa-surface\)/);
 assert.match(style, /\.enterprise-record \{ display: grid/);
 assert.match(style, /#view-entreprise \.entreprise-section > \.list \{/);
-assert.match(style, /#view-factures #facture-filters \{ margin-bottom: var\(--sa-space-4\); \}/);
+// Cette ligne verifiait une regle ecrite au nom d'une vue :
+// « #view-factures #facture-filters { margin-bottom: 16px } ». La refonte
+// a remplace ces quatorze retouches par le systeme de familles, ou
+// l'espacement d'un registre est declare une fois. Verifier la regle
+// disparue revenait a interdire la correction ; on verifie desormais le
+// RESULTAT qu'elle produisait - un registre garde ses filtres et sa
+// recherche sur une seule ligne, quel que soit l'ecran.
+assert.match(style, /\.view\[data-famille="registre"\] \.list-toolbar,\s*\n\.view\[data-famille="parc"\] \.list-toolbar \{[^}]*flex-wrap: wrap/,
+  "les commandes d'un registre passent a la ligne plutot que de deborder");
+assert.match(style, /\.view\[data-famille="registre"\] \.list-toolbar,\s*\n\.view\[data-famille="parc"\] \.list-toolbar \{[^}]*margin-bottom: var\(--sa-space-4\)/,
+  "l'espacement sous les commandes est declare pour la famille, pas par vue");
 
 console.log("OK - entreprise-ui.test.mjs");

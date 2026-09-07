@@ -79,6 +79,27 @@ function fmtEuroOuRien(n) {
   return n === null || n === undefined ? "" : fmtEuro(n);
 }
 
+/** Un montant pour une GRADUATION, pas pour une piece comptable.
+ *
+ *  L'axe d'un graphique n'annonce pas une somme, il donne l'echelle :
+ *  « 11,7 k€ » se lit d'un coup d'oeil la ou « 11 650,00 € » demande a
+ *  etre dechiffre. Ce n'est pas qu'une question de gout - l'axe des
+ *  ordonnees dispose de 44 px, et le montant complet en demandait 60. Il
+ *  sortait donc du cadre du SVG, ou il etait purement et simplement
+ *  rogne : les quatre graduations du chiffre d'affaires etaient illisibles
+ *  et personne ne pouvait dire a quelle hauteur passait la courbe.
+ *
+ *  Les centimes n'ont aucun sens sur une graduation, et la valeur exacte
+ *  reste disponible la ou elle compte : sur le point, et dans le tableau.
+ */
+function fmtEuroAxe(n) {
+  if (n === null || n === undefined) return "";
+  const abs = Math.abs(n);
+  if (abs >= 1e6) return `${(n / 1e6).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} M€`;
+  if (abs >= 1000) return `${(n / 1000).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} k€`;
+  return `${Math.round(n).toLocaleString("fr-FR")} €`;
+}
+
 function skeletonCards(n = 3) {
   return Array.from({ length: n }).map(() => '<div class="skeleton skeleton-card"></div>').join("");
 }

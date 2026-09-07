@@ -83,6 +83,9 @@ const debut = appSource.indexOf("function caAreaChartSvg");
 const fin = appSource.indexOf("function mixHexColors");
 const contexte = {
   fmtEuro: (v) => `${v} €`,
+  // La graduation de l'axe a son propre format : elle vit dans socle.js,
+  // hors de la tranche de code executee ici, donc elle est fournie.
+  fmtEuroAxe: (v) => (Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(1)} k€` : `${v} €`),
   fmtMoisCourt: (m) => m,
 };
 vm.runInNewContext(
@@ -104,5 +107,20 @@ assert.equal((cheminPlein.match(/[ML]/g) || []).length, serie.length - 1,
 const creux = serie.map((m, i) => ({ ...m, ca: i % 3 === 0 ? 0 : m.ca }));
 const avecCreux = contexte.__c.caAreaChartSvg(creux);
 assert.ok((avecCreux.match(/chart-axis-label/g) || []).length > 5, "un mois a zero reste un point du graphique");
+
+// ---------------------------------------------------------------------
+// 6. La graduation de l'axe doit TENIR dans sa gouttiere.
+// ---------------------------------------------------------------------
+// « 11 650,00 € » demandait 60 px la ou l'axe en offrait 36 : les quatre
+// graduations sortaient du viewBox et etaient rognees, si bien qu'on ne
+// pouvait plus dire a quelle hauteur passait la courbe. Un axe donne une
+// ECHELLE ; la somme exacte se lit sur le point et dans le tableau.
+const grosseSerie = Array.from({ length: 12 }, (_, i) => ({ mois: `2026-${String(i + 1).padStart(2, "0")}`, ca: 1_000_000 * (i + 1) }));
+const svgGros = contexte.__c.caAreaChartSvg(grosseSerie);
+assert.doesNotMatch(svgGros, /class="chart-axis-label"[^>]*>[\d\s]{7,}/,
+  "aucune graduation ne doit etaler un montant complet sur l'axe");
+assert.match(sources.socle, /function fmtEuroAxe/, "le format de graduation est un helper partage, pas une regle locale");
+assert.match(sources.statistiques, /PAD_L = 52/,
+  "la gouttiere de l'axe doit rester assez large pour sa graduation la plus longue");
 
 console.log("OK - statistiques-periodes.test.mjs");

@@ -11,7 +11,7 @@
      DIRECTION-ARTISTIQUE.md. Les deux feuilles superposees d'avant ont ete
      fondues ici, verification faite par comparaison des styles calcules
      sur les douze vues (voir outils/empreinte-styles.js). -->
-<link rel="stylesheet" href="style.css?v=20260907-notifs">
+<link rel="stylesheet" href="style.css?v=20260907-ui1">
 <!-- Habillage de l'ecran connexion/inscription. Charge APRES style.css,
      tous ses selecteurs sont ancres sous .auth-screen : rien ne fuit vers
      le SaaS. Supprimer cette ligne rend l'ecran a son etat precedent. -->
@@ -245,7 +245,7 @@
       </button>
       <button type="button" class="nav-link" data-view="notifications">
         <svg viewBox="0 0 24 24" class="nav-icon"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>
-        Notifications <span id="badge-notifications" class="badge-count badge-alert" hidden>0</span>
+        Notifications <span id="badge-notifications" class="badge-count" hidden>0</span>
       </button>
     </nav>
     <div class="sidebar-footer">
@@ -361,12 +361,12 @@
     </div>
 
     <!-- ---------- Section Tableau de bord ---------- -->
-    <section id="view-dashboard" class="view">
+    <section id="view-dashboard" class="view" data-famille="poste">
       <div id="dashboard-content"></div>
     </section>
 
     <!-- ---------- Section Prospects (pipeline commercial) ---------- -->
-    <section id="view-prospects" class="view" hidden>
+    <section id="view-prospects" class="view" data-famille="registre" hidden>
       <div class="view-header">
         <div class="view-header-text">
           <p class="view-header-eyebrow">Commercial</p>
@@ -393,7 +393,7 @@
     </section>
 
     <!-- ---------- Section Clients (annuaire des affaires gagnees) ---------- -->
-    <section id="view-clients" class="view" hidden>
+    <section id="view-clients" class="view" data-famille="registre" hidden>
       <div class="view-header">
         <div class="view-header-text">
           <p class="view-header-eyebrow">Commercial</p>
@@ -436,7 +436,7 @@
     </section>
 
     <!-- ---------- Section Devis & relances ---------- -->
-    <section id="view-devis" class="view" hidden>
+    <section id="view-devis" class="view" data-famille="registre" hidden>
       <!-- Une barre de modules occupait cette place : « Devis & devis »,
            « Commerciaux », « Contact » - trois libelles inertes, plus deux
            boutons qui refaisaient ce que la colonne de gauche fait deja.
@@ -515,7 +515,7 @@
     </section>
 
     <!-- ---------- Section Factures ---------- -->
-    <section id="view-factures" class="view" hidden>
+    <section id="view-factures" class="view" data-famille="registre" hidden>
       <div class="view-header">
         <div class="view-header-text">
           <p class="view-header-eyebrow">Gestion</p>
@@ -590,7 +590,7 @@
     </section>
 
     <!-- ---------- Section Chantiers ---------- -->
-    <section id="view-chantiers" class="view" hidden>
+    <section id="view-chantiers" class="view" data-famille="parc" hidden>
       <div class="view-header">
         <div class="view-header-text">
           <p class="view-header-eyebrow">Gestion</p>
@@ -655,7 +655,7 @@
     </section>
 
     <!-- ---------- Section Planning ---------- -->
-    <section id="view-planning" class="view" hidden>
+    <section id="view-planning" class="view" data-famille="agenda" hidden>
       <div class="view-header">
         <div class="view-header-text">
           <p class="view-header-eyebrow">Gestion</p>
@@ -671,7 +671,7 @@
     </section>
 
     <!-- ---------- Section Tâches ---------- -->
-    <section id="view-taches" class="view" hidden>
+    <section id="view-taches" class="view" data-famille="file" hidden>
       <div class="view-header">
         <div class="view-header-text">
           <p class="view-header-eyebrow">Organisation</p>
@@ -712,7 +712,7 @@
     </section>
 
     <!-- ---------- Section Documents ---------- -->
-    <section id="view-documents" class="view" hidden>
+    <section id="view-documents" class="view" data-famille="registre" hidden>
       <div class="view-header">
         <div class="view-header-text">
           <p class="view-header-eyebrow">Organisation</p>
@@ -774,7 +774,7 @@
     </section>
 
     <!-- ---------- Section Statistiques ---------- -->
-    <section id="view-statistiques" class="view" hidden>
+    <section id="view-statistiques" class="view" data-famille="rapport" hidden>
       <div class="view-header">
         <div class="view-header-text">
           <p class="view-header-eyebrow">Organisation</p>
@@ -792,7 +792,7 @@
     </section>
 
     <!-- ---------- Section Avis clients ---------- -->
-    <section id="view-avis" class="view" hidden>
+    <section id="view-avis" class="view" data-famille="reputation" hidden>
       <div class="view-header">
         <div class="view-header-text">
           <p class="view-header-eyebrow">Entreprise</p>
@@ -834,7 +834,7 @@
     </section>
 
     <!-- ---------- Section Entreprise (infos + conformite) ---------- -->
-    <section id="view-entreprise" class="view" hidden>
+    <section id="view-entreprise" class="view" data-famille="gestion" hidden>
       <div class="view-header">
         <div class="view-header-text">
           <p class="view-header-eyebrow">Entreprise</p>
@@ -1037,7 +1037,7 @@
     </section>
 
     <!-- ---------- Section Notifications ---------- -->
-    <section id="view-notifications" class="view" hidden>
+    <section id="view-notifications" class="view" data-famille="file" hidden>
       <div class="view-header">
         <div class="view-header-text">
           <p class="view-header-eyebrow">Entreprise</p>
@@ -1140,7 +1140,7 @@
         </button>
         <button type="button" class="nav-link" data-view="notifications">
           <svg viewBox="0 0 24 24" class="nav-icon"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>
-          Notifications <span id="badge-notifications-mobile" class="badge-count badge-alert" hidden>0</span>
+          Notifications <span id="badge-notifications-mobile" class="badge-count" hidden>0</span>
         </button>
       </div>
     </div>
@@ -1154,11 +1154,11 @@
      d'abord - formats, etats d'ecran, messages, confirmations, clavier des
      fenetres - puis la navigation et l'adressage. Scripts classiques charges dans l'ordre : les declarations de
      premier niveau restent partagees, comme lorsque tout tenait dans app.js. -->
-<script src="api.js?v=20260907-notifs"></script>
-<script src="socle.js?v=20260907-notifs"></script>
-<script src="navigation.js?v=20260907-notifs"></script>
-<script src="planning.js?v=20260907-notifs"></script>
-<script src="statistiques.js?v=20260907-notifs"></script>
-<script src="app.js?v=20260907-notifs"></script>
+<script src="api.js?v=20260907-ui1"></script>
+<script src="socle.js?v=20260907-ui1"></script>
+<script src="navigation.js?v=20260907-ui1"></script>
+<script src="planning.js?v=20260907-ui1"></script>
+<script src="statistiques.js?v=20260907-ui1"></script>
+<script src="app.js?v=20260907-ui1"></script>
 </body>
 </html>

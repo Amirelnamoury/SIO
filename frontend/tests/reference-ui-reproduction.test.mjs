@@ -120,11 +120,27 @@ assert.doesNotMatch(styleSource, /body\[data-view="statistiques"\]::before/);
 assert.doesNotMatch(styleSource, /width: 1024px; height: 702px; min-height: 702px/);
 assert.match(styleSource, /minmax\(210px, 1\.45fr\) 142px 94px minmax\(150px, 1fr\) 108px 128px 28px/);
 assert.match(styleSource, /minmax\(170px, 1\.35fr\) 122px 128px 96px minmax\(130px, 1fr\) 122px 138px 28px/);
-assert.match(styleSource, /#view-devis \.list-toolbar \.list-search \{ flex: 0 1 460px/);
-assert.match(styleSource, /#view-devis \.list-toolbar \{[^}]*margin-bottom: var\(--sa-space-4\)/);
-assert.match(styleSource, /#view-factures \.list-toolbar \{[^}]*margin-bottom: var\(--sa-space-4\)/);
-assert.match(styleSource, /#view-factures #facture-filters \{ margin-bottom: var\(--sa-space-4\); \}/);
-assert.match(styleSource, /#view-factures #factures-statut-filtre \{ width: 108px; \}/);
+// ---------------------------------------------------------------------
+// Ce que la refonte UI a remplace, et pourquoi ces lignes ont change
+// ---------------------------------------------------------------------
+// Ce bloc epinglait cinq regles ecrites au nom d'une vue : la largeur de
+// la recherche de Devis (460 px), celle du filtre de statut des Factures
+// (108 px), et trois marges basses. Elles decrivaient une reproduction
+// fidele d'une capture de reference - la consigne de l'epoque.
+//
+// La consigne actuelle est l'inverse : une identite propre, et pas de
+// retouche par ecran. Les quatorze regles de ce type ont ete remplacees
+// par le systeme de familles, ou la composition d'un registre est
+// declaree UNE fois. On verifie donc que le comportement survit, et
+// surtout qu'il n'est plus reintroduit vue par vue.
+assert.match(styleSource, /\.view\[data-famille="registre"\] \.list-search,\s*\n\.view\[data-famille="parc"\] \.list-search \{[^}]*flex: 1 1 240px/,
+  "la recherche prend la place disponible dans un registre");
+assert.match(styleSource, /\.view\[data-famille="registre"\] \.list-toolbar select,\s*\n\.view\[data-famille="parc"\] \.list-toolbar select \{[^}]*width: auto/,
+  "un filtre prend la largeur de son contenu, pas une valeur mesuree a la main");
+assert.doesNotMatch(styleSource, /#view-(devis|factures) #\w+-(statut|montant|relance|paiement|echeance|sort)-?\w* \{ width:/,
+  "aucune largeur de filtre ne doit revenir sous le nom d'une vue");
+assert.doesNotMatch(styleSource, /#view-(devis|factures) \.view-header \{ margin-bottom: \d+px/,
+  "aucune marge d'en-tete mesuree a la main ne doit revenir sous le nom d'une vue");
 assert.doesNotMatch(styleSource, /\.list-row\.is-due \{[^}]*padding-left/);
 // Les chantiers sont presentes en CARTES, a la demande explicite de
 // l'utilisateur ("je veux pas que les chantiers soit ligne par ligne je

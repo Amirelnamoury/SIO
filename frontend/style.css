@@ -22,91 +22,119 @@
    ===================================================================== */
 
 :root {
-  /* ---------- Surfaces : trois plans, pas un de plus ----------
-     Un quatrieme niveau de gris ne se percoit plus, il n'ajoute que des
-     regles a ecrire. Clarte L* mesuree : 91.7 / 95.2 / 98.3. */
-  --sa-bg: #F4F1EA;
-  /* survol d'une zone deja en creux */
-  --sa-sidebar: #23261F;
-  /* le papier : pierre calcaire, jamais du blanc pur */
-  --sa-surface: #FCFAF5;
-  /* la feuille posee sur l'etabli */
-  --sa-surface-2: #EBE7DE;
-  /* le creux : en-tete de tableau, zone inerte */
-  --sa-surface-3: #E3DED2;
-  /* l'atelier : le seul plan sombre, voir plus bas */
+  /* ---------- Les quatre plans ----------
+     Un plan = un role, et le role se lit a la clarte. Du plus inerte au
+     plus vivant : le sommaire recule, le plan de travail porte, la
+     feuille recoit. Le creux ne sert qu'au survol d'une zone inerte.
+     Trois valeurs suffisent a le dire ; une quatrieme nuance de gris ne
+     se percevrait plus, elle n'ajouterait que des regles a ecrire. */
+  --sa-rail: #EEF1F2;
+  /* le sommaire : legerement en retrait, il n'est pas le travail */
+  --sa-bg: #F6F7F8;
+  /* le plan de travail */
+  --sa-surface: #FFFFFF;
+  /* la feuille */
+  --sa-surface-2: #EEF1F2;
+  /* zone inerte : en-tete de colonne, encart de rappel */
+  --sa-surface-3: #E3E8EA;
+  /* le creux : survol d'une zone deja inerte */
+  --sa-sidebar: var(--sa-rail);
 
-  /* ---------- Filets ----------
-     Deux roles a ne pas confondre. `border` texture sans structurer, il
-     est VOLONTAIREMENT sous le seuil de contraste (1.24:1).
-     `border-strong` est un contour fonctionnel : WCAG 1.4.11 impose 3:1
-     pour qu'un champ ou un bouton soit identifiable. Mesure sur la
-     surface la plus sombre, le creux : 3.19:1. */
-  --sa-border: #DFDACE;
-  --sa-border-strong: #86806E;
+  /* Le fond de marque. Il n'apparait que la ou le produit se presente -
+     connexion, inscription, page publique - jamais dans l'espace de
+     travail. Le vert est le fil qui relie les deux contextes ; il n'a pas
+     besoin d'occuper l'application pour cela. */
+  --sa-brand-ground: #1B3A31;
+  --sa-brand-ink: #F2F5F4;
+  --sa-brand-ink-muted: #A9BEB6;
+
+  /* ---------- Filets : deux roles a ne pas confondre ----------
+     `border` texture sans structurer : il est VOLONTAIREMENT sous le
+     seuil (1.28:1), c'est une reglure de registre, pas un contour.
+     `border-strong` est fonctionnel - WCAG 1.4.11 impose 3:1 pour qu'un
+     champ ou un bouton soit identifiable. Mesure sur la surface la plus
+     sombre ou il apparait, la zone inerte : 3.21:1. */
+  --sa-border: #DFE4E6;
+  --sa-border-strong: #7B888F;
+
   /* ---------- Encre : trois niveaux, tous au-dessus du seuil ----------
-     14.89:1 / 6.43:1 / 4.97:1 sur le papier. Le troisieme niveau porte
-     les libelles de colonne et les mentions : un libelle illisible n'est
-     pas « discret », il est rate.
-     Il vaut 4.54:1 sur le CREUX (#EBE7DE), la plus sombre des trois
-     surfaces : c'est elle qui fixe le plancher, et c'est justement celle
-     que la validation initiale de la palette avait oubliee. Les en-tetes
-     de colonnes des listes, qui vivent dessus, tombaient a 4.28:1. */
-  --sa-text: #1C1E1A;
-  /* noir chaud, jamais #000 */
-  --sa-text-muted: #55584F;
-  --sa-text-faint: #66695E;
-  --sa-text-on-accent: #FCFAF5;
-  /* 9.69:1 sur le vert-de-gris */
-  --sa-text-on-dark: #F0EDE4;
-  /* sur la colonne sombre */
-  --sa-text-on-dark-muted: #A8A99E;
-  /* ---------- Accent : vert-de-gris ----------
-     Zinc patine, vetement de travail. Elle tient lieu d'encre soutenue
-     plutot que de couleur vive : elle porte l'action primaire et l'etat
-     actif sans crier. */
-  --sa-accent: #2E4739;
-  --sa-accent-strong: #243A2E;
-  --sa-accent-soft: #E4EAE4;
+     15.0:1 / 6.4:1 / 5.6:1 sur la feuille. Le troisieme porte les
+     libelles de colonne : un libelle illisible n'est pas discret, il est
+     rate. C'est le CREUX qui fixe son plancher, pas la feuille - il y
+     vaut 4.54:1, et c'est le fond qu'une validation faite sur le blanc
+     oublie systematiquement. */
+  --sa-text: #20282C;
+  --sa-text-muted: #536168;
+  --sa-text-faint: #5B6A71;
+  --sa-text-on-accent: #FFFFFF;
+  --sa-text-on-dark: var(--sa-brand-ink);
+  --sa-text-on-dark-muted: var(--sa-brand-ink-muted);
+
+  /* ---------- L'ancrage : vert profond ----------
+     Il tient trois roles et pas un de plus : l'action dominante, la
+     position courante, et le filet de reference en tete des dossiers.
+     Partout ailleurs, l'interface est en gris et en noir. Une marque qui
+     remplit l'ecran de sa couleur cesse d'etre reconnaissable. */
+  --sa-accent: #245548;
+  --sa-accent-strong: #1B4238;
+  --sa-accent-soft: #E7EEEB;
+  --sa-accent-line: #C3D5CE;
   --sa-accent-on-dark: #9DBBA6;
-  /* ---------- Semantique : lisible, jamais clignotante ---------- */
-  --sa-success: #3B6647;
-  /* 5.86:1 */
-  --sa-success-soft: #E3EBE4;
-  --sa-warning: #8A5E19;
-  /* 5.04:1 */
-  --sa-warning-soft: #F5EAD6;
-  --sa-danger: #9E3A2B;
-  /* 6.02:1 — terre cuite */
-  --sa-danger-strong: #85301F;
-  --sa-danger-border: #D9B5AC;
-  --sa-danger-soft: #F6E4DF;
-  --sa-info: #42596B;
-  /* 6.48:1 — ardoise */
-  --sa-info-soft: #E4EAEE;
+
+  /* ---------- Semantique : quatre etats, jamais decoratifs ----------
+     Le rouge ne sort que pour un probleme reel, l'ambre pour ce qui
+     demande une decision, le vert pour ce qui est confirme, le bleu pour
+     ce qui informe sans rien demander. La couleur n'est jamais la seule
+     information : elle double toujours un mot. */
+  --sa-info: #365C82;
+  --sa-info-soft: #E6ECF2;
+  --sa-info-line: #C6D5E3;
+  --sa-success: #326343;
+  --sa-success-soft: #E6EEE8;
+  --sa-success-line: #C2D6C8;
+  --sa-warning: #805B16;
+  --sa-warning-soft: #F5EDDC;
+  --sa-warning-line: #E2D0A9;
+  --sa-danger: #A03332;
+  --sa-danger-strong: #85292A;
+  --sa-danger-soft: #F7E8E7;
+  --sa-danger-line: #E8C6C4;
+  --sa-danger-border: var(--sa-danger-line);
   --sa-neutral-soft: var(--sa-surface-2);
-  --sa-bronze: var(--sa-laiton);
-  --sa-bronze-strong: #704C1C;
-  --sa-bronze-soft: var(--sa-laiton-soft);
-  /* ---------- Typographie : celles du site public ----------
-     L'application utilisait Archivo + Public Sans, le site Fraunces +
-     Inter. Deux typographies pour une marque, sans raison. Fraunces porte
-     les titres et les chiffres : elle lit « imprime », c'est elle qui fait
-     qu'un montant ressemble a un montant de devis. */
+
+  /* ---------- Typographie ----------
+     Inter fait le travail : lecture, formulaires, colonnes, nombres,
+     commandes. Fraunces ne sert qu'a nommer - titre de page, titre de
+     dossier, en-tete de document. Elle lit « imprime », et c'est
+     exactement ce qu'on veut d'un intitule de piece ; l'employer sur une
+     ligne de tableau serait la vider de ce sens. */
   --sa-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --sa-font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
   --sa-text-2xs: 0.6875rem;
-  --sa-text-xs: 0.78rem;
-  --sa-text-sm: 0.855rem;
-  --sa-text-base: 0.92rem;
-  --sa-text-md: 0.98rem;
-  --sa-text-lg: 1.14rem;
-  --sa-text-xl: 1.4rem;
+  /* 11px — libelle de colonne, mention */
+  --sa-text-xs: 0.75rem;
+  /* 12px — metadonnee */
+  --sa-text-sm: 0.8125rem;
+  /* 13px — second niveau de ligne */
+  --sa-text-base: 0.90625rem;
+  /* 14.5px — le corps */
+  --sa-text-md: 1rem;
+  /* 16px — les champs : jamais moins, iOS zoome en dessous */
+  --sa-text-lg: 1.125rem;
+  --sa-text-xl: 1.375rem;
   --sa-text-2xl: 1.75rem;
-  --sa-weight-normal: 430;
-  --sa-weight-medium: 520;
-  --sa-weight-semibold: 620;
+  /* 28px — titre de page */
+  --sa-text-3xl: 2.125rem;
+  /* 34px — la mesure dominante d'un rapport, et elle seule */
+
+  /* Inter est chargee en 400/500/600/700. Les valeurs intermediaires
+     demandaient une fonte variable qui n'est pas requise : le navigateur
+     les arrondissait en silence. */
+  --sa-weight-normal: 400;
+  --sa-weight-medium: 500;
+  --sa-weight-semibold: 600;
   --sa-weight-bold: 700;
+
   /* ---------- Espacement (echelle 4px) ---------- */
   --sa-space-1: 4px;
   --sa-space-2: 8px;
@@ -117,33 +145,58 @@
   --sa-space-8: 32px;
   --sa-space-10: 40px;
   --sa-space-12: 48px;
-  /* ---------- L'angle vif ----------
-     Les grands arrondis partout sont la signature du composant generique.
-     2px sur ce qu'on manipule, 4px sur un objet, 0 sur une section. */
-  --sa-radius-sm: 2px;
-  --sa-radius-md: 3px;
-  --sa-radius-lg: 4px;
-  --sa-radius-xl: 6px;
+
+  /* ---------- Hauteurs de controle ----------
+     Une seule hauteur par famille, tenue partout. Des boutons qui
+     changent de taille d'un ecran a l'autre est le signe le plus sur
+     qu'une interface a ete assemblee et non concue. */
+  --sa-control-h: 40px;
+  --sa-control-h-sm: 32px;
+  --sa-touch: 44px;
+
+  /* ---------- Rayons ----------
+     Sobres et hierarchises : ce qu'on manipule, ce qui se repete, ce qui
+     flotte. Au-dela, on quitte l'outil professionnel. */
+  --sa-radius-sm: 4px;
+  --sa-radius-md: 6px;
+  --sa-radius-lg: 6px;
+  --sa-radius-xl: 8px;
   --sa-radius-full: 999px;
-  /* ---------- Ombres : presque aucune ----------
-     La profondeur vient du ton du papier et des filets. Une seule ombre
-     reelle, pour ce qui flotte au-dessus de la page. */
+
+  /* ---------- Profondeur ----------
+     La separation vient des filets et des plans, pas des ombres. Une
+     ombre ne se justifie que si la surface est REELLEMENT superposee :
+     un menu, une modale, une feuille de document posee sur le plan. */
   --sa-shadow-xs: none;
-  --sa-shadow-sm: 0 1px 2px rgba(28, 30, 26, .05);
-  --sa-shadow-md: 0 6px 20px rgba(28, 30, 26, .10);
-  --sa-shadow-lg: 0 16px 44px rgba(28, 30, 26, .16);
-  /* Focus : un liseré franc colle a la bordure, pas un halo diffus. */
+  --sa-shadow-sm: none;
+  --sa-shadow-feuille: 0 1px 2px rgba(32, 40, 44, .06), 0 0 0 1px rgba(32, 40, 44, .04);
+  --sa-shadow-md: 0 4px 14px rgba(32, 40, 44, .10), 0 1px 2px rgba(32, 40, 44, .06);
+  --sa-shadow-lg: 0 18px 48px rgba(32, 40, 44, .16);
+  /* Focus : un lisere franc colle a la bordure, pas un halo diffus. */
   --sa-shadow-focus: 0 0 0 1px var(--sa-accent);
-  /* ---------- Mouvement ---------- */
+
+  /* ---------- Mouvement ----------
+     Court, et au service du reperage. Rien ne doit se donner en
+     spectacle sur un ecran qu'on regarde huit heures par jour. */
   --sa-duration-fast: 110ms;
   --sa-duration-base: 160ms;
   --sa-duration-slow: 200ms;
   --sa-ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+
   /* ---------- Mise en page ---------- */
-  --sa-sidebar-w: 230px;
+  --sa-sidebar-w: 224px;
   --sa-content-w: 1320px;
   --sa-header-h: 52px;
   --sa-bottom-nav-h: 58px;
+
+  /* ---------- La marge des dossiers ----------
+     Colonne d'intitules a gauche du contenu, separee par un filet. Elle
+     ne vaut que si elle PORTE quelque chose - l'intitule de section et
+     son compte - sinon c'est une gouttiere vide qui prend la largeur du
+     travail. Reservee au dossier et au poste de travail ; les registres
+     et l'agenda ont besoin de toute leur largeur. */
+  --sa-marge: 96px;
+
   /* ---------- Z-index ---------- */
   --sa-z-sidebar: 20;
   --sa-z-bottom-nav: 25;
@@ -152,7 +205,17 @@
   --sa-z-modal: 60;
   --sa-z-modal-top: 70;
   --sa-z-toast: 80;
-  /* Ponts retro-compatibles (styles inline residuels dans app.js). */
+
+  /* Le laiton et le bronze - signature de la direction « Atelier » - ont
+     ete retires apres reprise de leurs dix-huit usages. Ils ne sont PAS
+     conserves en pont : un jeton mort qui repond encore est exactement ce
+     qui permet a une identite abandonnee de revenir par une regle
+     ecrite distraitement. Ce qui les remplace, selon ce que l'endroit
+     disait vraiment : --sa-accent pour la position courante,
+     --sa-warning pour ce qui appelle une action.
+
+     Ponts vers l'ancienne nomenclature, eux toujours utiles : quelques
+     styles en ligne subsistent dans app.js. */
   --primary: var(--sa-text);
   --primary-dark: var(--sa-bg);
   --accent: var(--sa-accent);
@@ -173,19 +236,6 @@
   --radius-sm: var(--sa-radius-sm);
   --radius-md: var(--sa-radius-md);
   --radius-lg: var(--sa-radius-lg);
-  /* ---------- Laiton : le detail, jamais l'aplat ----------
-     Filet sous un chiffre cle, soulignement d'un onglet actif. Jamais un
-     bouton plein - c'etait l'erreur de l'identite precedente. 4.93:1. */
-  --sa-laiton: #8A6024;
-  /* Le laiton sur la COLONNE SOMBRE. La meme valeur y tombe a 2.76:1 :
-     une couleur qui traverse deux fonds a besoin de deux valeurs. 5.96:1. */
-  --sa-laiton-sur-sombre: #C79A4E;
-  --sa-laiton-soft: #F1E8D6;
-  /* ---------- La marge ----------
-     Gouttiere des pages composees : les intitules de section y vivent en
-     petites capitales, separes du contenu par un filet vertical. C'est la
-     structure d'un document technique. */
-  --sa-marge: 108px;
 }
 
 
@@ -266,7 +316,7 @@ input[readonly] { background: var(--sa-surface-2); }
 .auth-screen[hidden] { display: none; }
 .auth-screen { min-height: 100vh; display: flex; background: var(--sa-bg); }
 
-.auth-brand-panel { flex: 0 0 40%; max-width: 460px; min-width: 320px; background: var(--sa-sidebar); display: flex; align-items: center; padding: 64px; }
+.auth-brand-panel { flex: 0 0 40%; max-width: 460px; min-width: 320px; background: var(--sa-brand-ground); display: flex; align-items: center; padding: 64px; }
 .auth-brand-content { max-width: 340px; }
 .auth-brand-panel .auth-logo-on-brand { font-family: var(--sa-font-display); font-size: 1.15rem; font-weight: var(--sa-weight-bold); letter-spacing: 0; color: var(--sa-text-on-dark); margin-bottom: var(--sa-space-8); }
 .auth-brand-tagline { font-family: var(--sa-font-display); font-size: 1.35rem; font-weight: var(--sa-weight-medium); letter-spacing: 0; line-height: 1.4; color: var(--sa-text-on-dark); margin-bottom: var(--sa-space-8); }
@@ -307,7 +357,7 @@ input[readonly] { background: var(--sa-surface-2); }
 .app-shell { min-height: 100vh; display: flex; background: var(--sa-bg); }
 
 /* ---------- Sidebar — plan le plus sombre, marque toujours visible. ---------- */
-.sidebar { width: var(--sa-sidebar-w); flex-shrink: 0; color: var(--sa-text-on-dark); display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; z-index: var(--sa-z-sidebar); }
+.sidebar { width: var(--sa-sidebar-w); flex-shrink: 0; color: var(--sa-text-muted); display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; z-index: var(--sa-z-sidebar); }
 .sidebar-brand { display: flex; align-items: center; gap: 10px; }
 .sidebar-brand-mark { width: 26px; height: 26px; flex-shrink: 0; display: grid; place-items: center; font-weight: 800; font-size: 0.72rem; letter-spacing: 0.01em; }
 .sidebar-brand-name { font-size: 0.98rem; color: var(--sa-text-on-dark); }
@@ -371,7 +421,7 @@ input[readonly] { background: var(--sa-surface-2); }
 @media (min-width: 1520px) { .content { max-width: 1320px; } }
 
 /* ---------- Page header : eyebrow / titre / description / actions ---------- */
-.view-header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sa-space-4); margin-bottom: 18px; flex-wrap: wrap; }
+.view-header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sa-space-4); margin-bottom: var(--sa-space-5); flex-wrap: wrap; }
 .view-header-text { min-width: 0; }
 .view-header-eyebrow { font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-bold); text-transform: uppercase; letter-spacing: 0.08em; color: var(--sa-accent); margin-bottom: 4px; }
 .view-header h2 { font-size: var(--sa-text-xl); }
@@ -388,18 +438,6 @@ input[readonly] { background: var(--sa-surface-2); }
      sautait donc de place a chaque passage sur ces deux vues. */
 }
 
-#view-devis .view-header { margin-bottom: 34px; }
-#view-devis .view-header-actions { margin-top: 18px; }
-#view-devis .view-header-actions .btn-primary { order: -1; }
-#view-devis #devis-kpi-band .kpi-card { height: 106px; min-height: 106px; padding: 14px 16px; }
-#view-devis #devis-kpi-band > .kpi-band { margin-bottom: 40px; }
-#view-devis .list-toolbar { flex-wrap: nowrap; gap: 10px; margin-bottom: var(--sa-space-4); }
-#view-devis .list-toolbar .list-search { flex: 0 1 460px; width: 460px; max-width: 460px; margin-right: auto; }
-#view-devis .list-toolbar select { flex-shrink: 0; min-width: 0; margin-bottom: 0; }
-#view-devis #devis-statut-filtre { width: 88px; }
-#view-devis #devis-montant-filtre { width: 104px; }
-#view-devis #devis-relance-filtre { width: 100px; }
-#view-devis #devis-sort { width: 106px; }
 
 .section-hint { margin: -10px 0 var(--sa-space-4); max-width: 62ch; }
 
@@ -465,7 +503,7 @@ input[readonly] { background: var(--sa-surface-2); }
 
   .bottom-nav {
     display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: var(--sa-z-bottom-nav);
-    background: var(--sa-sidebar); border-top: 1px solid var(--sa-border);
+    background: var(--sa-surface); border-top: 1px solid var(--sa-border);
     padding: 4px 4px calc(4px + env(safe-area-inset-bottom, 0px));
   }
   .bottom-nav .nav-link, .bottom-nav #btn-open-more {
@@ -886,7 +924,6 @@ input[readonly] { background: var(--sa-surface-2); }
 .avis-card { padding: 14px 0 0; }
 .avis-card-bottom { margin-top: var(--sa-space-3); }
 #view-avis > .section-hint { display: none; }
-#view-avis .view-header { margin-bottom: 18px; }
 #view-avis .avis-header-actions { position: relative; align-items: center; margin-top: 20px; }
 #view-avis .avis-header-actions .btn-primary { margin-right: 0; }
 #view-avis .avis-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sa-space-6); }
@@ -906,18 +943,6 @@ input[readonly] { background: var(--sa-surface-2); }
 .doc-row-meta { min-width: 0; font-size: var(--sa-text-xs); color: var(--sa-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .doc-row-action { flex-shrink: 0; }
 
-#view-documents .view-header { margin-bottom: 21px; }
-#view-documents .view-header-actions { flex-direction: column; align-items: flex-end; gap: 5px; margin-top: 20px; }
-#view-documents .view-header-actions .btn-primary { order: -1; }
-#view-documents #document-filters { margin-bottom: 14px; }
-#view-documents .list-toolbar { flex-wrap: nowrap; gap: 6px; margin-bottom: 38px; }
-#view-documents .list-toolbar .list-search { flex: 0 0 466px; min-width: 466px; max-width: 466px; margin-right: auto; }
-#view-documents .list-toolbar select { min-width: 0; width: auto; max-width: 140px; margin-bottom: 0; padding: 8px 9px; font-size: var(--sa-text-xs); }
-#view-documents #documents-type-filter { width: 76px; }
-#view-documents #documents-client-filter { width: 80px; }
-#view-documents #documents-chantier-filter { width: 90px; }
-#view-documents #documents-date-filter { width: 82px; }
-#view-documents #documents-sort { width: 98px; }
 @media (max-width: 720px) {
   .doc-row { grid-template-columns: 34px minmax(0, 1fr) auto; }
   .doc-row-meta { grid-column: 2 / -1; }
@@ -939,8 +964,6 @@ input[type="checkbox"], input[type="radio"] { width: 24px; height: 24px; flex-sh
 .tache-row-titre { font-size: var(--sa-text-sm); font-weight: var(--sa-weight-medium); }
 .tache-row-sub { margin-top: 1px; }
 #view-taches { position: relative; }
-#view-taches .view-header { margin-bottom: 38px; }
-#view-taches .view-header > .btn-primary { margin-top: 28px; }
 #view-taches #tache-filters { margin-bottom: 12px; }
 #view-taches #tache-subfilters { margin-bottom: 21px; }
 .taches-search-tools { position: absolute; top: 159px; right: 0; display: flex; align-items: center; gap: 6px; }
@@ -987,16 +1010,10 @@ input[type="checkbox"], input[type="radio"] { width: 24px; height: 24px; flex-sh
    marge, le temps de la retrouver des yeux. */
 .tache-row.is-focused { box-shadow: inset 2px 0 0 var(--sa-accent); }
 
-#view-chantiers .view-header { margin-bottom: 34px; }
-#view-chantiers .view-header-actions { margin-top: 20px; }
-#view-chantiers .view-header-actions .btn-primary { order: -1; }
 #view-chantiers .view-header-actions .btn-archives { border: 1px solid var(--sa-border-strong); padding: 8px 14px; border-radius: var(--sa-radius-sm); }
 #view-chantiers #chantiers-kpi-band .kpi-card { height: 104px; min-height: 104px; padding: 14px 16px; }
 #view-chantiers #chantiers-kpi-band > .kpi-band { margin-bottom: 20px; }
 #view-chantiers #chantier-filters { margin-bottom: 14px; }
-#view-chantiers .list-toolbar { flex-wrap: nowrap; gap: 8px; }
-#view-chantiers .list-toolbar .list-search { min-width: 260px; margin-right: auto; margin-bottom: 12px; }
-#view-chantiers .list-toolbar select { min-width: 102px; max-width: 135px; margin-bottom: 12px; }
 #view-chantiers #chantiers-priorite-tri { min-width: 138px; max-width: 150px; }
 
 /* ---------- Liste des chantiers : des cartes, en grille ----------
@@ -1168,6 +1185,14 @@ input[type="checkbox"], input[type="radio"] { width: 24px; height: 24px; flex-sh
   }
   .list-header-row-devis > span:nth-child(3),
   .list-header-row-facture > span:nth-child(4) { text-align: right; }
+  /* Le filet de la colonne des sommes commence a l'en-tete, pas a la
+     premiere ligne : une reglure qui demarre au deuxieme rang se lit
+     comme un defaut d'alignement. */
+  .view[data-famille="registre"] .list-header-row-devis > span:nth-child(3),
+  .view[data-famille="registre"] .list-header-row-facture > span:nth-child(4) {
+    border-left: 1px solid var(--sa-border);
+    padding-left: var(--sa-space-4);
+  }
 }
 .list-row-paiement { font-size: var(--sa-text-xs); color: var(--sa-text-muted); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .list-row-echeance { font-size: var(--sa-text-xs); color: var(--sa-text-muted); white-space: nowrap; }
@@ -1176,19 +1201,7 @@ input[type="checkbox"], input[type="radio"] { width: 24px; height: 24px; flex-sh
    la meme ligne sans que la recherche ne domine visuellement. */
 .list-search-compact { max-width: 220px; }
 
-#view-factures .view-header { margin-bottom: 37px; }
-#view-factures .view-header-actions { margin-top: 24px; }
-#view-factures .view-header-actions .btn-primary { order: -1; }
 #view-factures .view-header-actions .btn-archives { border: 1px solid var(--sa-border-strong); padding: 8px 14px; border-radius: var(--sa-radius-sm); color: var(--sa-accent); }
-#view-factures #factures-tresorerie .kpi-card { height: 108px; min-height: 108px; padding-top: 18px; padding-bottom: 18px; }
-#view-factures #facture-filters { margin-bottom: var(--sa-space-4); }
-#view-factures .list-toolbar { flex-wrap: nowrap; gap: 10px; margin-bottom: var(--sa-space-4); }
-#view-factures .list-toolbar .list-search { flex: 0 1 260px; width: 260px; max-width: 260px; margin-right: auto; }
-#view-factures .list-toolbar select { flex-shrink: 0; min-width: 0; margin-bottom: 0; }
-#view-factures #factures-statut-filtre { width: 108px; }
-#view-factures #factures-paiement-filtre { width: 124px; }
-#view-factures #factures-echeance-filtre { width: 126px; }
-#view-factures #factures-sort { width: 112px; }
 #view-factures .list-row-primary .crm-avatar { width: 29px; height: 29px; }
 @media (max-width: 999px) {
   .list-row {
@@ -1319,8 +1332,6 @@ input[type="checkbox"], input[type="radio"] { width: 24px; height: 24px; flex-sh
 /* =====================================================================
    PLANNING — grille horaire, une seule couleur d'accent pour "aujourd'hui".
    ===================================================================== */
-#view-planning .view-header { margin-bottom: 29px; }
-#view-planning .view-header > .btn-primary { margin-top: 28px; }
 .planning-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--sa-space-3); margin-bottom: var(--sa-space-5); position: relative; }
 /* Recherche + filtres type/client/chantier : purement client (voir
    planningFilterItems), places entre la barre de navigation et la grille
@@ -1549,7 +1560,7 @@ input[type="checkbox"], input[type="radio"] { width: 24px; height: 24px; flex-sh
 .search-result-item:hover, .search-result-item.active { background: var(--sa-surface-2); }
 /* Le resultat que Entree ouvrira. Un aplat seul ne se distinguerait pas du
    survol : le cran de laiton dit lequel des deux est le curseur clavier. */
-.search-result-item.est-marque { background: var(--sa-surface-2); box-shadow: inset 2px 0 0 var(--sa-laiton); }
+.search-result-item.est-marque { background: var(--sa-surface-2); box-shadow: inset 2px 0 0 var(--sa-accent); }
 .search-result-item .title { font-weight: var(--sa-weight-semibold); font-size: var(--sa-text-sm); color: var(--sa-text); }
 .search-result-item .sub { font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
 .search-empty { padding: 24px 20px; text-align: center; color: var(--sa-text-muted); font-size: var(--sa-text-sm); }
@@ -1574,7 +1585,6 @@ input[type="checkbox"], input[type="radio"] { width: 24px; height: 24px; flex-sh
 
 /* ---------- Entreprise : espace de gestion commun aux huit onglets ---------- */
 #view-entreprise .view-header { margin-bottom: var(--sa-space-5); }
-#view-entreprise .view-header-desc { max-width: none; white-space: nowrap; }
 /* Huit onglets sur un filet, comme les onglets de toutes les autres vues.
    Ils vivaient dans un bandeau encadre et arrondi qui n'existait nulle part
    ailleurs dans le produit : deux grammaires pour la meme fonction. */
@@ -1583,7 +1593,7 @@ input[type="checkbox"], input[type="radio"] { width: 24px; height: 24px; flex-sh
 #view-entreprise .entreprise-tabs::-webkit-scrollbar { display: none; }
 #view-entreprise .entreprise-tabs .filter-chip { flex: 0 0 auto; margin: 0; padding: 9px 0; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: transparent; color: var(--sa-text-muted); font-size: var(--sa-text-xs); white-space: nowrap; }
 #view-entreprise .entreprise-tabs .filter-chip:hover { background: transparent; color: var(--sa-text); }
-#view-entreprise .entreprise-tabs .filter-chip.active { background: transparent; border-bottom-color: var(--sa-laiton); color: var(--sa-text); }
+#view-entreprise .entreprise-tabs .filter-chip.active { background: transparent; border-bottom-color: var(--sa-accent); color: var(--sa-text); }
 #view-entreprise [data-tab-panel] { min-height: 260px; }
 #view-entreprise .subsection-header { min-height: 52px; margin-bottom: 8px; padding-bottom: 14px; border-bottom: 1px solid var(--sa-border); }
 #view-entreprise .subsection-header h2 { font-size: var(--sa-text-lg) !important; }
@@ -1694,7 +1704,7 @@ input[type="checkbox"], input[type="radio"] { width: 24px; height: 24px; flex-sh
    pastille. Non lue, elle se voit ; lue, il n'y a rien - et c'est le bon
    signal, l'absence. */
 .notif-cran { width: 2px; height: 15px; background: transparent; }
-.notif-row.est-non-lue .notif-cran { background: var(--sa-laiton); }
+.notif-row.est-non-lue .notif-cran { background: var(--sa-warning); }
 .notif-main { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .notif-title { font-size: var(--sa-text-sm); font-weight: var(--sa-weight-medium); color: var(--sa-text); }
 .notif-row.est-lue .notif-title { font-weight: 400; color: var(--sa-text-muted); }
@@ -1723,28 +1733,15 @@ input[type="checkbox"], input[type="radio"] { width: 24px; height: 24px; flex-sh
 }
 .vue-barre-filtres > .filters { margin-bottom: 0; border-bottom: 0; }
 .vue-barre-filtres > .list-search { width: 242px; margin: 0 0 8px; }
-#view-notifications .view-header { margin-bottom: 22px; }
-#view-notifications .view-header-eyebrow { margin-bottom: 12px; }
-#view-notifications .view-header-desc { max-width: none; white-space: nowrap; }
 #view-notifications #notifications-list { padding-top: 6px; }
 .notifications-tools { display: flex; align-items: center; gap: 7px; margin-bottom: 8px; }
 .notifications-tools .list-search { width: 184px; margin: 0; }
 .notifications-tools select { width: 92px; padding: 8px 9px; font-size: var(--sa-text-xs); }
 
 @media (max-width: 900px) {
-  #view-devis .list-toolbar, #view-factures .list-toolbar { flex-wrap: wrap; }
-  #view-devis .list-toolbar .list-search, #view-factures .list-toolbar .list-search { flex: 1 1 100%; min-width: 0; max-width: none; margin-right: 0; }
-  #view-devis .list-toolbar select, #view-factures .list-toolbar select { flex: 1 1 130px; width: auto !important; }
-  #view-documents .list-toolbar { flex-wrap: wrap; margin-bottom: var(--sa-space-5); }
-  #view-documents .list-toolbar .list-search { flex: 1 1 100%; min-width: 0; max-width: none; }
-  #view-documents .list-toolbar select { flex: 1 1 130px; width: auto !important; max-width: none; }
   /* Chantiers manquait a cette liste : sa barre d'outils est en
      `flex-wrap: nowrap` (ligne 1100) et debordait donc de l'ecran en
      mobile, poussant toute la page en defilement horizontal. */
-  #view-chantiers .list-toolbar { flex-wrap: wrap; }
-  #view-chantiers .list-toolbar .list-search { flex: 1 1 100%; min-width: 0; margin-right: 0; }
-  #view-chantiers .list-toolbar select { flex: 1 1 130px; min-width: 0; max-width: none; }
-  #view-avis .view-header-desc, #view-entreprise .view-header-desc, #view-notifications .view-header-desc { white-space: normal; }
   #view-avis #avis-filters, #view-notifications #notifications-filters { width: 100%; }
   #view-avis .avis-header-actions .action-menu { position: static; }
   /* La rangee onglets + outils s'empile : les outils prennent la largeur. */
@@ -1818,38 +1815,93 @@ h1, h2, h3, .kpi-card-value, .dash-masthead-lede, .sidebar-brand-name {
 }
 
 /* =====================================================================
-   L'ATELIER — la colonne sombre
+   LE SOMMAIRE — la colonne de gauche
    ---------------------------------------------------------------------
-   Un seul plan sombre dans toute l'application : la navigation. Ce n'est
-   pas un reste de l'ancienne identite, c'est une decision de composition -
-   la table a dessin est eclairee, l'atelier autour ne l'est pas. Elle
-   donne au papier sa valeur et evite l'ecran uniformement clair.
-   ===================================================================== */
-.sidebar { background: var(--sa-sidebar); border-right: none; }
-.sidebar-brand { padding: 22px var(--sa-space-4) 18px; }
-.sidebar-brand-mark {
-  background: transparent;
-  color: var(--sa-laiton-sur-sombre);
-  border: 1px solid #4A4E42;
-  border-radius: 2px;
-  font-family: var(--sa-font-display);
-}
-.sidebar-brand-name { font-family: var(--sa-font-display); font-weight: 600; letter-spacing: 0; }
+   Pas une barre d'outils : le sommaire d'un classeur. Il recule d'un ton
+   sous le plan de travail parce qu'il n'EST pas le travail, et la section
+   ouverte en ressort en blanc - la feuille sortie du classeur.
 
-.nav-group-label { color: #8E9184; letter-spacing: 0.09em; }
-.nav-link { border-radius: 0; color: var(--sa-text-on-dark-muted); }
-.nav-link:hover { background: rgba(240, 237, 228, .05); color: var(--sa-text-on-dark); }
-/* L'element actif : pas d'aplat colore, un filet de laiton et de l'encre
-   claire. Le meme geste que le soulignement d'un onglet. */
-.nav-link.active { background: rgba(240, 237, 228, .07); color: var(--sa-text-on-dark); }
-.sidebar .nav-link::before { width: 2px; background: transparent; }
-.sidebar .nav-link.active::before { background: var(--sa-laiton-sur-sombre); }
-.nav-link.active .nav-icon { color: var(--sa-laiton-sur-sombre); }
-.sidebar-footer { border-top-color: #34382E; }
-.btn-ghost-small { color: var(--sa-text-on-dark-muted); }
-.btn-ghost-small:hover { background: rgba(240, 237, 228, .06); color: var(--sa-text-on-dark); }
-.badge-count { background: #34382E; color: var(--sa-text-on-dark-muted); border: none; }
-.nav-link.active .badge-count { background: var(--sa-laiton-sur-sombre); color: #1C1E1A; }
+   Ce qui la distingue vraiment d'une navigation de SaaS : les comptes
+   sont des CHIFFRES alignes a droite en chiffres tabulaires, pas des
+   pastilles rouges. On lit « Devis 2 · Factures 1 » comme on lit l'index
+   d'un registre, et la couleur ne sert qu'a la seule ligne qui porte un
+   vrai retard.
+   ===================================================================== */
+.sidebar {
+  background: var(--sa-rail);
+  border-right: 1px solid var(--sa-border);
+}
+.sidebar-brand {
+  padding: 18px var(--sa-space-4) 16px;
+  border-bottom: 1px solid var(--sa-border);
+  margin-bottom: var(--sa-space-2);
+}
+.sidebar-brand-mark {
+  background: var(--sa-accent);
+  color: var(--sa-text-on-accent);
+  border: none;
+  border-radius: var(--sa-radius-sm);
+  font-family: var(--sa-font);
+  font-weight: 700;
+}
+.sidebar-brand-name {
+  font-family: var(--sa-font-display);
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--sa-text);
+}
+
+.nav-group-label { color: var(--sa-text-faint); letter-spacing: 0.09em; }
+.nav-link { border-radius: var(--sa-radius-sm); color: var(--sa-text-muted); }
+.nav-link:hover { background: rgba(32, 40, 44, .045); color: var(--sa-text); }
+/* La section ouverte : la feuille blanche posee sur le sommaire, tenue
+   par un filet vert. Pas un aplat de couleur - la couleur de marque sert
+   a designer, elle ne remplit pas. */
+.sidebar .nav-link.active {
+  background: var(--sa-surface);
+  color: var(--sa-text);
+  box-shadow: var(--sa-shadow-feuille);
+}
+.sidebar .nav-link::before { width: 2px; background: transparent; border-radius: 0 2px 2px 0; }
+.sidebar .nav-link.active::before { background: var(--sa-accent); }
+.nav-link.active .nav-icon { color: var(--sa-accent); opacity: 1; }
+.sidebar-footer { border-top-color: var(--sa-border); }
+.btn-ghost-small { color: var(--sa-text-muted); }
+.btn-ghost-small:hover { background: rgba(32, 40, 44, .05); color: var(--sa-text); }
+
+/* Le compte : un nombre dans sa colonne, pas une pastille. */
+.badge-count {
+  background: none;
+  border: none;
+  padding: 0;
+  min-width: 0;
+  color: var(--sa-text-faint);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  font-weight: var(--sa-weight-medium);
+  font-size: var(--sa-text-xs);
+}
+.nav-link.active .badge-count { color: var(--sa-text-muted); }
+/* Le seul cas ou la couleur intervient : un retard reel. Un carre, pas un
+   rond - une marque portee sur un formulaire, pas une notification. */
+.badge-count.badge-alert {
+  background: none;
+  color: var(--sa-danger);
+  font-weight: var(--sa-weight-semibold);
+  position: relative;
+  padding-left: 10px;
+}
+.badge-count.badge-alert::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  margin-top: -2.5px;
+  background: var(--sa-danger);
+  border-radius: 1px;
+}
 .kbd-hint { border-color: var(--sa-border-strong); color: var(--sa-text-faint); }
 
 /* =====================================================================
@@ -1867,6 +1919,45 @@ h1, h2, h3, .kpi-card-value, .dash-masthead-lede, .sidebar-brand-name {
 }
 .topbar-search-btn:hover { background: var(--sa-surface); border-color: var(--sa-text-faint); }
 .topbar-avatar, .topbar-icon-btn { border-radius: var(--sa-radius-sm); }
+/* Le compte du sommaire est un chiffre dans sa colonne ; celui-ci est
+   pose sur une icone et n'a pas de colonne ou vivre - il garde donc un
+   fond. C'est le SEUL de l'application. */
+.topbar-badge.badge-count {
+  padding: 1px 4px;
+  min-width: 15px;
+  text-align: center;
+  background: var(--sa-danger);
+  color: var(--sa-text-on-accent);
+  border-radius: 3px;
+  font-size: var(--sa-text-2xs);
+  font-weight: var(--sa-weight-semibold);
+}
+.topbar-badge.badge-count::before { display: none; }
+
+/* =====================================================================
+   HAUTEURS DE CONTROLE
+   ---------------------------------------------------------------------
+   Une hauteur par famille, tenue partout. Des commandes qui changent de
+   taille d'un ecran a l'autre est le signe le plus sur qu'une interface
+   a ete assemblee plutot que composee. Sur un ecran tactile, le plancher
+   monte a 44 px : c'est la largeur d'un pouce, pas une convention.
+   ===================================================================== */
+.btn-primary, .btn-secondary, .btn-archives, .topbar-create-btn,
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+select, .list-search input {
+  min-height: var(--sa-control-h);
+}
+.btn-sm, .btn-sm-primary, .btn-ghost-small { min-height: var(--sa-control-h-sm); }
+.topbar-icon-btn, .topbar-avatar { width: 36px; height: 36px; }
+/* 16 px dans les champs : en dessous, iOS zoome a la mise au point et
+   l'utilisateur se retrouve deplace dans la page. */
+input, select, textarea { font-size: var(--sa-text-md); }
+@media (pointer: coarse) {
+  .btn-primary, .btn-secondary, .btn-archives, .topbar-create-btn,
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  select { min-height: var(--sa-touch); }
+  .btn-sm, .btn-sm-primary { min-height: 38px; }
+}
 
 /* =====================================================================
    BOUTONS — l'action primaire est de l'encre, pas de la couleur
@@ -1940,20 +2031,51 @@ label { color: var(--sa-text-muted); }
 .list-row:hover { background: var(--sa-surface); }
 
 /* =====================================================================
-   PASTILLES ET BADGES — un mot, une teinte, pas de pilule criarde
+   L'ETAT S'ECRIT, LE COMPTE S'ENCADRE
+   ---------------------------------------------------------------------
+   Deux objets qu'on confondait sous le meme habillage colore, alors
+   qu'ils ne disent pas la meme chose :
+
+     .badge  un ETAT - « Consulte », « Signe », « En retard ». Il se lit
+             dans une colonne, ligne apres ligne. Une pastille pleine par
+             ligne transforme un registre en guirlande, et quand tout est
+             colore plus rien ne ressort. L'etat s'ecrit donc en toutes
+             lettres, precede d'une marque carree de la couleur de son
+             sens : le mot porte l'information, la couleur la double.
+
+     .pill   un COMPTE ou une etiquette - « Documents 3 ». Un nombre isole
+             a besoin d'etre enclos pour qu'on voie a quoi il se rapporte.
+             Celui-la garde son fond.
+
+   C'est aussi la reponse a l'exigence d'accessibilite : personne ne doit
+   dependre de la teinte pour savoir ou en est une piece.
    ===================================================================== */
-.badge, .pill {
+.badge {
+  background: none;
+  border: none;
+  padding: 0;
+  border-radius: 0;
+  font-weight: var(--sa-weight-medium);
+  letter-spacing: 0;
+}
+.badge-gray { color: var(--sa-text-muted); }
+.badge-green { color: var(--sa-success); }
+.badge-orange { color: var(--sa-warning); }
+.badge-red { color: var(--sa-danger); font-weight: var(--sa-weight-semibold); }
+.badge-blue { color: var(--sa-info); }
+
+.pill {
   border-radius: var(--sa-radius-sm);
-  font-weight: 500;
+  font-weight: var(--sa-weight-medium);
   letter-spacing: 0.01em;
   border: 1px solid transparent;
 }
-.badge-gray, .pill-gray { background: var(--sa-surface-2); color: var(--sa-text-muted); border-color: var(--sa-border); }
-.badge-green, .pill-green { background: var(--sa-success-soft); color: var(--sa-success); border-color: #C9DACE; }
-.badge-orange { background: var(--sa-warning-soft); color: var(--sa-warning); border-color: #E4D2B0; }
-.badge-red, .pill-red { background: var(--sa-danger-soft); color: var(--sa-danger); border-color: #E3C4BC; }
-.badge-blue { background: var(--sa-info-soft); color: var(--sa-info); border-color: #C8D4DB; }
-.pill-accent { background: var(--sa-laiton-soft); color: var(--sa-laiton); border-color: #E0CFAE; }
+.pill-gray { background: var(--sa-surface-2); color: var(--sa-text-muted); border-color: var(--sa-border); }
+.pill-green { background: var(--sa-success-soft); color: var(--sa-success); border-color: var(--sa-success-line); }
+.pill-orange { background: var(--sa-warning-soft); color: var(--sa-warning); border-color: var(--sa-warning-line); }
+.pill-red { background: var(--sa-danger-soft); color: var(--sa-danger); border-color: var(--sa-danger-line); }
+.pill-blue { background: var(--sa-info-soft); color: var(--sa-info); border-color: var(--sa-info-line); }
+.pill-accent { background: var(--sa-accent-soft); color: var(--sa-accent); border-color: var(--sa-accent-line); }
 
 /* =====================================================================
    LA MARGE — gouttiere des pages composees
@@ -1975,17 +2097,35 @@ label { color: var(--sa-text-muted); }
   padding-right: var(--sa-space-6);
   border-right: 1px solid var(--sa-border);
 }
+/* L'intitule de marge etait en capitales espacees. Mesure faite, le mot
+   le plus long du produit - « Performance » - demandait alors 91 px dans
+   une colonne qui en offre 72 : il sortait de la marge et passait sous le
+   filet vertical. En casse normale il en demande 70, et tient.
+
+   Ce n'est pas qu'une affaire de place. Des capitales largement espacees
+   se dechiffrent lettre a lettre ; c'est acceptable pour un ornement, pas
+   pour un repere qu'on relit vingt fois par jour. */
 .sa-section-titre {
-  margin: 2px 0 0;
+  margin: 1px 0 0;
   font-family: var(--sa-font);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  font-size: var(--sa-text-2xs);
+  font-weight: var(--sa-weight-semibold);
+  letter-spacing: 0;
+  line-height: 1.35;
   color: var(--sa-text-faint);
   text-align: right;
+  text-wrap: balance;
+  overflow-wrap: break-word;
 }
-.sa-section-note { margin: 6px 0 0; font-size: 0.6875rem; color: var(--sa-text-faint); text-align: right; line-height: 1.5; }
+.sa-section-note {
+  margin: 5px 0 0;
+  font-size: var(--sa-text-2xs);
+  color: var(--sa-text-faint);
+  text-align: right;
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+  hyphens: none;
+}
 .sa-section-corps { min-width: 0; padding-bottom: 40px; }
 
 /* En dessous de 1100 px la gouttiere disparait : elle couterait plus de
@@ -2177,7 +2317,7 @@ label { color: var(--sa-text-muted); }
 }
 /* Le laiton signale le seul chiffre qui appelle une action : ce qui reste
    du. C'est exactement son role - un detail, jamais un aplat. */
-.dash-chiffre.est-du .dash-chiffre-valeur { border-bottom-color: var(--sa-laiton); }
+.dash-chiffre.est-du .dash-chiffre-valeur { border-bottom-color: var(--sa-warning); }
 .dash-chiffre-note { font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
 /* Les quatre chiffres d'un chantier deplie : meme geste que sur l'accueil,
    a une echelle plus modeste - ils vivent dans une carte, pas sur une page. */
@@ -2361,7 +2501,7 @@ label { color: var(--sa-text-muted); }
   font-family: var(--sa-font-display);
   font-size: var(--sa-text-md);
   font-weight: 600;
-  color: var(--sa-laiton);
+  color: var(--sa-text-faint);
   line-height: 1;
 }
 .repertoire-lettre:first-child { margin-top: 0; }
@@ -2577,22 +2717,46 @@ label { color: var(--sa-text-muted); }
    ligne de contexte. Meme grammaire que la phrase d'ouverture de
    l'accueil, appliquee a une autre question.
    ===================================================================== */
+/* ---------- L'etat des lieux d'un registre ----------
+   Ce bloc titrait en Fraunces 25 px : « Rien a relancer aujourd'hui »
+   pesait alors plus lourd que le nom de la page, et une bonne nouvelle
+   occupait le haut de l'ecran. Un etat des lieux se CONSTATE - il tient
+   sur deux lignes de texte courant, et laisse la place au travail. */
 .devis-suivi { margin-bottom: var(--sa-space-6); }
+.devis-suivi-lede {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--sa-space-2);
+}
 .devis-suivi-lede h3 {
   margin: 0;
-  font-family: var(--sa-font-display);
-  font-size: clamp(1.25rem, 2.4vw, 1.6rem);
-  font-weight: 500; line-height: 1.2; color: var(--sa-text);
+  font-family: var(--sa-font);
+  font-size: var(--sa-text-base);
+  font-weight: var(--sa-weight-semibold);
+  line-height: 1.45;
+  color: var(--sa-text);
 }
-.devis-suivi-lede p { margin: 6px 0 0; font-size: var(--sa-text-sm); color: var(--sa-text-muted); }
-/* Le filet terre cuite ne s'allume que s'il y a vraiment quelque chose a
-   relancer. Une page rouge tous les matins cesse d'alerter. */
-.devis-suivi-lede.est-alerte { padding-left: 14px; border-left: 2px solid var(--sa-danger); }
+.devis-suivi-lede p {
+  margin: 0;
+  font-size: var(--sa-text-base);
+  line-height: 1.45;
+  color: var(--sa-text-muted);
+}
+/* Le filet ne s'allume que s'il y a vraiment quelque chose a relancer.
+   Une page rouge tous les matins cesse d'alerter. */
+.devis-suivi-lede.est-alerte {
+  padding-left: 12px;
+  border-left: 2px solid var(--sa-danger);
+  width: 100%;
+}
 .devis-suivi-contexte {
-  margin: var(--sa-space-4) 0 0;
-  padding-top: 14px;
-  border-top: 1px solid var(--sa-border);
-  font-size: var(--sa-text-sm); color: var(--sa-text-muted);
+  margin: 6px 0 0;
+  padding-top: 0;
+  border-top: none;
+  font-size: var(--sa-text-sm);
+  color: var(--sa-text-muted);
+  font-variant-numeric: tabular-nums;
 }
 .devis-suivi-contexte strong { color: var(--sa-text); font-weight: 600; font-variant-numeric: tabular-nums; }
 .devis-suivi-contexte .est-alerte { color: var(--sa-warning); }
@@ -2604,7 +2768,7 @@ label { color: var(--sa-text-muted); }
    depuis douze jours ; l'ancienne version disait « En attente de réponse »
    dans les deux cas. */
 .list-row-suivi.is-alerte { color: var(--sa-danger); font-weight: 500; }
-.list-row-suivi.is-accent { color: var(--sa-laiton); font-weight: 500; }
+.list-row-suivi.is-accent { color: var(--sa-warning); font-weight: 500; }
 .list-row-suivi.is-success { color: var(--sa-success); }
 .list-row-suivi.is-muted { color: var(--sa-text-muted); }
 .list-row.is-due { box-shadow: inset 2px 0 0 var(--sa-danger); }
@@ -2708,7 +2872,7 @@ label { color: var(--sa-text-muted); }
   border-top: 1px solid var(--sa-border);
   font-size: var(--sa-text-xs);
 }
-.totalisateur-ligne.est-acompte span:last-child { color: var(--sa-laiton); font-size: var(--sa-text-sm); }
+.totalisateur-ligne.est-acompte span:last-child { color: var(--sa-warning); font-size: var(--sa-text-sm); }
 /* Le montant HT sous l'acompte : c'est celui de la facture d'acompte que le
    produit generera. La ligne au-dessus donne le TTC, celui que le client
    voit sur la page qu'il signe. */
@@ -2750,7 +2914,7 @@ label { color: var(--sa-text-muted); }
 }
 .devis-detail-suivi { font-size: var(--sa-text-sm); }
 .devis-detail-suivi.is-alerte { color: var(--sa-danger); font-weight: 500; }
-.devis-detail-suivi.is-accent { color: var(--sa-laiton); font-weight: 500; }
+.devis-detail-suivi.is-accent { color: var(--sa-warning); font-weight: 500; }
 .devis-detail-suivi.is-success { color: var(--sa-success); }
 .devis-detail-suivi.is-muted { color: var(--sa-text-muted); }
 
@@ -3006,9 +3170,9 @@ label { color: var(--sa-text-muted); }
    samedi peut etre aujourd'hui. */
 .planning-day-cell.is-today {
   background: var(--sa-surface);
-  box-shadow: inset 0 2px 0 var(--sa-laiton);
+  box-shadow: inset 0 2px 0 var(--sa-accent);
 }
-.planning-day-cell.is-today .planning-day-header { color: var(--sa-laiton); }
+.planning-day-cell.is-today .planning-day-header { color: var(--sa-accent); }
 .planning-day-cell.drag-over { background: var(--sa-accent-soft); }
 
 /* Les reglures : elles se repetent toutes les 41 px. Au meme ton que les
@@ -3066,7 +3230,7 @@ label { color: var(--sa-text-muted); }
 .stats-lecture p {
   margin: 0 0 var(--sa-space-4);
   padding-left: 16px;
-  border-left: 2px solid var(--sa-laiton);
+  border-left: 2px solid var(--sa-accent);
   font-family: var(--sa-font-display);
   font-size: var(--sa-text-lg);
   font-weight: 400; line-height: 1.45;
@@ -3174,7 +3338,7 @@ label { color: var(--sa-text-muted); }
   color: var(--sa-accent);        /* 8.28:1 sur cette pastille */
   border-bottom-color: var(--sa-accent);
 }
-.filter-chip.active { border-bottom-color: var(--sa-laiton); color: var(--sa-text); }
+.filter-chip.active { border-bottom-color: var(--sa-accent); color: var(--sa-text); }
 .filter-chip { color: var(--sa-text-muted); }
 .filter-chip-count { color: var(--sa-text-faint); }
 .subfilter-link.active { color: var(--sa-text); }
@@ -3243,9 +3407,6 @@ label { color: var(--sa-text-muted); }
       Chantiers avant lui : ses trois listes deroulantes a `min-width:
       150px` debordaient de 214 px. */
 @media (max-width: 900px) {
-  #view-clients .list-toolbar { flex-wrap: wrap; }
-  #view-clients .list-toolbar .list-search { flex: 1 1 100%; min-width: 0; }
-  #view-clients .list-toolbar select { flex: 1 1 132px; min-width: 0; max-width: none; }
 }
 
 /* 3. LA BARRE DE MODULE de Devis a ete supprimee : trois de ses cinq
@@ -3309,7 +3470,7 @@ label { color: var(--sa-text-muted); }
   line-height: 1.18; color: var(--sa-text); font-variant-numeric: tabular-nums;
 }
 .avis-lede-sub { margin: 0 0 var(--sa-space-2); font-size: var(--sa-text-sm); color: var(--sa-text-muted); }
-.avis-stars { color: var(--sa-laiton); letter-spacing: 2px; }
+.avis-stars { color: var(--sa-warning); letter-spacing: 2px; }
 
 /* La repartition des notes. Une moyenne de 4,7 peut sortir de cinq avis a
    4,7 ou de quatre 5 et d'un 1 : ce ne sont pas les memes entreprises, et
@@ -3318,9 +3479,9 @@ label { color: var(--sa-text-muted); }
 .avis-repartition { display: flex; flex-direction: column; gap: 7px; max-width: 420px; }
 .avis-repartition-ligne { display: grid; grid-template-columns: 34px minmax(0, 1fr) 24px; align-items: center; gap: var(--sa-space-3); }
 .avis-repartition-note { font-size: var(--sa-text-xs); color: var(--sa-text-muted); font-variant-numeric: tabular-nums; }
-.avis-repartition-note span { color: var(--sa-laiton); }
+.avis-repartition-note span { color: var(--sa-text-muted); }
 .avis-repartition-piste { height: 3px; background: var(--sa-surface-2); }
-.avis-repartition-trait { display: block; height: 100%; background: var(--sa-laiton); }
+.avis-repartition-trait { display: block; height: 100%; background: var(--sa-warning); }
 .avis-repartition-compte { font-size: var(--sa-text-xs); color: var(--sa-text-muted); text-align: right; font-variant-numeric: tabular-nums; }
 
 /* « A demander » : des lignes reglees. La boite en pointilles qui les
@@ -3386,8 +3547,8 @@ label { color: var(--sa-text-muted); }
 .field-hint { color: var(--sa-text-muted); font-size: var(--sa-text-xs); }
 .moment-banner {
   padding: 11px 14px;
-  border-left: 2px solid var(--sa-laiton);
-  background: var(--sa-laiton-soft);
+  border-left: 2px solid var(--sa-warning);
+  background: var(--sa-warning-soft);
   border-radius: 0 var(--sa-radius-sm) var(--sa-radius-sm) 0;
   font-size: var(--sa-text-sm); color: var(--sa-text);
 }
@@ -3406,7 +3567,7 @@ label { color: var(--sa-text-muted); }
 }
 .auth-form .btn-primary:hover { background: var(--sa-accent-strong); border-color: var(--sa-accent-strong); }
 .auth-form input, .auth-form select { border-radius: var(--sa-radius-sm); }
-.auth-tab.active { border-bottom-color: var(--sa-laiton); }
+.auth-tab.active { border-bottom-color: var(--sa-accent); }
 
 /* =====================================================================
    DETAIL D'UNE FACTURE — « le reglement »
@@ -3542,3 +3703,265 @@ body.est-dossier-ouvert .view { display: none; }
 /* La mention d'un report. Reporter ne fait pas disparaitre le probleme : la
    ligne le dit, pour qu'on ne prenne pas un report pour un reglement. */
 .notif-report { display: block; margin-top: 2px; font-size: var(--sa-text-2xs); color: var(--sa-warning); }
+
+
+/* =====================================================================
+   =====================================================================
+   LES FAMILLES DE COMPOSITION
+   =====================================================================
+   ---------------------------------------------------------------------
+   MEME IDENTITE, PAS MEME PAGE.
+
+   Chaque vue declare sa famille dans le balisage (`data-famille` sur la
+   section, recopie sur <body> par switchView). La famille dit la MISSION
+   de l'ecran, et c'est la mission qui decide de la composition :
+
+     registre    on parcourt et on compare        Prospects, Clients,
+                                                  Devis, Factures, Documents
+     dossier     on comprend une situation        fiche client, fiche chantier
+     document    on lit et on verifie une piece   devis, facture
+     agenda      on lit du temps                  Planning
+     rapport     on tire des conclusions          Statistiques
+     poste       on decide quoi faire maintenant  Accueil
+     file        on execute a la suite            Taches, Notifications
+     parc        on reconnait des objets          Chantiers
+
+   Ce qui reste identique d'une famille a l'autre : l'encre, les filets,
+   les hauteurs de controle, le traitement des nombres, la maniere de dire
+   un etat. Ce qui change : ce qui domine, et donc ou va la largeur.
+
+   La regle d'ecriture : une famille ne se declare qu'ICI. Aucune vue ne
+   doit recevoir de retouche a son seul nom - c'est ce qui avait produit
+   sept largeurs de colonne differentes pour une meme coquille.
+   ===================================================================== */
+
+/* ---------------------------------------------------------------------
+   La largeur suit la mission
+   --------------------------------------------------------------------- */
+/* Lire du temps ou comparer des objets demande de la largeur. */
+body[data-famille="agenda"] .content,
+body[data-famille="parc"] .content { max-width: 1560px; }
+/* Un rapport se lit. Au-dela d'une certaine largeur, l'oeil perd la ligne
+   et une comparaison chiffree devient un balayage. */
+body[data-famille="rapport"] .content { max-width: 1080px; }
+/* Une file s'execute de haut en bas : elle n'a pas besoin de la largeur
+   d'un registre, et l'etaler eloigne l'intitule de son echeance. */
+body[data-famille="file"] .content { max-width: 940px; }
+
+/* =====================================================================
+   LE REGISTRE
+   ---------------------------------------------------------------------
+   Un registre n'est pas une page qu'on lit, c'est un outil qu'on ouvre
+   vingt fois par jour. Son en-tete doit donc etre le plus court possible
+   et dire l'ETAT DES LIEUX, pas presenter la fonctionnalite.
+
+   Ce qui a saute : le sur-titre, qui repetait le groupe de la colonne de
+   gauche ; et la phrase de presentation, qui expliquait a un utilisateur
+   quotidien ce qu'il sait depuis le premier jour. L'explication garde sa
+   place la ou elle sert vraiment - dans l'etat vide, au premier usage.
+   ===================================================================== */
+.view[data-famille="registre"] .view-header {
+  align-items: baseline;
+  gap: var(--sa-space-5);
+  margin-bottom: 0;
+  padding-bottom: var(--sa-space-4);
+}
+.view[data-famille="registre"] .view-header-eyebrow,
+.view[data-famille="registre"] .view-header-desc { display: none; }
+.view[data-famille="registre"] .view-header h2 {
+  font-size: var(--sa-text-xl);
+  font-weight: var(--sa-weight-semibold);
+  line-height: 1.2;
+}
+.view[data-famille="registre"] .view-header-actions { align-self: center; }
+
+/* La bande de situation : ce qui se passe, en chiffres, sur une ou deux
+   lignes. Elle prend la place du titre bavard, pas celle de la liste. */
+.view[data-famille="registre"] .devis-suivi,
+.view[data-famille="registre"] .reglette,
+.view[data-famille="registre"] .balance {
+  border-top: 1px solid var(--sa-border);
+  padding-top: var(--sa-space-4);
+  margin-bottom: var(--sa-space-5);
+}
+
+/* ---------- La reglure ----------
+   Un registre se lit en colonnes. L'en-tete de colonne existait dans le
+   balisage mais restait masque : une liste sans nom de colonne oblige a
+   deduire ce que chaque valeur represente, ligne apres ligne. */
+@media (min-width: 1101px) {
+  .view[data-famille="registre"] .list-header-row {
+    display: grid;
+    position: sticky;
+    top: var(--sa-header-h);
+    z-index: 2;
+    background: var(--sa-surface-2);
+    border-bottom: 1px solid var(--sa-border-strong);
+    border-radius: var(--sa-radius-sm) var(--sa-radius-sm) 0 0;
+    padding: 7px var(--sa-space-3);
+    font-size: var(--sa-text-2xs);
+    font-weight: var(--sa-weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--sa-text-faint);
+  }
+}
+.view[data-famille="registre"] .list-row {
+  padding: 11px var(--sa-space-3);
+  background: var(--sa-surface);
+  transition: background-color var(--sa-duration-fast) var(--sa-ease);
+}
+.view[data-famille="registre"] .list-row:hover { background: var(--sa-surface-2); }
+
+/* ---------- LA COLONNE DES MONTANTS ----------
+   La signature du registre, et elle vient du metier : dans un livre de
+   comptes, la colonne des sommes est separee du libelle par un filet
+   vertical. Ce n'est pas un ornement - c'est ce qui permet de descendre
+   la colonne des yeux sans relire les intitules.
+
+   Il faut `align-self: stretch` pour que le filet coure sur toute la
+   hauteur de la ligne : une cellule de grille centree ne fait que la
+   hauteur de son texte, et le filet apparaitrait en pointille. */
+.view[data-famille="registre"] .list-row-amount,
+.view[data-famille="registre"] .list-header-row .est-colonne-montant {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-end;
+  border-left: 1px solid var(--sa-border);
+  padding-left: var(--sa-space-4);
+}
+.view[data-famille="registre"] .list-row-amount {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* ---------- La barre de commandes ----------
+   Elle appartient au registre ET au parc : les deux se parcourent avec une
+   recherche et des filtres. Vingt-huit regles ecrites vue par vue disaient
+   ceci, dans cinq dialectes legerement differents - et divergents :
+   Documents refusait le retour a la ligne sur bureau, ce qui faisait
+   sortir sa derniere liste deroulante de 18 px hors du champ.
+
+   Chercher et filtrer n'est pas agir : ces controles descendent d'un cran.
+   Ils gardent leur zone tactile, ils perdent leur poids visuel. */
+.view[data-famille="registre"] .list-toolbar,
+.view[data-famille="parc"] .list-toolbar {
+  /* Une barre de commandes PASSE A LA LIGNE plutot que de deborder ;
+     quand la place existe, elle tient sur une ligne de toute facon. */
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: var(--sa-space-4);
+}
+.view[data-famille="registre"] .list-toolbar select,
+.view[data-famille="parc"] .list-toolbar select,
+.view[data-famille="registre"] .list-search input,
+.view[data-famille="parc"] .list-search input {
+  min-height: var(--sa-control-h-sm);
+  font-size: var(--sa-text-sm);
+  background: var(--sa-surface);
+  border-color: var(--sa-border-strong);
+}
+/* Une liste deroulante prend la largeur de son contenu, pas une largeur de
+   gabarit. Quatorze reglages ecrits au nom d'une vue - « #devis-sort :
+   106 px », « #factures-sort : 112 px » - disaient la meme chose, une
+   valeur mesuree a la main a la fois. */
+.view[data-famille="registre"] .list-toolbar select,
+.view[data-famille="parc"] .list-toolbar select {
+  margin-bottom: 0;
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 0;
+  padding: 0 30px 0 10px;
+}
+/* La recherche passe en premier et prend ce qui reste : sur un registre,
+   on cherche d'abord et on filtre ensuite. */
+.view[data-famille="registre"] .list-search,
+.view[data-famille="parc"] .list-search {
+  margin-bottom: 0;
+  flex: 1 1 240px;
+  min-width: 160px;
+  max-width: 460px;
+  margin-right: auto;
+}
+@media (max-width: 1100px) {
+  .view[data-famille="registre"] .list-search,
+  .view[data-famille="parc"] .list-search { max-width: none; flex-basis: 100%; }
+}
+
+/* ---------- L'action dominante passe devant ----------
+   « + Nouveau devis » et « Archives » etaient poses dans l'ordre du
+   balisage, et trois vues corrigeaient cet ordre pour elles seules. Une
+   seule action domine un contexte, et elle se lit en premier : la regle
+   vaut pour tout le produit, elle n'a pas a etre redite par ecran. */
+.view-header-actions .btn-primary { order: -1; }
+/* Corollaire : ce qui n'est pas l'action dominante doit LE MONTRER. Une
+   archive consultee trois fois par an ne merite pas le meme poids qu'une
+   creation faite dix fois par jour. */
+.view-header-actions .btn-archives {
+  border: 1px solid var(--sa-border-strong);
+  background: transparent;
+  color: var(--sa-text-muted);
+  font-weight: var(--sa-weight-normal);
+}
+.view-header-actions .btn-archives:hover { background: var(--sa-surface); color: var(--sa-text); }
+
+/* =====================================================================
+   LE POSTE DE TRAVAIL — l'accueil
+   ---------------------------------------------------------------------
+   La seule vue ou un grand titre se justifie : il n'annonce pas la page,
+   il EST la reponse a « qu'est-ce que je dois faire ? ». Ailleurs, un
+   titre de cette taille ne fait que remplir le haut de l'ecran.
+   ===================================================================== */
+body[data-famille="poste"] .content { max-width: 1180px; }
+
+/* =====================================================================
+   L'AGENDA — le planning
+   ---------------------------------------------------------------------
+   Il a le droit d'etre plus dense que le reste : sa fonction est de faire
+   tenir du temps dans de l'espace. Une echelle de texte plus serree n'est
+   pas une incoherence ici, c'est la consequence de la mission.
+   ===================================================================== */
+body[data-famille="agenda"] .view-header { margin-bottom: var(--sa-space-4); }
+body[data-famille="agenda"] .view-header-desc { display: none; }
+
+/* =====================================================================
+   LA FILE — taches et notifications
+   ---------------------------------------------------------------------
+   On la descend, on la vide. Colonne etroite, echeance toujours visible,
+   contexte metier a portee de regard.
+   ===================================================================== */
+body[data-famille="file"] .view-header h2 {
+  font-size: var(--sa-text-xl);
+  font-weight: var(--sa-weight-semibold);
+}
+body[data-famille="file"] .view-header-eyebrow { display: none; }
+
+/* =====================================================================
+   L'ETAT, PARTOUT DE LA MEME MANIERE
+   ---------------------------------------------------------------------
+   Un carre, pas un rond. Un rond lit « voyant lumineux » ; un carre lit
+   « marque portee sur un formulaire », ce qui est exactement la nature de
+   l'information. Et le mot est toujours la : la couleur ne porte jamais
+   seule le sens - un ecran vu en plein soleil, ou par quelqu'un qui
+   distingue mal le rouge du vert, doit rester lisible.
+   ===================================================================== */
+.badge::before {
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
+}
+
+/* =====================================================================
+   CORRECTIFS DE LA BASCULE — anciens fonds sombres
+   ---------------------------------------------------------------------
+   La barre basse et le sommaire etaient sombres ; leur encre claire est
+   restee accrochee a des regles qui vivent maintenant sur du blanc. Sans
+   cela, l'onglet actif de la barre mobile ecrit en blanc sur blanc.
+   ===================================================================== */
+@media (max-width: 900px) {
+  .bottom-nav .nav-link.active { color: var(--sa-accent); }
+  .bottom-nav .nav-link .badge-count { color: var(--sa-text-faint); }
+  .more-drawer-box { background: var(--sa-surface); }
+}

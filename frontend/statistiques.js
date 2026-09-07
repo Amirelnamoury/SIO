@@ -57,7 +57,11 @@ async function ouvrirSourceStatistique(cle) {
 function caAreaChartSvg(caParMois, { dernierEnCours = false } = {}) {
   // PAD_R tient compte de l'etiquette du dernier mois, centree sous son
   // point : a 8 px, « sept. » sortait du cadre et se retrouvait rognee.
-  const W = 760, H = 220, PAD_L = 44, PAD_R = 22, PAD_T = 12, PAD_B = 24;
+  // PAD_L : la gouttiere de gauche doit contenir la GRADUATION la plus
+  // large. Mesuree a 44 px, elle en demandait 60 tant que l'axe affichait
+  // des montants complets ; l'axe est passe aux ordres de grandeur
+  // (fmtEuroAxe) et 52 px lui laissent de la marge.
+  const W = 760, H = 220, PAD_L = 52, PAD_R = 22, PAD_T = 12, PAD_B = 24;
   const values = caParMois.map((m) => m.ca);
   const max = Math.max(1, ...values);
   const innerW = W - PAD_L - PAD_R, innerH = H - PAD_T - PAD_B;
@@ -79,7 +83,7 @@ function caAreaChartSvg(caParMois, { dernierEnCours = false } = {}) {
   const gridLines = [0, 0.25, 0.5, 0.75, 1].map((f) => {
     const y = PAD_T + innerH * (1 - f);
     return `<line x1="${PAD_L}" y1="${y.toFixed(1)}" x2="${W - PAD_R}" y2="${y.toFixed(1)}" class="chart-gridline"/>
-      <text x="${PAD_L - 8}" y="${(y + 3).toFixed(1)}" class="chart-axis-label" text-anchor="end">${fmtEuro(Math.round(max * f))}</text>`;
+      <text x="${PAD_L - 8}" y="${(y + 3).toFixed(1)}" class="chart-axis-label" text-anchor="end">${fmtEuroAxe(Math.round(max * f))}</text>`;
   }).join("");
   const moisLabels = caParMois.map((m, i) => {
     if (caParMois.length > 8 && i % 2 !== 0 && i !== caParMois.length - 1) return "";

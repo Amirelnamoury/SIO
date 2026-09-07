@@ -31,6 +31,13 @@ function switchView(view) {
   // liens de nav ci-dessous.
   document.body.classList.toggle("is-view-dashboard", view === "dashboard");
   document.body.dataset.view = view;
+  // La FAMILLE de composition de la vue, remontee sur <body>. Elle est
+  // declaree une fois pour toutes sur la section (data-famille dans
+  // index.html) ; la recopier ici permet a la coquille - largeur de la
+  // colonne de travail, gouttieres, densite - de suivre la mission de la
+  // page sans qu'aucune regle n'ait a enumerer des identifiants de vue.
+  const section = document.getElementById(`view-${view}`);
+  document.body.dataset.famille = (section && section.dataset.famille) || "registre";
   document.querySelectorAll(".nav-link").forEach((btn) => btn.classList.toggle("active", btn.dataset.view === view));
   // Sur mobile, la nav devient une rangee horizontale scrollable : sans ca,
   // l'onglet actif peut rester hors champ apres un changement de vue
