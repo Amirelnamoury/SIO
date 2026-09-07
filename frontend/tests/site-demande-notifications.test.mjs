@@ -35,6 +35,6 @@ for (const [type, objet] of [
   );
 }
 assert.match(routage, /case "conformite":[\s\S]*?data-tab="conformite"/, "la conformité doit ouvrir son onglet");
-assert.match(appSource, /case "client": showTimeline\(identifiant\)/, "ouvrir un client doit afficher son dossier");
+assert.match(appSource, /case "client": return showTimeline\(identifiant\)/, "ouvrir un client doit afficher son dossier");
 
 console.log("OK - site-demande-notifications.test.mjs");

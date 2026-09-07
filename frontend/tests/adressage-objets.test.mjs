@@ -40,7 +40,9 @@ assert.deepEqual(temporisees, [], `navigation temporisee residuelle : ${temporis
 // 2. ouvrirObjet ouvre la bonne piece, et refuse un identifiant vide.
 // ---------------------------------------------------------------------
 const ouvreStart = appSource.indexOf("async function ouvrirObjet");
-const ouvreEnd = appSource.indexOf("\n}", ouvreStart) + 2;
+// ouvrirObjet delegue l'ouverture proprement dite a ouvrirFiche, juste en
+// dessous : les deux sont indissociables et s'executent donc ensemble.
+const ouvreEnd = appSource.indexOf("\n}", appSource.indexOf("async function ouvrirFiche")) + 2;
 const cibleStart = appSource.indexOf("async function ouvrirCible");
 const cibleEnd = appSource.indexOf("\n}", cibleStart) + 2;
 assert.ok(ouvreStart !== -1 && cibleStart !== -1, "les ouvertures d'objet sont introuvables");
@@ -52,11 +54,24 @@ const contexte = {
     facture: { view: "factures" }, chantier: { view: "chantiers" },
   },
   switchView: async (view) => { journal.push(`vue:${view}`); },
-  showTimeline: (id) => journal.push(`client:${id}`),
-  showDevisDetail: (id) => journal.push(`devis:${id}`),
-  showFactureDetail: (id) => journal.push(`facture:${id}`),
+  // Les vrais ouvreurs rendent VRAI quand la fiche s'affiche, FAUX quand la
+  // piece n'est plus dans la liste (archivee, supprimee) : `absent` permet
+  // d'eprouver ce second cas, celui d'une adresse recue par message.
+  absent: false,
+  showTimeline: (id) => { journal.push(`client:${id}`); return !contexte.absent; },
+  showDevisDetail: (id) => { journal.push(`devis:${id}`); return !contexte.absent; },
+  showFactureDetail: (id) => { journal.push(`facture:${id}`); return !contexte.absent; },
   focusChantierCard: () => journal.push("chantier:focus"),
-  document: { querySelector: () => ({ click: () => journal.push("chantier:deplie") }) },
+  document: {
+    querySelector: () => (contexte.absent
+      ? null
+      : { click: () => journal.push("chantier:deplie"), getAttribute: () => "false" }),
+    body: { dataset: {} },
+  },
+  // L'adresse est ecrite par les ouvreurs eux-memes, hors de ce decoupage,
+  // sauf pour le chantier - qui n'a pas de fonction d'ouverture a lui.
+  ecrireAdresse: () => {},
+  adresseFiche: (type, id) => `#/${type}/${id}`,
 };
 vm.runInNewContext(
   `let chantierFocusId = null;\n${appSource.slice(ouvreStart, ouvreEnd)}\n${appSource.slice(cibleStart, cibleEnd)}\nglobalThis.__ouvre = { ouvrirObjet, ouvrirCible };`,

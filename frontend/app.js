@@ -464,7 +464,14 @@ function enterDashboard() {
   document.getElementById("auth-screen").hidden = true;
   document.getElementById("dashboard-screen").hidden = false;
   refreshProfilePhoto().catch(() => {});
-  switchView("dashboard");
+  // Une adresse dans la barre du navigateur veut dire qu'on vient d'un lien
+  // ou d'un rechargement : elle a la priorite sur l'accueil par defaut.
+  if (window.location.hash.startsWith("#/")) {
+    derniereAdresseAppliquee = null;
+    appliquerAdresse();
+  } else {
+    switchView("dashboard");
+  }
   refreshBadges();
   maybeShowOnboarding();
 }
@@ -543,10 +550,16 @@ document.addEventListener("click", (e) => {
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && !document.getElementById("onboarding-modal").hidden) finishOnboarding();
   if (e.key === "Escape") {
-    ["panel-profil", "panel-timeline", "panel-archives"].forEach((id) => {
+    // Le profil et les archives ne sont pas des fiches adressables : ils se
+    // referment tels quels. Les trois fiches, elles, passent par l'adresse,
+    // pour que Precedent et Echap laissent le meme etat derriere eux.
+    ["panel-profil", "panel-archives"].forEach((id) => {
       const el = document.getElementById(id);
       if (el && !el.hidden) el.hidden = true;
     });
+    const fiche = ["panel-timeline", "panel-devis", "panel-facture"]
+      .some((id) => !document.getElementById(id)?.hidden);
+    if (fiche) fermerFicheEtRevenir();
   }
 });
 
@@ -586,6 +599,9 @@ function switchView(view) {
   document.querySelectorAll(".view").forEach((section) => {
     section.hidden = section.id !== `view-${view}`;
   });
+  // L'adresse suit l'ecran. ouvrirObjet() la precisera ensuite avec
+  // l'identifiant de la fiche ouverte.
+  ecrireAdresse(`#/${view}`);
   // switchView RETOURNE desormais la promesse du chargeur de la vue.
   // Sans elle, tout appelant voulant ouvrir un objet apres la bascule ne
   // pouvait qu'attendre au jugé : `setTimeout(..., 300)`. Un reseau lent
@@ -619,21 +635,142 @@ async function ouvrirObjet(type, id) {
   const identifiant = Number(id);
   if (!Number.isInteger(identifiant) || identifiant <= 0) return false;
   await switchView(meta.view);
+  // Chaque ouverture rend VRAI ou FAUX. Un devis archive, une fiche
+  // supprimee, un identifiant recopie de travers : sans cette reponse,
+  // l'artisan restait devant une liste ou rien ne s'ouvrait, sans un mot.
+  return ouvrirFiche(type, identifiant);
+}
+
+async function ouvrirFiche(type, identifiant) {
   switch (type) {
-    case "client": showTimeline(identifiant); return true;
-    case "devis": showDevisDetail(identifiant); return true;
-    case "facture": showFactureDetail(identifiant); return true;
+    case "client": return showTimeline(identifiant);
+    case "devis": return showDevisDetail(identifiant);
+    case "facture": return showFactureDetail(identifiant);
     case "chantier": {
       // Le chantier n'a pas de panneau : il se deplie dans sa carte. On
       // reutilise le mecanisme de mise en avant deja en place.
+      const carte = document.querySelector(`[data-chantier-id="${identifiant}"]`);
+      if (!carte) return false;
       chantierFocusId = identifiant;
       focusChantierCard();
-      document.querySelector(`[data-action="toggle-chantier-details"][data-id="${identifiant}"]`)?.click();
+      // Le bouton BASCULE : cliquer sur un dossier deja ouvert le refermerait.
+      const bascule = document.querySelector(`[data-action="toggle-chantier-details"][data-id="${identifiant}"]`);
+      if (bascule && bascule.getAttribute("aria-expanded") !== "true") bascule.click();
+      ecrireAdresse(adresseFiche("chantier", identifiant));
       return true;
     }
     default: return false;
   }
 }
+
+// ===================== Adresses =====================
+// Chaque vue et chaque fiche a une adresse : on peut la mettre en favori,
+// l'envoyer par message, la rouvrir apres un rechargement, et le bouton
+// Precedent du navigateur fait ce qu'il annonce. Jusqu'ici l'URL ne bougeait
+// jamais : quel que soit l'ecran, elle disait « index.html », et « revenir en
+// arriere » sortait du produit.
+//
+// Le HASH plutot que le chemin : le produit est servi en fichiers statiques,
+// et une adresse en /devis/89 renverrait un 404 au rechargement sans une
+// regle de reecriture cote serveur - une dependance d'hebergement que ce
+// changement n'a pas a introduire.
+const ROUTE_OBJETS = { prospects: "client", clients: "client", devis: "devis", factures: "facture", chantiers: "chantier" };
+const ROUTE_VUES = new Set([
+  "dashboard", "prospects", "clients", "devis", "factures", "chantiers", "planning",
+  "taches", "documents", "notifications", "statistiques", "avis", "entreprise",
+]);
+const ROUTE_LIBELLES = { client: "Ce client", devis: "Ce devis", facture: "Cette facture", chantier: "Ce chantier" };
+
+// Vrai pendant qu'on APPLIQUE une adresse. Sans ce garde-fou, switchView()
+// reecrirait l'adresse au milieu de sa propre lecture et l'historique
+// enregistrerait deux fois la meme etape - Precedent semblerait bloque.
+let routageEnCours = false;
+let derniereAdresseAppliquee = null;
+
+function ecrireAdresse(hash, { remplacer = false } = {}) {
+  if (routageEnCours || window.location.hash === hash) return;
+  derniereAdresseAppliquee = hash;
+  // history plutot que `location.hash = ...` : l'affectation directe declenche
+  // un hashchange, et on rejouerait une navigation qu'on vient de faire.
+  // Premiere adresse de la session : on REMPLACE l'entree plutot que d'en
+  // ajouter une, sinon le premier Precedent se contenterait de retirer le
+  // hash en laissant l'ecran identique - un retour qui ne retourne nulle part.
+  const methode = remplacer || !window.location.hash ? "replaceState" : "pushState";
+  window.history[methode](null, "", hash);
+}
+
+/** Adresse d'une fiche, dans la vue d'ou on la regarde.
+ *
+ *  Un client se lit depuis Prospects ou depuis Clients : l'adresse garde la
+ *  vue courante quand elle convient, pour que fermer la fiche ramene bien a
+ *  la liste d'ou l'on venait. */
+function adresseFiche(type, id) {
+  const vueCourante = document.body.dataset.view;
+  const vue = ROUTE_OBJETS[vueCourante] === type
+    ? vueCourante
+    : Object.keys(ROUTE_OBJETS).find((v) => ROUTE_OBJETS[v] === type);
+  return `#/${vue}/${id}`;
+}
+
+function lireAdresse() {
+  const [vue, segment] = window.location.hash.replace(/^#\/?/, "").split("/").filter(Boolean);
+  if (!vue || !ROUTE_VUES.has(vue)) return { vue: "dashboard", segment: null };
+  return { vue, segment: segment || null };
+}
+
+/** Amene l'ecran a l'etat que decrit l'adresse courante. */
+async function appliquerAdresse() {
+  if (document.getElementById("dashboard-screen").hidden) return;
+  if (window.location.hash === derniereAdresseAppliquee) return;
+  derniereAdresseAppliquee = window.location.hash;
+  const { vue, segment } = lireAdresse();
+  routageEnCours = true;
+  try {
+    fermerFiches();
+    // On NE RECHARGE PAS une vue deja affichee. C'est ce qui preserve les
+    // filtres en cours et la position dans la liste quand on referme une
+    // fiche : le retour a la liste doit rendre la liste telle qu'elle etait,
+    // pas une liste neuve remise a zero.
+    if (document.body.dataset.view !== vue) await switchView(vue);
+    if (!segment) return;
+    if (vue === "entreprise") {
+      document.querySelector(`#entreprise-tabs [data-tab="${segment.replace(/[^\w-]/g, "")}"]`)?.click();
+      return;
+    }
+    const type = ROUTE_OBJETS[vue];
+    const identifiant = Number(segment);
+    if (!type || !Number.isInteger(identifiant) || identifiant <= 0) return;
+    if (!(await ouvrirFiche(type, identifiant))) {
+      // Adresse valide, objet absent : archive, supprime, ou appartenant a un
+      // autre compte. On le dit, et on laisse la liste ouverte.
+      showToast(`${ROUTE_LIBELLES[type]} n'est plus dans votre liste. Il a peut-être été archivé ou supprimé.`, true);
+      // history en direct : ecrireAdresse() se tait pendant qu'on applique une
+      // adresse, et c'est justement pendant ce temps qu'il faut effacer celle
+      // qui ne mene nulle part - sans quoi Actualiser rejouerait l'echec.
+      derniereAdresseAppliquee = `#/${vue}`;
+      window.history.replaceState(null, "", `#/${vue}`);
+    }
+  } finally {
+    routageEnCours = false;
+  }
+}
+
+/** Referme les fiches ouvertes par-dessus une liste, sans toucher a la liste. */
+function fermerFiches() {
+  ["panel-timeline", "panel-devis", "panel-facture"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.hidden = true;
+  });
+}
+
+/** Referme la fiche courante ET remet l'adresse sur la liste. */
+function fermerFicheEtRevenir() {
+  fermerFiches();
+  ecrireAdresse(`#/${document.body.dataset.view || "dashboard"}`);
+}
+
+window.addEventListener("hashchange", appliquerAdresse);
+window.addEventListener("popstate", appliquerAdresse);
 
 /** Ouvre l'objet designe par un bouton, ou a defaut sa vue.
  *
@@ -815,6 +952,11 @@ function setupEntrepriseTabs() {
     btn.classList.add("active");
     btn.setAttribute("aria-selected", "true");
     afficherOngletEntreprise(btn.dataset.tab);
+    // L'onglet fait partie de l'adresse : Entreprise a huit onglets, et
+    // « regarde ma conformite » ne peut pas vouloir dire « ouvre Entreprise
+    // et cherche ». Remplace plutot qu'empile : passer d'un onglet a l'autre
+    // n'est pas un deplacement dont on veut revenir un a un.
+    ecrireAdresse(`#/entreprise/${btn.dataset.tab}`, { remplacer: true });
   });
   // Sans cet appel, les 8 panneaux restent tous visibles (leur etat naturel
   // dans le HTML) tant qu'aucun clic n'a jamais eu lieu sur un onglet - le
@@ -3530,11 +3672,17 @@ function ficheSection(titre, corps) {
 
 async function showTimeline(clientId) {
   const client = clientsCache.find((c) => c.id === clientId) || (await Api.listClients()).find((c) => c.id === clientId);
+  // Un dossier vide titre « Dossier client » ne dit rien de ce qui s'est
+  // passe. Depuis qu'une adresse peut designer un client, l'identifiant peut
+  // etre celui d'une fiche supprimee : on ne l'ouvre pas, et l'appelant le
+  // signale.
+  if (!client) return false;
   document.getElementById("timeline-titre").textContent = "Dossier client";
   const content = document.getElementById("timeline-content");
   content.innerHTML = '<div class="fiche-squelette"><span></span><span></span><span></span></div>';
   document.getElementById("panel-timeline").hidden = false;
   document.getElementById("panel-timeline").dataset.clientId = clientId;
+  ecrireAdresse(adresseFiche("client", clientId));
 
   try {
     // Les trois listes d'affaires sont deja en cache quand on arrive depuis
@@ -3580,6 +3728,7 @@ async function showTimeline(clientId) {
   } catch (err) {
     content.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
   }
+  return true;
 }
 
 function setupClientsView() {
@@ -3622,7 +3771,7 @@ function setupClientsView() {
 
   document.getElementById("panel-timeline").addEventListener("click", async (e) => {
     if (e.target.closest('[data-action="close-timeline"]') || e.target.id === "panel-timeline") {
-      document.getElementById("panel-timeline").hidden = true;
+      fermerFicheEtRevenir();
       return;
     }
     const devisBtn = e.target.closest('[data-action="quick-devis"]');
@@ -4614,7 +4763,10 @@ function showDevisDetail(devisId) {
   const d = devisListCache.find((x) => x.id === devisId)
     || (window.__devisTousCache || []).find((x) => x.id === devisId);
   const panneau = document.getElementById("panel-devis");
-  if (!panneau || !d) return;
+  // Renvoie desormais un booleen : depuis qu'une adresse peut designer un
+  // devis, l'appelant doit pouvoir dire « ce devis est introuvable » au lieu
+  // de laisser l'artisan devant une liste ou rien ne s'ouvre.
+  if (!panneau || !d) return false;
 
   const meta = DEVIS_STATUT_META[d.statut] || { label: d.statut, badge: "badge-gray" };
   const suivi = devisSuivi(d, devisDueIds.has(d.id));
@@ -4645,6 +4797,11 @@ function showDevisDetail(devisId) {
   panneau.hidden = false;
   panneau.dataset.devisId = devisId;
   panneau.querySelector(".side-panel-close").focus();
+  // L'adresse est ecrite ICI, et non chez les appelants : la fiche s'ouvre
+  // depuis la liste, la recherche, une notification, l'accueil ou un lien
+  // colle. Un seul endroit a corriger le jour ou l'un d'eux change.
+  ecrireAdresse(adresseFiche("devis", devisId));
+  return true;
 }
 
 /** Les actions du devis, reprises telles quelles de la ligne de liste :
@@ -4872,7 +5029,7 @@ function setupDevisView() {
       return;
     }
     if (btn.dataset.action === "close-devis-detail") {
-      document.getElementById("panel-devis").hidden = true;
+      fermerFicheEtRevenir();
       return;
     }
 
@@ -5394,7 +5551,7 @@ function factureActionsHtml(f) {
 function showFactureDetail(factureId) {
   const f = facturesCache.find((x) => x.id === factureId);
   const panneau = document.getElementById("panel-facture");
-  if (!panneau || !f) return;
+  if (!panneau || !f) return false;
 
   const meta = FACTURE_STATUT_META[f.statut] || { label: f.statut, badge: "badge-gray" };
   document.getElementById("facture-detail-titre").textContent = f.numero || `Facture #${f.id}`;
@@ -5429,6 +5586,8 @@ function showFactureDetail(factureId) {
   panneau.hidden = false;
   panneau.dataset.factureId = factureId;
   panneau.querySelector(".side-panel-close").focus();
+  ecrireAdresse(adresseFiche("facture", factureId));
+  return true;
 }
 
 function showPaiementForm(factureId, soldeRestant) {
@@ -5623,7 +5782,7 @@ function setupFacturesView() {
 
     if (btn.dataset.action === "voir-facture") { showFactureDetail(id); return; }
     if (btn.dataset.action === "close-facture-detail") {
-      document.getElementById("panel-facture").hidden = true;
+      fermerFicheEtRevenir();
       return;
     }
 

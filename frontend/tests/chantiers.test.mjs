@@ -17,7 +17,7 @@ const indexSource = fs.readFileSync(path.join(frontendDir, "index.html"), "utf8"
 // les deux blocs ensemble - l'ouverture generique et la mise en avant de la
 // carte - pour verifier le trajet complet, pas seulement une delegation.
 const ouvreStart = appSource.indexOf("async function ouvrirObjet");
-const ouvreEnd = appSource.indexOf("\n}", ouvreStart) + 2;
+const ouvreEnd = appSource.indexOf("\n}", appSource.indexOf("async function ouvrirFiche")) + 2;
 const focusStart = appSource.indexOf("function focusChantierCard");
 const focusEnd = appSource.indexOf("function rentabiliteHtml", focusStart);
 assert.ok(ouvreStart !== -1 && ouvreEnd > ouvreStart, "l'ouverture d'objet est introuvable");
@@ -35,9 +35,13 @@ const focusContext = {
         classList: { add: () => {}, remove: () => {} },
         scrollIntoView: () => { scrolled = true; },
         click: () => { deplie = true; },
+        getAttribute: () => "false",
       };
     },
+    body: { dataset: {} },
   },
+  ecrireAdresse: () => {},
+  adresseFiche: (type, id) => `#/${type}/${id}`,
   // La bascule de vue est ASYNCHRONE : elle rend la promesse du chargeur de
   // la vue. Si ouvrirObjet ne l'attendait pas, la carte serait cherchee
   // avant que la liste n'existe - c'est exactement le defaut corrige.
