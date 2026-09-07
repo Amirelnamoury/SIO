@@ -612,10 +612,12 @@ function switchView(view) {
     devis: loadDevis, factures: loadFactures, chantiers: loadChantiers,
     planning: loadPlanning, taches: loadTaches, documents: loadDocuments,
     notifications: loadNotifications, statistiques: loadStatistiques, avis: loadAvis,
-    entreprise: () => Promise.all([
-      loadEntrepriseForm(), loadPrestations(), loadFournisseurs(),
-      loadConformite(), loadEquipe(), loadAutomationStatus(), loadContrats(),
-    ]),
+    // Entreprise ne charge QUE l'onglet consulte. Ouvrir la vue declenchait
+    // sept appels d'un coup - equipe, prestations, fournisseurs, conformite,
+    // automatisations, contrats - alors qu'un seul panneau est visible et que
+    // la plupart des visites ne concernent qu'un onglet. Les autres se
+    // chargent a leur premiere ouverture, et une seule fois.
+    entreprise: () => chargerOngletEntreprise(ongletEntrepriseActif()),
   };
   return Promise.resolve(chargeurs[view] ? chargeurs[view]() : undefined);
 }
@@ -1171,6 +1173,7 @@ function viderCaches() {
   planningViewMode = "semaine";
   planningAnchorDate = new Date();
   planningFilters = { q: "", type: "", clientId: "", chantierId: "" };
+  ongletsEntrepriseCharges = new Set();
 }
 
 // ===================== Entreprise (infos + conformite) =====================
@@ -1179,6 +1182,43 @@ function viderCaches() {
 // plan des l'ouverture de la vue (switchView() appelle deja tous les
 // load*() existants), seule leur visibilite change ici - zero nouvel appel
 // reseau au changement d'onglet.
+// Un onglet, son chargeur. Profil et Identite visuelle partagent le meme
+// formulaire : la table est donc indexee par onglet, mais le suivi de « deja
+// charge » porte sur le CHARGEUR, pour ne pas le rejouer deux fois.
+const CHARGEURS_ENTREPRISE = {
+  profil: () => loadEntrepriseForm(),
+  "identite-visuelle": () => loadEntrepriseForm(),
+  equipe: () => loadEquipe(),
+  prestations: () => loadPrestations(),
+  fournisseurs: () => loadFournisseurs(),
+  automatisations: () => loadAutomationStatus(),
+  contrats: () => loadContrats(),
+  conformite: () => loadConformite(),
+};
+const CLES_CHARGEURS_ENTREPRISE = {
+  profil: "entreprise", "identite-visuelle": "entreprise", equipe: "equipe",
+  prestations: "prestations", fournisseurs: "fournisseurs",
+  automatisations: "automatisations", contrats: "contrats", conformite: "conformite",
+};
+let ongletsEntrepriseCharges = new Set();
+
+function ongletEntrepriseActif() {
+  return document.querySelector("#entreprise-tabs .filter-chip.active")?.dataset.tab || "profil";
+}
+
+function chargerOngletEntreprise(onglet) {
+  const cle = CLES_CHARGEURS_ENTREPRISE[onglet];
+  const chargeur = CHARGEURS_ENTREPRISE[onglet];
+  if (!chargeur || ongletsEntrepriseCharges.has(cle)) return Promise.resolve();
+  ongletsEntrepriseCharges.add(cle);
+  // Un echec ne doit pas condamner l'onglet : on oublie la marque pour qu'un
+  // second passage retente, au lieu d'afficher un panneau vide pour toujours.
+  return Promise.resolve(chargeur()).catch((err) => {
+    ongletsEntrepriseCharges.delete(cle);
+    throw err;
+  });
+}
+
 function afficherOngletEntreprise(cible) {
   document.querySelectorAll("#view-entreprise [data-tab-panel]").forEach((panel) => {
     panel.hidden = panel.dataset.tabPanel !== cible;
@@ -1198,6 +1238,7 @@ function setupEntrepriseTabs() {
     btn.classList.add("active");
     btn.setAttribute("aria-selected", "true");
     afficherOngletEntreprise(btn.dataset.tab);
+    chargerOngletEntreprise(btn.dataset.tab);
     // L'onglet fait partie de l'adresse : Entreprise a huit onglets, et
     // « regarde ma conformite » ne peut pas vouloir dire « ouvre Entreprise
     // et cherche ». Remplace plutot qu'empile : passer d'un onglet a l'autre
@@ -4141,9 +4182,14 @@ async function showTimeline(clientId) {
       Api.clientTimeline(clientId),
       Api.clientResume(clientId),
       tolerant(journal, "les messages", Api.listClientMessages(clientId)),
-      cache.chantiers?.length ? cache.chantiers : tolerant(journal, "les chantiers", Api.listChantiers()),
-      cache.devis?.length ? cache.devis : tolerant(journal, "les devis", Api.listDevis()),
-      cache.factures?.length ? cache.factures : tolerant(journal, "les factures", Api.listFactures()),
+      // Quand le cache de l'annuaire est froid - arrivee par un lien, depuis
+      // Prospects, apres un rechargement - on ne demande QUE les pieces de ce
+      // client. Le dossier telechargeait sinon tous les chantiers, tous les
+      // devis et toutes les factures du compte, avec pour les chantiers leurs
+      // notes, depenses, heures et taches, pour en afficher deux ou trois.
+      cache.chantiers?.length ? cache.chantiers : tolerant(journal, "les chantiers", Api.listChantiers(false, clientId)),
+      cache.devis?.length ? cache.devis : tolerant(journal, "les devis", Api.listDevis(null, false, clientId)),
+      cache.factures?.length ? cache.factures : tolerant(journal, "les factures", Api.listFactures(null, false, clientId)),
     ]);
 
     content.innerHTML = `

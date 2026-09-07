@@ -115,10 +115,14 @@ const Api = {
   deletePrestation: (id) => apiFetch(`/prestations/${id}`, { method: "DELETE" }),
 
   // ---------- Devis ----------
-  listDevis: (statut, archive) => {
+  // `clientId` : le serveur filtre depuis toujours sur ce parametre, le
+  // frontend ne le passait jamais. Un dossier client telechargeait donc TOUS
+  // les devis du compte pour en afficher deux.
+  listDevis: (statut, archive, clientId) => {
     const params = new URLSearchParams();
     if (statut) params.set("statut", statut);
     if (archive) params.set("archive", "true");
+    if (clientId) params.set("client_id", String(clientId));
     const qs = params.toString();
     return apiFetch("/devis" + (qs ? `?${qs}` : ""));
   },
@@ -133,7 +137,13 @@ const Api = {
   restaurerDevis: (id) => apiFetch(`/devis/${id}/restaurer`, { method: "POST" }),
 
   // ---------- Chantiers ----------
-  listChantiers: (archive) => apiFetch("/chantiers" + (archive ? "?archive=true" : "")),
+  listChantiers: (archive, clientId) => {
+    const params = new URLSearchParams();
+    if (archive) params.set("archive", "true");
+    if (clientId) params.set("client_id", String(clientId));
+    const qs = params.toString();
+    return apiFetch("/chantiers" + (qs ? `?${qs}` : ""));
+  },
   getChantier: (id) => apiFetch(`/chantiers/${id}`),
   createChantier: (payload) => apiFetch("/chantiers", { method: "POST", body: payload }),
   updateChantier: (id, payload) => apiFetch(`/chantiers/${id}`, { method: "PATCH", body: payload }),
@@ -168,10 +178,11 @@ const Api = {
   deleteConformite: (id) => apiFetch(`/conformite/${id}`, { method: "DELETE" }),
 
   // ---------- Factures ----------
-  listFactures: (statut, archive) => {
+  listFactures: (statut, archive, clientId) => {
     const params = new URLSearchParams();
     if (statut) params.set("statut", statut);
     if (archive) params.set("archive", "true");
+    if (clientId) params.set("client_id", String(clientId));
     const qs = params.toString();
     return apiFetch("/factures" + (qs ? `?${qs}` : ""));
   },
