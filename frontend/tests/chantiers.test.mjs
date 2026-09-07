@@ -12,36 +12,53 @@ const appSource = fs.readFileSync(appPath, "utf8");
 const apiSource = fs.readFileSync(apiPath, "utf8");
 const indexSource = fs.readFileSync(path.join(frontendDir, "index.html"), "utf8");
 
+// Ouvrir un chantier depuis le planning, une notification, le dossier client
+// ou la recherche passe par UN SEUL chemin : ouvrirObjet(). On execute donc
+// les deux blocs ensemble - l'ouverture generique et la mise en avant de la
+// carte - pour verifier le trajet complet, pas seulement une delegation.
+const ouvreStart = appSource.indexOf("async function ouvrirObjet");
+const ouvreEnd = appSource.indexOf("\n}", ouvreStart) + 2;
 const focusStart = appSource.indexOf("function focusChantierCard");
 const focusEnd = appSource.indexOf("function rentabiliteHtml", focusStart);
+assert.ok(ouvreStart !== -1 && ouvreEnd > ouvreStart, "l'ouverture d'objet est introuvable");
 assert.ok(focusStart !== -1 && focusEnd > focusStart, "les helpers de navigation vers un chantier sont introuvables");
 
 let switchedTo = null;
-let selectedWith = null;
+const selecteurs = [];
 let scrolled = false;
+let deplie = false;
 const focusContext = {
   document: {
     querySelector(selector) {
-      selectedWith = selector;
+      selecteurs.push(selector);
       return {
         classList: { add: () => {}, remove: () => {} },
         scrollIntoView: () => { scrolled = true; },
+        click: () => { deplie = true; },
       };
     },
   },
-  switchView: (view) => { switchedTo = view; },
+  // La bascule de vue est ASYNCHRONE : elle rend la promesse du chargeur de
+  // la vue. Si ouvrirObjet ne l'attendait pas, la carte serait cherchee
+  // avant que la liste n'existe - c'est exactement le defaut corrige.
+  switchView: async (view) => { switchedTo = view; await Promise.resolve(); },
   setTimeout: (callback) => callback(),
+  SEARCH_TYPE_META: { chantier: { label: "Chantiers", view: "chantiers" } },
 };
 vm.runInNewContext(
-  `let chantierFocusId = null;\n${appSource.slice(focusStart, focusEnd)}\nglobalThis.__chantiers = { ouvrirChantierDepuisPlanning, focusChantierCard };`,
+  `let chantierFocusId = null;\n${appSource.slice(ouvreStart, ouvreEnd)}\n${appSource.slice(focusStart, focusEnd)}\nglobalThis.__chantiers = { ouvrirChantierDepuisPlanning, focusChantierCard };`,
   focusContext,
   { filename: appPath },
 );
-focusContext.__chantiers.ouvrirChantierDepuisPlanning(73);
+assert.equal(await focusContext.__chantiers.ouvrirChantierDepuisPlanning(73), true);
 assert.equal(switchedTo, "chantiers");
-focusContext.__chantiers.focusChantierCard();
-assert.equal(selectedWith, '[data-chantier-id="73"]', "le chantier doit être retrouvé par son ID");
-assert.equal(scrolled, true);
+assert.ok(selecteurs.includes('[data-chantier-id="73"]'), "le chantier doit être retrouvé par son ID");
+assert.equal(scrolled, true, "la carte doit être amenée dans le champ de vision");
+assert.equal(deplie, true, "la carte doit être dépliée, pas seulement surlignée");
+// Un identifiant absent ne doit pas faire basculer de vue pour rien.
+switchedTo = null;
+assert.equal(await focusContext.__chantiers.ouvrirChantierDepuisPlanning(undefined), false);
+assert.equal(switchedTo, null, "sans identifiant exploitable, aucune navigation");
 
 // =====================================================================
 // LES QUATRE CORRECTIFS

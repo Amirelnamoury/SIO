@@ -569,27 +569,93 @@ function switchView(view) {
   document.querySelectorAll(".view").forEach((section) => {
     section.hidden = section.id !== `view-${view}`;
   });
-  if (view === "dashboard") loadDashboard();
-  if (view === "prospects") loadClients();
-  if (view === "clients") loadClientsDirectory();
-  if (view === "devis") loadDevis();
-  if (view === "factures") loadFactures();
-  if (view === "chantiers") loadChantiers();
-  if (view === "planning") loadPlanning();
-  if (view === "taches") loadTaches();
-  if (view === "documents") loadDocuments();
-  if (view === "notifications") loadNotifications();
-  if (view === "statistiques") loadStatistiques();
-  if (view === "avis") loadAvis();
-  if (view === "entreprise") {
-    loadEntrepriseForm();
-    loadPrestations();
-    loadFournisseurs();
-    loadConformite();
-    loadEquipe();
-    loadAutomationStatus();
-    loadContrats();
+  // switchView RETOURNE desormais la promesse du chargeur de la vue.
+  // Sans elle, tout appelant voulant ouvrir un objet apres la bascule ne
+  // pouvait qu'attendre au jugé : `setTimeout(..., 300)`. Un reseau lent
+  // ratait la fenetre et l'objet ne s'ouvrait pas ; un reseau rapide
+  // attendait pour rien. On attend maintenant le chargement reel.
+  const chargeurs = {
+    dashboard: loadDashboard, prospects: loadClients, clients: loadClientsDirectory,
+    devis: loadDevis, factures: loadFactures, chantiers: loadChantiers,
+    planning: loadPlanning, taches: loadTaches, documents: loadDocuments,
+    notifications: loadNotifications, statistiques: loadStatistiques, avis: loadAvis,
+    entreprise: () => Promise.all([
+      loadEntrepriseForm(), loadPrestations(), loadFournisseurs(),
+      loadConformite(), loadEquipe(), loadAutomationStatus(), loadContrats(),
+    ]),
+  };
+  return Promise.resolve(chargeurs[view] ? chargeurs[view]() : undefined);
+}
+
+/** Ouvre l'OBJET trouve, pas seulement le module qui le contient.
+ *
+ *  Un resultat de recherche « facture FA-2026-014 » basculait sur la page
+ *  Factures et laissait l'artisan la chercher dans la liste - le seul type
+ *  qui s'ouvrait vraiment etait le client. La recherche promettait un objet
+ *  et livrait un rayon. */
+async function ouvrirObjet(type, id) {
+  const meta = SEARCH_TYPE_META[type];
+  if (!meta) return false;
+  // Strict : un attribut vide donne Number("") === 0, un identifiant
+  // parfaitement fini qui ferait chercher la piece n°0 - donc un panneau
+  // vide ou une erreur, la ou il fallait simplement ouvrir la liste.
+  const identifiant = Number(id);
+  if (!Number.isInteger(identifiant) || identifiant <= 0) return false;
+  await switchView(meta.view);
+  switch (type) {
+    case "client": showTimeline(identifiant); return true;
+    case "devis": showDevisDetail(identifiant); return true;
+    case "facture": showFactureDetail(identifiant); return true;
+    case "chantier": {
+      // Le chantier n'a pas de panneau : il se deplie dans sa carte. On
+      // reutilise le mecanisme de mise en avant deja en place.
+      chantierFocusId = identifiant;
+      focusChantierCard();
+      document.querySelector(`[data-action="toggle-chantier-details"][data-id="${identifiant}"]`)?.click();
+      return true;
+    }
+    default: return false;
   }
+}
+
+/** Ouvre l'objet designe par un bouton, ou a defaut sa vue.
+ *
+ *  Les boutons « Voir » de l'accueil connaissent la piece exacte (la facture
+ *  en retard, le devis a relancer) : ils la nomment dans leur libelle. Ils
+ *  doivent donc l'ouvrir, pas se contenter du rayon. */
+async function ouvrirCible(donnees) {
+  if (donnees.objetType && (await ouvrirObjet(donnees.objetType, parseInt(donnees.objetId, 10)))) return;
+  if (donnees.view) await switchView(donnees.view);
+}
+
+/** Ouvre ce qu'une notification designe.
+ *
+ *  « Impaye : Villa Bertrand » posait l'artisan devant la liste complete des
+ *  factures. La notification connait pourtant la piece exacte (n.id) : elle
+ *  peut donc l'ouvrir. Quand le type ne designe pas un objet adressable
+ *  (conformite), on ouvre au moins le bon onglet plutot que la vue nue. */
+async function ouvrirNotification(donnees) {
+  const objetId = parseInt(donnees.objetId, 10);
+  const clientId = parseInt(donnees.clientId, 10);
+  switch (donnees.notificationType) {
+    case "devis_relance":
+      if (await ouvrirObjet("devis", objetId)) return;
+      break;
+    case "facture_relance":
+      if (await ouvrirObjet("facture", objetId)) return;
+      break;
+    case "message_client":
+    case "nouvelle_demande_devis":
+      if (await ouvrirObjet("client", clientId)) return;
+      break;
+    case "conformite":
+      await switchView("entreprise");
+      document.querySelector('#entreprise-tabs [data-tab="conformite"]')?.click();
+      return;
+    default:
+      break;
+  }
+  await switchView(donnees.view);
 }
 
 // Reflete un compteur sur toutes les pastilles qui representent la meme
@@ -1957,6 +2023,13 @@ function notificationRowHtml(n) {
   // devis »). L'etat lu/non lu n'est plus une pastille grise indistinguable
   // d'une puce : il se lit sur l'encre du titre et sur un cran de laiton dans
   // la marge, c'est-a-dire sur la ligne elle-meme.
+  // `n.id` porte l'objet vise (le devis a relancer, la facture impayee...) :
+  // sans lui, « Voir la facture » ne pouvait ouvrir que la liste des factures
+  // et laissait l'artisan retrouver la ligne lui-meme. Un seul jeu d'attributs
+  // pour les deux boutons, qui declenchent exactement la meme chose.
+  const cible = `data-action="voir-notification" data-view="${n.view}"
+    data-notification-type="${escapeHtml(n.type)}" data-notification-id="${n.notification_id || ""}"
+    data-client-id="${n.client_id || ""}" data-objet-id="${n.id || ""}"`;
   return `
   <div class="notif-row ${n.urgent ? "is-urgent" : ""} ${n.lu ? "est-lue" : "est-non-lue"}">
     <span class="notif-cran" aria-hidden="true"></span>
@@ -1965,13 +2038,12 @@ function notificationRowHtml(n) {
       ${n.sous_titre ? `<span class="notif-sub">${escapeHtml(n.sous_titre)}</span>` : ""}
     </div>
     <time class="notif-date" datetime="${escapeHtml(n.date)}">${fmtNotificationDate(n.date)}</time>
-    <button type="button" class="btn-sm" data-action="voir-notification" data-view="${n.view}"
-      data-notification-type="${escapeHtml(n.type)}" data-notification-id="${n.notification_id || ""}" data-client-id="${n.client_id || ""}">${actionLabels[n.view] || "Ouvrir"}</button>
+    <button type="button" class="btn-sm" ${cible}>${actionLabels[n.view] || "Ouvrir"}</button>
     <div class="action-menu">
       <button type="button" class="action-menu-trigger" data-action="toggle-action-menu" aria-haspopup="true" aria-expanded="false" aria-label="Plus d'actions sur cette notification">
         <svg viewBox="0 0 24 24" class="nav-icon"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg>
       </button>
-      <div class="action-menu-panel" role="menu"><button type="button" data-action="voir-notification" data-view="${n.view}" data-notification-type="${escapeHtml(n.type)}" data-notification-id="${n.notification_id || ""}" data-client-id="${n.client_id || ""}">Ouvrir</button></div>
+      <div class="action-menu-panel" role="menu"><button type="button" ${cible}>Ouvrir</button></div>
     </div>
   </div>`;
 }
@@ -2147,16 +2219,7 @@ function setupNotificationsView() {
     if (!btn) return;
     await withErrorToast(async () => {
       const notificationId = parseInt(btn.dataset.notificationId, 10);
-      const clientId = parseInt(btn.dataset.clientId, 10);
-      switchView(btn.dataset.view);
-      if (btn.dataset.notificationType === "conformite") {
-        const tab = document.querySelector('#entreprise-tabs [data-tab="conformite"]');
-        if (tab) tab.click();
-      }
-      if (btn.dataset.view === "prospects" && Number.isInteger(clientId)) {
-        await loadClients();
-        await showTimeline(clientId);
-      }
+      await ouvrirNotification(btn.dataset);
       if (Number.isInteger(notificationId)) await Api.markNotificationRead(notificationId);
       refreshBadges();
     });
@@ -2167,7 +2230,7 @@ function setupDashboardView() {
   document.getElementById("dashboard-content").addEventListener("click", async (e) => {
     const voirBtn = e.target.closest('[data-action="voir-notification"]');
     if (voirBtn) {
-      switchView(voirBtn.dataset.view);
+      ouvrirCible(voirBtn.dataset);
       return;
     }
     const relanceDevisBtn = e.target.closest('[data-action="relancer-devis"]');
@@ -2196,15 +2259,13 @@ function setupDashboardView() {
     const emptyClientBtn = e.target.closest('[data-action="dash-empty-client"]');
     if (emptyClientBtn) {
       const action = QUICK_ACTIONS.find((a) => a.id === "qa-client");
-      switchView(action.view);
-      setTimeout(action.run, 200);
+      switchView(action.view).then(action.run);
       return;
     }
     const emptyDevisBtn = e.target.closest('[data-action="dash-empty-devis"]');
     if (emptyDevisBtn) {
       const action = QUICK_ACTIONS.find((a) => a.id === "qa-devis");
-      switchView(action.view);
-      setTimeout(action.run, 200);
+      switchView(action.view).then(action.run);
       return;
     }
   });
@@ -2350,21 +2411,14 @@ function setupGlobalSearch() {
       const action = QUICK_ACTIONS.find((a) => a.id === actionItem.dataset.actionId);
       closeSearch();
       if (action) {
-        switchView(action.view);
-        setTimeout(action.run, 200);
+        switchView(action.view).then(action.run);
       }
       return;
     }
     const item = e.target.closest(".search-result-item");
     if (!item) return;
-    const meta = SEARCH_TYPE_META[item.dataset.type];
     closeSearch();
-    if (meta) {
-      switchView(meta.view);
-      if (item.dataset.type === "client") {
-        setTimeout(() => showTimeline(parseInt(item.dataset.id, 10)), 300);
-      }
-    }
+    ouvrirObjet(item.dataset.type, item.dataset.id);
   });
 }
 
@@ -2441,8 +2495,7 @@ function setupTopbar() {
       const action = QUICK_ACTIONS.find((a) => a.id === btn.dataset.actionId);
       closeCreateMenu();
       if (action) {
-        switchView(action.view);
-        setTimeout(action.run, 200);
+        switchView(action.view).then(action.run);
       }
     });
     document.addEventListener("click", (e) => {
@@ -2544,7 +2597,9 @@ function taskRowHtml(item) {
   const actionBtn = item.action
     ? `<button type="button" class="btn-sm btn-sm-primary" data-action="${item.action}" data-id="${item.actionId}">${item.actionLabel}</button>`
     : "";
-  const voirBtn = item.view ? `<button type="button" class="btn-sm" data-action="voir-notification" data-view="${item.view}">Voir</button>` : "";
+  const voirBtn = item.view
+    ? `<button type="button" class="btn-sm" data-action="voir-notification" data-view="${item.view}" data-objet-type="${item.objet || ""}" data-objet-id="${item.objetId || ""}">Voir</button>`
+    : "";
   // Composition en champs distincts (type / titre / contexte / montant)
   // plutot qu'une seule chaine concatenee : memes donnees deja calculees
   // par prioriteItems, juste reparties pour rester scannable d'un coup
@@ -2583,14 +2638,21 @@ function dashTaskGroupsHtml(groupes) {
 
 const RECOMMANDATION_URGENCE_LABELS = { haute: "Important", moyenne: "À surveiller", basse: "Info" };
 
+// Certaines recommandations designent une piece precise (« Le chantier X
+// depasse son budget ») : le serveur la nomme dans reference_id. Les autres
+// parlent d'un ensemble (« vous avez 3 factures en retard ») et ouvrent donc
+// la liste, ce qui est la bonne destination pour elles.
+const VUE_VERS_OBJET = { devis: "devis", factures: "facture", chantiers: "chantier", clients: "client", prospects: "client" };
+
 function recommandationRowHtml(r) {
   const badgeClasse = r.urgence === "haute" ? "badge-red" : r.urgence === "moyenne" ? "badge-orange" : "badge-blue";
+  const objet = r.reference_id ? VUE_VERS_OBJET[r.view] || "" : "";
   return `
   <div class="recommandation-row">
     <span>${escapeHtml(r.message)}</span>
     <span class="recommandation-row-actions">
       <span class="badge ${badgeClasse}">${RECOMMANDATION_URGENCE_LABELS[r.urgence] || r.urgence}</span>
-      <button type="button" class="btn-sm" data-action="voir-notification" data-view="${r.view}">Voir</button>
+      <button type="button" class="btn-sm" data-action="voir-notification" data-view="${r.view}" data-objet-type="${objet}" data-objet-id="${objet ? r.reference_id : ""}">Voir</button>
     </span>
   </div>`;
 }
@@ -2851,7 +2913,7 @@ async function loadDashboard() {
       {
         label: "Factures en retard",
         items: d.aujourdhui.factures_en_retard.map((f) => ({
-          urgence: "haute", view: "factures",
+          urgence: "haute", view: "factures", objet: "facture", objetId: f.id,
           titre: escapeHtml(f.client_nom), meta: `${escapeHtml(f.numero)} · en retard`,
           montant: fmtEuro(f.montant_restant),
           label: `${escapeHtml(f.numero)} · ${escapeHtml(f.client_nom)} · ${fmtEuro(f.montant_restant)} en retard`,
@@ -2861,7 +2923,7 @@ async function loadDashboard() {
       {
         label: "Devis à relancer",
         items: d.aujourdhui.devis_a_relancer.map((dv) => ({
-          urgence: "moyenne", view: "devis",
+          urgence: "moyenne", view: "devis", objet: "devis", objetId: dv.id,
           titre: escapeHtml(dv.client_nom), meta: escapeHtml(dv.numero || "Devis #" + dv.id),
           label: `Relancer ${escapeHtml(dv.client_nom)} (${escapeHtml(dv.numero || "devis #" + dv.id)})`,
           ...(hasPlan("essentiel") && dv.relance_manuelle_possible !== false
@@ -2888,7 +2950,7 @@ async function loadDashboard() {
       {
         label: "Chantiers à venir",
         items: d.aujourdhui.chantiers_a_venir.map((c) => ({
-          urgence: "basse", view: "chantiers",
+          urgence: "basse", view: "chantiers", objet: "chantier", objetId: c.id,
           titre: escapeHtml(c.titre), meta: `Commence le ${fmtDate(c.date_debut)}`,
           label: `Chantier '${escapeHtml(c.titre)}' commence le ${fmtDate(c.date_debut)}`,
         })),
@@ -3504,8 +3566,7 @@ function setupClientsView() {
     if (devisBtn) {
       const clientId = parseInt(devisBtn.dataset.clientId, 10);
       document.getElementById("panel-timeline").hidden = true;
-      switchView("devis");
-      setTimeout(() => showDevisForm(null, clientId), 200);
+      switchView("devis").then(() => showDevisForm(null, clientId));
     }
 
     // Le bloc « Affaires » du dossier renvoie vers la piece concernee.
@@ -3516,9 +3577,11 @@ function setupClientsView() {
     if (affaire) {
       const id = parseInt(affaire.dataset.id, 10);
       document.getElementById("panel-timeline").hidden = true;
-      if (affaire.dataset.action === "ouvrir-chantier-depuis-client") ouvrirChantierDepuisPlanning(id);
-      else if (affaire.dataset.action === "ouvrir-devis-depuis-client") switchView("devis");
-      else switchView("factures");
+      // Le bloc annoncait « la piece en un clic » mais ne passait que l'id
+      // du module : le devis et la facture s'arretaient sur la liste.
+      if (affaire.dataset.action === "ouvrir-chantier-depuis-client") ouvrirObjet("chantier", id);
+      else if (affaire.dataset.action === "ouvrir-devis-depuis-client") ouvrirObjet("devis", id);
+      else ouvrirObjet("facture", id);
       return;
     }
 
@@ -4792,9 +4855,12 @@ function setupDevisView() {
       });
     } else if (btn.dataset.action === "facturer-devis") {
       await withErrorToast(async () => {
-        await Api.factureDepuisDevis(id, "standard");
+        // On ouvre la facture qui vient d'etre creee, au lieu de deposer
+        // l'artisan devant la liste complete : c'est cette piece-la qu'il
+        // veut relire, et elle n'est pas toujours en tete de liste.
+        const facture = await Api.factureDepuisDevis(id, "standard");
         showToast("Facture créée à partir du devis.");
-        switchView("factures");
+        await ouvrirObjet("facture", facture.id);
       });
     } else if (btn.dataset.action === "preparer-chantier") {
       showPreparerChantierForm(id);
@@ -4816,7 +4882,7 @@ function setupDevisView() {
         if (res.facture_acompte) msg += ` Facture d'acompte ${fmtEuro(res.facture_acompte.montant_ttc)} creee.`;
         if (res.nb_taches_creees > 0) msg += ` ${res.nb_taches_creees} taches de preparation ajoutees.`;
         showToast(msg);
-        switchView("chantiers");
+        await ouvrirObjet("chantier", res.chantier.id);
       } catch (err) {
         errorBox.hidden = false;
         errorBox.textContent = err.message;
@@ -6045,8 +6111,10 @@ function focusChantierCard() {
 }
 
 function ouvrirChantierDepuisPlanning(chantierId) {
-  chantierFocusId = Number(chantierId);
-  switchView("chantiers");
+  // Un seul chemin d'ouverture pour les chantiers, quel que soit l'appelant
+  // (planning, notification, dossier client, recherche) : la carte est mise
+  // en avant ET depliee une fois la liste reellement chargee.
+  return ouvrirObjet("chantier", chantierId);
 }
 
 function rentabiliteHtml(c) {
@@ -6665,8 +6733,7 @@ function setupChantiersView() {
         errorBox.textContent = err.message;
       }
     } else if (btn.dataset.action === "chantier-document") {
-      switchView("documents");
-      setTimeout(() => showDocumentForm(id), 50);
+      switchView("documents").then(() => showDocumentForm(id));
     } else if (btn.dataset.action === "planifier-intervention") {
       const chantier = chantiersCache.find((c) => c.id === id);
       switchView("planning");

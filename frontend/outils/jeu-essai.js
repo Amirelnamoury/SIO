@@ -60,11 +60,37 @@ Api.listChantiers = async () => [
 Api.listDevis = async () => [
   { id: 89, client_id: 1, client_nom: "Bertrand", numero: "DV-2026-089", titre: "Rénovation salle de bain complète", description: null, taux_tva: 10, acompte_pourcentage: 30, remise_pourcentage: 5, montant_ht: 1333.57, montant_ttc: 1466.93, statut: "consulte", date_envoi: tg(9), date_consultation: tg(1), date_derniere_relance: tg(3), date_signature: null, nom_signataire: null, nb_relances: 2, source: "manuel", token: "t89", relance_manuelle_possible: true, created_at: tg(12), lignes: [{ id: 1, description: "Pose de carrelage", quantite: 24, unite: "m2", prix_unitaire_ht: 45.5 }] },
 ];
+// Un devis SIGNE en plus : c'est le seul statut qui fait apparaitre « Tout
+// preparer » et « Convertir en facture ». Avec un unique devis « consulte »,
+// les deux enchainements les plus structurants du produit n'existaient sur
+// aucun ecran auditable.
+Api.listDevis = (function (base) {
+  return async (...a) => [
+    ...(await base(...a)),
+    { id: 90, client_id: 2, client_nom: "Roussel", numero: "DV-2026-090", titre: "Remplacement de chauffe-eau", description: null, taux_tva: 10, acompte_pourcentage: 40, remise_pourcentage: 0, montant_ht: 2180, montant_ttc: 2398, statut: "signe", date_envoi: tg(14), date_consultation: tg(12), date_derniere_relance: null, date_signature: tg(5), nom_signataire: "M. Roussel", nb_relances: 0, source: "site_vitrine", token: "t90", relance_manuelle_possible: false, created_at: tg(16), lignes: [{ id: 2, description: "Chauffe-eau thermodynamique 200 L, pose comprise", quantite: 1, unite: "u", prix_unitaire_ht: 2180 }] },
+  ];
+})(Api.listDevis);
 Api.devisARelancer = async () => [];
 Api.listFactures = async () => [
   { id: 14, client_id: 1, client_nom: "Bertrand", devis_id: null, chantier_id: null, contrat_id: null, numero: "FA-2026-014", type: "standard", taux_tva: 20, statut: "envoyee", montant_ht: 1533, montant_ttc: 1840, montant_paye: 0, montant_restant: 1840, est_en_retard: true, date_emission: jg(-40), date_echeance: jg(-12), date_envoi: tg(40), notes: null, date_derniere_relance: null, nb_relances: 0, token: "f14", created_at: tg(40), paiements: [] },
 ];
 Api.facturesARelancer = async () => [];
+// Les deux conversions devis -> facture et devis -> chantier n'etaient pas
+// simulees : sans backend elles echouaient sur une erreur reseau, et les deux
+// enchainements les plus structurants du produit restaient hors d'atteinte de
+// tout audit. Elles renvoient ici les memes formes que le serveur
+// (FactureOut, PreparerChantierOut), et donc un `id` reellement ouvrable.
+// On capture les listes AVANT que listerOuArchives() ne les enveloppe plus
+// bas : sinon ces deux appels suivraient le filtre « archives » de la vue et
+// pourraient ne rien renvoyer.
+const facturesBrutes = Api.listFactures;
+const chantiersBruts = Api.listChantiers;
+Api.factureDepuisDevis = async () => (await facturesBrutes())[0];
+Api.preparerChantierDepuisDevis = async () => ({
+  chantier: (await chantiersBruts())[0],
+  facture_acompte: null,
+  nb_taches_creees: 3,
+});
 Api.listTaches = async () => [
   { id: 1, artisan_id: 1, client_id: null, chantier_id: 2, titre: "Commander le carrelage pour la salle de bain", description: null, priorite: "urgente", echeance: jg(-3), statut: "a_faire", created_at: tg(5) },
 ];
@@ -87,15 +113,28 @@ Api.listAvis = async () => [
 // sous-titre, affichait « undefined » a la place de la date, et aucune
 // notification ne pouvait tomber dans le groupe « A traiter ». Les cinq
 // ci-dessous couvrent les quatre groupes et les trois modules.
+// `id` n'est PAS un numero de notification : le serveur y met l'identifiant
+// de la piece visee (routers/notifications.py) - le devis a relancer, la
+// facture impayee, l'item de conformite. C'est `notification_id` qui identifie
+// la notification elle-meme, et lui seul sert a la marquer lue. Le jeu d'essai
+// numerotait les deux 1..5 : « Voir la facture » cherchait donc la facture
+// n°1, qui n'existe pas, et retombait sur la liste - la vue paraissait cassee
+// alors que seul le jeu d'essai l'etait.
 Api.listNotifications = async () => [
-  { id: 1, type: "facture_relance", notification_id: 1, client_id: 1, titre: "Facture FA-2026-014 en retard de 12 jours", sous_titre: "Bertrand · 1 840,00 € restent à encaisser", urgent: true, date: tg(0.2), view: "factures", lu: false },
-  { id: 2, type: "conformite", notification_id: 2, client_id: null, titre: "Assurance décennale à renouveler", sous_titre: "AXA · échéance dans 21 jours", urgent: true, date: tg(0.6), view: "entreprise", lu: false },
-  { id: 3, type: "devis_relance", notification_id: 3, client_id: 1, titre: "Devis DV-2026-089 lu, sans réponse", sous_titre: "Bertrand · consulté hier, 2 relances envoyées", urgent: false, date: tg(0.4), view: "devis", lu: false },
-  { id: 4, type: "nouvelle_demande_devis", notification_id: 4, client_id: 2, titre: "Nouvelle demande depuis le site", sous_titre: "Roussel · remplacement de chauffe-eau", urgent: false, date: tg(1.3), view: "prospects", lu: true },
+  { id: 14, type: "facture_relance", notification_id: 1, client_id: 1, titre: "Facture FA-2026-014 en retard de 12 jours", sous_titre: "Bertrand · 1 840,00 € restent à encaisser", urgent: true, date: tg(0.2), view: "factures", lu: false },
+  { id: 3, type: "conformite", notification_id: 2, client_id: null, titre: "Assurance décennale à renouveler", sous_titre: "AXA · échéance dans 21 jours", urgent: true, date: tg(0.6), view: "entreprise", lu: false },
+  { id: 89, type: "devis_relance", notification_id: 3, client_id: 1, titre: "Devis DV-2026-089 lu, sans réponse", sous_titre: "Bertrand · consulté hier, 2 relances envoyées", urgent: false, date: tg(0.4), view: "devis", lu: false },
+  { id: 2, type: "nouvelle_demande_devis", notification_id: 4, client_id: 2, titre: "Nouvelle demande depuis le site", sous_titre: "Roussel · remplacement de chauffe-eau", urgent: false, date: tg(1.3), view: "prospects", lu: true },
   { id: 5, type: "message_client", notification_id: 5, client_id: 1, titre: "Message de Bertrand", sous_titre: "« Peut-on décaler la visite de mardi ? »", urgent: false, date: tg(6), view: "prospects", lu: true },
 ];
-Api.dashboard = async () => ({ finances: { ca_mois: 18420, a_encaisser: 1840, paiements_recents: [{ date_paiement: jg(-2), moyen: "Virement", montant: 4200 }] }, commercial: { devis_en_attente: 7, valeur_pipeline: 42100 }, aujourdhui: { factures_en_retard: [{ id: 14, numero: "FA-2026-014", client_nom: "Bertrand", montant_restant: 1840 }], devis_a_relancer: [], taches: [{ id: 1, titre: "Commander le carrelage" }], chantiers_a_venir: [], evenements: [{ id: 1, titre: "Métré chez Mme Roussel", date_debut: new Date().toISOString() }] }, alertes_conformite: [], presence_site: { statut: "livre", url: "https://exemple.fr", nb_demandes_total: 9, nb_demandes_30j: 3, nb_clients_gagnes: 2, ca_genere: 12400, taux_conversion: 22.2 } });
-Api.dashboardRecommandations = async () => [{ message: "Trois devis de plus de 30 jours n'ont jamais été relancés.", urgence: "haute" }];
+Api.dashboard = async () => ({ finances: { ca_mois: 18420, a_encaisser: 1840, paiements_recents: [{ date_paiement: jg(-2), moyen: "Virement", montant: 4200 }] }, commercial: { devis_en_attente: 7, valeur_pipeline: 42100 }, aujourdhui: { factures_en_retard: [{ id: 14, numero: "FA-2026-014", client_nom: "Bertrand", montant_restant: 1840 }], devis_a_relancer: [{ id: 89, numero: "DV-2026-089", client_nom: "Bertrand", relance_manuelle_possible: true }], taches: [{ id: 1, titre: "Commander le carrelage" }], chantiers_a_venir: [{ id: 2, titre: "Villa Ducros — extension côté jardin", date_debut: jg(4) }], evenements: [{ id: 1, titre: "Métré chez Mme Roussel", date_debut: new Date().toISOString() }] }, alertes_conformite: [], presence_site: { statut: "livre", url: "https://exemple.fr", nb_demandes_total: 9, nb_demandes_30j: 3, nb_clients_gagnes: 2, ca_genere: 12400, taux_conversion: 22.2 } });
+// RecommandationOut porte toujours une `view`, et parfois un `reference_id`
+// quand la phrase designe une piece precise (routers/dashboard.py). Les deux
+// cas doivent etre representes : l'un ouvre la liste, l'autre le chantier.
+Api.dashboardRecommandations = async () => [
+  { message: "Trois devis de plus de 30 jours n'ont jamais été relancés.", urgence: "haute", view: "devis", reference_id: null },
+  { message: "Le chantier 'Villa Ducros — extension côté jardin' dépasse actuellement son budget de 12 %.", urgence: "haute", view: "chantiers", reference_id: 2 },
+];
 // Le contrat serveur est SanteEntrepriseOut / SousScoreOut : la valeur du
 // sous-score s'appelle `valeur`, pas `score`, et peut etre nulle quand il n'y
 // a pas de quoi juger. Le jeu d'essai disait `score` : chaque sous-score

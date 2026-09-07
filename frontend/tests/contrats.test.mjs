@@ -39,9 +39,17 @@ assert.match(
   "Api.genererContrat doit retourner directement le JSON de l'endpoint",
 );
 assert.match(indexSource, /app\.js\?v=[\w-]+/, "app.js doit être versionné pour invalider l'ancien handler en cache");
+// Les chargeurs de vue sont desormais une table dans switchView(), qui rend
+// leur promesse pour que l'appelant puisse ouvrir un objet APRES le
+// chargement. L'ancienne assertion citait la forme `if (view === ...)`, qui
+// n'existe plus : elle ne verifiait donc plus rien. On garde l'intention -
+// ouvrir Entreprise charge bien les contrats.
+const chargeursStart = appSource.indexOf("const chargeurs = {");
+const chargeursEnd = appSource.indexOf("\n  };", chargeursStart);
+assert.ok(chargeursStart !== -1 && chargeursEnd > chargeursStart, "la table des chargeurs de vue est introuvable");
 assert.match(
-  appSource,
-  /if \(view === "entreprise"\)[\s\S]*?loadContrats\(\);[\s\S]*?\n  }/,
+  appSource.slice(chargeursStart, chargeursEnd),
+  /entreprise:[\s\S]*?loadContrats\(\)/,
   "ouvrir Entreprise doit charger les contrats",
 );
 
