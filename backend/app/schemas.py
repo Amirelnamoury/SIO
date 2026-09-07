@@ -1393,6 +1393,11 @@ class PortailClientOut(BaseModel):
 
 # ---------- Notifications (centre de notifications) ----------
 
+# Seules les alertes CALCULEES se reportent. Un evenement persistant se marque
+# lu - il a un identifiant pour cela. Un message client non plus : il se lit.
+ALERTES_REPORTABLES = {"devis_relance", "facture_relance", "conformite"}
+
+
 class NotificationOut(BaseModel):
     type: str  # devis_relance, facture_relance, conformite, nouvelle_demande_devis
     id: int
@@ -1404,6 +1409,38 @@ class NotificationOut(BaseModel):
     date: datetime
     view: str
     lu: bool = False
+    # Reportable : le front n'a pas a rededuire la regle. Et quand l'alerte
+    # est deja reportee, la date le dit - c'est ce qui permet de la retrouver
+    # dans l'historique sans qu'elle encombre le flux courant.
+    reportable: bool = False
+    reportee_jusqu_au: Optional[date] = None
+
+
+class ReporterAlerteIn(BaseModel):
+    """Repousser une alerte CALCULEE a une date.
+
+    Elle n'a pas d'identifiant propre - elle est recalculee a chaque appel -
+    donc on la designe par son type et la piece qu'elle vise. Reporter n'efface
+    rien : l'alerte reparait le jour dit.
+    """
+
+    type: str
+    reference_id: int
+    jusqu_au: date
+
+    @field_validator("type")
+    @classmethod
+    def type_reportable(cls, v):
+        if v not in ALERTES_REPORTABLES:
+            raise ValueError(f"type doit etre l'un de : {sorted(ALERTES_REPORTABLES)}")
+        return v
+
+    @field_validator("jusqu_au")
+    @classmethod
+    def date_future(cls, v):
+        if v <= date.today():
+            raise ValueError("La date de report doit etre posterieure a aujourd'hui")
+        return v
 
 
 # ---------- Automatisation (emails + observabilite du scheduler) ----------

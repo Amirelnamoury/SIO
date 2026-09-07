@@ -1084,3 +1084,37 @@ class NumeroSequence(Base):
     type_document = Column(String, nullable=False)  # "devis" ou "facture"
     annee = Column(Integer, nullable=False)
     dernier_numero = Column(Integer, nullable=False, default=0)
+
+
+class AlerteReportee(Base):
+    """Une alerte CALCULEE que l'artisan a repoussee a plus tard.
+
+    Le centre de notifications melange deux natures. Les evenements
+    persistants vivent dans `notifications` : ils ont un identifiant, on peut
+    les marquer lus. Les alertes metier - devis a relancer, facture impayee,
+    conformite qui expire - sont recalculees a chaque appel : elles n'ont pas
+    d'identifiant propre, et rien ne permettait donc de dire « je m'en occupe
+    jeudi, ne me le remontre pas d'ici la ».
+
+    Les repousser N'EFFACE RIEN : la facture reste en retard, elle reparait le
+    jour dit. C'est un report, pas un classement sans suite - Astra §22 :
+    « Lire n'efface pas une facture en retard. »
+
+    L'identite d'une alerte calculee, c'est son type et la piece qu'elle vise.
+    D'ou la contrainte d'unicite : reporter deux fois la meme alerte deplace
+    l'echeance, elle ne cree pas une seconde ligne.
+    """
+
+    __tablename__ = "alertes_reportees"
+    __table_args__ = (
+        UniqueConstraint("artisan_id", "type", "reference_id", name="uq_alerte_reportee_artisan_type_reference"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    artisan_id = Column(Integer, ForeignKey("artisans.id"), nullable=False, index=True)
+
+    type = Column(String, nullable=False)  # devis_relance, facture_relance, conformite...
+    reference_id = Column(Integer, nullable=False)  # la piece visee
+    jusqu_au = Column(Date, nullable=False)
+
+    created_at = Column(DateTime(timezone=True), default=utcnow)
