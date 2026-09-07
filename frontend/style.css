@@ -3497,3 +3497,18 @@ label { color: var(--sa-text-muted); }
 @media (prefers-reduced-motion: reduce) {
   .est-en-actualisation { transition: none; }
 }
+
+/* ---------- Dossier client ----------
+   Il occupait un panneau lateral superpose au repertoire : une fenetre, pour
+   l'ecran qui rassemble toute la relation avec un client. Il prend maintenant
+   la pleine largeur, a la place de la liste - sans changer de vue, pour que la
+   liste reste montee dessous avec ses filtres et son defilement.
+   Les .view sont masquees par la classe portee sur <body> : `display` bat
+   l'attribut `hidden`, et c'est ce qu'on veut ici puisque la vue reste
+   "active" du point de vue de la navigation. */
+body.est-dossier-ouvert .view { display: none; }
+.dossier { padding: var(--sa-space-6) 0 var(--sa-space-10); }
+.dossier-barre { margin-bottom: var(--sa-space-4); }
+/* Le contenu du dossier reprend la gouttiere des pages composees : intitules
+   dans la marge, contenu a droite. Il en avait la matiere, pas la place. */
+#timeline-content { max-width: 1100px; }

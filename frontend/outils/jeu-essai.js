@@ -92,6 +92,17 @@ Api.facturesARelancer = async () => [];
 // pourraient ne rien renvoyer.
 const facturesBrutes = Api.listFactures;
 const chantiersBruts = Api.listChantiers;
+// Les quatre lectures PAR IDENTIFIANT. Le produit s'en sert pour ouvrir une
+// fiche absente de la liste chargee - un lien recu, une piece archivee ou
+// filtree. Sans elles, un audit croit le lien casse alors que seul le
+// simulacre l'etait : le vrai serveur, lui, repond.
+const clientsBruts = Api.listClients;
+const devisBruts = Api.listDevis;
+const introuvable = () => { const e = new Error("Introuvable"); e.status = 404; throw e; };
+Api.getClient = async (id) => (await clientsBruts()).find((c) => c.id === id) || introuvable();
+Api.getDevis = async (id) => (await devisBruts()).find((d) => d.id === id) || introuvable();
+Api.getFacture = async (id) => (await facturesBrutes()).find((f) => f.id === id) || introuvable();
+Api.getChantier = async (id) => (await chantiersBruts()).find((c) => c.id === id) || introuvable();
 Api.factureDepuisDevis = async () => (await facturesBrutes())[0];
 Api.preparerChantierDepuisDevis = async () => ({
   chantier: (await chantiersBruts())[0],

@@ -602,7 +602,7 @@ document.addEventListener("keydown", (e) => {
       const el = document.getElementById(id);
       if (el && !el.hidden) el.hidden = true;
     });
-    const fiche = ["panel-timeline", "panel-devis", "panel-facture"]
+    const fiche = ["client-dossier", "panel-devis", "panel-facture"]
       .some((id) => !document.getElementById(id)?.hidden);
     if (fiche) fermerFicheEtRevenir();
   }
@@ -641,6 +641,10 @@ function switchView(view) {
   if (activeLink && window.matchMedia("(max-width: 900px)").matches) {
     activeLink.scrollIntoView({ inline: "center", block: "nearest" });
   }
+  // Le dossier client vit HORS des .view (il occupe leur place sans en etre
+  // une, pour que la liste reste montee dessous) : changer de vue doit donc
+  // le refermer explicitement, sinon il resterait affiche par-dessus.
+  fermerDossier();
   document.querySelectorAll(".view").forEach((section) => {
     section.hidden = section.id !== `view-${view}`;
   });
@@ -713,7 +717,12 @@ const REGISTRE_FICHES = {
     memoriser: (piece) => { facturesCache = [...facturesCache, piece]; },
   },
   client: {
-    dansCache: (id) => clientsCache.some((x) => x.id === id),
+    // Un client peut avoir ete charge par le PIPELINE (clientsCache) ou par
+    // l'ANNUAIRE (clientsDirectoryCache.clients) : deux ecrans, deux caches.
+    // Ne regarder que le premier faisait redemander au serveur une fiche
+    // deja en memoire, a chaque ouverture depuis l'annuaire.
+    dansCache: (id) => clientsCache.some((x) => x.id === id)
+      || (clientsDirectoryCache.clients || []).some((x) => x.id === id),
     charger: (id) => Api.getClient(id),
     memoriser: (piece) => { clientsCache = [...clientsCache, piece]; },
   },
@@ -889,9 +898,28 @@ async function appliquerAdresse() {
   }
 }
 
+// Qui a ouvert le dossier client : fige a l'ouverture, pour que refermer
+// rende le focus a la ligne d'ou l'on venait et non a un bouton du dossier.
+let dossierDeclencheur = null;
+
+/** Referme le dossier client et rend la liste a l'ecran.
+ *
+ *  On ne touche PAS a la liste : elle est restee montee dessous, avec ses
+ *  filtres, sa page et son defilement. C'est tout l'interet d'avoir garde la
+ *  meme vue plutot que d'en ouvrir une nouvelle. */
+function fermerDossier() {
+  const dossier = document.getElementById("client-dossier");
+  if (!dossier || dossier.hidden) return;
+  dossier.hidden = true;
+  document.body.classList.remove("est-dossier-ouvert");
+  if (dossierDeclencheur && dossierDeclencheur.isConnected) dossierDeclencheur.focus();
+  dossierDeclencheur = null;
+}
+
 /** Referme les fiches ouvertes par-dessus une liste, sans toucher a la liste. */
 function fermerFiches() {
-  ["panel-timeline", "panel-devis", "panel-facture"].forEach((id) => {
+  fermerDossier();
+  ["panel-devis", "panel-facture"].forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.hidden = true;
   });
@@ -4211,8 +4239,15 @@ async function showTimeline(clientId) {
   document.getElementById("timeline-titre").textContent = "Dossier client";
   const content = document.getElementById("timeline-content");
   content.innerHTML = '<div class="fiche-squelette"><span></span><span></span><span></span></div>';
-  document.getElementById("panel-timeline").hidden = false;
-  document.getElementById("panel-timeline").dataset.clientId = clientId;
+  const dossier = document.getElementById("client-dossier");
+  // On retient QUI a ouvert le dossier, pour rendre le focus a cet endroit en
+  // refermant. `dernierGeste` est mis a jour par les ecouteurs de geste ; on
+  // le fige ici, sinon un clic DANS le dossier deviendrait le declencheur.
+  dossierDeclencheur = dernierGeste;
+  dossier.hidden = false;
+  dossier.dataset.clientId = clientId;
+  document.body.classList.add("est-dossier-ouvert");
+  dossier.querySelector('[data-action="close-timeline"]')?.focus();
   ecrireAdresse(adresseFiche("client", clientId));
 
   try {
@@ -4324,15 +4359,15 @@ function setupClientsView() {
     }
   });
 
-  document.getElementById("panel-timeline").addEventListener("click", async (e) => {
-    if (e.target.closest('[data-action="close-timeline"]') || e.target.id === "panel-timeline") {
+  document.getElementById("client-dossier").addEventListener("click", async (e) => {
+    if (e.target.closest('[data-action="close-timeline"]')) {
       fermerFicheEtRevenir();
       return;
     }
     const devisBtn = e.target.closest('[data-action="quick-devis"]');
     if (devisBtn) {
       const clientId = parseInt(devisBtn.dataset.clientId, 10);
-      document.getElementById("panel-timeline").hidden = true;
+      fermerDossier();
       switchView("devis").then(() => showDevisForm(null, clientId));
     }
 
@@ -4343,7 +4378,7 @@ function setupClientsView() {
     const affaire = e.target.closest('[data-action^="ouvrir-"][data-action$="-depuis-client"]');
     if (affaire) {
       const id = parseInt(affaire.dataset.id, 10);
-      document.getElementById("panel-timeline").hidden = true;
+      fermerDossier();
       // Le bloc annoncait « la piece en un clic » mais ne passait que l'id
       // du module : le devis et la facture s'arretaient sur la liste.
       if (affaire.dataset.action === "ouvrir-chantier-depuis-client") ouvrirObjet("chantier", id);

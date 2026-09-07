@@ -254,4 +254,47 @@ assert.match(jeu, /args\.some\(\(a\) => a === true\) \? archivés\[cle\] : vivan
   "le simulacre doit transmettre statut et drapeau d'archive");
 assert.match(jeu, /\.filter\(\(d\) => !statut \|\| d\.statut === statut\)/);
 
+// ---------------------------------------------------------------------
+// §9-4 — le dossier client est une PAGE, pas une fenêtre
+// ---------------------------------------------------------------------
+// Astra : « Page dédiée [...] lui donner une adresse et davantage de place. »
+// L'adresse existait ; la place non — le dossier tenait dans un panneau
+// latéral de 460 px superposé au répertoire, pour l'écran qui rassemble toute
+// la relation avec un client.
+assert.doesNotMatch(indexSource, /id="panel-timeline"/, "le panneau latéral doit avoir disparu");
+assert.match(indexSource, /<section id="client-dossier" class="dossier" hidden aria-labelledby="timeline-titre">/);
+// Ce n'est plus une fenêtre : rien n'est superposé, il n'y a rien à confiner.
+const marquageDossier = indexSource.slice(indexSource.indexOf('id="client-dossier"'), indexSource.indexOf('id="client-dossier"') + 300);
+assert.doesNotMatch(marquageDossier, /role="dialog"/);
+assert.doesNotMatch(marquageDossier, /aria-modal/);
+assert.match(indexSource, /data-action="close-timeline">&larr; Retour à la liste/,
+  "une page se quitte par un retour, pas par une croix de fermeture");
+
+// LE POINT DELICAT : le dossier n'est pas une .view, et `document.body.dataset
+// .view` reste `clients` ou `prospects`. C'est ce qui garde la liste montée
+// dessous — avec ses filtres, sa page et son défilement — et ce qui fait que
+// la refermer ne recharge rien.
+assert.match(appSource, /function fermerDossier\(\)/);
+assert.match(appSource, /document\.body\.classList\.add\("est-dossier-ouvert"\)/);
+assert.match(styleSource, /body\.est-dossier-ouvert \.view \{ display: none; \}/,
+  "les listes sont masquées par une classe sur body, la vue reste active");
+// Vivant hors des .view, il ne serait masqué par personne en changeant de vue.
+assert.match(appSource, /fermerDossier\(\);\s+document\.querySelectorAll\("\.view"\)/,
+  "changer de vue doit refermer le dossier");
+// Le focus revient à la ligne d'où l'on venait, figé à l'ouverture.
+assert.match(appSource, /dossierDeclencheur = dernierGeste;/);
+assert.match(appSource, /if \(dossierDeclencheur && dossierDeclencheur\.isConnected\) dossierDeclencheur\.focus\(\);/);
+
+// Le registre des fiches connaît les DEUX caches de clients : le pipeline et
+// l'annuaire. N'en regarder qu'un redemandait au serveur une fiche déjà en
+// mémoire — défaut vu en ouvrant un lien direct, pas en relisant le code.
+assert.match(appSource, /\(clientsDirectoryCache\.clients \|\| \[\]\)\.some\(\(x\) => x\.id === id\)/);
+
+// Le jeu d'essai simule les quatre lectures par identifiant : sans elles, un
+// audit conclut qu'un lien direct est cassé alors que seul le simulacre l'est.
+const jeuEssai = fs.readFileSync(path.join(frontendDir, "outils", "jeu-essai.js"), "utf8");
+for (const methode of ["getClient", "getDevis", "getFacture", "getChantier"]) {
+  assert.ok(jeuEssai.includes(`Api.${methode} = async`), `le jeu d'essai doit simuler ${methode}`);
+}
+
 console.log("OK - astra-section-9.test.mjs");

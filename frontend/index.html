@@ -11,7 +11,7 @@
      DIRECTION-ARTISTIQUE.md. Les deux feuilles superposees d'avant ont ete
      fondues ici, verification faite par comparaison des styles calcules
      sur les douze vues (voir outils/empreinte-styles.js). -->
-<link rel="stylesheet" href="style.css?v=20260907-etats">
+<link rel="stylesheet" href="style.css?v=20260907-dossier">
 <!-- Habillage de l'ecran connexion/inscription. Charge APRES style.css,
      tous ses selecteurs sont ancres sous .auth-screen : rien ne fuit vers
      le SaaS. Supprimer cette ligne rend l'ecran a son etat precedent. -->
@@ -296,14 +296,24 @@
       </div>
     </div>
 
-    <!-- ---------- Panneau timeline client ---------- -->
-    <div id="panel-timeline" class="side-panel" hidden role="dialog" aria-modal="true" aria-labelledby="timeline-titre">
-      <div class="side-panel-box side-panel-box-wide">
-        <button type="button" class="side-panel-close" data-action="close-timeline" aria-label="Fermer">&times;</button>
-        <p class="side-panel-eyebrow" id="timeline-titre">Historique</p>
-        <div id="timeline-content"></div>
+    <!-- ---------- Dossier client ----------
+         C'etait un PANNEAU LATERAL superpose au repertoire : une fenetre
+         modale, donc, pour l'ecran qui rassemble toute la relation avec un
+         client - son identite, ses affaires, ses documents, ses echanges et
+         sa chronologie. Il vit desormais en pleine largeur, a la place de la
+         liste, sans changer de vue : `document.body.dataset.view` reste
+         `clients` ou `prospects`, ce qui garde la liste montee dessous avec
+         ses filtres, sa page et son defilement. Refermer ne recharge rien.
+
+         Ce n'est plus une fenetre modale : ni role="dialog", ni aria-modal.
+         Rien n'est superpose, il n'y a donc rien a confiner. -->
+    <section id="client-dossier" class="dossier" hidden aria-labelledby="timeline-titre">
+      <div class="dossier-barre">
+        <button type="button" class="btn-sm" data-action="close-timeline">&larr; Retour à la liste</button>
       </div>
-    </div>
+      <p class="view-header-eyebrow" id="timeline-titre">Dossier client</p>
+      <div id="timeline-content"></div>
+    </section>
 
     <!-- ---------- Lecture d'un devis ----------
          Il n'existait aucun ecran pour consulter un devis dans
@@ -1131,7 +1141,7 @@
 <script src="env.js"></script>
 <script src="config.js"></script>
 <script src="pricing.js"></script>
-<script src="api.js?v=20260907-etats"></script>
-<script src="app.js?v=20260907-etats"></script>
+<script src="api.js?v=20260907-dossier"></script>
+<script src="app.js?v=20260907-dossier"></script>
 </body>
 </html>

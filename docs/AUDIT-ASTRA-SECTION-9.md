@@ -46,16 +46,24 @@ client / aucun résultat de recherche / données indisponibles) par `etatVide`,
 
 ## 4. Fiche client
 
-**Écart — non traité.**
+**Corrigé.**
 
-Conforme : identité compacte, affaires liées, chronologie ; les affaires ouvrent
-la pièce exacte ; adresse propre (`#/clients/<id>`).
+Le dossier tenait dans un panneau latéral de 460 px superposé au répertoire :
+une fenêtre modale, pour l'écran qui rassemble toute la relation avec un
+client — son identité, ses affaires, ses documents, ses échanges, sa
+chronologie. Il occupe désormais la pleine largeur (1040 px sur 1366), à la
+place de la liste.
 
-Écart restant : **c'est un panneau latéral, pas une page.** Astra demande de lui
-« donner une adresse et davantage de place ». L'adresse est faite, la place non.
-C'est le seul écart §9 encore ouvert, et le plus lourd : il déplace le dossier
-hors du panneau superposé, ce qui touche ses six points d'entrée.
+Le point délicat était de ne pas perdre ce que la liste avait en mémoire. Le
+dossier n'est donc **pas une vue** : `document.body.dataset.view` reste
+`clients` ou `prospects`, la liste demeure montée dessous, et la refermer ne
+recharge rien. Vérifié : recherche « Bertrand » et position conservées à
+l'ouverture comme au retour, sur bureau et sur mobile, et le focus revient à
+la ligne d'où l'on venait.
 
+Ce n'est plus une fenêtre — ni `role="dialog"`, ni `aria-modal`, ni croix de
+fermeture : rien n'est superposé, il n'y a rien à confiner, et on la quitte
+par un retour.
 ## 5. Devis
 
 **Conforme.**
@@ -264,19 +272,21 @@ aucun retour du générateur de sites supprimé.
 | Verdict | Écrans |
 |---|---|
 | Conforme à l'audit | 3, 5, 7, 13, 15, 16, 17, 18, 19, 20, 23 — **11** |
-| Écart corrigé | 1, 2, 6, 8, 9, 11, 12, 14, 21, 22 — **10** |
+| Écart corrigé | 1, 2, 4, 6, 8, 9, 11, 12, 14, 21, 22 — **11** |
 | Corrigé en partie | 10 — **1** |
-| Écart ouvert | 4 — **1** |
 
-Douze écarts nommés, onze traités. Restent, distinctement :
+Douze écarts nommés, tous traités côté frontend. Ce qui reste demande le
+serveur, et Astra le range lui-même à part :
 
-- **§9-4, la fiche client en page** plutôt qu'en panneau latéral. Frontend, mais
-  lourd : le dossier a six points d'entrée.
-- **§9-10, les interventions d'un chantier.** Évolution backend : `/planning`
-  répond par période, pas par chantier.
-- **§9-21 et §9-22**, pour leur part backend : identité individuelle, et cycle
-  explicite des notifications.
+- **§9-10, les interventions d'un chantier.** `/planning` répond par période,
+  pas par chantier. Charger le planning entier pour filtrer côté client serait
+  exactement ce que §14 reproche.
+- **§9-21, l'identité individuelle.** La photo appartient à `Artisan` ; aucune
+  identité par personne n'existe dans le modèle, et rien ne la simule.
+- **§9-22, le cycle des notifications.** Reporter, traiter et consulter
+  l'historique demandent un contrat explicite : le routeur mélange aujourd'hui
+  notifications persistantes et alertes calculées.
 
 Chaque correction est vérifiée en pilotant le navigateur, pas seulement en
-relisant le code — et deux d'entre elles ont d'abord révélé un défaut dans le
-jeu d'essai, pas dans le produit.
+relisant le code — et trois d'entre elles ont d'abord révélé un défaut dans le
+jeu d'essai ou dans la sonde, pas dans le produit.
