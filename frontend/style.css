@@ -249,7 +249,11 @@ button { font-family: inherit; cursor: pointer; color: inherit; transition: back
 input, select, textarea { font-family: inherit; transition: border-color var(--sa-duration-base) ease, box-shadow var(--sa-duration-base) ease; }
 a { color: var(--sa-accent); transition: opacity var(--sa-duration-base) ease; }
 :focus-visible { border-radius: 4px; }
-h1, h2, h3 { margin: 0; font-family: var(--sa-font-display); font-weight: var(--sa-weight-bold); letter-spacing: 0; }
+/* Aucune fonte imposee ici : c'est cette regle qui posait la romane sur
+   les cinquante-sept titres du produit, jusqu'aux intitules de
+   formulaire. Elle est demandee nommement, la ou elle nomme. */
+h1, h2, h3 { margin: 0; font-weight: var(--sa-weight-bold); letter-spacing: 0; }
+.view-header h2 { font-family: var(--sa-font-display); }
 h3 { font-weight: 700; margin-bottom: var(--sa-space-3); }
 p { margin: 0 0 var(--sa-space-3); }
 
@@ -359,7 +363,7 @@ input[readonly] { background: var(--sa-surface-2); }
 /* ---------- Sidebar — plan le plus sombre, marque toujours visible. ---------- */
 .sidebar { width: var(--sa-sidebar-w); flex-shrink: 0; color: var(--sa-text-muted); display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; z-index: var(--sa-z-sidebar); }
 .sidebar-brand { display: flex; align-items: center; gap: 10px; }
-.sidebar-brand-mark { width: 26px; height: 26px; flex-shrink: 0; display: grid; place-items: center; font-weight: 800; font-size: 0.72rem; letter-spacing: 0.01em; }
+.sidebar-brand-mark { width: 26px; height: 26px; flex-shrink: 0; display: grid; place-items: center; font-weight: var(--sa-weight-bold); font-size: 0.72rem; letter-spacing: 0.01em; }
 .sidebar-brand-name { font-size: 0.98rem; color: var(--sa-text-on-dark); }
 
 .kbd-hint { margin-left: auto; font-size: var(--sa-text-2xs); border: 1px solid var(--sa-border-strong); border-radius: 4px; padding: 1px 5px; font-weight: var(--sa-weight-semibold); }
@@ -492,7 +496,7 @@ input[readonly] { background: var(--sa-surface-2); }
     background: var(--sa-bg); color: var(--sa-text); padding: 12px var(--sa-space-4);
     border-bottom: 1px solid var(--sa-border);
   }
-  .mobile-topbar-brand { font-family: var(--sa-font-display); font-weight: 800; font-size: 0.98rem; }
+  .mobile-topbar-brand { font-family: var(--sa-font-display); font-weight: var(--sa-weight-bold); font-size: 0.98rem; }
   .mobile-topbar-actions { display: flex; align-items: center; gap: 4px; }
   .mobile-icon-btn {
     display: grid; place-items: center; width: 36px; height: 36px; border-radius: var(--sa-radius-sm);
@@ -662,7 +666,7 @@ input[readonly] { background: var(--sa-surface-2); }
    ===================================================================== */
 .dash-masthead { padding: 38px 0 41px; }
 .dash-masthead-eyebrow { font-size: var(--sa-text-2xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--sa-accent); margin-bottom: 12px; }
-.dash-masthead-lede { font-family: "Arial Narrow", var(--sa-font-display); font-size: 2.5rem; font-weight: 800; letter-spacing: 0; line-height: 1.05; color: var(--sa-text); max-width: none; }
+.dash-masthead-lede { font-family: var(--sa-font); font-size: 2.5rem; font-weight: var(--sa-weight-bold); letter-spacing: 0; line-height: 1.05; color: var(--sa-text); max-width: none; }
 
 .dash-hero-empty-lede { max-width: 20ch; }
 .dash-hero-empty { max-width: 50ch; }
@@ -677,7 +681,7 @@ input[readonly] { background: var(--sa-surface-2); }
 .kpi-card { background: var(--sa-surface); border: 1px solid var(--sa-border); border-radius: var(--sa-radius-lg); padding: var(--sa-space-4) var(--sa-space-5); min-width: 0; }
 .kpi-card.is-highlight { background: var(--sa-accent-soft); border-color: var(--sa-border-strong); }
 .kpi-card-label { font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-semibold); letter-spacing: 0; color: var(--sa-text-muted); margin-bottom: 8px; }
-.kpi-card-value { font-family: var(--sa-font-display); font-size: 1.6rem; font-weight: 800; color: var(--sa-text); letter-spacing: 0; }
+.kpi-card-value { font-family: var(--sa-font); font-size: 1.6rem; font-weight: var(--sa-weight-bold); color: var(--sa-text); letter-spacing: 0; }
 .kpi-card-sub { font-size: var(--sa-text-xs); color: var(--sa-text-muted); margin-top: 4px; }
 .kpi-card-sub.is-positive { color: var(--sa-success); }
 .kpi-card-sub.is-alert { color: var(--sa-danger); }
@@ -749,7 +753,7 @@ input[readonly] { background: var(--sa-surface-2); }
 .dash-today { display: grid; grid-template-columns: minmax(0, 1fr) 344px; gap: 35px; align-items: start; margin-bottom: var(--sa-space-8); }
 .dash-today-main { min-width: 0; }
 .dash-today-head { display: flex; align-items: baseline; gap: 9px; margin-bottom: var(--sa-space-3); }
-.dash-today-head h3 { font-family: var(--sa-font-display); font-size: 1.3rem; font-weight: 800; color: var(--sa-text); margin: 0; }
+.dash-today-head h3 { font-family: var(--sa-font); font-size: 1.3rem; font-weight: var(--sa-weight-bold); color: var(--sa-text); margin: 0; }
 .dash-today-count { display: inline-flex; align-items: center; justify-content: center; min-width: 21px; height: 21px; padding: 0 6px; background: var(--sa-accent); color: var(--sa-text-on-accent); border-radius: var(--sa-radius-full); font-size: 0.7rem; font-weight: 700; }
 .dash-today-count { display: none; }
 .dash-today-clear { font-size: var(--sa-text-sm); color: var(--sa-text-muted); padding: var(--sa-space-4) 0; }
@@ -763,7 +767,7 @@ input[readonly] { background: var(--sa-surface-2); }
 .dash-agenda-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--sa-success); align-self: center; }
 .dash-agenda-titre { font-size: var(--sa-text-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dash-agenda-empty { display: flex; flex-direction: column; gap: 5px; padding: var(--sa-space-2) 0; }
-.dash-agenda-empty-title { font-family: var(--sa-font-display); font-size: 1.15rem; font-weight: 700; color: var(--sa-text); }
+.dash-agenda-empty-title { font-family: var(--sa-font); font-size: 1.15rem; font-weight: 700; color: var(--sa-text); }
 .dash-agenda-empty-sub { font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
 
 .dash-glance { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sa-space-10); margin-bottom: var(--sa-space-8); }
@@ -790,7 +794,7 @@ input[readonly] { background: var(--sa-surface-2); }
 /* ---------- Activation checklist ---------- */
 .activation-card { margin-bottom: var(--sa-space-8); padding-top: var(--sa-space-6); border-top: 1px solid var(--sa-border); }
 .activation-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--sa-space-4); gap: var(--sa-space-3); }
-.activation-head h3 { margin: 0; font-family: var(--sa-font-display); font-size: 1.05rem; font-weight: 700; color: var(--sa-text); }
+.activation-head h3 { margin: 0; font-family: var(--sa-font); font-size: 1.05rem; font-weight: 700; color: var(--sa-text); }
 .activation-head span { font-size: var(--sa-text-xs); color: var(--sa-text-muted); font-weight: 600; font-variant-numeric: tabular-nums; }
 .activation-bar { height: 3px; border-radius: var(--sa-radius-full); background: var(--sa-surface-3); overflow: hidden; margin-bottom: var(--sa-space-5); }
 .activation-bar > span { display: block; height: 100%; background: var(--sa-accent); }
@@ -823,7 +827,7 @@ input[readonly] { background: var(--sa-surface-2); }
 .task-row-titre { font-size: var(--sa-text-sm); color: var(--sa-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .task-row.urgence-haute .task-row-titre { font-weight: 600; }
 .task-row-meta { display: block; font-size: var(--sa-text-xs); color: var(--sa-text-muted); margin-top: 2px; }
-.task-row-montant { flex-shrink: 0; font-family: var(--sa-font-display); font-weight: 700; font-size: var(--sa-text-sm); color: var(--sa-accent); font-variant-numeric: tabular-nums; padding-top: 1px; }
+.task-row-montant { flex-shrink: 0; font-family: var(--sa-font); font-weight: 700; font-size: var(--sa-text-sm); color: var(--sa-accent); font-variant-numeric: tabular-nums; padding-top: 1px; }
 .task-row.urgence-haute .task-row-montant { color: var(--sa-danger); }
 .task-row-actions { flex-shrink: 0; display: flex; gap: 4px; }
 
@@ -873,7 +877,7 @@ input[readonly] { background: var(--sa-surface-2); }
 .stats-panel h4 { margin: 0 0 9px; color: var(--sa-text); font-size: var(--sa-text-sm); font-weight: var(--sa-weight-semibold); }
 .stats-ca-panel { display: grid; grid-template-columns: 150px minmax(0, 1fr); grid-template-rows: 1fr 30px; column-gap: 10px; height: 208px; padding: 14px 14px 10px; margin-bottom: 12px; }
 .stats-ca-summary { display: flex; flex-direction: column; justify-content: flex-start; padding-top: 2px; }
-.stats-ca-value { font-family: var(--sa-font-display); font-size: 1.75rem; font-weight: 800; color: var(--sa-text); letter-spacing: 0; margin-top: 3px; }
+.stats-ca-value { font-family: var(--sa-font); font-size: 1.75rem; font-weight: var(--sa-weight-bold); color: var(--sa-text); letter-spacing: 0; margin-top: 3px; }
 .stats-chart-wrap { min-width: 0; overflow: hidden; }
 .chart-svg { width: 100%; height: 152px; display: block; }
 .stats-ca-legend { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; align-items: center; }
@@ -905,7 +909,7 @@ input[readonly] { background: var(--sa-surface-2); }
 .stats-funnel { display: flex; align-items: stretch; min-height: 84px; border-radius: var(--sa-radius-lg); overflow: hidden; clip-path: polygon(0 0, 100% 14%, 100% 100%, 0 100%); }
 .stats-funnel-step { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: var(--sa-space-3) var(--sa-space-2); }
 .stats-funnel-label { font-size: var(--sa-text-xs); color: var(--sa-text-on-accent); opacity: .72; margin: 0 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-.stats-funnel-value { font-family: var(--sa-font-display); font-size: 1.2rem; font-weight: 800; color: var(--sa-text-on-accent); white-space: nowrap; }
+.stats-funnel-value { font-family: var(--sa-font); font-size: 1.2rem; font-weight: var(--sa-weight-bold); color: var(--sa-text-on-accent); white-space: nowrap; }
 .stats-funnel-arrow { flex: 0 0 auto; width: 26px; display: flex; align-items: center; justify-content: center; background: var(--sa-border-strong); color: var(--sa-text-on-accent); opacity: .55; font-size: var(--sa-text-sm); }
 @media (max-width: 640px) {
   .stats-funnel { flex-direction: column; clip-path: none; }
@@ -2184,7 +2188,7 @@ label { color: var(--sa-text-muted); }
   border: 0; border-top: 1px solid var(--sa-border); border-radius: 0;
   background: transparent;
   text-align: left;
-  font-family: var(--sa-font-display);
+  font-family: var(--sa-font);
   font-size: clamp(1.25rem, 1.9vw, 1.6rem); font-weight: 500; line-height: 1.25;
   color: var(--sa-text);
 }
@@ -2278,7 +2282,7 @@ label { color: var(--sa-text-muted); }
 .dash-journee-item:hover .dash-journee-titre { color: var(--sa-accent); }
 .dash-journee-item:focus-visible { outline: 2px solid var(--sa-accent); outline-offset: 2px; }
 .dash-journee-heure {
-  font-family: var(--sa-font-display);
+  font-family: var(--sa-font);
   font-size: var(--sa-text-sm); font-weight: 600;
   color: var(--sa-text); font-variant-numeric: tabular-nums;
 }
@@ -2302,7 +2306,7 @@ label { color: var(--sa-text-muted); }
   color: var(--sa-text-faint);
 }
 .dash-chiffre-valeur {
-  font-family: var(--sa-font-display);
+  font-family: var(--sa-font);
   font-size: 1.5rem; font-weight: 500; line-height: 1;
   color: var(--sa-text);
   font-variant-numeric: tabular-nums;
@@ -2319,7 +2323,7 @@ label { color: var(--sa-text-muted); }
    champ. Ils etaient absents : les formulaires inline s'ouvraient sans nom,
    et le solde d'une facture etait entasse dans l'intitule du champ -
    « Montant (euros) * · Solde 1 840,00 € », trois informations en une. */
-.form-box-titre { margin: 0 0 var(--sa-space-4); font-family: var(--sa-font-display); font-size: 1.05rem; font-weight: 600; color: var(--sa-text); }
+.form-box-titre { margin: 0 0 var(--sa-space-4); font-family: var(--sa-font); font-size: 1.05rem; font-weight: 600; color: var(--sa-text); }
 .champ-aide { margin: 5px 0 0; font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
 /* Un montant qui depasse le solde n'est pas une erreur de saisie tant que
    rien n'est envoye : la mention prend l'encre d'alerte, sans bloquer. */
@@ -2381,7 +2385,7 @@ label { color: var(--sa-text-muted); }
 }
 .reglette-total { display: flex; flex-direction: column; gap: 4px; }
 .reglette-total-valeur {
-  font-family: var(--sa-font-display);
+  font-family: var(--sa-font);
   font-size: 1.85rem; font-weight: 500; line-height: 1;
   color: var(--sa-text); font-variant-numeric: tabular-nums;
 }
@@ -2405,7 +2409,7 @@ label { color: var(--sa-text-muted); }
 .reglette-item { display: grid; grid-template-columns: 8px auto; grid-template-rows: auto auto auto; gap: 1px var(--sa-space-2); align-items: baseline; }
 .reglette-puce { width: 8px; height: 8px; border-radius: 1px; grid-row: 1; align-self: center; }
 .reglette-item-label { font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
-.reglette-item-valeur { grid-column: 2; font-family: var(--sa-font-display); font-size: var(--sa-text-md); font-weight: 500; color: var(--sa-text); font-variant-numeric: tabular-nums; }
+.reglette-item-valeur { grid-column: 2; font-family: var(--sa-font); font-size: var(--sa-text-md); font-weight: 500; color: var(--sa-text); font-variant-numeric: tabular-nums; }
 .reglette-item-nb { grid-column: 2; font-size: var(--sa-text-2xs); color: var(--sa-text-faint); }
 
 .reglette-signaux { grid-column: 1 / -1; margin: 4px 0 0; font-size: var(--sa-text-sm); color: var(--sa-text-muted); }
@@ -2430,7 +2434,7 @@ label { color: var(--sa-text-muted); }
 .kanban-column.est-repliee .kanban-column-header { align-items: baseline; }
 .kanban-column-zero {
   margin-left: auto;
-  font-family: var(--sa-font-display); font-size: var(--sa-text-md);
+  font-family: var(--sa-font); font-size: var(--sa-text-md);
   color: var(--sa-text-faint);
 }
 
@@ -2453,7 +2457,7 @@ label { color: var(--sa-text-muted); }
 .kanban-card-sub { font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
 .kanban-card-valeur {
   margin-top: 8px;
-  font-family: var(--sa-font-display); font-size: var(--sa-text-md); font-weight: 500;
+  font-family: var(--sa-font); font-size: var(--sa-text-md); font-weight: 500;
   color: var(--sa-text); font-variant-numeric: tabular-nums;
 }
 .kanban-card-valeur span { font-family: var(--sa-font); font-size: var(--sa-text-xs); font-weight: 400; color: var(--sa-text-faint); }
@@ -2518,7 +2522,7 @@ label { color: var(--sa-text-muted); }
   background: var(--sa-surface-2); color: var(--sa-text-muted);
   border: 1px solid var(--sa-border);
   border-radius: var(--sa-radius-sm);
-  font-family: var(--sa-font-display); font-weight: 600; font-size: 0.78rem;
+  font-family: var(--sa-font); font-weight: var(--sa-weight-semibold); font-size: var(--sa-text-xs);
   display: grid; place-items: center;
 }
 .crm-main { min-width: 0; }
@@ -2535,7 +2539,7 @@ label { color: var(--sa-text-muted); }
    client : en Fraunces, aligne d'une ligne a l'autre. */
 .crm-ca { text-align: right; min-width: 96px; }
 .crm-ca-valeur {
-  font-family: var(--sa-font-display);
+  font-family: var(--sa-font);
   font-size: var(--sa-text-md); font-weight: 500;
   color: var(--sa-text); font-variant-numeric: tabular-nums;
 }
@@ -2614,7 +2618,7 @@ label { color: var(--sa-text-muted); }
 .fiche-chiffre { display: flex; flex-direction: column; gap: 5px; }
 .fiche-chiffre-label { font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-semibold); letter-spacing: 0; color: var(--sa-text-faint); }
 .fiche-chiffre-valeur {
-  font-family: var(--sa-font-display); font-size: 1.2rem; font-weight: 500; line-height: 1;
+  font-family: var(--sa-font); font-size: 1.2rem; font-weight: 500; line-height: 1;
   color: var(--sa-text); font-variant-numeric: tabular-nums;
   padding-bottom: 6px; border-bottom: 1px solid var(--sa-border-strong);
 }
@@ -2644,7 +2648,7 @@ label { color: var(--sa-text-muted); }
   margin: 0 0 4px;
   font-size: var(--sa-text-xs); font-weight: 600; color: var(--sa-text-muted);
 }
-.fiche-affaire-groupe-titre span { font-family: var(--sa-font-display); color: var(--sa-text-faint); font-variant-numeric: tabular-nums; }
+.fiche-affaire-groupe-titre span { font-family: var(--sa-font); color: var(--sa-text-faint); font-variant-numeric: tabular-nums; }
 .fiche-affaire {
   display: grid; grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: baseline; gap: var(--sa-space-3);
@@ -2659,7 +2663,7 @@ label { color: var(--sa-text-muted); }
 .fiche-affaire-meta { font-size: var(--sa-text-xs); color: var(--sa-text-faint); white-space: nowrap; }
 .fiche-affaire-montant {
   min-width: 74px; text-align: right;
-  font-family: var(--sa-font-display); font-size: var(--sa-text-sm); font-weight: 500;
+  font-family: var(--sa-font); font-size: var(--sa-text-sm); font-weight: 500;
   color: var(--sa-text); font-variant-numeric: tabular-nums;
 }
 .fiche-affaire-montant.est-alerte { color: var(--sa-danger); }
@@ -2812,7 +2816,7 @@ label { color: var(--sa-text-muted); }
    C'est la qu'une erreur de quantite ou de prix se voit. */
 .ligne-total {
   text-align: right;
-  font-family: var(--sa-font-display); font-size: var(--sa-text-sm); font-weight: 500;
+  font-family: var(--sa-font); font-size: var(--sa-text-sm); font-weight: 500;
   color: var(--sa-text); font-variant-numeric: tabular-nums;
   padding-right: 2px;
 }
@@ -2852,7 +2856,7 @@ label { color: var(--sa-text-muted); }
   padding: 7px 0;
   font-size: var(--sa-text-sm); color: var(--sa-text-muted);
 }
-.totalisateur-ligne span:last-child { font-family: var(--sa-font-display); color: var(--sa-text); white-space: nowrap; }
+.totalisateur-ligne span:last-child { font-family: var(--sa-font); color: var(--sa-text); white-space: nowrap; }
 .totalisateur-ligne.est-remise span:last-child { color: var(--sa-danger); }
 /* Le total TTC : le seul chiffre du bloc qui compte vraiment. Filet fort
    au-dessus, corps plus grand — le geste du total souligne. */
@@ -2930,7 +2934,7 @@ label { color: var(--sa-text-muted); }
 .devis-lecture td:first-child { color: var(--sa-text); }
 .devis-lecture tr:last-child td { border-bottom: 0; }
 .devis-lecture .est-nombre { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.devis-lecture .est-total { font-family: var(--sa-font-display); font-weight: 500; color: var(--sa-text); }
+.devis-lecture .est-total { font-family: var(--sa-font); font-weight: 500; color: var(--sa-text); }
 
 .devis-detail-totaux { display: flex; justify-content: flex-end; padding-top: var(--sa-space-5); }
 .devis-detail-totaux .totalisateur { min-width: 280px; }
@@ -2997,7 +3001,7 @@ label { color: var(--sa-text-muted); }
 }
 .balance-total { display: flex; flex-direction: column; gap: 4px; }
 .balance-total-valeur {
-  font-family: var(--sa-font-display);
+  font-family: var(--sa-font);
   font-size: 1.85rem; font-weight: 500; line-height: 1;
   color: var(--sa-text); font-variant-numeric: tabular-nums;
 }
@@ -3019,7 +3023,7 @@ label { color: var(--sa-text-muted); }
 .balance-tranche.est-vide { opacity: 0.5; }
 .balance-puce { width: 8px; height: 8px; border-radius: 1px; grid-row: 1; align-self: center; }
 .balance-tranche-label { font-size: var(--sa-text-xs); color: var(--sa-text-muted); white-space: nowrap; }
-.balance-tranche-montant { grid-column: 2; font-family: var(--sa-font-display); font-size: var(--sa-text-md); font-weight: 500; color: var(--sa-text); font-variant-numeric: tabular-nums; }
+.balance-tranche-montant { grid-column: 2; font-family: var(--sa-font); font-size: var(--sa-text-md); font-weight: 500; color: var(--sa-text); font-variant-numeric: tabular-nums; }
 .balance-tranche-nb { grid-column: 2; font-size: var(--sa-text-2xs); color: var(--sa-text-faint); }
 
 .balance-verdict { grid-column: 1 / -1; margin: 4px 0 0; font-size: var(--sa-text-sm); color: var(--sa-text-muted); }
@@ -3049,7 +3053,7 @@ label { color: var(--sa-text-muted); }
 }
 .chantiers-charge {
   margin: 0;
-  font-family: var(--sa-font-display);
+  font-family: var(--sa-font);
   font-size: var(--sa-text-lg); font-weight: 500; color: var(--sa-text);
 }
 .chantiers-charge strong { font-weight: 600; font-variant-numeric: tabular-nums; }
@@ -3071,7 +3075,7 @@ label { color: var(--sa-text-muted); }
 .chantier-card.is-focused { border-color: var(--sa-accent); }
 .chantier-card-titre { font-family: var(--sa-font-display); font-weight: 600; }
 .chantier-jauge-label { color: var(--sa-text-faint); }
-.chantier-jauge-valeur { font-family: var(--sa-font-display); font-weight: 500; }
+.chantier-jauge-valeur { font-family: var(--sa-font); font-weight: var(--sa-weight-medium); font-variant-numeric: tabular-nums; }
 /* Les jauges : la piste recule dans le papier, le remplissage porte le
    contraste. L'avancement reste neutre - un chantier a 15 % vient de
    commencer, il n'est pas en difficulte. */
@@ -3102,7 +3106,7 @@ label { color: var(--sa-text-muted); }
   color: var(--sa-text-faint);
 }
 .tache-groupe-label:first-child { margin-top: 0; }
-.tache-groupe-label span { font-family: var(--sa-font-display); font-size: var(--sa-text-sm); letter-spacing: 0; color: var(--sa-text-muted); }
+.tache-groupe-label span { font-family: var(--sa-font); font-size: var(--sa-text-sm); letter-spacing: 0; color: var(--sa-text-muted); }
 /* Un seul groupe est colore : celui qui est en retard. */
 .tache-groupe-label.est-retard { color: var(--sa-danger); border-bottom-color: var(--sa-danger); }
 .tache-groupe-label.est-retard span { color: var(--sa-danger); }
@@ -3225,7 +3229,7 @@ label { color: var(--sa-text-muted); }
 }
 .planning-modes .btn-sm:not(.btn-sm-primary):hover,
 .prospects-modes .btn-sm:not(.btn-sm-primary):hover { background: rgba(32, 40, 44, .05); }
-.planning-label { font-family: var(--sa-font-display); font-weight: 600; letter-spacing: 0.02em; color: var(--sa-text); }
+.planning-label { font-family: var(--sa-font); font-weight: var(--sa-weight-semibold); letter-spacing: 0.02em; color: var(--sa-text); }
 
 /* =====================================================================
    STATISTIQUES — un rapport, pas un tableau de bord
@@ -3252,7 +3256,7 @@ label { color: var(--sa-text-muted); }
 
 .stats-ca-tete { display: flex; align-items: baseline; gap: var(--sa-space-3); flex-wrap: wrap; margin-bottom: var(--sa-space-5); }
 .stats-ca-valeur {
-  font-family: var(--sa-font-display);
+  font-family: var(--sa-font);
   font-size: 2rem; font-weight: 500; line-height: 1;
   color: var(--sa-text); font-variant-numeric: tabular-nums;
 }
@@ -3265,7 +3269,7 @@ label { color: var(--sa-text-muted); }
   border-top: 1px solid var(--sa-border);
   font-size: var(--sa-text-sm); color: var(--sa-text-muted);
 }
-.stats-ca-legende strong { color: var(--sa-text); font-family: var(--sa-font-display); font-weight: 500; font-variant-numeric: tabular-nums; }
+.stats-ca-legende strong { color: var(--sa-text); font-family: var(--sa-font); font-weight: 500; font-variant-numeric: tabular-nums; }
 /* Pipeline et impayes sont des soldes A CET INSTANT, pas des cumuls sur
    douze mois comme le CA au-dessus. Sous un intitule « douze derniers mois »,
    ils se lisaient pourtant comme tels : la mention corrige la portee, a la
@@ -3296,7 +3300,7 @@ label { color: var(--sa-text-muted); }
 }
 .stats-commercial-step span { font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
 .stats-commercial-step strong {
-  font-family: var(--sa-font-display); font-size: var(--sa-text-lg); font-weight: 500;
+  font-family: var(--sa-font); font-size: var(--sa-text-lg); font-weight: 500;
   color: var(--sa-text); font-variant-numeric: tabular-nums;
 }
 .stats-commercial-arrow { align-self: center; color: var(--sa-border-strong); }
@@ -3305,7 +3309,7 @@ label { color: var(--sa-text-muted); }
 .stats-metric-list > div { display: flex; flex-direction: column; gap: 5px; }
 .stats-metric-list span { font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-semibold); letter-spacing: 0; color: var(--sa-text-faint); }
 .stats-metric-list strong {
-  font-family: var(--sa-font-display); font-size: var(--sa-text-lg); font-weight: 500;
+  font-family: var(--sa-font); font-size: var(--sa-text-lg); font-weight: var(--sa-weight-semibold);
   color: var(--sa-text); font-variant-numeric: tabular-nums;
   padding-bottom: 6px; border-bottom: 1px solid var(--sa-border-strong);
 }
@@ -3373,7 +3377,7 @@ label { color: var(--sa-text-muted); }
   margin: 0 0 var(--sa-space-2);
   padding-bottom: 6px;
   border-bottom: 1px solid var(--sa-border-strong);
-  font-family: var(--sa-font-display);
+  font-family: var(--sa-font);
   font-size: var(--sa-text-md); font-weight: 600; color: var(--sa-text);
 }
 .doc-groupe-type {
@@ -3594,7 +3598,7 @@ label { color: var(--sa-text-muted); }
 .fact-reglement { padding: var(--sa-space-4) 0 var(--sa-space-5); }
 .fact-reglement-tete { display: flex; align-items: baseline; gap: var(--sa-space-3); flex-wrap: wrap; margin-bottom: 12px; }
 .fact-reglement-valeur {
-  font-family: var(--sa-font-display);
+  font-family: var(--sa-font);
   font-size: 2rem; font-weight: 500; line-height: 1;
   color: var(--sa-text); font-variant-numeric: tabular-nums;
 }
