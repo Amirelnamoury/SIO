@@ -6025,6 +6025,14 @@ async function loadChantiers() {
       if (!documentsParChantier.has(d.chantier_id)) documentsParChantier.set(d.chantier_id, []);
       documentsParChantier.get(d.chantier_id).push(d);
     }
+    // Les interventions : une demande par chantier AFFICHE, en parallele. On
+    // ne les charge pas pour les chantiers archives ni pour ceux qu'un filtre
+    // masque - c'est le prix a payer pour ne pas telecharger le planning
+    // entier, et il est proportionnel a ce qui est reellement montre.
+    interventionsParChantier = new Map();
+    const listes = await Promise.all(chantiers.map((c) =>
+      tolerant(journal, "les interventions", Api.interventionsChantier(c.id))));
+    chantiers.forEach((c, i) => interventionsParChantier.set(c.id, listes[i]));
     const clientSelect = document.getElementById("chantiers-client-filtre");
     if (clientSelect) {
       const clients = [...new Map(chantiers.filter((c) => c.client_id).map((c) => [c.client_id, c.client_nom || `Client ${c.client_id}`])).entries()];
@@ -6125,6 +6133,8 @@ function rentabiliteHtml(c) {
 // - alors qu'Astra demande justement que « les pieces jointes gardent leur
 // rattachement ». La liste est chargee une fois avec la vue.
 let documentsParChantier = new Map();
+// Les interventions rattachees a chaque chantier, chargees avec la vue.
+let interventionsParChantier = new Map();
 
 function documentsChantierHtml(c) {
   const documents = documentsParChantier.get(c.id) || [];
@@ -6137,6 +6147,28 @@ function documentsChantierHtml(c) {
           <span>${fmtDate(d.created_at)} · ${escapeHtml(d.nom)}${d.taille_octets ? " · " + fmtTaille(d.taille_octets) : ""}</span>
           <button type="button" class="btn-sm" style="padding:2px 8px;flex-shrink:0;" data-action="telecharger-document" data-id="${d.id}" data-nom="${escapeHtml(d.nom_original || d.nom)}">Télécharger</button>
         </div>`).join("")}
+    </div>`;
+}
+
+// Les interventions planifiees sur ce chantier. Astra §9 les demande comme
+// section de la fiche ; elles n'y figuraient pas, faute d'une route pour les
+// demander - /planning repond par periode, pas par chantier.
+function interventionsChantierHtml(c) {
+  const interventions = interventionsParChantier.get(c.id) || [];
+  if (!interventions.length) return "";
+  return `
+    <div class="dash-section" style="margin:12px 0;">
+      <h3 style="font-size:0.88rem;">Interventions</h3>
+      ${interventions.map((e) => {
+        const duree = planningDureeMinutes({ date: e.date_debut, date_fin: e.date_fin });
+        return `
+        <div class="item-sub" style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+          <span>${fmtDate(e.date_debut)} · ${planningHeureLocale(e.date_debut)}${
+            duree !== null ? `–${planningHeureLocale(e.date_fin)}` : ""
+          } · ${escapeHtml(e.titre)}${e.lieu ? " · " + escapeHtml(e.lieu) : ""}</span>
+          <button type="button" class="btn-sm" style="padding:2px 8px;flex-shrink:0;" data-action="ouvrir-intervention" data-evenement-id="${e.id}">Ouvrir</button>
+        </div>`;
+      }).join("")}
     </div>`;
 }
 
@@ -6477,6 +6509,7 @@ function renderChantierCard(c) {
       ${c.finances_verrouillees ? '<div class="moment-banner"><span>Les données financières sont verrouillées depuis la création de la facture finale.</span></div>' : ""}
       ${depensesHtml ? `<div class="dash-section" style="margin:12px 0;"><h3 style="font-size:0.88rem;">Dépenses</h3><div class="item-meta">${depensesHtml}</div></div>` : ""}
       ${heuresHtml(c)}
+      ${interventionsChantierHtml(c)}
       ${documentsChantierHtml(c)}
       <div class="dash-section" style="margin:12px 0;">
         <h3 style="font-size:0.88rem;">Historique</h3>
@@ -6671,6 +6704,20 @@ function setupChantiersView() {
     // chantier ne duplique pas la logique, elle reutilise l'action.
     if (btn.dataset.action === "telecharger-document") {
       await withErrorToast(() => telechargerDocument(parseInt(btn.dataset.id, 10), btn.dataset.nom));
+      return;
+    }
+
+    // Une intervention de la fiche ouvre le meme detail que depuis le
+    // planning : lieu, client, et de quoi la modifier ou la supprimer.
+    if (btn.dataset.action === "ouvrir-intervention") {
+      const id = parseInt(btn.dataset.evenementId, 10);
+      const ev = [...interventionsParChantier.values()].flat().find((x) => x.id === id);
+      if (ev) {
+        ouvrirDetailEvenement({
+          date: ev.date_debut, date_fin: ev.date_fin, type: ev.type, titre: ev.titre,
+          reference_id: ev.id, client_id: ev.client_id, chantier_id: ev.chantier_id, lieu: ev.lieu,
+        });
+      }
       return;
     }
 

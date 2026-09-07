@@ -103,6 +103,11 @@ Api.getClient = async (id) => (await clientsBruts()).find((c) => c.id === id) ||
 Api.getDevis = async (id) => (await devisBruts()).find((d) => d.id === id) || introuvable();
 Api.getFacture = async (id) => (await facturesBrutes()).find((f) => f.id === id) || introuvable();
 Api.getChantier = async (id) => (await chantiersBruts()).find((c) => c.id === id) || introuvable();
+// Les interventions rattachees a un chantier (EvenementOut complets).
+Api.interventionsChantier = async (id) => (id === 2 ? [
+  { id: 2, artisan_id: 1, client_id: 1, chantier_id: 2, titre: "Visite de chantier Ducros", type: "visite", date_debut: hg(14), date_fin: null, lieu: "Écully", notes: null },
+  { id: 7, artisan_id: 1, client_id: 1, chantier_id: 2, titre: "Pose des menuiseries", type: "intervention", date_debut: tg(6), date_fin: null, lieu: "Écully", notes: null },
+] : []);
 Api.factureDepuisDevis = async () => (await facturesBrutes())[0];
 Api.preparerChantierDepuisDevis = async () => ({
   chantier: (await chantiersBruts())[0],

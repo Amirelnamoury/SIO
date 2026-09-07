@@ -165,6 +165,10 @@ const Api = {
     return apiFetch("/chantiers" + (qs ? `?${qs}` : ""));
   },
   getChantier: (id) => apiFetch(`/chantiers/${id}`),
+  // Les rendez-vous rattaches a un chantier. /planning repond par PERIODE :
+  // sans cette route, la fiche devait telecharger le planning entier et
+  // filtrer cote client pour montrer ses propres interventions.
+  interventionsChantier: (id) => apiFetch(`/chantiers/${id}/interventions`),
   createChantier: (payload) => apiFetch("/chantiers", { method: "POST", body: payload }),
   updateChantier: (id, payload) => apiFetch(`/chantiers/${id}`, { method: "PATCH", body: payload }),
   deleteChantier: (id) => apiFetch(`/chantiers/${id}`, { method: "DELETE" }),
