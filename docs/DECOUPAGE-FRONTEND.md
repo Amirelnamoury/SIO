@@ -44,14 +44,26 @@ Ce dont **tous** les écrans se servent :
 - la section composée (`saSection`) ;
 - le clavier dans les fenêtres modales — piège, restitution du focus.
 
+### `navigation.js` — où l'on est, et comment y aller (375 lignes)
+
+Trois questions, et elles seules :
+
+- **quelle vue** est à l'écran, et qui la charge — `switchView`, qui rend la
+  promesse de son chargeur pour qu'on puisse ouvrir un objet *après* ;
+- **quelle adresse** décrit cet état, dans les deux sens : l'écrire en
+  naviguant, retrouver l'état en recevant un lien ;
+- **comment ouvrir** une pièce précise : la trouver en cache ou la demander au
+  serveur, l'afficher, et dire quand elle est introuvable.
+
+Ce fichier ne sait rien du contenu des écrans. Les fonctions d'ouverture
+(`showTimeline`, `showDevisDetail`…) vivent dans `app.js` et sont appelées par
+leur nom.
+
 ## Reste à extraire
 
 Dans l'ordre où Astra le suggère, et par lots séparés :
 
-1. **`navigation.js`** — `switchView`, les adresses, `ouvrirObjet` /
-   `ouvrirFiche` / `ouvrirCible`, le registre des fiches. C'est le bloc le plus
-   cohésif qui reste, et le plus lu.
-2. **`planning.js`** — la grille horaire, les durées, le glisser-déposer.
+1. **`planning.js`** — la grille horaire, les durées, le glisser-déposer.
    Fortement autonome : peu de couplage avec le reste.
 3. **`statistiques.js`** — le rapport et son graphique.
 4. **`devis.js`** et **`chantier.js`** — les deux compositions les plus lourdes.

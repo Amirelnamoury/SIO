@@ -9,10 +9,14 @@ import fs from "node:fs";
 import path from "node:path";
 import vm from "node:vm";
 import { fileURLToPath } from "node:url";
+import * as sources from "./_sources.mjs";
 
 const frontendDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const appPath = path.join(frontendDir, "app.js");
-const appSource = fs.readFileSync(appPath, "utf8");
+// Depuis le decoupage §16, ce code peut vivre dans socle.js ou
+// navigation.js. On lit les scripts du produit dans leur ordre de
+// chargement : le test verifie un COMPORTEMENT, pas son rangement.
+const appSource = sources.tout;
 const dashboardPy = fs.readFileSync(path.resolve(frontendDir, "..", "backend", "app", "routers", "dashboard.py"), "utf8");
 
 // ---------------------------------------------------------------------
@@ -228,18 +232,18 @@ assert.match(conformitePy, /SEUIL_ALERTE_JOURS = 30/,
 // n'ont volontairement aucun lien.
 const sourcesDebut = appSource.indexOf("const SOURCES_STATISTIQUES");
 const sourcesFin = appSource.indexOf("function caAreaChartSvg");
-const sources = appSource.slice(sourcesDebut, sourcesFin);
+const tableSources = appSource.slice(sourcesDebut, sourcesFin);
 for (const [cle, vue, filtre] of [
   ["devis-crees", "devis", '""'],
   ["devis-signes", "devis", '"signe"'],
   ["factures-dues", "factures", '"a_encaisser"'],
   ["factures-payees", "factures", '"payee"'],
 ]) {
-  assert.ok(sources.includes(`"${cle}": { vue: "${vue}"`), `${cle} doit viser la vue ${vue}`);
-  assert.ok(sources.includes(`(${filtre})`), `${cle} doit appliquer le filtre ${filtre}`);
+  assert.ok(tableSources.includes(`"${cle}": { vue: "${vue}"`), `${cle} doit viser la vue ${vue}`);
+  assert.ok(tableSources.includes(`(${filtre})`), `${cle} doit appliquer le filtre ${filtre}`);
 }
 // « Clients acquis » compte un statut que l'annuaire ne filtre pas : pas de lien.
-assert.doesNotMatch(sources, /clients-acquis/,
+assert.doesNotMatch(tableSources, /clients-acquis/,
   "aucun lien ne doit exister pour une population sans filtre équivalent");
 assert.match(appSource, /{ label: "Clients acquis", nb: a\.nb_clients_acquis, population: "clients" }/,
   "l'étape Clients acquis reste sans source, et c'est délibéré");
