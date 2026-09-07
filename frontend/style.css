@@ -3538,3 +3538,7 @@ body.est-dossier-ouvert .view { display: none; }
 }
 .profil-row-group + .profil-row-group { margin-top: var(--sa-space-6); }
 .profil-groupe-note { margin: var(--sa-space-3) 0 0; font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
+
+/* La mention d'un report. Reporter ne fait pas disparaitre le probleme : la
+   ligne le dit, pour qu'on ne prenne pas un report pour un reglement. */
+.notif-report { display: block; margin-top: 2px; font-size: var(--sa-text-2xs); color: var(--sa-warning); }

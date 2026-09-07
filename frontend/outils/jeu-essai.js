@@ -168,12 +168,17 @@ Api.listAvis = async () => [
 // n°1, qui n'existe pas, et retombait sur la liste - la vue paraissait cassee
 // alors que seul le jeu d'essai l'etait.
 Api.listNotifications = async () => [
-  { id: 14, type: "facture_relance", notification_id: 1, client_id: 1, titre: "Facture FA-2026-014 en retard de 12 jours", sous_titre: "Bertrand · 1 840,00 € restent à encaisser", urgent: true, date: tg(0.2), view: "factures", lu: false },
-  { id: 3, type: "conformite", notification_id: 2, client_id: null, titre: "Assurance décennale à renouveler", sous_titre: "AXA · échéance dans 21 jours", urgent: true, date: tg(0.6), view: "entreprise", lu: false },
-  { id: 89, type: "devis_relance", notification_id: 3, client_id: 1, titre: "Devis DV-2026-089 lu, sans réponse", sous_titre: "Bertrand · consulté hier, 2 relances envoyées", urgent: false, date: tg(0.4), view: "devis", lu: false },
+  { id: 14, type: "facture_relance", reportable: true, reportee_jusqu_au: null, notification_id: 1, client_id: 1, titre: "Facture FA-2026-014 en retard de 12 jours", sous_titre: "Bertrand · 1 840,00 € restent à encaisser", urgent: true, date: tg(0.2), view: "factures", lu: false },
+  { id: 3, type: "conformite", reportable: true, reportee_jusqu_au: null, notification_id: 2, client_id: null, titre: "Assurance décennale à renouveler", sous_titre: "AXA · échéance dans 21 jours", urgent: true, date: tg(0.6), view: "entreprise", lu: false },
+  { id: 89, type: "devis_relance", reportable: true, reportee_jusqu_au: null, notification_id: 3, client_id: 1, titre: "Devis DV-2026-089 lu, sans réponse", sous_titre: "Bertrand · consulté hier, 2 relances envoyées", urgent: false, date: tg(0.4), view: "devis", lu: false },
   { id: 2, type: "nouvelle_demande_devis", notification_id: 4, client_id: 2, titre: "Nouvelle demande depuis le site", sous_titre: "Roussel · remplacement de chauffe-eau", urgent: false, date: tg(1.3), view: "prospects", lu: true },
   { id: 5, type: "message_client", notification_id: 5, client_id: 1, titre: "Message de Bertrand", sous_titre: "« Peut-on décaler la visite de mardi ? »", urgent: false, date: tg(6), view: "prospects", lu: true },
 ];
+// Le report d'alerte et l'historique : sans eux, l'onglet « Historique » et
+// les actions « Reporter » sont intestables hors backend.
+Api.listNotificationsHistorique = async () => (await Api.listNotifications()).map((n) => ({ ...n, lu: true }));
+Api.reporterAlerte = async () => null;
+Api.annulerReportAlerte = async () => null;
 Api.dashboard = async () => ({ finances: { ca_mois: 18420, a_encaisser: 1840, paiements_recents: [{ date_paiement: jg(-2), moyen: "Virement", montant: 4200 }] }, commercial: { devis_en_attente: 7, valeur_pipeline: 42100 }, aujourdhui: { // DashboardAujourdhui transporte des FactureOut et des DevisOut COMPLETS.
   // Reduits a quatre champs, le jeu d'essai faisait afficher « échéance non
   // fixée » a une facture qui en a une, et privait la ligne « devis a

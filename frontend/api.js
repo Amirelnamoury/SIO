@@ -238,6 +238,14 @@ const Api = {
 
   // ---------- Notifications ----------
   listNotifications: () => apiFetch("/notifications"),
+  // `historique` : le flux courant laisse de cote ce qui a ete lu et ce qui
+  // est reporte. Sans lui, un evenement marque lu disparaissait pour toujours.
+  listNotificationsHistorique: () => apiFetch("/notifications?historique=true"),
+  // Reporter une alerte CALCULEE. Elle n'a pas d'identifiant propre : on la
+  // designe par son type et la piece visee. Reporter n'efface rien.
+  reporterAlerte: (payload) => apiFetch("/notifications/reporter", { method: "POST", body: payload }),
+  annulerReportAlerte: (type, referenceId) =>
+    apiFetch(`/notifications/reporter/${encodeURIComponent(type)}/${referenceId}`, { method: "DELETE" }),
   markNotificationRead: (id) => apiFetch(`/notifications/${id}/lire`, { method: "PATCH" }),
 
   // ---------- Tableau de bord & analytics ----------

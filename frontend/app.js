@@ -1672,6 +1672,14 @@ function setupAvisView() {
 // Chaque phrase decrit la condition reellement evaluee par le serveur
 // (routers/devis.py relance_due, routers/factures.py relance_facture_due,
 // routers/conformite.py SEUIL_ALERTE_JOURS, routers/notifications.py).
+// Reporter une alerte, c'est dire QUAND on s'en occupe - pas la faire taire.
+// Trois echeances suffisent : demain, la fin de semaine, la semaine suivante.
+const REPORTS_ALERTE = [
+  { jours: 1, libelle: "à demain" },
+  { jours: 3, libelle: "de 3 jours" },
+  { jours: 7, libelle: "d'une semaine" },
+];
+
 const NOTIFICATION_RAISONS = {
   devis_relance: "Ce devis a été envoyé et le délai de relance réglé dans votre profil est atteint, sans réponse du client.",
   facture_relance: "Cette facture a dépassé son échéance sans être entièrement réglée.",
@@ -1696,7 +1704,11 @@ async function loadNotifications() {
   const list = document.getElementById("notifications-list");
   debutChargement(list);
   try {
-    const notifications = await Api.listNotifications();
+    // « Historique » n'est pas un filtre local : le flux courant ne CONTIENT
+    // pas ce qui a ete lu ni ce qui est reporte. Il faut le demander.
+    const notifications = currentNotificationsFilter === "historique"
+      ? await Api.listNotificationsHistorique()
+      : await Api.listNotifications();
     notificationsCache = notifications;
     const setCount = (mode, n) => {
       const el = document.querySelector(`#notifications-filters [data-mode="${mode}"] .filter-chip-count`);
@@ -1722,6 +1734,8 @@ function renderNotificationsFiltered() {
     );
     return;
   }
+  // En mode « historique », la liste vient deja du serveur avec ce qu'il faut :
+  // on ne la refiltre pas, sinon on masquerait ce qu'on vient de demander.
   const base = currentNotificationsFilter === "non-lues" ? notificationsCache.filter((n) => !n.lu)
     : currentNotificationsFilter === "importantes" ? notificationsCache.filter((n) => n.urgent)
     : notificationsCache;
@@ -1812,6 +1826,7 @@ function notificationRowHtml(n) {
       <span class="notif-title">${escapeHtml(n.titre)}</span>
       ${n.sous_titre ? `<span class="notif-sub">${escapeHtml(n.sous_titre)}</span>` : ""}
       ${NOTIFICATION_RAISONS[n.type] ? `<span class="notif-raison">${escapeHtml(NOTIFICATION_RAISONS[n.type])}</span>` : ""}
+      ${n.reportee_jusqu_au ? `<span class="notif-report">Reportée au ${fmtDate(n.reportee_jusqu_au)} — la situation, elle, n'a pas changé.</span>` : ""}
     </div>
     <time class="notif-date" datetime="${escapeHtml(n.date)}">${fmtNotificationDate(n.date)}</time>
     <button type="button" class="btn-sm" ${cible}>${actionLabels[n.view] || "Ouvrir"}</button>
@@ -1819,7 +1834,14 @@ function notificationRowHtml(n) {
       <button type="button" class="action-menu-trigger" data-action="toggle-action-menu" aria-haspopup="true" aria-expanded="false" aria-label="Plus d'actions sur cette notification">
         <svg viewBox="0 0 24 24" class="nav-icon"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg>
       </button>
-      <div class="action-menu-panel" role="menu"><button type="button" ${cible}>Ouvrir</button></div>
+      <div class="action-menu-panel" role="menu">
+        <button type="button" ${cible}>Ouvrir</button>
+        ${n.reportable && !n.reportee_jusqu_au ? REPORTS_ALERTE.map((r) => `
+          <button type="button" data-action="reporter-alerte" data-type="${escapeHtml(n.type)}"
+            data-reference-id="${n.id}" data-jours="${r.jours}">Reporter ${r.libelle}</button>`).join("") : ""}
+        ${n.reportee_jusqu_au ? `<button type="button" data-action="annuler-report"
+          data-type="${escapeHtml(n.type)}" data-reference-id="${n.id}">Remettre dans le flux</button>` : ""}
+      </div>
     </div>
   </div>`;
 }
@@ -1983,14 +2005,49 @@ function setupNotificationsView() {
     if (!chip) return;
     document.querySelectorAll("#notifications-filters .filter-chip").forEach((c) => c.classList.remove("active"));
     chip.classList.add("active");
+    const avant = currentNotificationsFilter;
     currentNotificationsFilter = chip.dataset.mode;
-    renderNotificationsFiltered();
+    // Passer a l'historique - ou en revenir - change la LISTE, pas seulement
+    // son filtrage : on recharge. Les trois autres modes trient ce qu'on a.
+    if (avant === "historique" || currentNotificationsFilter === "historique") loadNotifications();
+    else renderNotificationsFiltered();
   });
   document.getElementById("notifications-module-filter").addEventListener("change", (e) => {
     currentNotificationModule = e.target.value;
     renderNotificationsFiltered();
   });
   document.getElementById("notifications-list").addEventListener("click", async (e) => {
+    // Reporter : on dit QUAND on s'en occupe. La situation ne change pas -
+    // la facture reste en retard - et l'alerte revient le jour dit.
+    const report = e.target.closest('[data-action="reporter-alerte"]');
+    if (report) {
+      const quand = new Date();
+      quand.setDate(quand.getDate() + parseInt(report.dataset.jours, 10));
+      const jour = `${quand.getFullYear()}-${String(quand.getMonth() + 1).padStart(2, "0")}-${String(quand.getDate()).padStart(2, "0")}`;
+      await withErrorToast(async () => {
+        await Api.reporterAlerte({
+          type: report.dataset.type,
+          reference_id: parseInt(report.dataset.referenceId, 10),
+          jusqu_au: jour,
+        });
+        showToast(`Reportée au ${fmtDate(jour)}. Vous la retrouverez dans l'historique d'ici là.`);
+        loadNotifications();
+        refreshBadges();
+      });
+      return;
+    }
+
+    const annulation = e.target.closest('[data-action="annuler-report"]');
+    if (annulation) {
+      await withErrorToast(async () => {
+        await Api.annulerReportAlerte(annulation.dataset.type, parseInt(annulation.dataset.referenceId, 10));
+        showToast("Remise dans le flux courant.");
+        loadNotifications();
+        refreshBadges();
+      });
+      return;
+    }
+
     const btn = e.target.closest('[data-action="voir-notification"]');
     if (!btn) return;
     await withErrorToast(async () => {
