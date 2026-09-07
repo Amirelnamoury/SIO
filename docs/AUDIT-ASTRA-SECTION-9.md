@@ -17,40 +17,23 @@ code.
 
 ## 1. Aujourd'hui
 
-**Écart.**
+**Corrigé.**
 
-Conforme : composition asymétrique (file d'actions « À faire », agenda du jour,
-puis chiffres du mois) ; première action réelle proposée sur un compte vide
-(« Ajouter un client », « Créer un devis ») ; une source en panne n'efface plus
-les autres (`bandeauCharge`).
-
-Écarts :
-
-1. **Score global opaque.** `santeWidgetHtml` affiche « 72/100 · Score global ».
-   Le serveur le calcule comme la moyenne arithmétique de cinq sous-scores
-   (`routers/dashboard.py`) qui ne partagent aucune unité : un taux de
-   signature, une part de montant non en retard, une part de chantiers dans
-   leur budget, une pénalité de 25 points par document expiré, une part de
-   tâches à l'heure. La moyenne de ces cinq échelles n'est pas un fait
-   d'entreprise. Astra : « Aucun score opaque ».
-2. **Les cinq sous-scores ne disent pas ce qu'ils mesurent.** « Commercial
-   65/100 » est exact mais illisible sans la formule.
-3. **Les lignes « À faire » n'exposent pas l'échéance.** Astra demande objet,
-   raison, échéance et action. Une facture en retard affiche « FA-2026-014 · en
-   retard » sans la date dépassée, alors que `date_echeance` est disponible.
+Le « Score global » a disparu de l'écran : il valait la moyenne arithmétique de
+cinq échelles sans unité commune. Le serveur le calcule toujours — le contrat
+d'API ne change pas — mais chacune des cinq mesures dit maintenant ce qu'elle
+compte. Les lignes « À faire » exposent leur échéance : la date dépassée d'une
+facture, la date d'envoi d'un devis qui attend, l'échéance d'une tâche.
 
 ## 2. Prospects
 
-**Écart.**
+**Corrigé.**
 
-Conforme : filtres conservés au retour d'une fiche (routage) ; colonnes vides
-repliées ; pas de débordement horizontal à 390 px.
-
-Écart : **le pipeline est la vue principale.** Astra demande une liste de
-travail ordonnée par prochaine action, le pipeline restant facultatif pour
-comparer les étapes. `loadClients()` rend la réglette puis les neuf colonnes ;
-aucune liste par prochaine action n'existe, alors que `prochaine_action` et
-`updated_at` sont déjà renvoyés par l'API.
+La liste de travail est devenue la vue principale : les prospects actifs y sont
+ordonnés par ancienneté du dernier mouvement, chacun avec sa prochaine action —
+ou « à définir », qui est une information en soi — son contact composable, sa
+source et le temps écoulé. Le pipeline reste à un clic, pour ce à quoi il sert :
+comparer les étapes.
 
 ## 3. Clients
 
@@ -63,15 +46,15 @@ client / aucun résultat de recherche / données indisponibles) par `etatVide`,
 
 ## 4. Fiche client
 
-**Écart.**
+**Écart — non traité.**
 
-Conforme : identité compacte, affaires liées, chronologie ; les affaires
-ouvrent la pièce exacte ; adresse propre (`#/clients/<id>`).
+Conforme : identité compacte, affaires liées, chronologie ; les affaires ouvrent
+la pièce exacte ; adresse propre (`#/clients/<id>`).
 
-Écart : **c'est un panneau latéral, pas une page.** Astra demande explicitement
-de lui « donner une adresse et davantage de place ». L'adresse est faite, la
-place non : le dossier reste contraint à la largeur d'un panneau superposé au
-répertoire.
+Écart restant : **c'est un panneau latéral, pas une page.** Astra demande de lui
+« donner une adresse et davantage de place ». L'adresse est faite, la place non.
+C'est le seul écart §9 encore ouvert, et le plus lourd : il déplace le dossier
+hors du panneau superposé, ce qui touche ses six points d'entrée.
 
 ## 5. Devis
 
@@ -84,14 +67,15 @@ filtres non compressés.
 
 ## 6. Création de devis
 
-**Écart.**
+**Corrigé.**
 
 Conforme : espace documentaire complet ; totalisateur réutilisé ; sauvegarde et
-envoi distincts ; **aucune TVA par ligne** — `LigneDevisIn` n'en porte pas, le
-formulaire n'en propose pas.
+envoi distincts ; aucune TVA par ligne — `LigneDevisIn` n'en porte pas.
 
-Écart : **aucun avertissement avant abandon.** Fermer le formulaire ou changer
-de vue perd les lignes saisies sans un mot.
+Un devis en cours de saisie est désormais protégé : la comparaison porte sur une
+empreinte prise à l'ouverture, et non sur « des champs sont non vides » — les
+valeurs par défaut auraient réclamé une confirmation sur un formulaire auquel
+personne n'avait touché.
 
 ## 7. Factures
 
@@ -103,58 +87,66 @@ tabulaires ; en-tête et lignes sur la même grille.
 
 ## 8. Facture et paiement
 
-**Écart.**
+**Corrigé.**
 
-Conforme : document d'abord, règlements ensuite ; conversion depuis un devis
-avec origine visible et sans ressaisie ; validation serveur contre le
-surpaiement conservée ; champ pré-rempli au solde restant.
-
-Écart : **le solde attendu après confirmation n'est pas montré.** Astra demande
-les trois : solde avant, montant, solde après. Seuls les deux premiers existent.
+Le formulaire de paiement montre les trois chiffres qu'Astra demande : solde
+avant, montant, et solde attendu après. Un montant supérieur au solde se voit
+avant l'envoi, là où le serveur le refusait après coup.
 
 ## 9. Chantiers
 
-**Écart.**
+**Corrigé.**
 
-Conforme : liste par démarrage et activité ; client, lieu et avancement sourcés ;
-sur une carte, une marge réelle absente s'affiche « — » et non zéro.
-
-Écart : **le total de marge du bandeau mélange réel et estimé sans le dire.**
-`margeTotale` retient `marge_reelle` quand elle existe, sinon `marge_estimee`,
-et présente la somme comme un seul chiffre. Astra : « Une marge incomplète reste
-annoncée comme telle. »
+Le total de marge substituait l'estimé au réel dès qu'il manquait, et présentait
+la somme comme un seul chiffre. Il annonce maintenant de quoi il est fait :
+« marge réelle », « marge prévisionnelle », ou le total avec le nombre de
+chantiers encore estimés.
 
 ## 10. Fiche chantier
 
-**Non éprouvée.**
+**Éprouvée, puis corrigée en partie.**
 
-La séparation « avancement d'exécution » / « situation financière » et les
-conséquences explicites de réception, arrêt et clôture demandent un parcours
-complet à mener écran en main. Je ne l'ai pas fait : je ne peux ni cocher ni
-invalider.
+Éprouvée en pilotant le navigateur sur un chantier peuplé — notes, dépenses,
+heures et tâches aux formes exactes du serveur.
+
+Conforme : bandeau opérationnel (titre, client, lieu, statut, début, livraison
+prévue) ; **avancement d'exécution et situation financière séparés** — deux
+jauges nommées, puis une ligne financière distincte ; les pièces gardent leur
+rattachement.
+
+Corrigé : les dépenses n'avaient pas d'intitulé de section alors que les heures
+en avaient un ; l'historique non plus. Et surtout, **les documents rattachés au
+chantier n'étaient pas listés** — `Document.chantier_id` existe depuis toujours,
+mais il fallait ouvrir la vue Documents et y retrouver le bon rattachement à la
+main. La fiche compte désormais six sections : préparation et tâches, dépenses,
+heures, documents et photos, historique, réception.
+
+Reste : **aucune section « interventions ».** Les événements portent un
+`chantier_id`, mais aucun endpoint ne permet de demander les interventions d'un
+chantier — `/planning` répond par période, pas par chantier. C'est une évolution
+backend (filtre `chantier_id` sur `/planning`, ou route dédiée), à traiter comme
+telle et non à contourner en chargeant le planning entier.
 
 ## 11. Planning
 
-**Écart.**
+**Corrigé.**
 
 Conforme : semaine horaire sur bureau ; durées réelles depuis que
 `PlanningItem.date_fin` existe ; échéances et débuts de chantier dans une bande
 sans heure ; aucun conflit d'équipe déduit d'un chevauchement.
 
-Écart : **les entrées dérivées n'ouvrent pas leur source.** Un chip de tâche
-n'est pas cliquable : `planningItemChip` ne marque `planning-item-clickable` que
-pour les événements et les débuts de chantier.
+Une échéance de tâche ouvre maintenant sa source : le chip est cliquable, la vue
+Tâches s'ouvre et la ligne est mise en avant. Masquée par un filtre, elle est
+signalée plutôt qu'ignorée.
 
 ## 12. Tâches
 
-**Écart.**
+**Corrigé.**
 
-Conforme : file d'exécution ; titre, contexte, échéance et priorité ; cocher
-signifie tâche faite et rien d'autre ; grandes cibles au tactile.
-
-Écart : **une tâche sans échéance est rangée dans « Plus tard ».** `tacheGroupe`
-renvoie `plus_tard` quand `t.echeance` est absente : une date future est donc
-sous-entendue là où il n'y en a aucune. Astra demande un groupe « sans date ».
+Une tâche sans échéance tombait dans « Plus tard », ce qui sous-entend une date
+future qu'elle n'a pas, et la noyait parmi des tâches datées où elle ne remontait
+jamais. Elle a désormais son propre groupe, placé en dernier : ces tâches n'ont
+pas d'urgence à revendiquer.
 
 ## 13. Documents
 
@@ -232,30 +224,30 @@ La couleur accompagne toujours un libellé : « Expiré », « Expire dans N j �
 
 ## 21. Compte, authentification et onboarding
 
-**Écart.**
+**Corrigé.**
 
-Conforme : onboarding court et interrompable ; **aucune création de données
-d'exemple** ; reprise après expiration de session.
+Conforme : onboarding court et interrompable ; aucune création de données
+d'exemple ; reprise après expiration de session.
 
-Écart : **la photo est présentée comme celle de la personne connectée.** Elle
-est portée par `Artisan` (`models.py:52`), donc par l'entreprise. Un salarié
-connecté voit la photo de l'entreprise à la place de la sienne.
+La photo appartient à `Artisan`, donc à l'entreprise. Elle s'affichait dans la
+pastille « Mon profil », où un salarié connecté croyait voir la sienne.
+L'intitulé nomme maintenant les deux, le texte de remplacement de l'image nomme
+l'entreprise, et le formulaire dit qu'elle est commune à toutes les personnes
+qui s'y connectent. Aucune identité individuelle n'est simulée — c'est une
+évolution backend qu'Astra range à part.
 
 ## 22. Notifications
 
-**Écart.**
+**Corrigé.**
 
-Conforme : chaque entrée ouvre l'objet précis (corrigé cette session) ; lire
-n'efface pas une facture en retard, recalculée à chaque chargement ; liste
-chronologique sans badges redondants.
+Chaque entrée ouvre l'objet précis, et dit maintenant **pourquoi elle
+apparaît** : les cinq phrases décrivent la condition réellement évaluée par le
+serveur. Sans cela, une alerte qui revient ou qui manque est incompréhensible —
+on ignore quel réglage la gouverne.
 
-Écart : **l'entrée n'indique pas pourquoi elle apparaît.** Le sous-titre porte
-un contexte (« Bertrand · 1 840 € restent à encaisser ») mais jamais la règle
-qui a déclenché l'alerte.
-
-Non applicable : reporter, traiter et consulter l'historique demandent le
-contrat explicite qu'Astra range en évolution backend — le routeur mélange
-aujourd'hui notifications persistantes et alertes calculées.
+Non applicable : reporter, traiter et consulter l'historique demandent le contrat
+explicite qu'Astra range en évolution backend — le routeur mélange aujourd'hui
+notifications persistantes et alertes calculées.
 
 ## 23. Pages client et Admin interne
 
@@ -271,10 +263,20 @@ aucun retour du générateur de sites supprimé.
 
 | Verdict | Écrans |
 |---|---|
-| Conforme | 3, 5, 7, 13, 15, 16, 17, 18, 19, 20, 23 — **11** |
-| Écart | 1, 2, 4, 6, 8, 9, 11, 12, 14, 21, 22 — **11** |
-| Non éprouvée | 10 — **1** |
+| Conforme à l'audit | 3, 5, 7, 13, 15, 16, 17, 18, 19, 20, 23 — **11** |
+| Écart corrigé | 1, 2, 6, 8, 9, 11, 12, 14, 21, 22 — **10** |
+| Corrigé en partie | 10 — **1** |
+| Écart ouvert | 4 — **1** |
 
-Treize écarts nommés, tous frontend sauf deux : la photo individuelle (§21) et
-le cycle des notifications (§22), qu'Astra range lui-même en évolutions backend
-à arbitrer séparément.
+Douze écarts nommés, onze traités. Restent, distinctement :
+
+- **§9-4, la fiche client en page** plutôt qu'en panneau latéral. Frontend, mais
+  lourd : le dossier a six points d'entrée.
+- **§9-10, les interventions d'un chantier.** Évolution backend : `/planning`
+  répond par période, pas par chantier.
+- **§9-21 et §9-22**, pour leur part backend : identité individuelle, et cycle
+  explicite des notifications.
+
+Chaque correction est vérifiée en pilotant le navigateur, pas seulement en
+relisant le code — et deux d'entre elles ont d'abord révélé un défaut dans le
+jeu d'essai, pas dans le produit.

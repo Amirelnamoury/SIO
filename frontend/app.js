@@ -6667,8 +6667,22 @@ async function loadChantiers() {
 
   list.innerHTML = skeletonCards();
   try {
-    const chantiers = await Api.listChantiers();
+    // Les documents accompagnent les chantiers : la fiche montre les siens.
+    // `tolerant` plutot qu'un Promise.all strict - si les documents ne
+    // repondent pas, les chantiers restent lisibles, et la fiche n'affirme
+    // pas « aucun document » a la place de « je n'ai pas pu les lire ».
+    const journal = journalDeCharge();
+    const [chantiers, documents] = await Promise.all([
+      Api.listChantiers(),
+      tolerant(journal, "les documents", Api.listDocuments()),
+    ]);
     chantiersCache = chantiers;
+    documentsParChantier = new Map();
+    for (const d of documents) {
+      if (!d.chantier_id) continue;
+      if (!documentsParChantier.has(d.chantier_id)) documentsParChantier.set(d.chantier_id, []);
+      documentsParChantier.get(d.chantier_id).push(d);
+    }
     const clientSelect = document.getElementById("chantiers-client-filtre");
     if (clientSelect) {
       const clients = [...new Map(chantiers.filter((c) => c.client_id).map((c) => [c.client_id, c.client_nom || `Client ${c.client_id}`])).entries()];
@@ -6759,6 +6773,27 @@ function rentabiliteHtml(c) {
           <span class="dash-chiffre-label">${label}</span>
           <span class="dash-chiffre-valeur">${valeur}</span>
           ${note ? `<span class="dash-chiffre-note">${note}</span>` : ""}
+        </div>`).join("")}
+    </div>`;
+}
+
+// Les documents rattaches a ce chantier. `Document.chantier_id` existe depuis
+// toujours ; la fiche ne s'en servait pas, et il fallait ouvrir la vue
+// Documents pour retrouver a la main les photos et attestations d'un chantier
+// - alors qu'Astra demande justement que « les pieces jointes gardent leur
+// rattachement ». La liste est chargee une fois avec la vue.
+let documentsParChantier = new Map();
+
+function documentsChantierHtml(c) {
+  const documents = documentsParChantier.get(c.id) || [];
+  if (!documents.length) return "";
+  return `
+    <div class="dash-section" style="margin:12px 0;">
+      <h3 style="font-size:0.88rem;">Documents et photos</h3>
+      ${documents.map((d) => `
+        <div class="item-sub" style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+          <span>${fmtDate(d.created_at)} · ${escapeHtml(d.nom)}${d.taille_octets ? " · " + fmtTaille(d.taille_octets) : ""}</span>
+          <button type="button" class="btn-sm" style="padding:2px 8px;flex-shrink:0;" data-action="telecharger-document" data-id="${d.id}" data-nom="${escapeHtml(d.nom_original || d.nom)}">Télécharger</button>
         </div>`).join("")}
     </div>`;
 }
@@ -7016,6 +7051,10 @@ function renderChantierCard(c) {
     )
     .join("");
 
+  // Les documents portent deja un chantier_id : la fiche peut donc montrer
+  // ses propres pieces, au lieu d'obliger a traverser la vue Documents et a
+  // y retrouver le bon rattachement a la main. Aucune donnee nouvelle - la
+  // liste est chargee une fois avec la vue Chantiers.
   const depensesHtml = (c.depenses || [])
     .slice()
     .reverse()
@@ -7094,9 +7133,13 @@ function renderChantierCard(c) {
       ${checklistHtml(c)}
       ${rentabiliteHtml(c)}
       ${c.finances_verrouillees ? '<div class="moment-banner"><span>Les données financières sont verrouillées depuis la création de la facture finale.</span></div>' : ""}
-      ${depensesHtml ? `<div class="item-meta">${depensesHtml}</div>` : ""}
+      ${depensesHtml ? `<div class="dash-section" style="margin:12px 0;"><h3 style="font-size:0.88rem;">Dépenses</h3><div class="item-meta">${depensesHtml}</div></div>` : ""}
       ${heuresHtml(c)}
-      <div class="notes-list">${notesHtml || '<div class="item-sub">Aucune note pour le moment.</div>'}</div>
+      ${documentsChantierHtml(c)}
+      <div class="dash-section" style="margin:12px 0;">
+        <h3 style="font-size:0.88rem;">Historique</h3>
+        <div class="notes-list">${notesHtml || '<div class="item-sub">Aucune note pour le moment.</div>'}</div>
+      </div>
       ${receptionHtml(c)}
       <div id="chantier-edit-form-${c.id}"></div>
       <div id="note-form-${c.id}"></div>
@@ -7281,6 +7324,13 @@ function setupChantiersView() {
   document.getElementById("chantiers-list").addEventListener("click", async (e) => {
     const btn = e.target.closest("[data-action]");
     if (!btn) return;
+
+    // Meme telechargement authentifie que dans la vue Documents : la fiche
+    // chantier ne duplique pas la logique, elle reutilise l'action.
+    if (btn.dataset.action === "telecharger-document") {
+      await withErrorToast(() => telechargerDocument(parseInt(btn.dataset.id, 10), btn.dataset.nom));
+      return;
+    }
 
     if (btn.dataset.action === "toggle-tache-chantier") {
       const chantierId = parseInt(btn.dataset.chantierId, 10);
