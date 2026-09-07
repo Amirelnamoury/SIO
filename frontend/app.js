@@ -3104,6 +3104,10 @@ async function tolerant(journal, etiquette, promesse, repli = []) {
 /** Le bandeau qui annonce ce qui manque. Il ne remplace pas le contenu
  *  charge : le reste de la page reste utilisable, on signale seulement
  *  qu'elle est incomplete. */
+// Les etiquettes passees a tolerant() sont des groupes nominaux : celles-ci
+// sont feminines. Toute nouvelle etiquette feminine doit y etre ajoutee.
+const ETIQUETTES_FEMININES = new Set(["les factures"]);
+
 function bandeauCharge(journal) {
   if (!journal.manquants.length) return "";
   const liste = journal.manquants.length === 1
@@ -3116,8 +3120,14 @@ function bandeauCharge(journal) {
   // (« les devis », « les factures », « les elements de conformite ») ;
   // l'accord est donc au pluriel, et la seule chose que le nombre de
   // sources change est l'enumeration.
+  //
+  // Le GENRE, lui, suit les etiquettes : « les factures n'ont pas pu etre
+  // chargeS » se lisait sur la fiche client. Quand plusieurs sources sont en
+  // panne et qu'elles ne sont pas toutes feminines, le masculin l'emporte -
+  // c'est la regle, pas un repli.
+  const toutesFeminines = journal.manquants.every((e) => ETIQUETTES_FEMININES.has(e));
   return `<p class="charge-incomplete" role="status">
-    ${escapeHtml(liste.charAt(0).toUpperCase() + liste.slice(1))} n'ont pas pu être chargés.
+    ${escapeHtml(liste.charAt(0).toUpperCase() + liste.slice(1))} n'ont pas pu être chargé${toutesFeminines ? "es" : "s"}.
     Ce qui s'affiche ci-dessous est donc incomplet.
     <button type="button" class="btn-sm" data-action="recharger-vue">Réessayer</button>
   </p>`;
