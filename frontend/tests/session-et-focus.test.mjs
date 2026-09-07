@@ -14,10 +14,14 @@ import fs from "node:fs";
 import path from "node:path";
 import vm from "node:vm";
 import { fileURLToPath } from "node:url";
+import * as sources from "./_sources.mjs";
 
 const frontendDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const appPath = path.join(frontendDir, "app.js");
-const appSource = fs.readFileSync(appPath, "utf8");
+// Depuis le decoupage §16, une partie de ce code vit dans socle.js.
+// On lit les scripts du produit dans leur ordre de chargement : le test
+// verifie un COMPORTEMENT, pas dans quel fichier il est range.
+const appSource = sources.tout;
 
 // ---------------------------------------------------------------------
 // 1. Rien ne survit à une fin de session
@@ -67,14 +71,20 @@ assert.match(recherche, /rechercheEnCours \+= 1;[\s\S]*?quickActionsHtml\(QUICK_
 // ---------------------------------------------------------------------
 // 3. Le clavier reste dans la fenêtre modale, et en ressort là où il était
 // ---------------------------------------------------------------------
-const modalesDebut = appSource.indexOf("const SELECTEUR_FOCUSABLE");
-const modalesFin = appSource.indexOf("/** Efface TOUT ce qui appartenait");
+// Le clavier des fenetres modales fait partie du SOCLE depuis le decoupage
+// §16 : on le decoupe dans son fichier, pas dans la concatenation - sinon la
+// tranche court jusqu'a un marqueur reste dans app.js et avale tout ce qui
+// separe les deux.
+const modalesDebut = sources.socle.indexOf("const SELECTEUR_FOCUSABLE");
+const modalesFin = sources.socle.indexOf("/** Un ecran vide qui INVITE");
+assert.ok(modalesDebut !== -1 && modalesFin > modalesDebut,
+  "le bloc des fenetres modales doit vivre dans socle.js");
 assert.ok(modalesDebut !== -1 && modalesFin > modalesDebut, "le bloc des fenêtres modales est introuvable");
 
 // Le déclencheur est retenu au GESTE, pas à l'événement `focusin` : celui-ci
 // ne se déclenche pas quand le document n'a pas le focus système. Défaut
 // constaté en pilotant le navigateur, pas déduit du code.
-const modales = appSource.slice(modalesDebut, modalesFin);
+const modales = sources.socle.slice(modalesDebut, modalesFin);
 for (const evenement of ["pointerdown", "keydown", "focusin"]) {
   assert.ok(modales.includes(`document.addEventListener("${evenement}", noterGeste, true)`),
     `le geste ${evenement} doit être écouté en capture`);

@@ -2,11 +2,15 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import * as sources from "./_sources.mjs";
 
 const testDir = path.dirname(fileURLToPath(import.meta.url));
 const frontendDir = path.resolve(testDir, "..");
 const indexSource = fs.readFileSync(path.join(frontendDir, "index.html"), "utf8");
-const appSource = fs.readFileSync(path.join(frontendDir, "app.js"), "utf8");
+// Depuis le decoupage §16, une partie de ce code vit dans socle.js.
+// On lit les scripts du produit dans leur ordre de chargement : le test
+// verifie un COMPORTEMENT, pas dans quel fichier il est range.
+const appSource = sources.tout;
 const styleSource = fs.readFileSync(path.join(frontendDir, "style.css"), "utf8");
 
 const views = [

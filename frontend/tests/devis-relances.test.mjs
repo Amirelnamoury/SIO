@@ -3,10 +3,14 @@ import fs from "node:fs";
 import path from "node:path";
 import vm from "node:vm";
 import { fileURLToPath } from "node:url";
+import * as sources from "./_sources.mjs";
 
 const testDir = path.dirname(fileURLToPath(import.meta.url));
 const appPath = path.resolve(testDir, "..", "app.js");
-const appSource = fs.readFileSync(appPath, "utf8");
+// Depuis le decoupage §16, une partie de ce code vit dans socle.js.
+// On lit les scripts du produit dans leur ordre de chargement : le test
+// verifie un COMPORTEMENT, pas dans quel fichier il est range.
+const appSource = sources.tout;
 
 const feedbackStart = appSource.indexOf("function feedbackRelanceDevis");
 const feedbackEnd = appSource.indexOf("async function withErrorToast", feedbackStart);

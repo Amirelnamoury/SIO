@@ -18,10 +18,14 @@ import fs from "node:fs";
 import path from "node:path";
 import vm from "node:vm";
 import { fileURLToPath } from "node:url";
+import * as sources from "./_sources.mjs";
 
 const frontendDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const appPath = path.join(frontendDir, "app.js");
-const appSource = fs.readFileSync(appPath, "utf8");
+// Depuis le decoupage §16, une partie de ce code vit dans socle.js.
+// On lit les scripts du produit dans leur ordre de chargement : le test
+// verifie un COMPORTEMENT, pas dans quel fichier il est range.
+const appSource = sources.tout;
 const apiSource = fs.readFileSync(path.join(frontendDir, "api.js"), "utf8");
 
 // ---------------------------------------------------------------------

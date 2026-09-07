@@ -11,7 +11,7 @@
      DIRECTION-ARTISTIQUE.md. Les deux feuilles superposees d'avant ont ete
      fondues ici, verification faite par comparaison des styles calcules
      sur les douze vues (voir outils/empreinte-styles.js). -->
-<link rel="stylesheet" href="style.css?v=20260907-interdit">
+<link rel="stylesheet" href="style.css?v=20260907-socle">
 <!-- Habillage de l'ecran connexion/inscription. Charge APRES style.css,
      tous ses selecteurs sont ancres sous .auth-screen : rien ne fuit vers
      le SaaS. Supprimer cette ligne rend l'ecran a son etat precedent. -->
@@ -1146,7 +1146,12 @@
 <script src="env.js"></script>
 <script src="config.js"></script>
 <script src="pricing.js"></script>
-<script src="api.js?v=20260907-interdit"></script>
-<script src="app.js?v=20260907-interdit"></script>
+<!-- Decoupage par domaine (Astra §16), en cours et progressif : le socle
+     d'abord - formats, etats d'ecran, messages, confirmations, clavier des
+     fenetres. Scripts classiques charges dans l'ordre : les declarations de
+     premier niveau restent partagees, comme lorsque tout tenait dans app.js. -->
+<script src="api.js?v=20260907-socle"></script>
+<script src="socle.js?v=20260907-socle"></script>
+<script src="app.js?v=20260907-socle"></script>
 </body>
 </html>
