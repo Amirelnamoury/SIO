@@ -1,5 +1,5 @@
 from collections import defaultdict
-from datetime import date, timedelta
+from datetime import date
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends
@@ -13,6 +13,19 @@ from app.schemas import AnalyticsMois, AnalyticsOut, AnalyticsSource, FunnelEtap
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
+NB_MOIS_FENETRE = 12
+
+
+def _decaler_mois(premier_du_mois: date, n: int) -> date:
+    """Avance ou recule de n mois, en restant sur le premier du mois.
+
+    Reculer de 365 jours ne ramene PAS au meme jour douze mois plus tot :
+    on tombe au milieu du mois, et le premier mois de la fenetre se
+    retrouvait tronque - un paiement du 20 y comptait, un paiement du 5 non,
+    sans que rien ne le signale sur le graphique."""
+    total = premier_du_mois.year * 12 + (premier_du_mois.month - 1) + n
+    return date(total // 12, total % 12 + 1, 1)
+
 
 @router.get("", response_model=AnalyticsOut)
 def obtenir_analytics(
@@ -22,19 +35,31 @@ def obtenir_analytics(
     """Statistiques de pilotage. Fonction payante : necessite un abonnement actif."""
     aujourdhui = date.today()
 
-    # ---------- CA par mois (12 derniers mois) ----------
-    depuis_12_mois = date(aujourdhui.year, aujourdhui.month, 1) - timedelta(days=365)
+    # ---------- CA par mois (12 mois pleins, mois en cours compris) ----------
+    mois_courant = date(aujourdhui.year, aujourdhui.month, 1)
+    premier_mois = _decaler_mois(mois_courant, -(NB_MOIS_FENETRE - 1))
     paiements = (
         db.query(Paiement.date_paiement, Paiement.montant)
         .join(Facture, Paiement.facture_id == Facture.id)
-        .filter(Facture.artisan_id == artisan.id, Paiement.date_paiement >= depuis_12_mois)
+        .filter(Facture.artisan_id == artisan.id, Paiement.date_paiement >= premier_mois)
         .all()
     )
     ca_par_mois_dict = defaultdict(Decimal)
     for date_paiement, montant in paiements:
         cle = date_paiement.strftime("%Y-%m")
         ca_par_mois_dict[cle] += montant
-    ca_par_mois = [AnalyticsMois(mois=k, ca=round(v, 2)) for k, v in sorted(ca_par_mois_dict.items())]
+    # TOUS les mois de la fenetre, y compris ceux sans le moindre paiement.
+    # Avant, seuls les mois encaissants etaient renvoyes : un CA en janvier,
+    # fevrier et septembre donnait trois points colles les uns aux autres, que
+    # le graphique presentait comme trois mois consecutifs en progression. Un
+    # mois sans encaissement vaut zero - ce n'est pas une absence de donnee.
+    ca_par_mois = [
+        AnalyticsMois(
+            mois=(cle := _decaler_mois(premier_mois, i).strftime("%Y-%m")),
+            ca=round(ca_par_mois_dict.get(cle, Decimal("0")), 2),
+        )
+        for i in range(NB_MOIS_FENETRE)
+    ]
 
     # ---------- Devis ----------
     devis_total = db.query(Devis).filter(Devis.artisan_id == artisan.id).count()
