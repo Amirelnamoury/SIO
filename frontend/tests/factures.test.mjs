@@ -58,7 +58,17 @@ vm.runInNewContext(
   { filename: appPath },
 );
 context.__showPaiementForm(42, 80);
-assert.match(containers["paiement-form-42"].innerHTML, /max="80\.00"/);
-assert.match(containers["paiement-form-42"].innerHTML, /Solde 80\.00 EUR/);
+const formulairePaiement = containers["paiement-form-42"].innerHTML;
+assert.match(formulairePaiement, /max="80\.00"/);
+// Le solde reste annonce - il l'etait dans l'intitule du champ, entasse avec
+// le nom et l'asterisque de champ requis (« Montant (euros) * · Solde
+// 80,00 € »), il est maintenant sous le champ, dans sa propre phrase.
+assert.match(formulairePaiement, /Solde restant : 80\.00 EUR/);
+// Et surtout : le champ est PRE-REMPLI au solde. Un artisan qui enregistre
+// un paiement encaisse la totalite de ce qui reste du dans la plupart des
+// cas ; lui faire ressaisir un montant affiche juste a cote, c'est du
+// travail rendu a la main et une occasion de faute de frappe comptable.
+assert.match(formulairePaiement, /value="80\.00"/,
+  "le montant doit etre pre-rempli au solde restant, tout en restant modifiable");
 
 console.log("OK - factures.test.mjs");

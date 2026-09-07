@@ -5200,10 +5200,21 @@ function showPaiementForm(factureId, soldeRestant) {
   if (!container) return;
   const today = new Date().toISOString().slice(0, 10);
   const maximum = Number(soldeRestant).toFixed(2);
+  // Le champ est PRE-REMPLI au solde restant. Un artisan qui enregistre un
+  // paiement encaisse la totalite de ce qui reste du dans l'immense
+  // majorite des cas ; lui faire ressaisir un montant qu'on lui affiche
+  // juste a cote, c'est du travail rendu a la main, et une occasion de
+  // faute de frappe sur un chiffre comptable. Le champ reste modifiable
+  // pour les acomptes et les reglements partiels.
   container.innerHTML = `
     <div class="form-box" style="margin-top:12px;">
+      <h3 class="form-box-titre">Enregistrer un paiement</h3>
       <div class="form-grid">
-        <div><label for="pay-montant-${factureId}">Montant (euros) * · Solde ${fmtEuro(soldeRestant)}</label><input type="number" step="0.01" min="0.01" max="${maximum}" id="pay-montant-${factureId}" required></div>
+        <div>
+          <label for="pay-montant-${factureId}">Montant (euros) *</label>
+          <input type="number" step="0.01" min="0.01" max="${maximum}" id="pay-montant-${factureId}" value="${maximum}" required>
+          <p class="champ-aide">Solde restant : ${fmtEuro(soldeRestant)}. Modifiable pour un règlement partiel.</p>
+        </div>
         <div><label for="pay-date-${factureId}">Date</label><input type="date" id="pay-date-${factureId}" value="${today}"></div>
         <div>
           <label for="pay-moyen-${factureId}">Moyen</label>
@@ -5933,18 +5944,32 @@ function ouvrirChantierDepuisPlanning(chantierId) {
 
 function rentabiliteHtml(c) {
   if (c.total_depenses === 0 && c.montant_facture === null && !c.total_heures) return "";
+  // Le trait d'union servait de « rien » ; c'est le cadratin qui joue ce
+  // role partout ailleurs dans le produit, et fmtEuro le rend deja seul.
   const margeTxt = c.marge_reelle !== null
-    ? `<span style="${c.marge_reelle < 0 ? "color:var(--danger);" : ""}">${fmtEuro(c.marge_reelle)}</span>`
-    : "-";
+    ? `<span class="${c.marge_reelle < 0 ? "est-negatif" : ""}">${fmtEuro(c.marge_reelle)}</span>`
+    : "—";
   const depensesLabel = c.cout_main_oeuvre !== null
     ? `${fmtEuro(c.total_depenses)} + ${fmtEuro(c.cout_main_oeuvre)} main d'oeuvre`
     : fmtEuro(c.total_depenses);
+  // Le dernier endroit du produit ou survivait la bande de quatre cartes
+  // encadrees en ouverture de bloc - la figure que la direction artistique
+  // proscrit en premier. Elle etait d'autant plus voyante ici que trois de
+  // ses quatre cases affichent un tiret tant que rien n'est facture : une
+  // rangee aux trois quarts vide, en cadres. Les chiffres reviennent au
+  // meme geste que partout ailleurs : un libelle, la valeur, un filet.
   return `
-    <div class="dash-grid" style="margin:12px 0;">
-      <div class="dash-stat"><div class="value">${depensesLabel}</div><div class="label">Dépenses</div></div>
-      <div class="dash-stat"><div class="value">${c.montant_facture !== null ? fmtEuro(c.montant_facture) : "-"}</div><div class="label">Facturé</div></div>
-      <div class="dash-stat"><div class="value">${c.montant_encaisse !== null ? fmtEuro(c.montant_encaisse) : "-"}</div><div class="label">Encaissé</div></div>
-      <div class="dash-stat"><div class="value">${margeTxt}</div><div class="label">Marge réelle</div></div>
+    <div class="dash-chiffres chantier-chiffres">
+      ${[["Dépenses", depensesLabel, ""],
+         ["Facturé", fmtEuro(c.montant_facture), ""],
+         ["Encaissé", fmtEuro(c.montant_encaisse), ""],
+         ["Marge réelle", margeTxt, ""]]
+        .map(([label, valeur, note]) => `
+        <div class="dash-chiffre">
+          <span class="dash-chiffre-label">${label}</span>
+          <span class="dash-chiffre-valeur">${valeur}</span>
+          ${note ? `<span class="dash-chiffre-note">${note}</span>` : ""}
+        </div>`).join("")}
     </div>`;
 }
 

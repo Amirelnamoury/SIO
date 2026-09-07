@@ -921,12 +921,15 @@ input[readonly] { background: var(--sa-surface-2); }
 }
 .tache-row { display: flex; align-items: center; gap: var(--sa-space-3); min-height: 63px; margin-bottom: 6px; padding: 10px 16px; border: 1px solid var(--sa-border); }
 .list .tache-row:first-child { border-top: 1px solid var(--sa-border); }
-/* 24 px, a toutes les largeurs. Cocher une tache est LE geste de cette vue,
-   et la case faisait 17 px de cote. Le correctif existait deja - mais sous
-   `@media (max-width: 760px)` seulement, comme si un artisan gante ne
-   consultait ses taches que sur telephone. WCAG 2.5.8 parle de cible de
-   POINTAGE, pas de cible tactile : la souris et le trackpad comptent
-   aussi. */
+/* 24 px pour TOUTE case a cocher et tout bouton radio, a toutes les
+   largeurs. La regle valait d'abord pour les taches - cocher une tache est
+   le geste de cette vue - mais l'audit des formulaires a trouve les memes
+   17 px sur les cases de cloture d'un chantier : « Generer et envoyer la
+   facture finale », « Demander un avis au client ». Cocher ou decocher
+   celles-la decide si une facture part reellement chez le client. WCAG
+   2.5.8 parle de cible de POINTAGE : la souris et le trackpad comptent
+   autant que le doigt. */
+input[type="checkbox"], input[type="radio"] { width: 24px; height: 24px; flex-shrink: 0; cursor: pointer; accent-color: var(--sa-accent); }
 .tache-row-check { width: 24px; height: 24px; flex-shrink: 0; cursor: pointer; }
 .tache-row-body { flex: 1; min-width: 0; }
 .tache-row-titre { font-size: var(--sa-text-sm); font-weight: var(--sa-weight-medium); }
@@ -1271,7 +1274,11 @@ input[readonly] { background: var(--sa-surface-2); }
 .form-actions { display: flex; gap: 10px; margin-top: var(--sa-space-5); }
 
 .form-box label.checkbox-option { display: flex; align-items: center; gap: 9px; font-weight: var(--sa-weight-normal); color: var(--sa-text); margin-top: var(--sa-space-3); margin-bottom: 0; cursor: pointer; }
-.form-box input[type="checkbox"] { width: 17px; height: 17px; flex-shrink: 0; padding: 0; margin: 0; accent-color: var(--sa-accent); }
+/* La regle existait pour empecher `.form-box input { width: 100% }` d'etirer
+   une case a cocher sur toute la ligne - mais elle la figeait a 17 px, sous
+   le seuil de 24. C'est elle qui laissait « Generer et envoyer la facture
+   finale » derriere une cible de 17 px. */
+.form-box input[type="checkbox"] { width: 24px; height: 24px; flex-shrink: 0; padding: 0; margin: 0; accent-color: var(--sa-accent); }
 
 .form-grid-labels-aligned label { display: flex; align-items: flex-end; min-height: 3em; }
 
@@ -1292,7 +1299,10 @@ input[readonly] { background: var(--sa-surface-2); }
 .notes-list { margin-top: var(--sa-space-4); display: flex; flex-direction: column; gap: 8px; }
 .note-item { background: var(--sa-surface-2); border-radius: var(--sa-radius-sm); padding: 10px 12px; font-size: var(--sa-text-sm); }
 .checklist-item { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: var(--sa-text-sm); }
-.checklist-item input[type="checkbox"] { width: 16px; height: 16px; flex-shrink: 0; accent-color: var(--sa-accent); }
+/* La checklist de preparation d'un chantier : ses cases faisaient 16 px,
+   les plus petites du produit, et ce sont pourtant celles qu'on coche sur
+   le terrain, debout, avec des gants. */
+.checklist-item input[type="checkbox"] { width: 24px; height: 24px; flex-shrink: 0; accent-color: var(--sa-accent); }
 .checklist-check { width: 16px; height: 16px; flex-shrink: 0; border: 1px solid var(--sa-border-strong); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: var(--sa-text-on-accent); }
 .note-photo { max-width: 100%; border-radius: var(--sa-radius-sm); margin-top: var(--sa-space-2); display: block; }
 
@@ -2098,6 +2108,17 @@ label { color: var(--sa-text-muted); }
    du. C'est exactement son role - un detail, jamais un aplat. */
 .dash-chiffre.est-du .dash-chiffre-valeur { border-bottom-color: var(--sa-laiton); }
 .dash-chiffre-note { font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
+/* Les quatre chiffres d'un chantier deplie : meme geste que sur l'accueil,
+   a une echelle plus modeste - ils vivent dans une carte, pas sur une page. */
+/* Le titre d'un formulaire qui surgit dans une liste, et l'aide sous un
+   champ. Ils etaient absents : les formulaires inline s'ouvraient sans nom,
+   et le solde d'une facture etait entasse dans l'intitule du champ -
+   « Montant (euros) * · Solde 1 840,00 € », trois informations en une. */
+.form-box-titre { margin: 0 0 var(--sa-space-4); font-family: var(--sa-font-display); font-size: 1.05rem; font-weight: 600; color: var(--sa-text); }
+.champ-aide { margin: 5px 0 0; font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
+.chantier-chiffres { margin: var(--sa-space-4) 0 var(--sa-space-5); }
+.chantier-chiffres .dash-chiffre-valeur { font-size: 1.12rem; }
+.chantier-chiffres .est-negatif { color: var(--sa-danger); }
 
 .dash-paiements { margin-top: var(--sa-space-8); }
 .dash-paiements-titre {

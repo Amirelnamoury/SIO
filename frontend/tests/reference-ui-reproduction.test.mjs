@@ -324,4 +324,22 @@ assert.match(appSource, /\.empty-state \[data-action\]/,
 assert.match(appSource, /function fmtEuro\(n\) \{\s*\n\s*if \(n === null \|\| n === undefined\) return "—";/,
   "un montant absent se rend par un tiret, jamais par la valeur nulle");
 
+// ---------------------------------------------------------------------
+// LA BANDE DE QUATRE KPI NE REVIENT PAS
+// ---------------------------------------------------------------------
+// C'est la premiere figure que la direction artistique proscrit. Elle avait
+// disparu de toutes les pages sauf une : le detail d'un chantier deplie, ou
+// quatre cartes encadrees annoncaient Depenses / Facture / Encaisse / Marge
+// - trois d'entre elles vides tant que rien n'est facture.
+assert.doesNotMatch(appSource, /function rentabiliteHtml[\s\S]{0,1500}?dash-stat"/,
+  "les chiffres d'un chantier se posent sur des filets, pas dans quatre cartes");
+assert.match(appSource, /function rentabiliteHtml[\s\S]{0,1500}?chantier-chiffres/);
+
+// Toute case a cocher fait au moins 24 px. Celles de la cloture d'un
+// chantier - « Generer et envoyer la facture finale », « Demander un avis
+// au client » - en faisaient 17 : cocher ou decocher decide pourtant si une
+// facture part reellement chez le client.
+assert.doesNotMatch(styleSource, /input\[type="checkbox"\][^{]*\{[^}]*width: 1[0-9]px/,
+  "aucune case a cocher ne descend sous 24 px");
+
 console.log("OK - reference-ui-reproduction.test.mjs");
