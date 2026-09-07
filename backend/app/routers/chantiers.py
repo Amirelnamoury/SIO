@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.database import get_db
 from app.deps import require_active_subscription
 from app import email_service
-from app.models import Artisan, Chantier, ChantierNote, Client, Depense, Devis, Document, Facture, Fournisseur, HeureTravail, LigneFacture, Membre, Tache
+from app.models import Artisan, Chantier, ChantierNote, Client, Depense, Devis, Document, Evenement, Facture, Fournisseur, HeureTravail, LigneFacture, Membre, Tache
 from app.pdf import generate_chantier_report_pdf
 from app.routers.factures import _generer_numero as _generer_numero_facture
 from app.routers.factures import _to_out as _facture_to_out
@@ -25,6 +25,7 @@ from app.schemas import (
     DepenseCreate,
     DepenseOut,
     DepenseUpdate,
+    EvenementOut,
     HeureTravailCreate,
     HeureTravailOut,
     HeureTravailUpdate,
@@ -226,6 +227,34 @@ def obtenir_chantier(
     artisan: Artisan = Depends(require_active_subscription),
 ):
     return _to_out(_get_chantier_or_404(db, artisan, chantier_id))
+
+
+@router.get("/{chantier_id}/interventions", response_model=list[EvenementOut])
+def lister_interventions_chantier(
+    chantier_id: int,
+    db: Session = Depends(get_db),
+    artisan: Artisan = Depends(require_active_subscription),
+):
+    """Les rendez-vous, visites et interventions rattaches a ce chantier.
+
+    Evenement.chantier_id existait depuis l'origine, mais aucune route ne
+    permettait de demander « les interventions de ce chantier » : /planning
+    repond par PERIODE, pas par chantier. La fiche de chantier n'avait donc
+    aucun moyen honnete d'afficher ses interventions - il aurait fallu
+    telecharger le planning entier et filtrer cote client, exactement ce que
+    l'audit reproche ailleurs.
+
+    Sous-ressource, comme /notes, /depenses et /heures. Le chantier est
+    d'abord verifie : un identifiant d'un autre compte donne 404, pas une
+    liste vide qui laisserait croire qu'il n'y a rien.
+    """
+    _get_chantier_or_404(db, artisan, chantier_id)
+    return (
+        db.query(Evenement)
+        .filter(Evenement.artisan_id == artisan.id, Evenement.chantier_id == chantier_id)
+        .order_by(Evenement.date_debut.desc())
+        .all()
+    )
 
 
 @router.patch("/{chantier_id}", response_model=ChantierOut)
