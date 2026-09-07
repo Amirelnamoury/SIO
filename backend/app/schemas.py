@@ -1069,6 +1069,13 @@ class DocumentOut(BaseModel):
 
 class PlanningItem(BaseModel):
     date: datetime
+    # Fin reelle de l'evenement quand elle est connue. Evenement.date_fin
+    # existait deja en base et dans EvenementOut, mais l'agregation du planning
+    # l'aplatissait : le front n'avait donc aucune duree et en inventait une
+    # d'une heure pour chaque item, y compris pour une echeance de tache. Champ
+    # optionnel : il reste None pour les taches et les debuts de chantier, qui
+    # n'ont pas de fin, et le front doit les presenter comme tels.
+    date_fin: Optional[datetime] = None
     type: str  # rdv, visite, intervention, autre, tache, chantier_debut, chantier_fin
     titre: str
     reference_id: Optional[int] = None
@@ -1076,7 +1083,7 @@ class PlanningItem(BaseModel):
     chantier_id: Optional[int] = None
     lieu: Optional[str] = None
 
-    @field_validator("date", mode="before")
+    @field_validator("date", "date_fin", mode="before")
     @classmethod
     def _date_toujours_utc(cls, v):
         return _naive_vers_utc(v)
