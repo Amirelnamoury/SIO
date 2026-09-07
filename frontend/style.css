@@ -674,7 +674,7 @@ input[readonly] { background: var(--sa-surface-2); }
 .kpi-band { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sa-space-3); margin-bottom: 24px; }
 .kpi-card { background: var(--sa-surface); border: 1px solid var(--sa-border); border-radius: var(--sa-radius-lg); padding: var(--sa-space-4) var(--sa-space-5); min-width: 0; }
 .kpi-card.is-highlight { background: var(--sa-accent-soft); border-color: var(--sa-border-strong); }
-.kpi-card-label { font-size: var(--sa-text-2xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sa-text-muted); margin-bottom: 8px; }
+.kpi-card-label { font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-semibold); letter-spacing: 0; color: var(--sa-text-muted); margin-bottom: 8px; }
 .kpi-card-value { font-family: var(--sa-font-display); font-size: 1.6rem; font-weight: 800; color: var(--sa-text); letter-spacing: 0; }
 .kpi-card-sub { font-size: var(--sa-text-xs); color: var(--sa-text-muted); margin-top: 4px; }
 .kpi-card-sub.is-positive { color: var(--sa-success); }
@@ -752,7 +752,7 @@ input[readonly] { background: var(--sa-surface-2); }
 .dash-today-count { display: none; }
 .dash-today-clear { font-size: var(--sa-text-sm); color: var(--sa-text-muted); padding: var(--sa-space-4) 0; }
 .dash-today-rail { min-width: 0; background: var(--sa-surface); border: 1px solid var(--sa-border); border-radius: var(--sa-radius-lg); padding: var(--sa-space-5) var(--sa-space-6); min-height: 252px; }
-.dash-today-rail h3 { font-size: 0.68rem; font-weight: 700; color: var(--sa-text-faint); margin: 0 0 var(--sa-space-3); text-transform: uppercase; letter-spacing: 0.08em; }
+.dash-today-rail h3 { font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-semibold); letter-spacing: 0; color: var(--sa-text-faint); margin: 0 0 var(--sa-space-3); }
 .dash-agenda { display: flex; flex-direction: column; }
 .dash-agenda-row { display: grid; grid-template-columns: 40px 12px 1fr; align-items: baseline; column-gap: 9px; padding: 9px 0; border-bottom: 1px solid var(--sa-border); width: 100%; text-align: left; background: none; border-left: none; border-right: none; border-top: none; color: var(--sa-text); cursor: pointer; }
 .dash-agenda-row:last-child { border-bottom: none; }
@@ -765,7 +765,7 @@ input[readonly] { background: var(--sa-surface-2); }
 .dash-agenda-empty-sub { font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
 
 .dash-glance { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sa-space-10); margin-bottom: var(--sa-space-8); }
-.dash-glance-col h4, .dash-glance-footer h4 { font-size: var(--sa-text-2xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--sa-text-faint); margin: 0 0 var(--sa-space-3); }
+.dash-glance-col h4, .dash-glance-footer h4 { font-size: var(--sa-text-2xs); font-weight: 700; letter-spacing: 0; color: var(--sa-text-faint); margin: 0 0 var(--sa-space-3); }
 .dash-glance-footer { padding-top: var(--sa-space-6); border-top: 1px solid var(--sa-border); }
 @media (max-width: 1100px) {
   .dash-today { grid-template-columns: 1fr; gap: var(--sa-space-6); }
@@ -805,7 +805,7 @@ input[readonly] { background: var(--sa-surface-2); }
 /* Un groupe par categorie (Factures en retard / Devis a relancer / ...),
    chacun avec son propre sous-en-tete - voir dashTaskGroupsHtml(). */
 .task-group + .task-group { margin-top: var(--sa-space-5); }
-.task-group-label { font-size: var(--sa-text-2xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sa-text-faint); margin: 0 0 6px; padding: 0 4px; }
+.task-group-label { font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-semibold); letter-spacing: 0; color: var(--sa-text-faint); margin: 0 0 6px; padding: 0 4px; }
 .task-feed { display: flex; flex-direction: column; }
 .task-row { display: flex; align-items: flex-start; gap: 11px; padding: 15px 4px; border-bottom: 1px solid var(--sa-border); }
 .task-row:last-child { border-bottom: none; }
@@ -868,7 +868,7 @@ input[readonly] { background: var(--sa-surface-2); }
 /* ---------- Statistiques : composition dense, toujours alimentee par Api.analytics(). ---------- */
 .stats-panel, .stats-ca-panel { background: var(--sa-surface); border: 1px solid var(--sa-border); border-radius: var(--sa-radius-lg); }
 .stats-panel { padding: 12px 14px; }
-.stats-panel h4 { margin: 0 0 9px; color: var(--sa-text); font-size: var(--sa-text-xs); font-weight: var(--sa-weight-bold); text-transform: uppercase; }
+.stats-panel h4 { margin: 0 0 9px; color: var(--sa-text); font-size: var(--sa-text-sm); font-weight: var(--sa-weight-semibold); }
 .stats-ca-panel { display: grid; grid-template-columns: 150px minmax(0, 1fr); grid-template-rows: 1fr 30px; column-gap: 10px; height: 208px; padding: 14px 14px 10px; margin-bottom: 12px; }
 .stats-ca-summary { display: flex; flex-direction: column; justify-content: flex-start; padding-top: 2px; }
 .stats-ca-value { font-family: var(--sa-font-display); font-size: 1.75rem; font-weight: 800; color: var(--sa-text); letter-spacing: 0; margin-top: 3px; }
@@ -932,7 +932,7 @@ input[readonly] { background: var(--sa-surface-2); }
 
 /* ---------- Documents : compteur + ligne dense avec icone de type. ---------- */
 .doc-compteur { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-.doc-compteur-label { font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-bold); text-transform: uppercase; letter-spacing: 0.06em; color: var(--sa-text-faint); }
+.doc-compteur-label { font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-semibold); letter-spacing: 0; color: var(--sa-text-faint); }
 .doc-row { display: grid; grid-template-columns: 34px minmax(260px, 1.25fr) 150px minmax(210px, .85fr) auto 32px; align-items: center; gap: 10px; min-height: 63px; margin-bottom: 7px; padding: 9px 16px; border: 1px solid var(--sa-border); }
 .list .doc-row:first-child { border-top: 1px solid var(--sa-border); }
 .doc-row-icon { width: 32px; height: 32px; flex-shrink: 0; border-radius: var(--sa-radius-sm); background: var(--sa-surface-3); display: flex; align-items: center; justify-content: center; }
@@ -1058,7 +1058,7 @@ input[type="checkbox"], input[type="radio"] { width: 24px; height: 24px; flex-sh
 /* 88px : la largeur de « AVANCEMENT » en capitales espacees. Plus etroit,
    le mot etait coupe net, sans ellipsis. */
 .chantier-jauge { display: grid; grid-template-columns: 88px 1fr 42px; align-items: center; gap: 9px; }
-.chantier-jauge-label { font-size: var(--sa-text-2xs); text-transform: uppercase; letter-spacing: 0.04em; }
+.chantier-jauge-label { font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-semibold); letter-spacing: 0; }
 .chantier-jauge-valeur { font-size: var(--sa-text-xs); color: var(--sa-text); text-align: right; font-variant-numeric: tabular-nums; }
 .chantier-jauge-note { grid-column: 2 / -1; font-size: var(--sa-text-2xs); color: var(--sa-text-faint); }
 .chantier-jauge .sante-barre { display: block; }
@@ -1459,7 +1459,7 @@ input[type="checkbox"], input[type="radio"] { width: 24px; height: 24px; flex-sh
 .site-offer h3 { margin: 3px 0 7px; font-size: var(--sa-text-md); }
 .site-offer p { margin: 0; color: var(--sa-text-muted); font-size: var(--sa-text-sm); }
 .site-offer .site-offer-benefit { margin-bottom: 6px; color: var(--sa-text); font-weight: var(--sa-weight-semibold); }
-.site-offer-label { color: var(--sa-text-muted); font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-bold); text-transform: uppercase; }
+.site-offer-label { color: var(--sa-text-muted); font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-bold); }
 .site-offer-price { align-self: center; text-align: right; color: var(--sa-text-muted); font-size: var(--sa-text-sm); }
 .site-offer-price strong { display: block; color: var(--sa-text); font-size: 1.2rem; }
 .site-offer-price span { display: block; margin-top: 3px; font-weight: var(--sa-weight-semibold); color: var(--sa-text); }
@@ -1504,7 +1504,7 @@ input[type="checkbox"], input[type="radio"] { width: 24px; height: 24px; flex-sh
 .side-panel-box { background: var(--sa-surface); width: 100%; max-width: 380px; height: 100%; padding: var(--sa-space-6); position: relative; overflow-y: auto; box-shadow: var(--sa-shadow-lg); border-left: 1px solid var(--sa-border-strong); }
 .side-panel-close { position: absolute; top: 16px; right: 16px; border: none; background: transparent; width: 30px; height: 30px; border-radius: var(--sa-radius-sm); font-size: 1.1rem; line-height: 1; color: var(--sa-text-muted); }
 .side-panel-box-wide { max-width: 460px; }
-.side-panel-eyebrow { font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-bold); text-transform: uppercase; letter-spacing: 0.06em; color: var(--sa-text-muted); margin: 0 0 var(--sa-space-4); }
+.side-panel-eyebrow { font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-semibold); letter-spacing: 0; color: var(--sa-text-muted); margin: 0 0 var(--sa-space-4); }
 
 /* ---------- Fiche client ---------- */
 .client-detail-header { display: flex; align-items: center; gap: 12px; margin-bottom: var(--sa-space-3); }
@@ -1524,7 +1524,7 @@ input[type="checkbox"], input[type="radio"] { width: 24px; height: 24px; flex-sh
 .profil-row-group { display: flex; flex-direction: column; }
 .profil-row-group .profil-row:last-child { margin-bottom: 0; }
 .profil-row { margin-bottom: var(--sa-space-3); }
-.profil-row .label { font-size: var(--sa-text-2xs); color: var(--sa-text-muted); text-transform: uppercase; letter-spacing: 0.04em; font-weight: var(--sa-weight-semibold); }
+.profil-row .label { font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-semibold); letter-spacing: 0; color: var(--sa-text-muted); }
 .profil-row .value { font-size: var(--sa-text-sm); font-weight: var(--sa-weight-semibold); word-break: break-word; margin-top: 2px; }
 
 /* ---------- Mon profil ---------- */
@@ -1555,7 +1555,7 @@ input[type="checkbox"], input[type="radio"] { width: 24px; height: 24px; flex-sh
 .search-modal-box { background: var(--sa-surface); border-radius: var(--sa-radius-lg); width: 100%; max-width: 560px; box-shadow: var(--sa-shadow-lg); overflow: hidden; border: 1px solid var(--sa-border-strong); }
 .search-modal-box input { width: 100%; border: none; padding: 16px 20px; font-size: var(--sa-text-md); outline: none; border-bottom: 1px solid var(--sa-border); border-radius: 0; }
 #search-results { max-height: 50vh; overflow-y: auto; padding: 6px; }
-.search-result-group { font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-bold); text-transform: uppercase; letter-spacing: 0.05em; color: var(--sa-text-muted); padding: 10px 10px 4px; }
+.search-result-group { font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-semibold); letter-spacing: 0; color: var(--sa-text-muted); padding: 10px 10px 4px; }
 .search-result-item { display: block; width: 100%; text-align: left; padding: 9px 10px; border-radius: var(--sa-radius-sm); border: none; background: none; color: var(--sa-text); }
 .search-result-item:hover, .search-result-item.active { background: var(--sa-surface-2); }
 /* Le resultat que Entree ouvrira. Un aplat seul ne se distinguerait pas du
@@ -1640,7 +1640,7 @@ input[type="checkbox"], input[type="radio"] { width: 24px; height: 24px; flex-sh
    de la page ». Ici, elle enfermait la page ENTIERE dans un grand cadre
    arrondi. Rien ne surgit sur un ecran de reglages : c'est l'ecran. */
 #entreprise-form-box { overflow: visible; padding: 0; background: transparent; border: 0; border-radius: 0; }
-.enterprise-card-label { margin: 0; padding: 0; color: var(--sa-text-faint); font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-bold); text-transform: uppercase; letter-spacing: .06em; }
+.enterprise-card-label { margin: 0; padding: 0; color: var(--sa-text-faint); font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-semibold); letter-spacing: 0; }
 /* Troisieme colonne en `auto` et non en 220px fixes : le bloc « profil
    complete » disparait quand il n'y a plus rien a completer, et une piste
    figee laisserait un vide de 220 px a sa place. */
@@ -2241,8 +2241,7 @@ label { color: var(--sa-text-muted); }
 .dash-entete { padding: 44px 0 8px; }
 .dash-date {
   margin: 0 0 12px;
-  font-size: 0.6875rem; font-weight: 600;
-  text-transform: uppercase; letter-spacing: 0.12em;
+  font-size: 0.6875rem; font-weight: 600; letter-spacing: 0;
   color: var(--sa-text-faint);
 }
 .dash-lede {
@@ -2303,8 +2302,7 @@ label { color: var(--sa-text-muted); }
 }
 .dash-chiffre { display: flex; flex-direction: column; gap: 6px; }
 .dash-chiffre-label {
-  font-size: 0.6875rem; font-weight: 600;
-  text-transform: uppercase; letter-spacing: 0.08em;
+  font-size: 0.6875rem; font-weight: 600; letter-spacing: 0;
   color: var(--sa-text-faint);
 }
 .dash-chiffre-valeur {
@@ -2337,8 +2335,7 @@ label { color: var(--sa-text-muted); }
 .dash-paiements { margin-top: var(--sa-space-8); }
 .dash-paiements-titre {
   display: block; margin-bottom: var(--sa-space-2);
-  font-size: 0.6875rem; font-weight: 600;
-  text-transform: uppercase; letter-spacing: 0.08em; color: var(--sa-text-faint);
+  font-size: 0.6875rem; font-weight: 600; letter-spacing: 0; color: var(--sa-text-faint);
 }
 .dash-paiement {
   display: flex; justify-content: space-between; gap: var(--sa-space-4);
@@ -2536,7 +2533,7 @@ label { color: var(--sa-text-muted); }
 .crm-societe { font-weight: 400; font-size: var(--sa-text-xs); color: var(--sa-text-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .crm-contact { font-size: var(--sa-text-xs); color: var(--sa-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .crm-stat { min-width: 0; }
-.crm-stat-label { font-size: var(--sa-text-2xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--sa-text-faint); }
+.crm-stat-label { font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-semibold); letter-spacing: 0; color: var(--sa-text-faint); }
 .crm-stat-value { font-size: var(--sa-text-xs); color: var(--sa-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* Le chiffre qu'on parcourt verticalement quand on cherche son meilleur
    client : en Fraunces, aligne d'une ligne a l'autre. */
@@ -2619,7 +2616,7 @@ label { color: var(--sa-text-muted); }
   padding: var(--sa-space-5) 0;
 }
 .fiche-chiffre { display: flex; flex-direction: column; gap: 5px; }
-.fiche-chiffre-label { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--sa-text-faint); }
+.fiche-chiffre-label { font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-semibold); letter-spacing: 0; color: var(--sa-text-faint); }
 .fiche-chiffre-valeur {
   font-family: var(--sa-font-display); font-size: 1.2rem; font-weight: 500; line-height: 1;
   color: var(--sa-text); font-variant-numeric: tabular-nums;
@@ -2629,10 +2626,15 @@ label { color: var(--sa-text-muted); }
 .fiche-chiffre-note { font-size: var(--sa-text-2xs); color: var(--sa-text-muted); }
 
 .fiche-section { padding-top: var(--sa-space-6); border-top: 1px solid var(--sa-border); }
+/* Meme traitement que l'intitule de marge des pages composees : casse
+   normale, pas d'espacement. Deux intitules de section qui ne se
+   ressemblent pas dans un meme produit se lisent comme deux systemes. */
 .fiche-section-titre {
   margin: 0 0 var(--sa-space-3);
-  font-size: 0.6875rem; font-weight: 600;
-  text-transform: uppercase; letter-spacing: 0.1em; color: var(--sa-text-faint);
+  font-size: var(--sa-text-2xs);
+  font-weight: var(--sa-weight-semibold);
+  letter-spacing: 0;
+  color: var(--sa-text-faint);
 }
 .fiche-vide { margin: 0; font-size: var(--sa-text-sm); color: var(--sa-text-muted); }
 
@@ -2791,8 +2793,8 @@ label { color: var(--sa-text-muted); }
    ===================================================================== */
 .form-box { background: var(--sa-surface); border: 1px solid var(--sa-border-strong); border-radius: var(--sa-radius-lg); }
 .form-section-title {
-  font-size: 0.6875rem; font-weight: 600;
-  text-transform: uppercase; letter-spacing: 0.1em;
+  font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-semibold);
+  letter-spacing: 0;
   color: var(--sa-text-faint);
   padding-bottom: 8px; margin-bottom: var(--sa-space-4);
   border-bottom: 1px solid var(--sa-border);
@@ -2803,7 +2805,7 @@ label { color: var(--sa-text-muted); }
 .ligne-row { display: grid; grid-template-columns: var(--ligne-cols); gap: var(--sa-space-2); align-items: center; }
 .ligne-row-header {
   font-size: var(--sa-text-2xs); font-weight: 600;
-  text-transform: uppercase; letter-spacing: 0.05em; color: var(--sa-text-faint);
+  text-transform: uppercase; letter-spacing: 0.04em; color: var(--sa-text-faint);
   padding-bottom: 6px; border-bottom: 1px solid var(--sa-border-strong); margin-bottom: 8px;
 }
 .ligne-row-header span:nth-child(2),
@@ -2925,7 +2927,7 @@ label { color: var(--sa-text-muted); }
 .devis-lecture th {
   padding: 0 10px 7px; text-align: left;
   font-size: var(--sa-text-2xs); font-weight: 600;
-  text-transform: uppercase; letter-spacing: 0.05em; color: var(--sa-text-faint);
+  text-transform: uppercase; letter-spacing: 0.04em; color: var(--sa-text-faint);
   border-bottom: 1px solid var(--sa-border-strong);
 }
 .devis-lecture td { padding: 9px 10px; border-bottom: 1px solid var(--sa-border); color: var(--sa-text-muted); vertical-align: top; }
@@ -3100,8 +3102,7 @@ label { color: var(--sa-text-muted); }
   margin: var(--sa-space-6) 0 var(--sa-space-2);
   padding-bottom: 6px;
   border-bottom: 1px solid var(--sa-border-strong);
-  font-size: 0.6875rem; font-weight: 600;
-  text-transform: uppercase; letter-spacing: 0.1em;
+  font-size: 0.6875rem; font-weight: 600; letter-spacing: 0;
   color: var(--sa-text-faint);
 }
 .tache-groupe-label:first-child { margin-top: 0; }
@@ -3130,8 +3131,7 @@ label { color: var(--sa-text-muted); }
 }
 .tache-row-contexte:hover { text-decoration: underline; text-underline-offset: 3px; }
 .tache-row-contexte-type {
-  font-size: var(--sa-text-2xs); font-weight: 600;
-  text-transform: uppercase; letter-spacing: 0.06em;
+  font-size: var(--sa-text-2xs); font-weight: 600; letter-spacing: 0;
   color: var(--sa-text-faint);
 }
 .tache-row-check { accent-color: var(--sa-accent); }
@@ -3292,7 +3292,7 @@ label { color: var(--sa-text-muted); }
 
 .stats-metric-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--sa-space-5); }
 .stats-metric-list > div { display: flex; flex-direction: column; gap: 5px; }
-.stats-metric-list span { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--sa-text-faint); }
+.stats-metric-list span { font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-semibold); letter-spacing: 0; color: var(--sa-text-faint); }
 .stats-metric-list strong {
   font-family: var(--sa-font-display); font-size: var(--sa-text-lg); font-weight: 500;
   color: var(--sa-text); font-variant-numeric: tabular-nums;
@@ -3367,8 +3367,7 @@ label { color: var(--sa-text-muted); }
 }
 .doc-groupe-type {
   font-family: var(--sa-font);
-  font-size: 0.6875rem; font-weight: 600;
-  text-transform: uppercase; letter-spacing: 0.07em;
+  font-size: 0.6875rem; font-weight: 600; letter-spacing: 0;
   color: var(--sa-text-faint);
 }
 .doc-groupe-compte { margin-left: auto; font-size: var(--sa-text-sm); font-weight: 400; color: var(--sa-text-faint); font-variant-numeric: tabular-nums; }
@@ -3693,8 +3692,7 @@ body.est-dossier-ouvert .view { display: none; }
    qui est commun a toutes les personnes du compte. */
 .profil-groupe-titre {
   margin: 0 0 var(--sa-space-2);
-  font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-bold);
-  text-transform: uppercase; letter-spacing: 0.08em;
+  font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-bold); letter-spacing: 0;
   color: var(--sa-text-faint);
 }
 .profil-row-group + .profil-row-group { margin-top: var(--sa-space-6); }
@@ -3965,3 +3963,356 @@ body[data-famille="file"] .view-header-eyebrow { display: none; }
   .bottom-nav .nav-link .badge-count { color: var(--sa-text-faint); }
   .more-drawer-box { background: var(--sa-surface); }
 }
+
+
+/* =====================================================================
+   LA BANDE DE REFERENCE
+   ---------------------------------------------------------------------
+   En tete de chaque piece et de chaque dossier, toujours identique. Elle
+   ne defile pas : quand on descend dans un devis de trente lignes, on
+   doit pouvoir dire de quel devis il s'agit sans remonter.
+
+   Le numero est en chiffres tabulaires et c'est deliberé : c'est la
+   chaine qu'on lit a voix haute au telephone, celle qu'on recopie sur un
+   virement. Elle merite d'etre composee, pas rangee en gris dans un coin.
+   ===================================================================== */
+.ref-bande {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sa-space-3) var(--sa-space-5);
+  margin: 0 0 var(--sa-space-6);
+  padding: var(--sa-space-4) 0 var(--sa-space-3);
+  background: var(--sa-surface);
+  border-bottom: 1px solid var(--sa-border-strong);
+}
+/* Le filet vert : le seul endroit ou la couleur de marque touche le
+   contenu. Il tient la reference comme une reglure tient une colonne. */
+.ref-bande-identite {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0 var(--sa-space-3);
+  min-width: 0;
+  padding-left: var(--sa-space-3);
+  border-left: 2px solid var(--sa-accent);
+}
+.ref-bande-numero {
+  font-size: var(--sa-text-lg);
+  font-weight: var(--sa-weight-semibold);
+  color: var(--sa-text);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.ref-bande-qui { font-size: var(--sa-text-base); color: var(--sa-text); font-weight: var(--sa-weight-medium); }
+.ref-bande-objet {
+  font-family: var(--sa-font-display);
+  font-size: var(--sa-text-base);
+  color: var(--sa-text-muted);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ref-bande-etat { display: flex; align-items: baseline; gap: var(--sa-space-3); flex-shrink: 0; }
+.ref-bande-note { font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
+
+/* =====================================================================
+   LA PIECE — feuille au centre, rail sur le cote
+   ---------------------------------------------------------------------
+   Un devis, une facture : on les RELIT avant de les envoyer. Le document
+   doit donc dominer, et les commandes se ranger a cote.
+
+   Avant, les quatre commandes s'alignaient en haut du panneau, de meme
+   poids, et le tableau des prestations commencait sous elles : on lisait
+   l'outillage avant de lire le devis.
+   ===================================================================== */
+.piece {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 264px;
+  gap: var(--sa-space-8);
+  align-items: start;
+}
+/* La feuille est le seul endroit du produit ou une ombre est justifiee :
+   une piece est REELLEMENT posee sur le plan de travail. Partout ailleurs
+   la separation vient des filets. */
+.piece-feuille {
+  min-width: 0;
+  background: var(--sa-surface);
+  border: 1px solid var(--sa-border);
+  border-radius: var(--sa-radius-md);
+  box-shadow: var(--sa-shadow-feuille);
+  padding: var(--sa-space-6) var(--sa-space-6) var(--sa-space-5);
+}
+/* La premiere section d'une feuille ne porte pas le filet qui separe DEUX
+   sections : il dessinait une ligne dans le vide en haut de la piece. */
+.piece-feuille > .fiche-section:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+.piece-rail {
+  min-width: 0;
+  position: sticky;
+  top: 76px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sa-space-6);
+}
+
+/* ---------- Les commandes d'une piece ----------
+   Une dominante, pleine largeur, nommee par ce qu'elle fait. Les autres
+   restent disponibles sans etre proposees : un rang de boutons de meme
+   poids ne designe rien. */
+.piece-actions { display: flex; flex-direction: column; gap: var(--sa-space-3); }
+.piece-action-dominante { width: 100%; margin-top: 0; justify-content: center; }
+.piece-actions-secondaires {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.piece-action-secondaire {
+  background: none;
+  border: none;
+  padding: 6px 0;
+  min-height: var(--sa-control-h-sm);
+  font-size: var(--sa-text-sm);
+  color: var(--sa-text-muted);
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: var(--sa-border-strong);
+  text-underline-offset: 3px;
+}
+.piece-action-secondaire:hover { color: var(--sa-accent); text-decoration-color: var(--sa-accent); }
+
+/* En dessous de 1100 px la feuille prend toute la largeur et le rail
+   passe dessous : deux colonnes de 300 px ne se lisent plus, elles se
+   subissent. La dominante y reprend sa place en tete. */
+@media (max-width: 1100px) {
+  .piece { grid-template-columns: minmax(0, 1fr); gap: var(--sa-space-6); }
+  .piece-rail { position: static; }
+  .piece-actions-secondaires { flex-direction: row; flex-wrap: wrap; gap: var(--sa-space-4); }
+}
+
+/* ---------- Le panneau qui porte une piece ----------
+   380 px suffisent pour un profil ; pas pour un document a relire. La
+   piece prend la largeur d'une feuille et de son rail, et laisse voir
+   d'ou l'on vient. */
+#panel-devis .side-panel-box-devis,
+#panel-facture .side-panel-box-devis {
+  max-width: 1060px;
+  background: var(--sa-bg);
+  padding-top: 0;
+}
+/* L'ancien en-tete du panneau : la bande de reference dit la meme chose,
+   au meme endroit, en mieux. Il reste dans le DOM parce que
+   aria-labelledby le designe - le supprimer priverait le panneau de son
+   nom accessible. */
+#panel-devis .devis-detail-entete,
+#panel-facture .devis-detail-entete {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+#panel-devis .side-panel-close,
+#panel-facture .side-panel-close { top: 18px; z-index: 4; }
+/* Le bouton de fermeture est en position absolue au-dessus de la bande :
+   sans cette reserve il recouvre la mention de suivi, et « Lu hier · 2
+   relances » se lit « Lu hier · 2 relanc ». */
+#panel-devis .ref-bande,
+#panel-facture .ref-bande { padding-right: 44px; }
+/* Le seul cas ou la bande de reference sort du gris : un retard reel. */
+.ref-bande-note.est-alerte { color: var(--sa-danger); font-weight: var(--sa-weight-semibold); }
+
+
+/* =====================================================================
+   LE DOSSIER — la fiche chantier
+   ---------------------------------------------------------------------
+   Un chantier n'est ni une fiche client ni un tableau financier. C'est un
+   dossier d'execution, et il se lit dans l'ordre des questions qu'on se
+   pose sur le terrain : qu'est-ce qui vient, que reste-t-il a faire, qui
+   est passe, quelles pieces, combien ca coute, ce qui s'est dit.
+
+   Ce qui a change : les chiffres de rentabilite occupaient le milieu du
+   dossier, « Depenses 56 000,00 € » en grand, AVANT la liste des
+   interventions. On ouvrait un chantier et on lisait sa comptabilite.
+
+   La structure vient de la typographie, des filets et de la marge - pas
+   d'un empilement de cartes. Chaque section porte son nom a gauche,
+   contre un filet vertical ; c'est la structure d'un document technique,
+   et elle coute zero rectangle.
+   ===================================================================== */
+.chantier-details.dossier { padding-top: var(--sa-space-2); }
+.chantier-details.dossier .sa-section { padding-top: var(--sa-space-5); }
+.chantier-details.dossier .sa-section-corps { padding-bottom: var(--sa-space-5); }
+.chantier-details.dossier .sa-section:first-child { padding-top: var(--sa-space-3); }
+
+/* Les lignes d'un dossier : une reglure, pas une liste de boites. Chaque
+   ligne porte son fait a gauche et son action a droite, et les deux
+   restent alignes d'une ligne a l'autre. */
+.dossier-lignes { display: flex; flex-direction: column; }
+.dossier-lignes > * {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sa-space-4);
+  padding: 9px 0;
+  border-bottom: 1px solid var(--sa-border);
+  font-size: var(--sa-text-sm);
+  color: var(--sa-text-muted);
+}
+.dossier-lignes > *:last-child { border-bottom: none; }
+.dossier-lignes > * > span:first-child { min-width: 0; color: var(--sa-text); }
+
+/* L'information de terrain : ou et quand, en clair, sous ce qui vient. */
+.dossier-terrain {
+  margin: var(--sa-space-3) 0 0;
+  font-size: var(--sa-text-sm);
+  color: var(--sa-text-muted);
+}
+.dossier-depenses { margin-top: var(--sa-space-3); }
+.dossier-depenses > div { padding: 7px 0; border-bottom: 1px solid var(--sa-border); }
+.dossier-depenses > div:last-child { border-bottom: none; }
+
+/* Le titre d'un chantier est son identite : mieux vaut deux lignes qu'une
+   coupure. « Villa Ducros — extensio... » ne se reconnait plus d'un coup
+   d'oeil, ce qui est pourtant toute la raison d'etre d'une carte. */
+.chantier-card-titre {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* =====================================================================
+   LE PARC — la vue Chantiers
+   ---------------------------------------------------------------------
+   L'en-tete d'un parc suit la meme regle que celui d'un registre : on
+   vient y travailler, pas y lire une presentation.
+   ===================================================================== */
+.view[data-famille="parc"] .view-header {
+  align-items: baseline;
+  gap: var(--sa-space-5);
+  margin-bottom: 0;
+  padding-bottom: var(--sa-space-4);
+}
+.view[data-famille="parc"] .view-header-eyebrow,
+.view[data-famille="parc"] .view-header-desc { display: none; }
+.view[data-famille="parc"] .view-header h2 {
+  font-size: var(--sa-text-xl);
+  font-weight: var(--sa-weight-semibold);
+  line-height: 1.2;
+}
+.view[data-famille="parc"] .view-header-actions { align-self: center; }
+
+/* =====================================================================
+   L'AGENDA ET LA FILE — meme regle d'en-tete
+   ---------------------------------------------------------------------
+   Un instrument de planification et une file d'execution sont des outils.
+   Seuls le poste de travail et le rapport gardent un grand titre : l'un
+   parce que son titre EST la reponse du jour, l'autre parce qu'un rapport
+   se lit comme un document.
+   ===================================================================== */
+body[data-famille="agenda"] .view-header,
+body[data-famille="file"] .view-header {
+  align-items: baseline;
+  padding-bottom: var(--sa-space-3);
+}
+body[data-famille="agenda"] .view-header h2 {
+  font-size: var(--sa-text-xl);
+  font-weight: var(--sa-weight-semibold);
+}
+body[data-famille="agenda"] .view-header-eyebrow,
+body[data-famille="file"] .view-header-desc { display: none; }
+body[data-famille="agenda"] .view-header-actions,
+body[data-famille="file"] .view-header-actions { align-self: center; }
+
+/* ---------- La prochaine intervention ----------
+   Le fait dominant d'un dossier de chantier. Il ne prend pas la forme
+   d'une carte : un filet vert a gauche, la date en chiffres tabulaires,
+   l'intitule en clair. La meme grammaire que la bande de reference -
+   ce qui compte est tenu par un filet, pas enferme dans un rectangle. */
+.dossier-prochaine {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--sa-space-2) var(--sa-space-4);
+  padding: 2px 0 2px var(--sa-space-3);
+  border-left: 2px solid var(--sa-accent);
+}
+.dossier-prochaine-quand {
+  font-size: var(--sa-text-base);
+  font-weight: var(--sa-weight-semibold);
+  color: var(--sa-text);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.dossier-prochaine-quoi { font-size: var(--sa-text-base); color: var(--sa-text); min-width: 0; }
+.dossier-prochaine-ou { font-size: var(--sa-text-sm); color: var(--sa-text-muted); }
+.dossier-prochaine .btn-sm { margin-left: auto; }
+
+/* =====================================================================
+   LA FICHE DE QUALIFICATION — le dossier d'un prospect
+   ---------------------------------------------------------------------
+   Trois faits en ligne, sur un filet : ou en est-on, d'ou vient-il,
+   depuis quand rien ne bouge. Pas de grands chiffres - a ce stade il n'y
+   a rien a compter, et un « 0 € » en grand ne devient pas une donnee
+   parce qu'on l'a compose.
+   ===================================================================== */
+.qualif {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sa-space-6) var(--sa-space-8);
+  padding: var(--sa-space-4) 0;
+  border-top: 1px solid var(--sa-border);
+  border-bottom: 1px solid var(--sa-border);
+  margin-bottom: var(--sa-space-2);
+}
+.qualif-fait { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.qualif-fait-label {
+  font-size: var(--sa-text-2xs);
+  font-weight: var(--sa-weight-semibold);
+  color: var(--sa-text-faint);
+}
+.qualif-fait-valeur {
+  font-size: var(--sa-text-base);
+  color: var(--sa-text);
+  font-variant-numeric: tabular-nums;
+}
+.qualif-fait-note { font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
+/* Un prospect qu'on n'a pas touche depuis quinze jours est en train de
+   se perdre : c'est la seule information de ce bloc qui appelle un geste. */
+.qualif-fait.est-dormant .qualif-fait-valeur { color: var(--sa-warning); font-weight: var(--sa-weight-semibold); }
+
+/* Le besoin est du texte qu'on lit, pas une donnee qu'on scanne : il a
+   droit a une largeur de lecture et a un interligne confortable. */
+.qualif-besoin {
+  margin: 0;
+  font-size: var(--sa-text-base);
+  line-height: 1.6;
+  color: var(--sa-text);
+  max-width: 62ch;
+}
+.qualif-action {
+  margin: 0;
+  padding-left: var(--sa-space-3);
+  border-left: 2px solid var(--sa-accent);
+  font-size: var(--sa-text-base);
+  line-height: 1.55;
+  color: var(--sa-text);
+  max-width: 62ch;
+}
+
+/* Les commandes du dossier : la dominante garde son aplat, le reste
+   redevient du texte cliquable. */
+.fiche-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sa-space-3) var(--sa-space-5); }
+.fiche-actions-secondaires { display: flex; flex-wrap: wrap; gap: var(--sa-space-5); }

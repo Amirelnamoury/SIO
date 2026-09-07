@@ -437,3 +437,55 @@ function saSection(titre, corps, note = "", classe = "") {
     <div class="sa-section-corps">${corps}</div>
   </section>`;
 }
+
+/* =====================================================================
+   LA BANDE DE REFERENCE
+   ---------------------------------------------------------------------
+   Le meme objet en tete de chaque piece et de chaque dossier : devis,
+   facture, chantier, client.
+
+   C'est la signature du produit, et elle vient du metier. Dans le
+   batiment, chaque piece porte un numero, et ce numero est ce qu'on dit
+   au telephone : « je vous rappelle au sujet du devis DV-2026-089 ». La
+   plupart des logiciels rangent cet identifiant en gris dans un coin ;
+   ici il ouvre la piece, en chiffres tabulaires, et il ne bouge pas
+   quand on fait defiler.
+
+   Trois informations, toujours les memes, toujours dans cet ordre :
+   la reference, de qui il s'agit, ou en est la piece.
+   ===================================================================== */
+function bandeReference({ reference, qui, objet = "", etat = "", etatClasse = "badge-gray", note = "", noteClasse = "" }) {
+  return `
+  <div class="ref-bande">
+    <div class="ref-bande-identite">
+      <span class="ref-bande-numero">${escapeHtml(reference)}</span>
+      <span class="ref-bande-qui">${escapeHtml(qui)}</span>
+      ${objet ? `<span class="ref-bande-objet">${escapeHtml(objet)}</span>` : ""}
+    </div>
+    <div class="ref-bande-etat">
+      ${etat ? `<span class="badge ${etatClasse}">${escapeHtml(etat)}</span>` : ""}
+      ${note ? `<span class="ref-bande-note ${noteClasse}">${escapeHtml(note)}</span>` : ""}
+    </div>
+  </div>`;
+}
+
+/** Les actions d'une piece : UNE dominante, les autres en retrait.
+ *
+ *  Le panneau alignait jusqu'a cinq boutons de meme poids - « Relancer »,
+ *  « Telecharger le PDF », « Copier le lien client », « Dupliquer » -
+ *  ce qui revient a n'en designer aucun. La premiere action marquee
+ *  dominante prend toute la largeur du rail ; les suivantes deviennent
+ *  une liste sobre, disponible sans etre proposee.
+ */
+function actionsPiece(actions) {
+  if (!actions || !actions.length) return "";
+  const dominante = actions.find((x) => x.p);
+  const autres = actions.filter((x) => x !== dominante);
+  return `
+  <div class="piece-actions">
+    ${dominante ? `<button type="button" class="btn-primary piece-action-dominante" ${dominante.a}>${dominante.l}</button>` : ""}
+    ${autres.length ? `<div class="piece-actions-secondaires">${autres
+      .map((x) => `<button type="button" class="piece-action-secondaire" ${x.a}>${x.l}</button>`)
+      .join("")}</div>` : ""}
+  </div>`;
+}

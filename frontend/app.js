@@ -3192,6 +3192,81 @@ function showClientForm() {
 /** Les chiffres du client : quatre reperes typographies, filet dessous,
  *  comme le total souligne d'un devis. Remplace cinq lignes
  *  libelle/valeur qui se lisaient comme un formulaire en lecture seule. */
+/* =====================================================================
+   UN PROSPECT N'EST PAS UN CLIENT SANS CHIFFRES
+   ---------------------------------------------------------------------
+   Prospect et client sont le meme enregistrement, distingue par son
+   statut - et le dossier les traitait a l'identique. Un prospect recu la
+   semaine derniere ouvrait donc sur quatre mesures : « Facture 0,00 € »,
+   « Impaye — », « Chantiers 0 », « Dernier contact — ». Quatre reponses
+   a des questions que personne ne pose a ce stade, la ou les vraies -
+   qu'est-ce qu'il veut, d'ou vient-il, quand faut-il le rappeler -
+   n'apparaissaient nulle part.
+
+   Une interface sait aussi ce qu'elle ne doit PAS afficher. Le dossier
+   d'un prospect est une FICHE DE QUALIFICATION ; il redevient un dossier
+   de relation le jour ou l'affaire est gagnee.
+
+   Aucun champ nouveau : `notes`, `source`, `prochaine_action`,
+   `montant_estime` et `probabilite` existent depuis toujours dans
+   ClientOut - ils n'etaient simplement pas montres ici.
+   ===================================================================== */
+const STADES_PROSPECT = new Set([
+  "nouveau", "contacte", "qualification", "visite_prevue",
+  "devis_a_faire", "devis_envoye", "negociation",
+]);
+const estProspect = (client) => STADES_PROSPECT.has(client.statut);
+
+function prospectQualificationHtml(client) {
+  const joursDepuis = (iso) => (iso ? Math.floor((Date.now() - new Date(iso).getTime()) / 86400000) : null);
+  const dormant = joursDepuis(client.updated_at);
+  const stade = CLIENT_STATUT_META[client.statut] || { label: client.statut, badge: "badge-gray" };
+
+  const fait = (label, valeur, note = "", classe = "") => `
+    <div class="qualif-fait ${classe}">
+      <span class="qualif-fait-label">${label}</span>
+      <span class="qualif-fait-valeur">${valeur}</span>
+      ${note ? `<span class="qualif-fait-note">${note}</span>` : ""}
+    </div>`;
+
+  // Le potentiel ne s'affiche QUE s'il a ete estime. « Potentiel : 0 € »
+  // sur un prospect qu'on n'a pas encore chiffre n'est pas une donnee,
+  // c'est un champ vide deguise en chiffre.
+  const potentiel = client.montant_estime
+    ? fait("Potentiel estimé", fmtEuro(client.montant_estime),
+        client.probabilite != null ? `${client.probabilite} % de chances` : "")
+    : "";
+
+  return `
+  <div class="qualif">
+    ${fait("Stade", `<span class="badge ${stade.badge}">${escapeHtml(stade.label)}</span>`)}
+    ${fait("Origine", escapeHtml(CLIENT_SOURCE_LABELS[client.source] || client.source || "inconnue"),
+      `reçu le ${fmtDate(client.created_at)}`)}
+    ${fait("Dernier mouvement",
+      dormant === null ? "—" : dormant === 0 ? "aujourd'hui" : `il y a ${dormant} j`,
+      "", dormant !== null && dormant >= 15 ? "est-dormant" : "")}
+    ${potentiel}
+  </div>`;
+}
+
+/** Le besoin, tel qu'il a ete note. C'est la premiere chose a lire sur un
+ *  prospect : sans lui, on ne peut ni chiffrer ni rappeler utilement. */
+function prospectBesoinHtml(client) {
+  if (!client.notes) {
+    return `<p class="fiche-vide">Le besoin n'a pas encore été noté. C'est ce qui permettra de chiffrer, ou de rappeler sans faire répéter.</p>`;
+  }
+  return `<p class="qualif-besoin">${escapeHtml(client.notes)}</p>`;
+}
+
+/** La prochaine action, et rien d'autre : sur un prospect, c'est la seule
+ *  ligne qui dit quoi faire demain matin. */
+function prospectProchaineActionHtml(client) {
+  if (!client.prochaine_action) {
+    return `<p class="fiche-vide">Aucune prochaine action définie. Un prospect sans prochaine action est un prospect qu'on oublie.</p>`;
+  }
+  return `<p class="qualif-action">${escapeHtml(client.prochaine_action)}</p>`;
+}
+
 function clientResumeHtml(r) {
   const jours = r.dernier_contact
     ? Math.floor((Date.now() - new Date(r.dernier_contact).getTime()) / 86400000)
@@ -3217,6 +3292,14 @@ function clientResumeHtml(r) {
  *  n'etait visible depuis la fiche. Les listes sont celles que la page
  *  Clients charge deja - on les reutilise quand elles sont en cache, on
  *  les demande sinon, avec le meme repli silencieux qu'ailleurs. */
+/** Ce client a-t-il seulement une affaire ? Meme filtre que l'affichage,
+ *  ecrit une fois : la section et son contenu ne peuvent pas diverger. */
+function clientAAffaires(clientId, chantiers, devis, factures) {
+  return chantiers.some((c) => c.client_id === clientId)
+    || devis.some((d) => d.client_id === clientId)
+    || factures.some((f) => f.client_id === clientId);
+}
+
 function clientAffairesHtml(clientId, chantiers, devis, factures) {
   const sesChantiers = chantiers.filter((c) => c.client_id === clientId);
   const sesDevis = devis.filter((d) => d.client_id === clientId);
@@ -3301,15 +3384,28 @@ function messagesPanelHtml() {
   </form>`;
 }
 
+/** Les commandes du dossier : une dominante, les autres en retrait.
+ *
+ *  Cinq boutons de meme taille s'alignaient ici, « Appeler » et « Email »
+ *  compris. Un bouton « Appeler » ne doit pas peser autant qu'un bloc de
+ *  contexte - encore moins autant que la seule action qui fait avancer
+ *  l'affaire, qui est de chiffrer.
+ *
+ *  « Demander un avis » et le lien de l'espace client ne sont proposes
+ *  qu'a un client : demander un avis a quelqu'un qui n'a encore rien
+ *  achete n'a pas de sens, et le proposer use la commande.
+ */
 function clientQuickActionsHtml(client) {
-  const actions = [];
-  if (client.telephone) actions.push(`<a class="btn-sm" href="tel:${escapeHtml(client.telephone)}">Appeler</a>`);
-  if (client.email) actions.push(`<a class="btn-sm" href="mailto:${escapeHtml(client.email)}">Email</a>`);
-  actions.push(`<button type="button" class="btn-sm" data-action="demander-avis" data-client-id="${client.id}">Demander un avis</button>`);
-  actions.push(`<button type="button" class="btn-sm" data-action="copier-lien-portail" data-client-id="${client.id}">Copier le lien de l'espace client</button>`);
+  const actions = [`<a class="piece-action-secondaire" href="tel:${escapeHtml(client.telephone || "")}">Appeler</a>`];
+  if (!client.telephone) actions.length = 0;
+  if (client.email) actions.push(`<a class="piece-action-secondaire" href="mailto:${escapeHtml(client.email)}">Email</a>`);
+  if (!estProspect(client)) {
+    actions.push(`<button type="button" class="piece-action-secondaire" data-action="demander-avis" data-client-id="${client.id}">Demander un avis</button>`);
+    actions.push(`<button type="button" class="piece-action-secondaire" data-action="copier-lien-portail" data-client-id="${client.id}">Copier le lien de l'espace client</button>`);
+  }
   return `<div class="fiche-actions">
     <button type="button" class="btn-primary" data-action="quick-devis" data-client-id="${client.id}">+ Nouveau devis</button>
-    ${actions.join("")}
+    ${actions.length ? `<div class="fiche-actions-secondaires">${actions.join("")}</div>` : ""}
   </div>`;
 }
 
@@ -3355,7 +3451,11 @@ async function showTimeline(clientId) {
   // etre celui d'une fiche supprimee : on ne l'ouvre pas, et l'appelant le
   // signale.
   if (!client) return false;
-  document.getElementById("timeline-titre").textContent = "Dossier client";
+  // Le dossier annonce ce qu'il est. Tant que l'affaire n'est pas gagnee,
+  // c'est un prospect qu'on qualifie ; l'appeler « client » a ce stade est
+  // faux, et fait attendre de la page des chiffres qui n'existent pas.
+  document.getElementById("timeline-titre").textContent =
+    estProspect(client) ? "Dossier prospect" : "Dossier client";
   const content = document.getElementById("timeline-content");
   content.innerHTML = '<div class="fiche-squelette"><span></span><span></span><span></span></div>';
   const dossier = document.getElementById("client-dossier");
@@ -3391,12 +3491,33 @@ async function showTimeline(clientId) {
       cache.factures?.length ? cache.factures : tolerant(journal, "les factures", Api.listFactures(null, false, clientId)),
     ]);
 
+    // DEUX DOSSIERS, UNE SEULE PAGE.
+    // La composition suit le stade : tant que l'affaire n'est pas gagnee,
+    // le dossier qualifie ; ensuite, il raconte une relation. Les deux
+    // partagent l'en-tete, la chronologie et les commandes - c'est la
+    // meme personne, et le passage de l'un a l'autre ne doit pas donner
+    // l'impression de changer d'ecran.
+    const qualifier = estProspect(client);
     content.innerHTML = `
       ${client ? clientDetailHeaderHtml(client) : ""}
       ${client ? clientQuickActionsHtml(client) : ""}
       ${bandeauCharge(journal)}
-      ${clientResumeHtml(resume)}
-      ${ficheSection("Affaires", clientAffairesHtml(clientId, chantiers, devis, factures))}
+      ${qualifier ? `
+        ${prospectQualificationHtml(client)}
+        ${ficheSection("Le besoin", prospectBesoinHtml(client))}
+        ${ficheSection("Prochaine action", prospectProchaineActionHtml(client))}
+        ${
+          // Sur un prospect, une section « Affaires » vide ne dit rien :
+          // il n'y a pas encore d'affaire, c'est la definition d'un
+          // prospect. Elle n'apparait que le jour ou il y en a une.
+          clientAAffaires(clientId, chantiers, devis, factures)
+            ? ficheSection("Affaires", clientAffairesHtml(clientId, chantiers, devis, factures))
+            : ""
+        }
+      ` : `
+        ${clientResumeHtml(resume)}
+        ${ficheSection("Affaires", clientAffairesHtml(clientId, chantiers, devis, factures))}
+      `}
       ${ficheSection("Chronologie", clientChronologieHtml(entries, messages) + messagesPanelHtml())}
     `;
     refreshBadges();
@@ -4483,25 +4604,43 @@ function showDevisDetail(devisId) {
   // document se relit exactement comme il a ete construit.
   const totaux = devisTotaux(d.lignes || [], d.taux_tva, d.remise_pourcentage || 0, d.acompte_pourcentage || 0);
 
+  // L'en-tete du panneau cede la place a la bande de reference, commune a
+  // toutes les pieces. Les deux elements restent dans le DOM pour les
+  // lecteurs d'ecran (aria-labelledby les designe) mais ne sont plus
+  // affiches : la bande dit la meme chose, mieux.
   document.getElementById("devis-detail-titre").textContent = d.numero || `Devis #${d.id}`;
   document.getElementById("devis-detail-sous").innerHTML =
     `${escapeHtml(d.client_nom)}${d.titre ? " · " + escapeHtml(d.titre) : ""}`;
 
+  // LA COMPOSITION D'UN DOCUMENT
+  // Un devis n'est pas une fiche : c'est une piece qu'on relit et qu'on
+  // verifie avant de l'envoyer. Le document doit donc DOMINER. Il occupe
+  // la feuille, au centre ; le suivi et les commandes se rangent dans un
+  // rail lateral, presents sans voler la vedette au contenu.
+  //
+  // Avant, les quatre commandes s'alignaient en haut, de meme poids, et
+  // le tableau des prestations commencait sous elles - on lisait
+  // l'outillage avant de lire le devis.
   document.getElementById("devis-detail-corps").innerHTML = `
-    <div class="devis-detail-etat">
-      <span class="badge ${meta.badge}">${escapeHtml(meta.label)}</span>
-      <span class="devis-detail-suivi ${suivi.cls}">${escapeHtml(suivi.texte)}</span>
+    ${bandeReference({
+      reference: d.numero || `Devis #${d.id}`,
+      qui: d.client_nom,
+      objet: d.titre || "",
+      etat: meta.label,
+      etatClasse: meta.badge,
+      note: suivi.texte,
+    })}
+    <div class="piece">
+      <article class="piece-feuille">
+        ${ficheSection("Prestations", devisLignesLectureHtml(d.lignes))}
+        ${totaux ? `<div class="devis-detail-totaux">${devisTotalisateurHtml(totaux)}</div>` : ""}
+        ${d.description ? ficheSection("Notes au client", `<p class="devis-detail-notes">${escapeHtml(d.description)}</p>`) : ""}
+      </article>
+      <aside class="piece-rail">
+        ${chantierActionsDevisHtml(d)}
+        ${ficheSection("La vie de ce devis", devisVieHtml(d))}
+      </aside>
     </div>
-
-    ${chantierActionsDevisHtml(d)}
-
-    ${ficheSection("Prestations", devisLignesLectureHtml(d.lignes))}
-
-    ${totaux ? `<div class="devis-detail-totaux">${devisTotalisateurHtml(totaux)}</div>` : ""}
-
-    ${d.description ? ficheSection("Notes au client", `<p class="devis-detail-notes">${escapeHtml(d.description)}</p>`) : ""}
-
-    ${ficheSection("La vie de ce devis", devisVieHtml(d))}
   `;
   panneau.hidden = false;
   panneau.dataset.devisId = devisId;
@@ -4528,9 +4667,10 @@ function chantierActionsDevisHtml(d) {
   if (d.token && d.statut !== "nouveau") actions.push({ a: `data-action="copier-lien-devis" data-token="${escapeHtml(d.token)}"`, l: "Copier le lien client" });
   actions.push({ a: `data-action="dupliquer-devis" data-id="${d.id}"`, l: "Dupliquer" });
 
-  return `<div class="fiche-actions">${actions
-    .map((x) => `<button type="button" class="btn-sm${x.p ? " btn-sm-primary" : ""}" ${x.a}>${x.l}</button>`)
-    .join("")}</div>`;
+  // Une seule action domine, les autres restent disponibles en retrait.
+  // Les `data-action` et les conditions ne changent pas : le gestionnaire
+  // delegue de la vue Devis reste branche a l'identique.
+  return actionsPiece(actions);
 }
 
 async function showDevisForm(devis, preselectClientId) {
@@ -5291,9 +5431,7 @@ function factureActionsHtml(f) {
   if (facturesDueIds.has(f.id)) actions.push({ a: `data-action="relancer-facture" data-id="${f.id}"`, l: "Relancer" });
   if (f.token && f.statut !== "brouillon") actions.push({ a: `data-action="copier-lien-facture" data-token="${escapeHtml(f.token)}"`, l: "Copier le lien client" });
   actions.push({ a: `data-action="pdf-facture" data-id="${f.id}"`, l: "Télécharger le PDF" });
-  return `<div class="fiche-actions">${actions
-    .map((x) => `<button type="button" class="btn-sm${x.p ? " btn-sm-primary" : ""}" ${x.a}>${x.l}</button>`)
-    .join("")}</div>`;
+  return actionsPiece(actions);
 }
 
 function showFactureDetail(factureId) {
@@ -5315,21 +5453,39 @@ function showFactureDetail(factureId) {
         tva: Math.round((f.montant_ttc - f.montant_ht) * 100) / 100,
         tauxTva: f.taux_tva, ttc: f.montant_ttc, acompte: 0, acomptePct: 0 };
 
+  // PIECE COMPTABLE ET JOURNAL. Meme composition que le devis - la piece
+  // au centre, le suivi et les commandes dans le rail - avec une
+  // difference qui tient a sa nature : le REGLEMENT vient en tete du rail.
+  // Sur une facture, la premiere question n'est pas « que contient-elle »
+  // mais « reste-t-il quelque chose a encaisser ».
+  //
+  // Le formulaire de paiement reste dans le rail, sous le reglement qu'il
+  // modifie : c'est la que le solde avant et le solde apres se lisent.
   document.getElementById("facture-detail-corps").innerHTML = `
-    <div class="devis-detail-etat">
-      <span class="badge ${meta.badge}">${escapeHtml(meta.label)}</span>
-      ${f.est_en_retard ? '<span class="devis-detail-suivi is-alerte">En retard</span>' : ""}
+    ${bandeReference({
+      reference: f.numero || `Facture #${f.id}`,
+      qui: f.client_nom,
+      objet: FACTURE_TYPE_LABELS[f.type] || f.type,
+      etat: meta.label,
+      etatClasse: meta.badge,
+      // Un retard est un probleme reel : c'est le seul cas ou la bande
+      // sort du gris. Le reste du temps elle ne fait que renseigner.
+      note: f.est_en_retard ? "En retard" : "",
+      noteClasse: f.est_en_retard ? "est-alerte" : "",
+    })}
+    <div class="piece">
+      <article class="piece-feuille">
+        ${lignes.length ? ficheSection("Prestations facturées", devisLignesLectureHtml(lignes)) : ""}
+        <div class="devis-detail-totaux">${devisTotalisateurHtml(totaux)}</div>
+        ${f.notes ? ficheSection("Notes", `<p class="devis-detail-notes">${escapeHtml(f.notes)}</p>`) : ""}
+      </article>
+      <aside class="piece-rail">
+        ${factureReglementHtml(f)}
+        ${factureActionsHtml(f)}
+        <div id="paiement-form-${f.id}"></div>
+        ${ficheSection("La vie de cette facture", factureVieHtml(f))}
+      </aside>
     </div>
-
-    ${factureReglementHtml(f)}
-    ${factureActionsHtml(f)}
-    <div id="paiement-form-${f.id}"></div>
-
-    ${lignes.length ? ficheSection("Prestations facturées", devisLignesLectureHtml(lignes)) : ""}
-    <div class="devis-detail-totaux">${devisTotalisateurHtml(totaux)}</div>
-
-    ${f.notes ? ficheSection("Notes", `<p class="devis-detail-notes">${escapeHtml(f.notes)}</p>`) : ""}
-    ${ficheSection("La vie de cette facture", factureVieHtml(f))}
   `;
   panneau.hidden = false;
   panneau.dataset.factureId = factureId;
@@ -6213,14 +6369,45 @@ function documentsChantierHtml(c) {
   const documents = documentsParChantier.get(c.id) || [];
   if (!documents.length) return "";
   return `
-    <div class="dash-section" style="margin:12px 0;">
-      <h3 style="font-size:0.88rem;">Documents et photos</h3>
+    <div class="dossier-lignes">
       ${documents.map((d) => `
         <div class="item-sub" style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
           <span>${fmtDate(d.created_at)} · ${escapeHtml(d.nom)}${d.taille_octets ? " · " + fmtTaille(d.taille_octets) : ""}</span>
           <button type="button" class="btn-sm" style="padding:2px 8px;flex-shrink:0;" data-action="telecharger-document" data-id="${d.id}" data-nom="${escapeHtml(d.nom_original || d.nom)}">Télécharger</button>
         </div>`).join("")}
     </div>`;
+}
+
+/** LA PROCHAINE INTERVENTION — la premiere chose que dit un dossier.
+ *
+ *  Sur un chantier, la question n'est pas « combien a-t-il coute » mais
+ *  « qu'est-ce qui se passe ensuite ». L'information existait deja - la
+ *  liste des interventions est chargee avec la vue - mais elle etait
+ *  rangee au milieu du dossier, sous les chiffres de rentabilite : il
+ *  fallait lire une comptabilite pour arriver a un rendez-vous.
+ *
+ *  Rien n'est affiche si aucune intervention n'est a venir. Une fiche qui
+ *  ecrit « Prochaine intervention : aucune » en gros fait du bruit avec du
+ *  vide.
+ */
+function prochaineInterventionHtml(c) {
+  const maintenant = Date.now();
+  const aVenir = (interventionsParChantier.get(c.id) || [])
+    .filter((e) => e.date_debut && new Date(e.date_debut).getTime() >= maintenant)
+    .sort((a, b) => new Date(a.date_debut) - new Date(b.date_debut));
+  const suivante = aVenir[0];
+  if (!suivante) return "";
+  const duree = planningDureeMinutes({ date: suivante.date_debut, date_fin: suivante.date_fin });
+  const quand = `${fmtDate(suivante.date_debut)} · ${planningHeureLocale(suivante.date_debut)}${
+    duree !== null ? `–${planningHeureLocale(suivante.date_fin)}` : ""
+  }`;
+  return `
+  <div class="dossier-prochaine">
+    <span class="dossier-prochaine-quand">${escapeHtml(quand)}</span>
+    <span class="dossier-prochaine-quoi">${escapeHtml(suivante.titre)}</span>
+    ${suivante.lieu ? `<span class="dossier-prochaine-ou">${escapeHtml(suivante.lieu)}</span>` : ""}
+    <button type="button" class="btn-sm" data-action="ouvrir-intervention" data-evenement-id="${suivante.id}">Ouvrir</button>
+  </div>`;
 }
 
 // Les interventions planifiees sur ce chantier. Astra §9 les demande comme
@@ -6230,8 +6417,7 @@ function interventionsChantierHtml(c) {
   const interventions = interventionsParChantier.get(c.id) || [];
   if (!interventions.length) return "";
   return `
-    <div class="dash-section" style="margin:12px 0;">
-      <h3 style="font-size:0.88rem;">Interventions</h3>
+    <div class="dossier-lignes">
       ${interventions.map((e) => {
         const duree = planningDureeMinutes({ date: e.date_debut, date_fin: e.date_fin });
         return `
@@ -6352,7 +6538,7 @@ function checklistHtml(c) {
       <span style="${checked ? "text-decoration:line-through;color:var(--text-muted);" : ""}">${escapeHtml(t.titre)}</span>
     </label>`;
   }).join("");
-  return `<div class="dash-section" style="margin:12px 0;"><h3 style="font-size:0.88rem;">Préparation et tâches</h3>${items}</div>`;
+  return items;
 }
 
 function receptionHtml(c) {
@@ -6573,21 +6759,36 @@ function renderChantierCard(c) {
         </span>
       </div>
     </div>
-    <div class="chantier-details" id="chantier-details-${c.id}" hidden>
+    <!-- LE DOSSIER D'EXECUTION
+         Un chantier n'est ni une fiche client ni un tableau financier :
+         c'est un dossier vivant, et l'ordre des sections doit suivre
+         l'ordre des questions qu'on se pose sur le terrain.
+
+         Ce qui a change : les chiffres de rentabilite occupaient le
+         milieu du dossier, « Depenses 56 000,00 € » en grand, juste sous
+         l'en-tete - avant meme la liste des interventions. On ouvrait un
+         chantier et on lisait sa comptabilite. La marge des sections
+         (celle des pages composees) remplace les intitules poses en
+         vrac : chaque bloc porte son nom a gauche, contre un filet, et
+         aucun n'est enferme dans une carte de plus. -->
+    <div class="chantier-details dossier" id="chantier-details-${c.id}" hidden>
       ${c.statut === "termine" ? `<div class="moment-banner"><span>Chantier terminé ! Clôturez-le pour générer la facture finale, demander un avis client et archiver le dossier.</span></div>` : ""}
-      ${aujourdhuiChantierHtml(c)}
-      <div class="item-meta">Début : ${fmtDate(c.date_debut)}${c.adresse ? ` · ${escapeHtml(c.adresse)}` : ""}</div>
-      ${checklistHtml(c)}
-      ${rentabiliteHtml(c)}
-      ${c.finances_verrouillees ? '<div class="moment-banner"><span>Les données financières sont verrouillées depuis la création de la facture finale.</span></div>' : ""}
-      ${depensesHtml ? `<div class="dash-section" style="margin:12px 0;"><h3 style="font-size:0.88rem;">Dépenses</h3><div class="item-meta">${depensesHtml}</div></div>` : ""}
-      ${heuresHtml(c)}
-      ${interventionsChantierHtml(c)}
-      ${documentsChantierHtml(c)}
-      <div class="dash-section" style="margin:12px 0;">
-        <h3 style="font-size:0.88rem;">Historique</h3>
-        <div class="notes-list">${notesHtml || '<div class="item-sub">Aucune note pour le moment.</div>'}</div>
-      </div>
+      ${saSection("Ce qui vient", `
+        ${prochaineInterventionHtml(c)}
+        ${aujourdhuiChantierHtml(c)}
+        <p class="dossier-terrain">Début : ${fmtDate(c.date_debut)}${c.adresse ? ` · ${escapeHtml(c.adresse)}` : ""}</p>`,
+        c.date_fin_prevue ? `livraison ${fmtDate(c.date_fin_prevue)}` : "livraison non fixée")}
+      ${saSection("Reste à faire", checklistHtml(c))}
+      ${saSection("Interventions", interventionsChantierHtml(c))}
+      ${saSection("Documents et photos", documentsChantierHtml(c))}
+      ${saSection("Dépenses et heures", `
+        ${rentabiliteHtml(c)}
+        ${c.finances_verrouillees ? '<div class="moment-banner"><span>Les données financières sont verrouillées depuis la création de la facture finale.</span></div>' : ""}
+        ${depensesHtml ? `<div class="item-meta dossier-depenses">${depensesHtml}</div>` : ""}
+        ${heuresHtml(c)}`)}
+      ${saSection("Historique",
+        `<div class="notes-list">${notesHtml || '<div class="item-sub">Aucune note pour le moment.</div>'}</div>`,
+        (c.notes || []).length ? `${(c.notes || []).length} note${(c.notes || []).length > 1 ? "s" : ""}` : "")}
       ${receptionHtml(c)}
       <div id="chantier-edit-form-${c.id}"></div>
       <div id="note-form-${c.id}"></div>

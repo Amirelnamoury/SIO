@@ -104,9 +104,18 @@ Api.getDevis = async (id) => (await devisBruts()).find((d) => d.id === id) || in
 Api.getFacture = async (id) => (await facturesBrutes()).find((f) => f.id === id) || introuvable();
 Api.getChantier = async (id) => (await chantiersBruts()).find((c) => c.id === id) || introuvable();
 // Les interventions rattachees a un chantier (EvenementOut complets).
+//
+// La troisieme est A VENIR, et elle n'est pas la pour faire nombre : le
+// dossier de chantier ouvre sur « ce qui vient », et cet etat ne pouvait
+// pas etre vu. Les deux premieres sont posees a une heure FIXE de la
+// journee - 14 h et il y a six jours - donc passees des que l'audit tourne
+// l'apres-midi. Le bloc n'apparaissait jamais, et rien ne disait s'il etait
+// absent parce qu'il n'y avait rien a montrer ou parce qu'il etait casse.
+// Un jeu d'essai qui ne couvre pas un etat le rend invisible, pas correct.
 Api.interventionsChantier = async (id) => (id === 2 ? [
   { id: 2, artisan_id: 1, client_id: 1, chantier_id: 2, titre: "Visite de chantier Ducros", type: "visite", date_debut: hg(14), date_fin: null, lieu: "Écully", notes: null },
   { id: 7, artisan_id: 1, client_id: 1, chantier_id: 2, titre: "Pose des menuiseries", type: "intervention", date_debut: tg(6), date_fin: null, lieu: "Écully", notes: null },
+  { id: 9, artisan_id: 1, client_id: 1, chantier_id: 2, titre: "Pose du carrelage salle de bain", type: "intervention", date_debut: `${jg(2)}T07:30:00.000Z`, date_fin: `${jg(2)}T15:00:00.000Z`, lieu: "Écully", notes: null },
 ] : []);
 Api.factureDepuisDevis = async () => (await facturesBrutes())[0];
 Api.preparerChantierDepuisDevis = async () => ({
