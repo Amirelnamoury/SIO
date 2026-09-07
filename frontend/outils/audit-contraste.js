@@ -111,13 +111,24 @@
       }
     }
 
+    // La valeur de retour est un OBJET NOMME, jamais un tableau nu.
+    //
+    // Elle rendait `echecs` directement. Toute sonde ecrite autour - et j'en
+    // ai ecrit beaucoup - lisait naturellement `resultat.echecs`, qui vaut
+    // `undefined` sur un tableau : la sonde retombait sur `[]` et annoncait
+    // « zero echec » quelle que soit la realite. L'outil disait vrai dans la
+    // console, l'appelant jetait la reponse.
+    //
+    // Un contrat nomme rend cette erreur impossible : `audites` dit combien
+    // d'elements ont ete regardes, ce qui permet en plus de reperer une
+    // racine vide (0 audite n'est pas 0 echec).
     if (!echecs.length) {
       console.log(`%cAucun échec de contraste — ${audites} éléments audités.`, "color:#3B6647;font-weight:600");
-      return [];
+      return { audites, echecs: [] };
     }
     console.log(`%c${echecs.length} échec(s) sur ${audites} éléments audités`, "color:#9E3A2B;font-weight:600");
     console.table(echecs);
-    return echecs;
+    return { audites, echecs };
   };
 
   console.log("auditContraste() est prêt. auditContraste('#view-devis') pour une seule vue.");

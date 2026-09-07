@@ -568,10 +568,24 @@
     Object.keys(PAUSE).forEach(function (s) {
       if (!sceneEls[s]) return;
       sceneEls[s].classList.add("is-on");
-      sceneEls[s].style.backgroundImage = "url(" + BASE + "frame-" + PAUSE[s] + ".webp)";
+      // La photographie est POSEE dans la section, pas mise en fond derriere
+      // le texte. En fond, il fallait un voile sombre pour lire par-dessus -
+      // et ce voile ramenait l'identite sombre que la page vient de quitter,
+      // sur le seul chemin emprunte par les visiteurs qui ont demande moins
+      // de mouvement.
+      var planche = document.createElement("div");
+      planche.className = "lc-planche-statique";
+      var img = document.createElement("img");
+      img.src = BASE + "frame-" + PAUSE[s] + ".webp";
+      img.alt = "";
+      img.loading = "lazy";
+      img.decoding = "async";
+      planche.appendChild(img);
+      var dedans = sceneEls[s].querySelector(".lc-scene-in");
+      if (dedans) dedans.appendChild(planche);
     });
     var fin = document.querySelector(".lc-chapter-final");
-    if (fin) fin.style.backgroundImage = "url(" + BASE + "frame-t.webp)";
+    if (fin) fin.classList.add("lc-sans-photo");
     if (lateBlock) lateBlock.classList.add("is-ready");
     if (phaseEl) Array.prototype.forEach.call(phaseEl.children, function (s) { s.classList.add("is-on"); });
   } else if (hasGsap) {

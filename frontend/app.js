@@ -1547,7 +1547,13 @@ const AVIS_SOURCE_LABELS = { manuel: "Saisi à la main", lien_public: "Envoyé p
 // vides reculent d'un ton, et la note reste lisible pour qui ne distingue
 // pas les deux glyphes - l'element porte un aria-label « n sur 5 ».
 function starsText(note) {
-  return `${"★".repeat(note)}<span class="avis-stars-vides">${"☆".repeat(5 - note)}</span>`;
+  // Les etoiles VIDES sont marquees decoratives. Le re-audit les a trouvees
+  // a 3.5:1 : sous le seuil des textes. Mais les durcir jusqu'a 4.5:1
+  // rendrait une etoile absente aussi visible qu'une etoile obtenue, ce qui
+  // est un defaut de composition, pas une amelioration. La note est portee
+  // par l'`aria-label` du conteneur (« 4 sur 5 ») : ces glyphes ne
+  // transportent rien que le lecteur d'ecran ne recoive deja.
+  return `${"★".repeat(note)}<span class="avis-stars-vides" aria-hidden="true">${"☆".repeat(5 - note)}</span>`;
 }
 
 // Partagee entre le panneau timeline client et le panneau "Avis a demander"

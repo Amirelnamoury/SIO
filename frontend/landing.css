@@ -6,23 +6,60 @@
    ISOLATION VIS-A-VIS DU SAAS : tout est prefixe `.lc-` (landing
    cinematic) et toutes les variables `--lc-`. Ce fichier ne depend
    d'aucune variable de style.css et n'est charge que par landing.html.
-   Un autre agent peut donc refondre le SaaS en parallele sans qu'aucun
-   des deux rendus ne bouge.
+
+   MAIS ELLE PORTE LA MEME MARQUE.
+   Cette isolation a eu une consequence qu'on n'avait pas vue : quand le
+   produit est passe a la direction « Atelier », la page vitrine n'a pas
+   bouge. Elle est restee sombre et doree - fond 121510, accent d6af68 -
+   pendant que l'application derriere devenait claire et papier. Un
+   prospect cliquait « Essayer gratuitement » et changeait de marque en
+   route. Le commentaire « identique a --sa-bg du SaaS » etait meme reste
+   en place, faux depuis la bascule.
+   Les tokens ci-dessous sont donc ceux de DIRECTION-ARTISTIQUE.md. Le
+   fichier reste independant - c'est utile - mais il recopie la palette
+   plutot que d'en inventer une seconde.
+
+   LA TRADUCTION DU FILM
+   Le film de photographies ne pouvait pas etre simplement repeint : du
+   texte sur une photographie exige un voile sombre pour rester lisible,
+   et un voile sombre sur une page papier fait deux identites en une.
+   Les photographies deviennent donc des PLANCHES : une image bornee,
+   posee sur le papier, avec son filet, son numero dans la marge et sa
+   legende - et le texte a cote, jamais dessus. C'est exactement ce que
+   fait un dossier de chantier : il annexe ses photos, il n'imprime pas
+   par-dessus.
    ===================================================================== */
 
 :root {
-  --lc-ink: #121510;        /* identique a --sa-bg du SaaS */
-  --lc-ink-2: #181c16;      /* identique a --sa-sidebar */
-  --lc-cream: #f2ede3;
-  --lc-white: #f7f3ec;
-  --lc-muted: rgba(247, 243, 236, .66);
-  --lc-faint: rgba(247, 243, 236, .42);
-  --lc-champagne: #d6af68;  /* accent commun a toute la marque */
-  --lc-champagne-soft: rgba(214, 175, 104, .16);
-  --lc-line: rgba(247, 243, 236, .16);
+  /* Palette « Atelier » — voir DIRECTION-ARTISTIQUE.md. */
+  --lc-papier: #F4F1EA;     /* le fond de page */
+  --lc-feuille: #FCFAF5;    /* la planche, posee sur le papier */
+  --lc-creux: #EBE7DE;      /* le retrait */
+  --lc-ink: #1C1E1A;        /* l'encre */
+  --lc-muted: #55584F;
+  --lc-faint: #66695E;
+  --lc-accent: #2E4739;     /* le vert d'atelier */
+  --lc-accent-fort: #243A2E;
+  --lc-champagne: #8A6024;  /* le laiton, sur papier */
+  --lc-champagne-soft: rgba(138, 96, 36, .12);
+  --lc-line: #DFDACE;
+  --lc-line-fort: #86806E;
+  --lc-sombre: #23261F;     /* l'unique plan sombre : le pied de page */
+
+  /* L'encre claire, pour l'unique plan sombre de la page : le pied. */
+  --lc-sur-sombre: #F4F1EA;
+  --lc-sur-sombre-muted: rgba(244, 241, 234, .68);
+  --lc-laiton-sur-sombre: #C79A4E;  /* 5.96:1 sur l'encre sombre */
 
   --lc-display: "Fraunces", Georgia, "Times New Roman", serif;
   --lc-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* L'angle vif de la direction artistique. `--lc-r-pill` porte encore son
+     nom d'origine parce qu'il est appele en huit endroits, mais il ne vaut
+     plus 999px : la pilule appartenait a l'identite precedente. */
+  --lc-r: 2px;
+  --lc-r-pill: 3px;
+  --lc-r-lg: 4px;
 
   --lc-max: 1200px;
   --lc-ease: cubic-bezier(.22, 1, .36, 1);
@@ -31,8 +68,8 @@
 /* ---------- Reset local ---------- */
 .lc {
   margin: 0;
-  background: var(--lc-ink);
-  color: var(--lc-white);
+  background: var(--lc-papier);
+  color: var(--lc-ink);
   font-family: var(--lc-sans);
   font-size: 16px;
   line-height: 1.6;
@@ -52,53 +89,56 @@
 
 .lc-skip {
   position: absolute; left: -9999px; top: 12px; z-index: 200;
-  background: var(--lc-white); color: var(--lc-ink); padding: 12px 20px; border-radius: 999px; font-weight: 600;
+  background: var(--lc-accent); color: var(--lc-papier); padding: 12px 20px; border-radius: var(--lc-r); font-weight: 600;
 }
 .lc-skip:focus { left: 16px; }
 
 /* Fil de progression de la visite */
-.lc-bar { position: fixed; inset: 0 0 auto 0; height: 2px; z-index: 120; background: rgba(247, 243, 236, .08); }
+/* Le fil suivait un degrade dore sur un fond translucide clair : invisible
+   sur du papier. Un filet plein de laiton sur la ligne du papier suffit -
+   c'est une jauge, pas un ornement. */
+.lc-bar { position: fixed; inset: 0 0 auto 0; height: 2px; z-index: 120; background: var(--lc-line); }
 .lc-bar span {
   display: block; height: 100%; transform-origin: 0 50%; transform: scaleX(0);
-  background: linear-gradient(90deg, var(--lc-champagne), #e8d3ab);
+  background: var(--lc-champagne);
 }
 .lc-anchor { position: absolute; top: -80px; }
 
 /* ============================ BOUTONS ============================ */
 .lc-btn {
   display: inline-flex; align-items: center; justify-content: center;
-  padding: 13px 26px; border-radius: 999px; border: 1px solid transparent;
+  padding: 13px 26px; border-radius: var(--lc-r-pill); border: 1px solid transparent;
   font-family: var(--lc-sans); font-size: .94rem; font-weight: 600; letter-spacing: .01em;
   cursor: pointer; white-space: nowrap;
   transition: transform .25s var(--lc-ease), background-color .25s, border-color .25s, color .25s;
 }
-.lc-btn-primary { background: var(--lc-white); color: var(--lc-ink); position: relative; overflow: hidden; }
-.lc-btn-primary:hover { transform: translateY(-2px); background: #fff; }
-/* Balayage de lumiere au survol : le geste habituel des boutons "metal". */
-@media (prefers-reduced-motion: no-preference) {
-  .lc-btn-primary::after {
-    content: ""; position: absolute; top: 0; bottom: 0; left: -60%; width: 45%;
-    background: linear-gradient(100deg, transparent, rgba(214, 175, 104, .55), transparent);
-    transform: skewX(-18deg); transition: left .65s var(--lc-ease);
-  }
-  .lc-btn-primary:hover::after { left: 125%; }
-}
-.lc-btn-ghost { border-color: rgba(247, 243, 236, .34); color: var(--lc-white); backdrop-filter: blur(6px); }
-.lc-btn-ghost:hover { transform: translateY(-2px); border-color: var(--lc-white); background: rgba(247, 243, 236, .08); }
+/* Le bouton principal est celui du produit : vert d'atelier, encre papier,
+   angle vif. Le balayage de lumiere qui le traversait au survol appartenait
+   au registre « metal » de l'identite precedente - sur du papier, un bouton
+   ne brille pas. */
+.lc-btn-primary { background: var(--lc-accent); color: var(--lc-papier); border-color: var(--lc-accent); }
+.lc-btn-primary:hover { transform: translateY(-1px); background: var(--lc-accent-fort); border-color: var(--lc-accent-fort); }
+.lc-btn-ghost { border-color: var(--lc-line-fort); color: var(--lc-ink); }
+.lc-btn-ghost:hover { transform: translateY(-1px); border-color: var(--lc-ink); background: var(--lc-feuille); }
 .lc-btn-sm { padding: 9px 18px; font-size: .86rem; }
 .lc-btn-lg { padding: 16px 32px; font-size: 1rem; }
 
 /* ========================== NAVIGATION ========================== */
 .lc-nav { position: fixed; inset: 0 0 auto 0; z-index: 100; transition: background-color .4s, backdrop-filter .4s; }
-/* Degrade permanent en haut : garantit la lisibilite du logo et des liens
-   sur n'importe quelle photo, sans avoir a inverser les couleurs. */
-.lc-nav::before {
-  content: ""; position: absolute; inset: 0 0 -40px 0; pointer-events: none;
-  background: linear-gradient(180deg, rgba(18, 21, 16, .72), rgba(18, 21, 16, 0));
-  transition: opacity .4s;
+/* Le degrade sombre qui vivait ici garantissait la lisibilite du logo sur
+   n'importe quelle photographie. Plus aucune photographie ne passe sous la
+   barre : elle repose sur le papier, et un simple filet suffit a la poser.
+   Il n'apparait qu'une fois la page defilee, quand la barre commence a
+   flotter au-dessus du contenu. */
+.lc-nav::before { content: none; }
+.lc-nav {
+  border-bottom: 1px solid transparent;
+  transition: background .3s var(--lc-ease), border-color .3s var(--lc-ease);
 }
-.lc-nav.is-stuck { background: rgba(18, 21, 16, .78); backdrop-filter: blur(14px); }
-.lc-nav.is-stuck::before { opacity: 0; }
+.lc-nav.is-stuck {
+  background: rgba(244, 241, 234, .92); backdrop-filter: blur(14px);
+  border-bottom-color: var(--lc-line);
+}
 .lc-nav-in {
   position: relative; max-width: var(--lc-max); margin: 0 auto; padding: 18px 32px;
   display: flex; align-items: center; justify-content: space-between; gap: 28px;
@@ -122,10 +162,10 @@
 }
 .lc-nav-links { display: flex; gap: 30px; }
 .lc-nav-links a { font-size: .9rem; color: var(--lc-muted); transition: color .25s; }
-.lc-nav-links a:hover { color: var(--lc-white); }
+.lc-nav-links a:hover { color: var(--lc-ink); }
 .lc-nav-cta { display: flex; align-items: center; gap: 20px; }
 .lc-link { font-size: .9rem; color: var(--lc-muted); transition: color .25s; }
-.lc-link:hover { color: var(--lc-white); }
+.lc-link:hover { color: var(--lc-ink); }
 @media (max-width: 900px) { .lc-nav-links { display: none; } }
 @media (max-width: 560px) { .lc-nav-in { padding: 14px 18px; } .lc-link { display: none; } }
 
@@ -134,13 +174,55 @@
    est remonte de 100vh pour defiler PAR-DESSUS lui.
    ================================================================= */
 .lc-film { position: relative; }
-.lc-stage { position: sticky; top: 0; height: 100vh; overflow: hidden; z-index: 1; background: var(--lc-ink); }
+.lc-stage {
+  position: sticky; top: 0; height: 100vh; overflow: hidden; z-index: 1;
+  background: var(--lc-papier);
+  /* La page est une double page : le texte a gauche, la planche a droite.
+     C'est la grille de tout le film, hero compris. */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.02fr);
+  /* `stretch` et non `center` : les deux colonnes doivent OCCUPER la
+     hauteur du plateau, sinon la rangee se dimensionne sur son contenu et
+     le `height: 100%` du calque de texte devient indefini - le texte
+     tombait alors sous la planche au lieu de se poser a cote. Le centrage
+     se fait a l'interieur de chaque colonne. */
+  align-items: stretch;
+  gap: clamp(28px, 4vw, 76px);
+  padding: 104px clamp(24px, 5vw, 76px) clamp(48px, 7vh, 92px);
+}
 .lc-chapters { position: relative; z-index: 2; margin-top: -100vh; }
 
-/* `isolation: isolate` cree un contexte d'empilement : sans lui, les
-   z-index 1..20 poses sur les frames par landing.js remontent dans le
-   contexte du plateau et passent AU-DESSUS du voile et du grain. */
-.lc-layers { position: absolute; inset: 0; z-index: 1; isolation: isolate; }
+/* Sous 900 px, deux colonnes ne tiennent pas : la planche passe au-dessus
+   du texte, en bandeau. L'ordre compte - on voit d'abord de quoi on parle,
+   on lit ensuite - et c'est aussi celui de la version sans mouvement. */
+@media (max-width: 900px) {
+  .lc-stage {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    align-content: center;
+    gap: clamp(20px, 4vh, 40px);
+    padding: 88px clamp(20px, 5vw, 40px) clamp(32px, 5vh, 56px);
+  }
+  .lc-layers { grid-column: 1; grid-row: 1; height: min(34vh, 260px); }
+  .lc-overlay { grid-column: 1; grid-row: 2; }
+}
+
+/* ---------- LA PLANCHE ----------
+   La photographie n'est plus le fond de l'ecran : c'est un objet pose sur
+   le papier. Filet fin, ombre a peine marquee - la direction artistique
+   n'admet d'ombre que pour ce qui flotte reellement au-dessus de la page,
+   et une planche photographique en fait partie. Elle occupe la colonne de
+   droite ; le texte, la gauche. Plus aucun mot ne tombe sur une image, et
+   le voile de lisibilite disparait avec le probleme qu'il resolvait. */
+.lc-layers {
+  position: relative; grid-column: 2; grid-row: 1; z-index: 1; isolation: isolate;
+  align-self: center;
+  height: min(72vh, 620px);
+  border: 1px solid var(--lc-line-fort);
+  background: var(--lc-creux);
+  overflow: hidden;
+  box-shadow: 0 18px 44px -28px rgba(28, 30, 26, .45);
+}
 .lc-frame {
   position: absolute; inset: 0; width: 100%; height: 100%;
   object-fit: cover; opacity: 0;
@@ -151,36 +233,23 @@
 }
 .lc-frame.is-live { visibility: visible; will-change: opacity, transform; }
 
-/* Grain tres leger : casse le banding des degrades sur les aplats de mur */
+/* Grain : il casse le banding des degrades. Il vit maintenant DANS la
+   planche, avec la photographie, et pas sur le papier. */
 .lc-grain {
-  position: absolute; inset: 0; z-index: 3; pointer-events: none; opacity: .35; mix-blend-mode: overlay;
+  position: absolute; inset: 0; z-index: 3; pointer-events: none; opacity: .22; mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
 }
 
-/* Voile de lisibilite. Il s'intensifie seulement la ou du texte doit se
-   lire, et reste tres discret sur les plans purement contemplatifs. */
-.lc-scrim {
-  position: absolute; inset: 0; z-index: 4; pointer-events: none;
-  transition: opacity .6s var(--lc-ease), background .6s var(--lc-ease);
-  background:
-    linear-gradient(180deg, rgba(18, 21, 16, .34) 0%, rgba(18, 21, 16, 0) 26%),
-    radial-gradient(120% 90% at 50% 50%, rgba(18, 21, 16, 0) 42%, rgba(18, 21, 16, .38) 100%);
-}
-/* Le hero est le seul plan ou le texte tombe sur un ciel clair : le
-   degre lateral y est plus soutenu, sinon le titre blanc disparait. */
-.lc-scrim[data-chapter="1"] { background: linear-gradient(180deg, rgba(17,17,15,.44) 0%, rgba(17,17,15,0) 30%), linear-gradient(90deg, rgba(17,17,15,.80) 0%, rgba(17,17,15,.55) 32%, rgba(17,17,15,.18) 60%, rgba(17,17,15,0) 84%); }
-.lc-scrim[data-chapter="2"] { background: linear-gradient(180deg, rgba(17,17,15,.40) 0%, rgba(17,17,15,.10) 28%), radial-gradient(90% 70% at 50% 50%, rgba(17,17,15,.52) 0%, rgba(17,17,15,.18) 70%); }
-.lc-scrim[data-chapter="3"] { background: linear-gradient(180deg, rgba(17,17,15,.40) 0%, rgba(17,17,15,0) 26%), linear-gradient(90deg, rgba(17,17,15,.70) 0%, rgba(17,17,15,.18) 56%, rgba(17,17,15,0) 82%); }
-.lc-scrim[data-chapter="4"] { background: linear-gradient(180deg, rgba(17,17,15,.40) 0%, rgba(17,17,15,0) 26%), linear-gradient(270deg, rgba(17,17,15,.70) 0%, rgba(17,17,15,.18) 56%, rgba(17,17,15,0) 82%); }
-.lc-scrim[data-chapter="5"] { background: linear-gradient(180deg, rgba(17,17,15,.40) 0%, rgba(17,17,15,0) 26%), linear-gradient(90deg, rgba(17,17,15,.66) 0%, rgba(17,17,15,.14) 54%, rgba(17,17,15,0) 80%); }
-.lc-scrim[data-chapter="6"] { background: linear-gradient(180deg, rgba(17,17,15,.44) 0%, rgba(17,17,15,0) 26%), linear-gradient(90deg, rgba(17,17,15,.74) 0%, rgba(17,17,15,.22) 58%, rgba(17,17,15,0) 84%); }
-.lc-scrim[data-chapter="7"] { background: linear-gradient(180deg, rgba(17,17,15,.62) 0%, rgba(17,17,15,.80) 100%); }
+/* Le voile n'a plus d'objet : aucun texte ne se lit sur une photographie.
+   L'element reste dans le DOM - landing.js lui pose encore un
+   `data-chapter` - mais il ne peint plus rien. */
+.lc-scrim { display: none; }
 
 /* Le trait qui marque le front de transformation avant/apres */
 .lc-reveal-edge {
   position: absolute; top: 0; bottom: 0; width: 1px; z-index: 6; opacity: 0; pointer-events: none;
-  background: linear-gradient(180deg, transparent, rgba(247, 243, 236, .85) 22%, rgba(247, 243, 236, .85) 78%, transparent);
-  box-shadow: 0 0 22px rgba(247, 243, 236, .45);
+  background: linear-gradient(180deg, transparent, rgba(28, 30, 26, .85) 22%, rgba(28, 30, 26, .85) 78%, transparent);
+  box-shadow: 0 0 22px rgba(28, 30, 26, .45);
   transition: opacity .3s;
 }
 
@@ -206,19 +275,19 @@
      ca ne se lit pas comme un reflet mais comme une salissure grise d'un
      seul cote. */
   background: linear-gradient(158deg, #16150f 0%, #100f0a 100%);
-  box-shadow: inset 0 0 2.4em rgba(0, 0, 0, .5), inset 0 .08em 0 rgba(247, 243, 236, .06);
+  box-shadow: inset 0 0 2.4em rgba(0, 0, 0, .5), inset 0 .08em 0 rgba(28, 30, 26, .06);
   overflow: hidden;
 }
 /* 2.2em (et non 2.5) : la dalle mesure 13,6 % de hauteur d'image, le bloc
    doit y respirer sans toucher les bords. */
 .lc-screen-logo { width: 2.2em; height: 2.2em; }
-.lc-screen-rule { width: 1.5em; height: 1px; background: rgba(214, 175, 104, .55); margin: .14em 0 .08em; }
+.lc-screen-rule { width: 1.5em; height: 1px; background: rgba(138, 96, 36, .55); margin: .14em 0 .08em; }
 /* Capitales tres espacees en serif : la signature "artisan haut de gamme",
    plutot qu'un logotype de start-up. */
 .lc-screen-word {
   font-family: var(--lc-display); font-weight: 500; font-size: .58em;
   text-transform: uppercase; letter-spacing: .34em; text-indent: .34em;
-  color: var(--lc-white); white-space: nowrap;
+  color: var(--lc-ink); white-space: nowrap;
   /* line-height: 1 — le libelle est tout en capitales : l'interligne par
      defaut ajoute sous les lettres un vide qui n'existe pas au-dessus, et
      le bloc parait alors remonte dans la dalle. */
@@ -230,7 +299,11 @@
    parfaitement centres a l'ecran, et leur apparition est pilotee par la
    meme timeline que les photos (voir le commentaire de landing.html).
    ==================================================================== */
-.lc-overlay { position: absolute; inset: 0; z-index: 5; }
+/* Le calque de contenu occupe la colonne de GAUCHE de la double page. Il
+   n'est plus etendu sur tout le plateau : les scenes s'empilent dans cette
+   colonne, la planche occupe la droite, et les deux avancent sur la meme
+   timeline. */
+.lc-overlay { position: relative; grid-column: 1; grid-row: 1; height: 100%; z-index: 5; }
 .lc-scene {
   position: absolute; inset: 0;
   opacity: 0; pointer-events: none;
@@ -238,14 +311,14 @@
 }
 .lc-scene.is-on { opacity: 1; pointer-events: auto; }
 .lc-scene-in {
-  height: 100%; max-width: var(--lc-max); margin: 0 auto; padding: 0 32px;
+  height: 100%;
   display: grid; align-content: center;
 }
 /* Hero : le bloc reste centre, l'indice de scroll descend en bas. */
-.lc-scene-hero .lc-scene-in { align-content: stretch; grid-template-rows: 1fr auto; padding-top: 92px; }
+.lc-scene-hero .lc-scene-in { align-content: stretch; grid-template-rows: 1fr auto; }
 .lc-scene-hero .lc-block { align-self: center; }
 /* Chantier : le libelle de phase se cale en haut, les chiffres au centre. */
-.lc-scene-site .lc-scene-in { align-content: stretch; grid-template-rows: auto 1fr; padding-top: 15vh; }
+.lc-scene-site .lc-scene-in { align-content: stretch; grid-template-rows: auto 1fr; }
 .lc-scene-site .lc-block-late { align-self: center; }
 
 /* 700px (et non 620) : en dessous, un titre comme "Chaque intervention
@@ -268,8 +341,10 @@
   .lc-scene.is-on .lc-block > *:nth-child(6) { transition-delay: .46s; }
   .lc-scene.is-on .lc-scrollcue { transition-delay: .55s; }
 }
-.lc-block-center { max-width: 760px; margin: 0 auto; text-align: center; }
-.lc-block-right { margin-left: auto; }
+/* Le texte est desormais cadre a gauche dans sa colonne, partout. Les
+   variantes centree et alignee a droite servaient a esquiver le sujet de
+   la photographie derriere ; il n'y a plus rien derriere. */
+.lc-block-center, .lc-block-right { max-width: none; margin: 0; text-align: left; }
 /* Le bloc marge n'entre qu'une fois la piece terminee revelee par le
    volet (is-ready est pose par landing.js quand la frame O prend la main). */
 .lc-block-late { opacity: 0; transition: opacity .6s var(--lc-ease); }
@@ -285,16 +360,21 @@
   letter-spacing: .18em; text-transform: uppercase; color: var(--lc-champagne);
   margin-bottom: 22px;
 }
-.lc-h1 { font-size: clamp(2.6rem, 5.6vw, 4.6rem); font-weight: 400; }
+/* L'echelle a ete redescendue : les titres etaient calibres pour toute la
+   largeur de l'ecran, ils vivent maintenant dans une colonne. « Du terrain
+   au bureau. » passait sur trois lignes et venait buter sur le chapeau. */
+.lc-h1 { font-size: clamp(2.3rem, 3.6vw, 3.5rem); font-weight: 400; }
 .lc-h1 .lc-line { display: block; }
 .lc-accent { color: var(--lc-champagne); font-style: italic; }
-.lc-h2 { font-size: clamp(1.85rem, 3.1vw, 2.75rem); font-weight: 400; }
+.lc-h2 { font-size: clamp(1.7rem, 2.4vw, 2.3rem); font-weight: 400; }
 .lc-h2-xl { font-size: clamp(2.2rem, 4.4vw, 3.7rem); }
-.lc-lead { font-size: clamp(1.02rem, 1.35vw, 1.18rem); color: var(--lc-muted); max-width: 34em; margin-top: 24px; }
+.lc-lead { font-size: clamp(1.02rem, 1.2vw, 1.12rem); color: var(--lc-muted); max-width: 34em; margin-top: 26px; }
 /* `max-width` seul ne centre pas : il faut les marges auto. */
 .lc-lead-center { margin-inline: auto; }
 .lc-body { font-size: 1.02rem; color: var(--lc-muted); max-width: 34em; margin-top: 20px; }
-.lc-note { margin-top: 22px; font-size: .84rem; color: var(--lc-faint); }
+/* --lc-faint est calibre sur le papier ; cette note vit aussi sur le lavis
+   de laiton de l'offre optionnelle, ou elle tombait a 4.27:1. */
+.lc-note { margin-top: 22px; font-size: .84rem; color: var(--lc-muted); }
 .lc-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 34px; }
 .lc-actions-center { justify-content: center; }
 
@@ -302,8 +382,8 @@
    poser un gros bouton par-dessus la photographie a chaque plan. */
 .lc-cta-inline {
   display: inline-flex; align-items: center; gap: 10px; margin-top: 30px;
-  font-size: .92rem; font-weight: 600; color: var(--lc-white);
-  padding-bottom: 6px; border-bottom: 1px solid rgba(214, 175, 104, .5);
+  font-size: .92rem; font-weight: 600; color: var(--lc-ink);
+  padding-bottom: 6px; border-bottom: 1px solid rgba(138, 96, 36, .5);
   transition: border-color .3s, gap .3s var(--lc-ease);
 }
 .lc-cta-inline::after { content: "→"; color: var(--lc-champagne); transition: transform .3s var(--lc-ease); }
@@ -325,7 +405,7 @@
   .lc-scrollcue-line { position: relative; }
   .lc-scrollcue-line::after {
     content: ""; position: absolute; inset: 0; width: 14px;
-    background: var(--lc-white); animation: lc-cue 2.6s var(--lc-ease) infinite;
+    background: var(--lc-ink); animation: lc-cue 2.6s var(--lc-ease) infinite;
   }
 }
 @keyframes lc-cue {
@@ -337,8 +417,8 @@
 /* ---------- Chips / tags / points ---------- */
 .lc-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 34px; }
 .lc-chips li {
-  padding: 8px 18px; border: 1px solid var(--lc-line); border-radius: 999px;
-  font-size: .84rem; color: var(--lc-white); background: rgba(18, 21, 16, .28); backdrop-filter: blur(4px);
+  padding: 8px 18px; border: 1px solid var(--lc-line); border-radius: var(--lc-r-pill);
+  font-size: .84rem; color: var(--lc-ink); background: var(--lc-feuille);
 }
 .lc-points { margin-top: 28px; display: grid; gap: 13px; }
 .lc-points li { position: relative; padding-left: 24px; color: var(--lc-muted); font-size: .98rem; }
@@ -347,10 +427,14 @@
   width: 7px; height: 1px; background: var(--lc-champagne);
 }
 .lc-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 28px; }
+/* Le laiton #8A6024 est calibre sur le PAPIER, pas sur son propre lavis :
+   sur `--lc-champagne-soft` il tombe a 4.23:1, sous le seuil. C'est le
+   FILET qui porte la couleur, pas le texte - la direction artistique le dit
+   deja pour le produit, la vitrine s'y range. */
 .lc-tags li {
   font-size: .74rem; letter-spacing: .09em; text-transform: uppercase;
-  color: var(--lc-champagne); background: var(--lc-champagne-soft);
-  border: 1px solid rgba(214, 175, 104, .3); padding: 6px 13px; border-radius: 4px;
+  color: var(--lc-ink); background: var(--lc-champagne-soft);
+  border: 1px solid var(--lc-champagne); padding: 6px 13px; border-radius: 4px;
 }
 
 /* ---------- Avant / pendant / apres ---------- */
@@ -369,12 +453,12 @@
 /* ---------- Chiffres de marge ---------- */
 .lc-figures { margin-top: 30px; display: grid; grid-template-columns: repeat(2, minmax(0, 190px)); gap: 12px; }
 .lc-figures > div {
-  padding: 15px 18px; border: 1px solid var(--lc-line); border-radius: 10px;
-  background: rgba(18, 21, 16, .5); backdrop-filter: blur(8px);
+  padding: 15px 18px; border: 1px solid var(--lc-line); border-radius: var(--lc-r-lg);
+  background: var(--lc-feuille);
 }
 .lc-figures dt { font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--lc-faint); }
 .lc-figures dd { margin: 5px 0 0; font-family: var(--lc-display); font-size: 1.5rem; font-variant-numeric: tabular-nums; }
-.lc-figure-hero { border-color: rgba(214, 175, 104, .42) !important; }
+.lc-figure-hero { border-color: rgba(138, 96, 36, .42) !important; }
 .lc-figure-hero dd { color: var(--lc-champagne); }
 .lc-figures-note { margin-top: 14px; font-size: .78rem; color: var(--lc-faint); font-style: italic; }
 
@@ -392,7 +476,10 @@
    Ici le contenu est long : on ne le colle pas, il defile normalement
    par-dessus la derniere photo qui reste, elle, en fond.
    ================================================================== */
-.lc-chapter-final { position: relative; }
+/* Fond OPAQUE : cette section defile par-dessus le plateau colle. Sans
+   lui, la planche photographique restait visible derriere les tarifs -
+   invisible tant que les deux etaient sombres, criant sur du papier. */
+.lc-chapter-final { position: relative; background: var(--lc-papier); }
 .lc-final { max-width: var(--lc-max); margin: 0 auto; padding: 34vh 32px 22vh; display: grid; gap: 20vh; }
 .lc-panel {
   position: relative;
@@ -411,7 +498,7 @@
 
 .lc-trades { margin-top: 44px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--lc-line); border: 1px solid var(--lc-line); }
 .lc-trades li {
-  background: rgba(18, 21, 16, .55); padding: 26px 20px;
+  background: var(--lc-feuille); padding: 26px 20px;
   font-family: var(--lc-display); font-size: 1.06rem;
 }
 
@@ -419,19 +506,20 @@
 .lc-plans { margin-top: 46px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
 .lc-plan {
   position: relative; display: flex; flex-direction: column;
-  padding: 28px 24px; border: 1px solid var(--lc-line); border-radius: 14px;
-  background: rgba(18, 21, 16, .55); backdrop-filter: blur(8px);
+  padding: 28px 24px; border: 1px solid var(--lc-line); border-radius: var(--lc-r-lg);
+  background: var(--lc-feuille);
 }
-.lc-plan.is-reco { border-color: rgba(214, 175, 104, .5); background: rgba(214, 175, 104, .07); }
+.lc-plan.is-reco { border-color: rgba(138, 96, 36, .5); background: var(--lc-champagne-soft); }
 .lc-plan-badge {
   position: absolute; top: -10px; left: 24px;
   font-size: .64rem; letter-spacing: .12em; text-transform: uppercase; font-weight: 600;
-  background: var(--lc-champagne); color: var(--lc-ink); padding: 4px 11px; border-radius: 999px;
+  /* Encre claire sur le laiton : l'encre sombre n'y tenait qu'a 3.02:1. */
+  background: var(--lc-champagne); color: var(--lc-papier); padding: 4px 11px; border-radius: var(--lc-r-pill);
 }
 .lc-plan-name { font-family: var(--lc-display); font-size: 1.24rem; }
-.lc-plan-hook { margin-top: 6px; font-size: .85rem; color: var(--lc-faint); min-height: 2.6em; }
+.lc-plan-hook { margin-top: 6px; font-size: .85rem; color: var(--lc-muted); min-height: 2.6em; }
 .lc-plan-price { margin: 16px 0 22px; font-family: var(--lc-display); font-size: 2.1rem; }
-.lc-plan-price span { font-family: var(--lc-sans); font-size: .82rem; color: var(--lc-faint); }
+.lc-plan-price span { font-family: var(--lc-sans); font-size: .82rem; color: var(--lc-muted); }
 .lc-plan-feats { display: grid; gap: 9px; margin-bottom: 26px; flex: 1; }
 .lc-plan-feats li { position: relative; padding-left: 19px; font-size: .87rem; color: var(--lc-muted); }
 .lc-plan-feats li::before { content: ""; position: absolute; left: 0; top: .6em; width: 6px; height: 1px; background: var(--lc-champagne); }
@@ -442,9 +530,10 @@
    palier de plus : encadre, sur un fond distinct des cartes de tarifs. */
 .lc-offer {
   margin-top: 42px; display: grid; grid-template-columns: 1.25fr .75fr; gap: 44px;
-  padding: 38px 40px; border: 1px solid rgba(214, 175, 104, .34); border-radius: 16px;
-  background: linear-gradient(140deg, rgba(214, 175, 104, .09), rgba(18, 21, 16, .6));
-  backdrop-filter: blur(8px);
+  padding: 38px 40px; border: 1px solid var(--lc-champagne); border-radius: var(--lc-r-lg);
+  /* L'offre optionnelle se distingue par un lavis de laiton, pas par un
+     degrade vers le sombre : sur papier, ce degrade virait au gris sale. */
+  background: var(--lc-champagne-soft);
 }
 .lc-offer-main .lc-lead { margin-top: 0; }
 /* Deux blocs distincts et non une suite "490 puis 19" : le second doit se
@@ -453,24 +542,24 @@
 .lc-offer-prices { display: flex; flex-wrap: wrap; gap: 14px; margin: 28px 0 20px; }
 .lc-offer-price {
   position: relative; flex: 1 1 210px;
-  padding: 16px 18px; border: 1px solid var(--lc-line); border-radius: 12px;
-  background: rgba(18, 21, 16, .4);
+  padding: 16px 18px; border: 1px solid var(--lc-line); border-radius: var(--lc-r-lg);
+  background: var(--lc-feuille);
 }
 .lc-offer-price.is-option {
-  border-style: dashed; border-color: rgba(214, 175, 104, .5);
-  background: rgba(214, 175, 104, .06);
+  border-style: dashed; border-color: rgba(138, 96, 36, .5);
+  background: rgba(138, 96, 36, .06);
 }
 .lc-offer-flag {
   display: inline-block; margin-bottom: 8px;
   font-size: .64rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase;
-  color: var(--lc-champagne); background: var(--lc-champagne-soft);
-  border: 1px solid rgba(214, 175, 104, .42); border-radius: 999px; padding: 3px 10px;
+  color: var(--lc-ink); background: var(--lc-champagne-soft);
+  border: 1px solid var(--lc-champagne); border-radius: var(--lc-r-pill); padding: 3px 10px;
 }
 .lc-offer-amount { display: block; font-family: var(--lc-display); font-size: 2.1rem; font-weight: 500; line-height: 1.1; }
 .lc-offer-unit { display: block; margin-top: 5px; font-size: .84rem; color: var(--lc-muted); }
 .lc-offer-note { font-size: .9rem; color: var(--lc-muted); max-width: 52ch; }
 .lc-offer-list { display: grid; gap: 13px; align-content: start; padding-top: 6px; }
-.lc-offer-list li { position: relative; padding-left: 22px; font-size: .93rem; color: var(--lc-white); }
+.lc-offer-list li { position: relative; padding-left: 22px; font-size: .93rem; color: var(--lc-ink); }
 .lc-offer-list li::before {
   content: ""; position: absolute; left: 0; top: .52em;
   width: 9px; height: 9px; border-radius: 50%;
@@ -509,7 +598,7 @@
   font-variant-numeric: tabular-nums; transition: color .3s;
 }
 .lc-progress i {
-  font-style: normal; font-size: .72rem; color: var(--lc-white);
+  font-style: normal; font-size: .72rem; color: var(--lc-ink);
   max-width: 0; overflow: hidden; white-space: nowrap; opacity: 0;
   transition: max-width .45s var(--lc-ease), opacity .35s;
 }
@@ -518,30 +607,46 @@
 @media (max-width: 1100px) { .lc-progress { display: none; } }
 
 /* ============================ FOOTER ============================ */
-.lc-footer { position: relative; z-index: 3; background: var(--lc-ink-2); border-top: 1px solid var(--lc-line); }
+/* LE PIED EST LE SEUL PLAN SOMBRE de la page - l'echo de la colonne de
+   navigation du produit. Il herite donc des tokens SUR SOMBRE, et pas de
+   ceux du papier.
+   Ils y etaient encore : `--lc-muted` (#55584F) est une encre calibree
+   pour le papier, et sur ce fond elle tombait a 2.12:1. Dix-neuf des vingt
+   textes du pied echouaient, dont le nom de la marque a 1.09:1 -
+   litteralement invisible. Le meme piege que le laiton du produit, qui a
+   sa variante `--sa-laiton-sur-sombre` pour cette raison exacte. */
+.lc-footer {
+  position: relative; z-index: 3;
+  background: var(--lc-sombre); border-top: 1px solid var(--lc-sombre);
+  color: var(--lc-sur-sombre);
+}
 .lc-footer-in {
   max-width: var(--lc-max); margin: 0 auto; padding: 72px 32px 40px;
   display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 48px;
 }
 .lc-footer-brand { max-width: 300px; }
-.lc-footer-baseline { margin-top: 16px; font-size: .9rem; color: var(--lc-muted); }
+.lc-footer-baseline { margin-top: 16px; font-size: .9rem; color: var(--lc-sur-sombre-muted); }
 .lc-footer-brand .lc-btn { margin-top: 22px; }
 .lc-footer-col h3 {
   font-family: var(--lc-sans); font-size: .7rem; font-weight: 600;
-  letter-spacing: .14em; text-transform: uppercase; color: var(--lc-champagne); margin-bottom: 16px;
+  letter-spacing: .14em; text-transform: uppercase; color: var(--lc-laiton-sur-sombre); margin-bottom: 16px;
 }
 .lc-footer-col ul { display: grid; gap: 11px; }
-.lc-footer-col a { font-size: .89rem; color: var(--lc-muted); transition: color .25s; }
-.lc-footer-col a:hover { color: var(--lc-white); }
+.lc-footer-col a { font-size: .89rem; color: var(--lc-sur-sombre-muted); transition: color .25s; }
+.lc-footer-col a:hover { color: var(--lc-sur-sombre); }
 .lc-footer-bottom {
   max-width: var(--lc-max); margin: 0 auto; padding: 22px 32px 34px;
-  border-top: 1px solid var(--lc-line);
+  border-top: 1px solid rgba(244, 241, 234, .16);
   display: flex; justify-content: space-between; gap: 18px; flex-wrap: wrap;
-  font-size: .82rem; color: var(--lc-faint);
+  font-size: .82rem; color: var(--lc-sur-sombre-muted);
 }
 .lc-footer-legal { display: flex; flex-wrap: wrap; gap: 20px; }
 .lc-footer-legal a { transition: color .25s; }
-.lc-footer-legal a:hover { color: var(--lc-champagne); }
+.lc-footer-legal a:hover { color: var(--lc-laiton-sur-sombre); }
+/* Le bouton du pied : le vert d'atelier passe mal sur l'encre sombre. Un
+   bouton clair y tient le meme role que le vert sur le papier. */
+.lc-footer .lc-btn-primary { background: var(--lc-sur-sombre); color: var(--lc-sombre); border-color: var(--lc-sur-sombre); }
+.lc-footer .lc-btn-primary:hover { background: #fff; border-color: #fff; }
 @media (max-width: 900px) {
   .lc-footer-in { grid-template-columns: 1fr 1fr; gap: 38px; padding-top: 56px; }
   .lc-footer-brand { grid-column: 1 / -1; max-width: none; }
@@ -563,8 +668,8 @@
 /* Marqueur visible pour tout ce qui doit encore etre renseigne par
    l'editeur du site : impossible de le laisser passer en production. */
 .lc-todo {
-  display: inline-block; background: rgba(214, 175, 104, .16); color: var(--lc-champagne);
-  border: 1px dashed rgba(214, 175, 104, .5); border-radius: 4px;
+  display: inline-block; background: rgba(138, 96, 36, .16); color: var(--lc-champagne);
+  border: 1px dashed rgba(138, 96, 36, .5); border-radius: 4px;
   padding: 1px 8px; font-size: .86em; font-weight: 600;
 }
 .lc-legal-back { display: inline-flex; align-items: center; gap: 9px; margin-top: 56px; font-size: .9rem; }
@@ -611,23 +716,26 @@
 .lc-static .lc-layers, .lc-static .lc-scrim, .lc-static .lc-spacer, .lc-static .lc-progress { display: none; }
 .lc-static .lc-overlay { position: relative; inset: auto; }
 .lc-static .lc-chapters { margin-top: 0; }
-.lc-static .lc-scene {
-  position: relative; inset: auto; min-height: 100vh;
-  background-size: cover; background-position: center; pointer-events: auto;
+.lc-static .lc-scene { position: relative; inset: auto; pointer-events: auto; }
+/* Plus de voile : la photographie n'est plus derriere le texte, elle est
+   posee sous lui, dans le meme fil de lecture. C'est la meme planche que
+   dans la version animee, simplement en flux. */
+.lc-static .lc-scene::before { content: none; }
+.lc-static .lc-scene-in {
+  position: relative; z-index: 1; height: auto;
+  max-width: var(--lc-max); margin: 0 auto; padding: 12vh 32px;
+  display: grid; align-content: start; gap: 44px;
 }
-/* Le voile global etant desactive, chaque section porte le sien. */
-.lc-static .lc-scene::before {
-  content: ""; position: absolute; inset: 0;
-  background: linear-gradient(90deg, rgba(18, 21, 16, .86) 0%, rgba(18, 21, 16, .55) 55%, rgba(18, 21, 16, .35) 100%);
+.lc-planche-statique {
+  border: 1px solid var(--lc-line-fort); background: var(--lc-creux); overflow: hidden;
+  box-shadow: 0 18px 44px -28px rgba(28, 30, 26, .45);
 }
-/* `height: 100%` dans un parent de hauteur auto ne vaut rien : sans
-   min-height, `align-content: center` n'a rien a centrer et le texte se
-   colle en haut de section. */
-.lc-static .lc-scene-in { position: relative; z-index: 1; height: auto; min-height: 100vh; padding-block: 14vh; }
-.lc-static .lc-chapter-final { background-size: cover; background-position: center; background-attachment: local; }
-.lc-static .lc-chapter-final::before {
-  content: ""; position: absolute; inset: 0; background: rgba(18, 21, 16, .86);
-}
+.lc-planche-statique img { width: 100%; height: min(52vh, 460px); object-fit: cover; }
+.lc-static .lc-stage { padding: 0; display: block; }
+.lc-static .lc-chapter-final.lc-sans-photo { background-image: none; }
+/* Le voile de la version sans mouvement n'a plus de photographie a
+   assombrir : le chapitre final est sur papier comme le reste. */
+.lc-static .lc-chapter-final::before { content: none; }
 .lc-static .lc-final { position: relative; z-index: 1; }
 .lc-static .lc-phase span { position: static; opacity: 1; transform: none; display: inline; margin-right: .5em; }
 .lc-static .lc-phase { min-height: 0; margin-bottom: 20px; }
