@@ -968,7 +968,6 @@ input[readonly] { background: var(--sa-surface-2); }
    (prestations, fournisseurs, equipe...) restent sur .item-card.
    ===================================================================== */
 .list { display: flex; flex-direction: column; }
-.empty-state { text-align: center; padding: 64px 20px; line-height: 1.6; font-size: var(--sa-text-base); }
 .empty-state strong { display: block; color: var(--sa-text); font-size: var(--sa-text-md); font-weight: var(--sa-weight-semibold); margin-bottom: 6px; }
 .empty-state .btn-primary, .empty-state .btn-secondary { margin-top: var(--sa-space-5); }
 
@@ -1953,13 +1952,60 @@ label { color: var(--sa-text-muted); }
 }
 
 /* =====================================================================
-   ETATS — aucun etat generique
+   ETATS VIDES — le premier ecran d'un artisan
+   ---------------------------------------------------------------------
+   L'intitule de cette section disait « aucun etat generique » au-dessus
+   d'une regle qui en dessinait un : un grand encadre en pointilles,
+   centre, avec « Aucun devis pour le moment. » dedans. Personne ne s'en
+   etait apercu parce que ces 41 etats n'avaient jamais ete rendus a
+   l'ecran - le jeu d'essai a toujours des donnees. Or c'est TOUT ce qu'un
+   nouvel inscrit voit : treize pages qui lui annoncent des absences.
+
+   Ils sont maintenant composes comme le reste du produit : cadres a
+   gauche, la phrase en Fraunces comme les autres ledes, un filet en tete
+   plutot qu'une boite, et - quand il y a un geste a faire - le bouton
+   juste dessous, la ou l'oeil arrive.
    ===================================================================== */
 .empty-state {
+  padding: var(--sa-space-6) 0 var(--sa-space-8);
+  border: 0; border-top: 1px solid var(--sa-border); border-radius: 0;
   background: transparent;
-  border: 1px dashed var(--sa-border-strong);
-  border-radius: var(--sa-radius-lg);
+  text-align: left;
+  font-family: var(--sa-font-display);
+  font-size: clamp(1.25rem, 1.9vw, 1.6rem); font-weight: 500; line-height: 1.25;
+  color: var(--sa-text);
+}
+.empty-state p {
+  margin: 8px 0 0; max-width: 52ch;
+  font-family: var(--sa-font); font-size: var(--sa-text-sm); font-weight: 400;
+  line-height: 1.55; color: var(--sa-text-muted);
+}
+/* Vide parce qu'on FILTRE, ce qui n'est pas la meme chose : il y a bien des
+   donnees, elles ne sont juste pas dans cet onglet. Rien a annoncer, rien a
+   proposer - une ligne discrete suffit. */
+.empty-state.est-filtre {
+  padding: var(--sa-space-5) 0;
+  font-family: var(--sa-font); font-size: var(--sa-text-sm); font-weight: 400;
   color: var(--sa-text-muted);
+}
+/* Quand la liste est VRAIMENT vide - pas seulement filtree - tout l'appareil
+   de tri disparait avec elle. Un compte du jour affichait cinq onglets
+   marques (0), un champ de recherche sur rien et quatre listes de tri :
+   un mur de commandes inutilisables, au-dessus d'un message disant qu'il
+   n'y a rien. Elles reviennent des qu'il y a une ligne a filtrer.
+   `:not(.est-filtre)` est essentiel : un etat vide DU A un filtre doit au
+   contraire garder les commandes, sans quoi on ne peut plus revenir. */
+.view:has(.list > .empty-state:not(.est-filtre)) .list-header-row,
+.view:has(.list > .empty-state:not(.est-filtre)) .list-toolbar,
+.view:has(.list > .empty-state:not(.est-filtre)) .filters,
+.view:has(.list > .empty-state:not(.est-filtre)) .vue-barre-filtres,
+.view:has(.list > .empty-state:not(.est-filtre)) #devis-filters,
+.view:has(.list > .empty-state:not(.est-filtre)) #facture-filters { display: none; }
+/* Le cadre de la liste etait ferme par l'en-tete de colonnes : sans elle il
+   ne restait qu'une boite a trois cotes autour du message. */
+.view:has(.list > .empty-state) #devis-list,
+.view:has(.list > .empty-state) #factures-list {
+  border: 0; border-radius: 0; padding: 0;
 }
 .skeleton {
   background: linear-gradient(100deg, var(--sa-surface) 30%, var(--sa-surface-2) 50%, var(--sa-surface) 70%);

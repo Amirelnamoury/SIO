@@ -292,4 +292,36 @@ for (const page of ["devis-public.html", "facture-public.html", "portail-client.
   }
 }
 
+// ---------------------------------------------------------------------
+// LES ETATS VIDES — LE PREMIER ECRAN D'UN ARTISAN
+// ---------------------------------------------------------------------
+// L'application compte une quarantaine d'etats vides ; aucun n'avait jamais
+// ete rendu, le jeu d'essai ayant toujours des donnees. Or c'est tout ce
+// qu'un nouvel inscrit voit. `outils/jeu-vide.js` existe pour cela.
+assert.ok(fs.existsSync(path.join(frontendDir, "outils", "jeu-vide.js")),
+  "le jeu d'essai vide doit rester : sans lui, plus personne ne regarde le premier ecran");
+
+// L'encadre en pointilles a disparu - la section qui le dessinait
+// s'intitulait pourtant « aucun etat generique ».
+assert.doesNotMatch(styleSource, /\.empty-state \{[^}]*dashed/,
+  "un etat vide ne s'annonce pas dans une boite en pointilles");
+
+// Une liste vide ne montre ni ses en-tetes de colonnes ni son appareil de
+// tri : ils ne trient rien. Mais un vide DU A UN FILTRE doit les garder,
+// sans quoi on ne peut plus revenir en arriere.
+assert.match(styleSource, /:has\(\.list > \.empty-state:not\(\.est-filtre\)\)/,
+  "seul le vide REEL masque les commandes, pas le vide filtre");
+
+// Les boutons des etats vides sont crees apres coup : les gestionnaires
+// d'origine, branches par querySelector, ne retiennent que le premier
+// element et les auraient laisses muets.
+assert.match(appSource, /\.empty-state \[data-action\]/,
+  "les boutons des etats vides doivent etre delegues, sinon ils ne font rien");
+
+// `fmtEuro(null)` renvoyait la valeur nulle : interpolee, elle s'ecrivait
+// « null » en toutes lettres. Sur un compte du jour, la page Statistiques
+// affichait « Panier moyen : null ».
+assert.match(appSource, /function fmtEuro\(n\) \{\s*\n\s*if \(n === null \|\| n === undefined\) return "—";/,
+  "un montant absent se rend par un tiret, jamais par la valeur nulle");
+
 console.log("OK - reference-ui-reproduction.test.mjs");

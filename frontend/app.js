@@ -46,9 +46,22 @@ function fmtDateCourte(iso) {
   if (!iso) return "-";
   return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 }
+// Rend un TIRET quand le montant est absent, jamais `null`. La version
+// precedente renvoyait la valeur nulle telle quelle : interpolee dans un
+// gabarit, elle s'ecrivait « null » en toutes lettres. Le defaut ne se
+// voyait que sur les montants reellement absents - c'est-a-dire, pour
+// l'essentiel, sur un compte qui vient d'etre cree. Un artisan inscrit du
+// jour lisait « Panier moyen : null » sur sa page Statistiques.
+// Les rares appels qui voulaient une chaine VIDE plutot qu'un tiret le
+// demandent maintenant explicitement (fmtEuroOuRien).
 function fmtEuro(n) {
-  if (n === null || n === undefined) return null;
+  if (n === null || n === undefined) return "—";
   return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(n);
+}
+/** Comme fmtEuro, mais rend une chaine vide pour un montant absent : sert la
+ *  ou une cellule sans montant doit rester blanche plutot que barree. */
+function fmtEuroOuRien(n) {
+  return n === null || n === undefined ? "" : fmtEuro(n);
 }
 
 function skeletonCards(n = 3) {
@@ -996,7 +1009,7 @@ async function loadEquipe() {
   try {
     const equipe = await Api.listEquipe();
     if (equipe.length === 0) {
-      list.innerHTML = '<div class="empty-state">Personne dans votre équipe pour le moment. Vous êtes seul(e) sur ce compte.</div>';
+      list.innerHTML = '<div class="empty-state">Personne dans votre équipe pour le moment. Vous êtes la seule personne sur ce compte.</div>';
       return;
     }
     list.innerHTML = equipe.map(renderMembreCard).join("");
@@ -1506,7 +1519,7 @@ async function loadStatistiques() {
       ${saSection("Performance commerciale", `
         <div class="stats-commercial-funnel">${commercialFunnelHtml}</div>
         <div class="stats-metric-list">
-          <div><span>Taux de signature</span><strong>${a.taux_acceptation} %</strong></div>
+          <div><span>Taux de signature</span><strong>${a.taux_acceptation === null || a.taux_acceptation === undefined ? "—" : a.taux_acceptation + " %"}</strong></div>
           <div><span>Panier moyen</span><strong>${fmtEuro(a.panier_moyen)}</strong></div>
           <div><span>Valeur du pipeline</span><strong>${fmtEuro(a.valeur_pipeline)}</strong></div>
         </div>`)}
@@ -1637,13 +1650,17 @@ async function loadAvis() {
 function renderAvisListFiltered() {
   const list = document.getElementById("avis-list");
   if (avisCache.length === 0) {
-    list.innerHTML = '<div class="empty-state">Aucun avis pour le moment. Saisissez-en un, ou envoyez une demande d\'avis depuis la fiche d\'un client.</div>';
+    list.innerHTML = etatVide(
+      "Vos avis clients vivront ici.",
+      "Envoyez une demande depuis la fiche d'un client, ou saisissez un avis reçu par téléphone. Vous choisissez ensuite lesquels paraissent sur votre site.",
+      { action: "show-avis-request-form", libelle: "Demander un avis" },
+    );
     return;
   }
   const filtres = currentAvisFilter === "" ? avisCache : avisCache.filter((a) => (currentAvisFilter === "1" ? a.publie_site : !a.publie_site));
   list.innerHTML = filtres.length
     ? `<div class="avis-grid">${filtres.map(renderAvisCard).join("")}</div>`
-    : '<div class="empty-state">Aucun avis dans cet onglet.</div>';
+    : etatFiltre("Aucun avis dans cet onglet.");
 }
 
 // Un avis EST une citation : c'est le temoignage qui doit dominer, pas le
@@ -1850,7 +1867,12 @@ async function loadNotifications() {
 function renderNotificationsFiltered() {
   const list = document.getElementById("notifications-list");
   if (notificationsCache.length === 0) {
-    list.innerHTML = '<div class="empty-state">Rien à signaler. Tout est à jour.</div>';
+    // Pas de bouton : cette page se remplit toute seule. Proposer une action
+    // reviendrait a inventer un geste que l'artisan n'a pas a faire.
+    list.innerHTML = etatVide(
+      "Rien à signaler.",
+      "Un devis lu sans réponse, une facture qui dépasse son échéance, une assurance qui arrive à terme : c'est ici que le produit vous préviendra.",
+    );
     return;
   }
   const base = currentNotificationsFilter === "non-lues" ? notificationsCache.filter((n) => !n.lu)
@@ -1865,7 +1887,7 @@ function renderNotificationsFiltered() {
     ? base.filter((n) => moduleTypes[currentNotificationModule]?.has(n.type))
     : base;
   if (filtrees.length === 0) {
-    list.innerHTML = '<div class="empty-state">Aucune notification dans cet onglet.</div>';
+    list.innerHTML = etatFiltre("Aucune notification dans cet onglet.");
     return;
   }
   const aujourdHui = new Date();
@@ -2624,6 +2646,41 @@ function dashLede(nbAFaire, retards, montantRetard) {
 /** Une section composee : intitule dans la marge, contenu a droite. C'est
  *  la structure d'un document technique, et c'est ce qui distingue les
  *  pages composees des pages denses. Voir DIRECTION-ARTISTIQUE.md. */
+/** Un ecran vide qui INVITE au lieu de constater une absence.
+ *
+ *  « Aucun devis pour le moment. » est une phrase de base de donnees : elle
+ *  decrit l'etat d'une table. Un artisan qui vient de s'inscrire n'a pas
+ *  besoin qu'on lui apprenne qu'il n'a pas encore de devis - il a besoin de
+ *  savoir ce que cette page fera pour lui et par ou commencer.
+ *
+ *  `action` est facultatif : certaines pages se remplissent toutes seules
+ *  (les notifications, les avis recus) et n'ont aucun geste a proposer. */
+function etatVide(titre, phrase = "", action = null) {
+  return `<div class="empty-state">${escapeHtml(titre)}
+    ${phrase ? `<p>${phrase}</p>` : ""}
+    ${action ? `<button type="button" class="btn-primary" data-action="${action.action}">${escapeHtml(action.libelle)}</button>` : ""}
+  </div>`;
+}
+
+/** Vide parce qu'un filtre exclut tout : il y a bien des donnees ailleurs. */
+function etatFiltre(phrase) {
+  return `<div class="empty-state est-filtre">${escapeHtml(phrase)}</div>`;
+}
+
+/* Les boutons des etats vides portent le meme `data-action` que ceux de
+   l'en-tete de page - mais les gestionnaires d'origine sont branches par
+   `querySelector`, qui ne retient QUE LE PREMIER element. Un bouton cree
+   plus tard dans un etat vide serait donc reste muet.
+   Plutot que de rebrancher chaque formulaire, on delegue : un clic dans un
+   etat vide releve le bouton d'en-tete correspondant et le declenche. Une
+   seule source de verite pour l'ouverture des formulaires. */
+document.addEventListener("click", (e) => {
+  const bouton = e.target.closest(".empty-state [data-action]");
+  if (!bouton) return;
+  const cible = document.querySelector(`.view-header [data-action="${bouton.dataset.action}"], .subsection-header [data-action="${bouton.dataset.action}"]`);
+  if (cible && cible !== bouton) { e.preventDefault(); cible.click(); }
+});
+
 function saSection(titre, corps, note = "", classe = "") {
   if (!corps) return "";
   return `
@@ -3104,7 +3161,7 @@ function clientResumeHtml(r) {
     </div>`;
   return `
   <div class="fiche-chiffres">
-    ${chiffre("Facturé", fmtEuro(r.valeur_totale) || "—", "depuis le début")}
+    ${chiffre("Facturé", fmtEuro(r.valeur_totale), "depuis le début")}
     ${chiffre("Impayé", r.impayes ? fmtEuro(r.impayes) : "—",
       r.impayes ? "à recouvrer" : "rien en attente", r.impayes > 0 ? "est-du" : "")}
     ${chiffre("Chantiers", String(r.nb_chantiers ?? 0), r.nb_chantiers ? "au total" : "aucun à ce jour")}
@@ -3151,7 +3208,7 @@ function clientAffairesHtml(clientId, chantiers, devis, factures) {
     ${bloc("Devis", sesDevis.length, sesDevis.map((d) => {
       const meta = DEVIS_STATUT_META[d.statut] || { label: d.statut };
       return ligne(`data-action="ouvrir-devis-depuis-client" data-id="${d.id}" role="button" tabindex="0"`,
-        escapeHtml(d.numero || `Devis #${d.id}`), escapeHtml(meta.label), fmtEuro(d.montant_ttc) || "");
+        escapeHtml(d.numero || `Devis #${d.id}`), escapeHtml(meta.label), fmtEuroOuRien(d.montant_ttc));
     }).join(""))}
 
     ${bloc("Factures", sesFactures.length, sesFactures.map((f) => {
@@ -3159,7 +3216,7 @@ function clientAffairesHtml(clientId, chantiers, devis, factures) {
       const impaye = (f.montant_restant || 0) > 0 && f.statut !== "payee";
       return ligne(`data-action="ouvrir-facture-depuis-client" data-id="${f.id}" role="button" tabindex="0"`,
         escapeHtml(f.numero || `Facture #${f.id}`), escapeHtml(meta.label),
-        impaye ? fmtEuro(f.montant_restant) : fmtEuro(f.montant_ttc) || "", impaye);
+        impaye ? fmtEuro(f.montant_restant) : fmtEuroOuRien(f.montant_ttc), impaye);
     }).join(""))}`;
 }
 
@@ -3468,7 +3525,7 @@ async function openArchivesPanel(entite) {
             <button type="button" class="btn-sm btn-sm-primary" data-action="restaurer-archive" data-id="${item.id}">Restaurer</button>
           </div>
         </div>`).join("")
-      : `<div class="empty-state">Aucun element archive.</div>`;
+      : `<div class="empty-state">Aucun élément archivé.</div>`;
   } catch (err) {
     content.innerHTML = `<div class="empty-state">Erreur : ${escapeHtml(err.message)}</div>`;
   }
@@ -3815,6 +3872,12 @@ function devisKpiBandHtml(tousDevis, nbARelancer) {
     .filter((d) => devisDueIds.has(d.id))
     .reduce((s, d) => s + (d.montant_ttc || 0), 0);
 
+  // Compte sans un seul devis : cette lede n'a rien a dire, et « Rien a
+  // relancer aujourd'hui » au-dessus de « Vos devis vivront ici » empile
+  // deux titres dont le premier commente une activite qui n'a pas commence.
+  // L'etat vide de la liste prend seul la parole.
+  if (tousDevis.length === 0) return "";
+
   let titre, detail, alerte = false;
   if (nbARelancer) {
     titre = nbARelancer === 1 ? "Un devis à relancer aujourd'hui." : `${nbARelancer} devis à relancer aujourd'hui.`;
@@ -3894,11 +3957,15 @@ function devisMatchesFiltres(d) {
 function renderDevisListFiltered() {
   const list = document.getElementById("devis-list");
   if (devisListCache.length === 0) {
-    list.innerHTML = '<div class="empty-state">Aucun devis pour le moment.</div>';
+    list.innerHTML = etatVide(
+      "Vos devis vivront ici.",
+      "Chaque devis envoyé est suivi jusqu'à la réponse du client : consulté ou non, relancé ou non. Vous verrez d'un coup d'œil lesquels attendent un geste de votre part.",
+      { action: "show-devis-form", libelle: "Créer un devis" },
+    );
     return;
   }
   const filtres = devisSort(devisListCache.filter(devisMatchesFiltres));
-  list.innerHTML = filtres.length ? filtres.map(renderDevisCard).join("") : '<div class="empty-state">Aucun devis dans ce filtre.</div>';
+  list.innerHTML = filtres.length ? filtres.map(renderDevisCard).join("") : etatFiltre("Aucun devis ne correspond à ce filtre.");
   reapplyListSearch("devis-search", "#devis-list .list-row");
 }
 
@@ -4829,7 +4896,16 @@ function renderFacturesListFiltered() {
   }
   affichees = factureSort(affichees.filter(factureMatchesFiltresSupp));
   if (affichees.length === 0) {
-    list.innerHTML = '<div class="empty-state">Aucune facture dans ce filtre.</div>';
+    // On distinguait mal les deux cas : un artisan sans la moindre facture
+    // lisait « Aucune facture dans ce filtre » alors qu'aucun filtre n'etait
+    // pose. C'est le genre de phrase qui fait douter de l'outil.
+    list.innerHTML = facturesCache.length === 0
+      ? etatVide(
+          "Vos factures vivront ici.",
+          "Émettez-les depuis un devis signé ou directement, suivez les encaissements, et voyez tout de suite ce qui a dépassé son échéance.",
+          { action: "show-facture-form", libelle: "Créer une facture" },
+        )
+      : etatFiltre("Aucune facture ne correspond à ce filtre.");
     reapplyListSearch("factures-search", "#factures-list .list-row");
     return;
   }
@@ -5827,7 +5903,11 @@ async function loadChantiers() {
     }
     if (kpiBand) kpiBand.innerHTML = chantiers.length ? chantiersKpiBandHtml(chantiers) : "";
     if (chantiers.length === 0) {
-      list.innerHTML = '<div class="empty-state">Aucun chantier pour le moment.</div>';
+      list.innerHTML = etatVide(
+        "Vos chantiers vivront ici.",
+        "Avancement, budget consommé, prochaine action : chaque chantier tient sur une carte, et celles qui dérapent se voient sans qu'on les cherche.",
+        { action: "show-chantier-form", libelle: "Créer un chantier" },
+      );
       return;
     }
     renderChantiersListFiltered();
@@ -6757,9 +6837,13 @@ function renderTacheRow(t) {
 function renderTachesFiltered() {
   const list = document.getElementById("taches-list");
   if (tachesCache.length === 0) {
-    list.innerHTML = `<div class="empty-state">${currentTacheFilter === "faite"
-      ? "Aucune tâche terminée pour le moment."
-      : "<strong>Rien à faire.</strong><br><br>Les tâches créées depuis un chantier ou un devis signé viendront se ranger ici automatiquement."}</div>`;
+    list.innerHTML = currentTacheFilter === "faite"
+      ? etatFiltre("Aucune tâche terminée pour le moment.")
+      : etatVide(
+          "Rien à faire aujourd'hui.",
+          "Les tâches créées depuis un chantier ou un devis signé viendront se ranger ici toutes seules. Vous pouvez aussi en ajouter une à la main.",
+          { action: "show-tache-form", libelle: "Nouvelle tâche" },
+        );
     return;
   }
   if (currentTacheFilter !== "a_faire") {
@@ -6777,7 +6861,7 @@ function renderTachesFiltered() {
       </div>
       ${sortTachesForDisplay(parGroupe[g]).map(renderTacheRow).join("")}
     `).join("");
-  list.innerHTML = html || '<div class="empty-state">Aucune tâche dans ce filtre.</div>';
+  list.innerHTML = html || etatFiltre("Aucune tâche ne correspond à ce filtre.");
 }
 
 async function loadTaches() {
@@ -7065,7 +7149,11 @@ async function loadDocuments() {
         : "";
     }
     if (documents.length === 0) {
-      list.innerHTML = '<div class="empty-state">Aucun document pour le moment. Ajoutez vos contrats, attestations d\'assurance, plans ou photos de chantier.</div>';
+      list.innerHTML = etatVide(
+        "Vos documents vivront ici.",
+        "Contrats, attestations d'assurance, plans, photos de chantier. Ils se rangent d'eux-mêmes par client et par chantier, pour que vous retrouviez une pièce sans vous souvenir de son nom.",
+        { action: "show-document-form", libelle: "Ajouter un document" },
+      );
       return;
     }
     renderDocumentsListFiltered();
