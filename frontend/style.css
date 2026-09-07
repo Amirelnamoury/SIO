@@ -1263,20 +1263,11 @@ input[type="checkbox"], input[type="radio"] { width: 24px; height: 24px; flex-sh
 
 #clients-directory .crm-row { min-height: 75px; margin-bottom: 8px; padding: 11px 14px; background: var(--sa-surface); border: 1px solid var(--sa-border); border-radius: var(--sa-radius-lg); }
 #clients-directory .crm-row:first-child { border-top: 1px solid var(--sa-border); }
-#clients-directory .crm-avatar { width: 40px; height: 40px; background: #e6dcc4; color: #26231d; }
+#clients-directory .crm-avatar { width: 40px; height: 40px; background: var(--sa-surface-2); color: var(--sa-text-muted); border: 1px solid var(--sa-border); }
 #clients-directory .crm-main { min-width: 250px; }
 #clients-directory .crm-stat:nth-of-type(3) { width: 235px; }
 #clients-directory .crm-stat:nth-of-type(4) { width: 180px; }
 #clients-directory .crm-stat:nth-of-type(5) { width: 160px; }
-.clients-header-actions { flex-direction: column; align-items: flex-end; gap: 6px; margin-top: 0; }
-/* `padding: 0` ramenait ce bouton a 16 px de haut - sous le seuil de 24 px
-   d'une cible de pointage. Le retrait vertical le retablit sans lui rendre
-   le cadre dont on ne veut pas ici. */
-.clients-header-actions .btn-archives { border: 0; padding: 6px 0; color: var(--sa-accent); }
-.clients-header-actions .btn-primary { margin-top: 0; }
-.clients-toolbar { gap: 8px; flex-wrap: nowrap; }
-.clients-toolbar .list-search { max-width: 380px; margin-right: auto; }
-.clients-toolbar select { min-width: 155px; }
 #clients-kpi-band > .kpi-band { margin-bottom: 40px; }
 .clients-pagination { min-height: 34px; }
 .btn-icon-sm { width: 30px; height: 30px; display: inline-grid; place-items: center; padding: 0; border: 1px solid var(--sa-border); border-radius: var(--sa-radius-sm); background: transparent; color: var(--sa-text-muted); }
@@ -3213,7 +3204,22 @@ label { color: var(--sa-text-muted); }
 /* Le selecteur Jour / Semaine / Mois : meme grammaire que les segments
    d'etat ailleurs dans le produit. */
 .planning-modes, .prospects-modes { background: var(--sa-surface-2); border-radius: var(--sa-radius-sm); }
-.planning-modes .btn-sm-primary, .prospects-modes .btn-sm-primary { background: var(--sa-accent); color: var(--sa-text-on-accent); border-color: var(--sa-accent); }
+/* CHOISIR UN AFFICHAGE N'EST PAS AGIR.
+   Le segment actif portait l'aplat vert de l'action dominante : « Liste de
+   travail » et « Semaine » pesaient donc autant que « + Nouveau contact »
+   ou « + Nouveau rendez-vous », et deux actions majeures se disputaient le
+   meme ecran. Le segment choisi reprend le geste du sommaire - la feuille
+   blanche qui ressort du plan inerte - qui dit « vous etes ici » partout
+   ailleurs dans le produit. */
+.planning-modes .btn-sm-primary, .prospects-modes .btn-sm-primary {
+  background: var(--sa-surface);
+  color: var(--sa-text);
+  border-color: transparent;
+  box-shadow: var(--sa-shadow-feuille);
+  font-weight: var(--sa-weight-semibold);
+}
+.planning-modes .btn-sm:not(.btn-sm-primary):hover,
+.prospects-modes .btn-sm:not(.btn-sm-primary):hover { background: rgba(32, 40, 44, .05); }
 .planning-label { font-family: var(--sa-font-display); font-weight: 600; letter-spacing: 0.02em; color: var(--sa-text); }
 
 /* =====================================================================
@@ -4316,3 +4322,19 @@ body[data-famille="file"] .view-header-actions { align-self: center; }
    redevient du texte cliquable. */
 .fiche-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sa-space-3) var(--sa-space-5); }
 .fiche-actions-secondaires { display: flex; flex-wrap: wrap; gap: var(--sa-space-5); }
+
+/* ---------- Les commandes d'en-tete tiennent sur une ligne ----------
+   Le conteneur des actions se repliait sur la largeur de son plus large
+   bouton : « + Nouveau client » prenait la ligne et « Archives » passait
+   dessous, ou il etait rogne par le bord de la colonne. Deux ou trois
+   commandes courtes n'ont aucune raison de passer a la ligne sur un
+   ecran de bureau ; sous 900 px, elles le peuvent. */
+@media (min-width: 901px) {
+  .view-header-actions { flex-wrap: nowrap; }
+}
+
+/* Une tranche d'anciennete sans facture : elle garde son rang dans
+   l'echelle - c'est ce qui permet de lire « rien au-dela de trente
+   jours » - mais elle s'efface. */
+.balance-tranche.est-vide { opacity: .45; }
+.balance-tranche.est-vide .balance-tranche-label { color: var(--sa-text-faint); }

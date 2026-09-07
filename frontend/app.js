@@ -2883,29 +2883,38 @@ function prospectsRegletteHtml(clients) {
   if (aContacter) signaux.push(`<strong>${aContacter}</strong> à contacter`);
   if (dormants) signaux.push(`<strong class="est-dormant">${dormants}</strong> sans mouvement depuis plus de ${CLIENT_SEUIL_DORMANT} jours`);
 
-  // Sans montant estime, la reglette affichait « — » en gros caracteres
-  // suivi de « de pipeline actif » : une phrase amputee, qui se lit comme un
-  // chiffre qui n'a pas su se calculer. Quand il n'y a rien a chiffrer, on
-  // le dit - et on en profite pour indiquer ou saisir le montant, puisque
-  // c'est precisement le geste qui manque.
-  const aucunMontant = !total;
+  // UNE ECHELLE DE VALEUR N'A DE SENS QUE S'IL Y A DE LA VALEUR.
+  //
+  // La reglette dessinait ses trois etapes quoi qu'il arrive. Sur un
+  // compte ou personne n'a estime de montant - le cas courant, le champ
+  // est facultatif - elle affichait donc « — / 1 prospect », « — /
+  // 0 prospect », « — / 0 prospect » en travers de la largeur : trois
+  // colonnes vides, deux zeros, et une phrase expliquant comment remplir
+  // un champ. Le seul fait utile de l'ecran, « 1 a contacter, 1 sans
+  // mouvement depuis 22 jours », finissait dessous en petits caracteres.
+  //
+  // Sans montant, la reglette disparait et les signaux prennent la
+  // parole. Avec des montants, seules les etapes qui portent quelque
+  // chose sont listees : une etape a zero n'est pas une information, et
+  // elle ne le devient pas parce qu'on lui a reserve une colonne.
+  const signauxHtml = `<p class="reglette-signaux">${signaux.join(" · ")}</p>`;
+  if (!total) return `<section class="reglette est-sans-montant">${signauxHtml}</section>`;
+
+  const portantes = blocs.filter((b) => b.nb || b.valeur);
   return `
-  <section class="reglette ${aucunMontant ? "est-sans-montant" : ""}">
+  <section class="reglette">
     <div class="reglette-total">
-      ${aucunMontant
-        ? `<span class="reglette-total-vide">Aucun montant estimé sur vos prospects actifs.</span>
-           <span class="reglette-total-label">Renseignez-le sur une fiche pour suivre la valeur du pipeline.</span>`
-        : `<span class="reglette-total-valeur">${fmtEuro(total)}</span>
-           <span class="reglette-total-label">de pipeline actif</span>`}
+      <span class="reglette-total-valeur">${fmtEuro(total)}</span>
+      <span class="reglette-total-label">de pipeline actif</span>
     </div>
     <div class="reglette-axe">
-      ${total ? `<div class="reglette-barre">
+      <div class="reglette-barre">
         ${blocs.filter((b) => b.valeur).map((b) => `
           <span class="reglette-seg est-${b.cle}" style="flex:${b.valeur}"
                 title="${b.label} : ${fmtEuro(b.valeur)}"></span>`).join("")}
-      </div>` : ""}
+      </div>
       <div class="reglette-legende">
-        ${blocs.map((b) => `
+        ${portantes.map((b) => `
           <span class="reglette-item">
             <span class="reglette-puce est-${b.cle}" aria-hidden="true"></span>
             <span class="reglette-item-label">${b.label}</span>
@@ -2914,7 +2923,7 @@ function prospectsRegletteHtml(clients) {
           </span>`).join("")}
       </div>
     </div>
-    <p class="reglette-signaux">${signaux.join(" · ")}</p>
+    ${signauxHtml}
   </section>`;
 }
 
@@ -3973,17 +3982,27 @@ function renderClientDirectoryRow(c, chantiers, factures, devis) {
       <div class="crm-name">${escapeHtml(c.nom)}${c.societe ? `<span class="crm-societe">${escapeHtml(c.societe)}</span>` : ""}</div>
       <div class="crm-contact">${escapeHtml(contact || "Pas de coordonnées")}</div>
     </div>
+    <!-- UNE COLONNE VIDE NE PORTE PAS SON INTITULE.
+         « Derniere activite — », « Chantiers — », « Encaisse — » : sur un
+         repertoire de clients recents, les trois colonnes de droite
+         alignaient des tirets sous des libelles, et la page se lisait
+         comme un tableau de bord financier qui n'aurait rien a dire.
+         L'absence est deja une information ; elle n'a pas besoin d'etre
+         etiquetee pour se faire comprendre. -->
     <div class="crm-stat">
-      <div class="crm-stat-label">Dernière activité</div>
-      <div class="crm-stat-value">${activite ? `${escapeHtml(activite.label)} · ${escapeHtml(activite.date)}` : "—"}</div>
+      ${activite ? `
+        <div class="crm-stat-label">Dernière activité</div>
+        <div class="crm-stat-value">${escapeHtml(activite.label)} · ${escapeHtml(activite.date)}</div>` : ""}
     </div>
     <div class="crm-stat">
-      <div class="crm-stat-label">Chantiers</div>
-      <div class="crm-stat-value">${escapeHtml(chantiersTxt)}</div>
+      ${chantiersClient.length ? `
+        <div class="crm-stat-label">Chantiers</div>
+        <div class="crm-stat-value">${escapeHtml(chantiersTxt)}</div>` : ""}
     </div>
     <div class="crm-ca">
-      <div class="crm-stat-label">Encaissé</div>
-      <div class="crm-ca-valeur">${caGenere > 0 ? fmtEuro(caGenere) : "—"}</div>
+      ${caGenere > 0 ? `
+        <div class="crm-stat-label">Encaissé</div>
+        <div class="crm-ca-valeur">${fmtEuro(caGenere)}</div>` : ""}
     </div>
   </div>`;
 }
@@ -5117,13 +5136,21 @@ function tresorerieHeaderHtml(factures) {
           <span class="balance-seg est-${t.cle}" style="flex:${t.montant}"
                 title="${t.label} : ${fmtEuro(t.montant)}"></span>`).join("")}
       </div>` : ""}
+      <!-- UNE TRANCHE VIDE GARDE SON RANG, PAS SES MOTS.
+           Les quatre tranches d'anciennete forment une ECHELLE : les
+           afficher toutes dit « rien au-dela de trente jours », ce qui est
+           une information. Mais elles ecrivaient « — » puis « aucune »
+           sous chacune, soit six mentions de vide en travers de la
+           largeur, pour une seule tranche qui portait quelque chose.
+           L'intitule seul, en gris, dit la meme chose sans le repeter. -->
       <div class="balance-legende">
         ${tranches.map((t) => `
           <span class="balance-tranche${t.nb ? "" : " est-vide"}">
             <span class="balance-puce est-${t.cle}" aria-hidden="true"></span>
             <span class="balance-tranche-label">${t.label}</span>
-            <span class="balance-tranche-montant">${t.montant ? fmtEuro(t.montant) : "—"}</span>
-            <span class="balance-tranche-nb">${t.nb ? `${t.nb} facture${t.nb > 1 ? "s" : ""}` : "aucune"}</span>
+            ${t.nb ? `
+              <span class="balance-tranche-montant">${fmtEuro(t.montant)}</span>
+              <span class="balance-tranche-nb">${t.nb} facture${t.nb > 1 ? "s" : ""}</span>` : ""}
           </span>`).join("")}
       </div>
     </div>
