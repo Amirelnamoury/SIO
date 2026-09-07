@@ -71,6 +71,30 @@ for (const beige of ["#F4F1EA", "#FCFAF5", "#EBE7DE", "#E3DED2", "#8A6024", "#1C
   assert.ok(!style.toUpperCase().includes(beige), `${beige} appartient a la direction abandonnee`);
 }
 
+// L'ecran de connexion portait sa PROPRE feuille de style de 307 lignes -
+// fond quasi noir, photographies d'atelier, laiton sur les onglets, et un
+// jeu de variables independant pour ne dependre de rien. C'etait un
+// produit different a l'entree du produit. Il suit desormais le systeme
+// commun : le brief demande que la connexion soit la continuation
+// naturelle de l'application, pas un second univers pose devant.
+assert.doesNotMatch(index, /href="auth\.css/, "l'ecran de connexion n'a plus de feuille propre");
+assert.match(index, /id="auth-screen"/, "l'ecran de connexion existe toujours");
+assert.match(style, /\.auth-tab\.active \{[\s\S]{0,200}box-shadow: var\(--sa-shadow-feuille\)/,
+  "l'onglet actif reprend le geste employe partout : la feuille qui ressort du plan");
+assert.match(style, /--sa-brand-ground: #1B3A31;/,
+  "le vert de marque relie la connexion, la page publique et l'application");
+
+// LE SUR-TITRE REPETAIT LE SOMMAIRE.
+// Douze vues affichaient « COMMERCIAL », « GESTION », « ORGANISATION » -
+// exactement le libelle du groupe sous lequel elles figurent dans la
+// colonne de gauche, a trois centimetres de la. Il coutait une ligne en
+// haut de chaque ecran et prenait l'accent de marque pour redire une
+// evidence. Le seul qui reste nomme la nature d'une piece.
+const surTitres = [...index.matchAll(/class="view-header-eyebrow"/g)];
+assert.equal(surTitres.length, 1,
+  "un seul sur-titre subsiste : celui du dossier, qui dit prospect ou client");
+assert.match(index, /class="view-header-eyebrow" id="timeline-titre"/);
+
 // ---------------------------------------------------------------------
 // 4. Les regles que l'oeil ne verifie pas
 // ---------------------------------------------------------------------

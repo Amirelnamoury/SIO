@@ -423,7 +423,9 @@ input[readonly] { background: var(--sa-surface-2); }
 /* ---------- Page header : eyebrow / titre / description / actions ---------- */
 .view-header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sa-space-4); margin-bottom: var(--sa-space-5); flex-wrap: wrap; }
 .view-header-text { min-width: 0; }
-.view-header-eyebrow { font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-bold); text-transform: uppercase; letter-spacing: 0.08em; color: var(--sa-accent); margin-bottom: 4px; }
+/* Ne subsiste que sur le dossier client/prospect, ou il nomme la nature
+   de la piece - une information que le sommaire ne porte pas. */
+.view-header-eyebrow { font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-semibold); letter-spacing: 0; color: var(--sa-text-faint); margin-bottom: 4px; }
 .view-header h2 { font-size: var(--sa-text-xl); }
 .view-header-desc { font-size: var(--sa-text-sm); color: var(--sa-text-muted); margin: 4px 0 0; max-width: 56ch; }
 .view-header .btn-primary { margin-top: 0; padding: 9px 16px; }
@@ -3773,7 +3775,6 @@ body[data-famille="file"] .content { max-width: 940px; }
   margin-bottom: 0;
   padding-bottom: var(--sa-space-4);
 }
-.view[data-famille="registre"] .view-header-eyebrow,
 .view[data-famille="registre"] .view-header-desc { display: none; }
 .view[data-famille="registre"] .view-header h2 {
   font-size: var(--sa-text-xl);
@@ -3943,7 +3944,6 @@ body[data-famille="file"] .view-header h2 {
   font-size: var(--sa-text-xl);
   font-weight: var(--sa-weight-semibold);
 }
-body[data-famille="file"] .view-header-eyebrow { display: none; }
 
 /* =====================================================================
    L'ETAT, PARTOUT DE LA MEME MANIERE
@@ -4214,7 +4214,6 @@ body[data-famille="file"] .view-header-eyebrow { display: none; }
   margin-bottom: 0;
   padding-bottom: var(--sa-space-4);
 }
-.view[data-famille="parc"] .view-header-eyebrow,
 .view[data-famille="parc"] .view-header-desc { display: none; }
 .view[data-famille="parc"] .view-header h2 {
   font-size: var(--sa-text-xl);
@@ -4240,7 +4239,6 @@ body[data-famille="agenda"] .view-header h2 {
   font-size: var(--sa-text-xl);
   font-weight: var(--sa-weight-semibold);
 }
-body[data-famille="agenda"] .view-header-eyebrow,
 body[data-famille="file"] .view-header-desc { display: none; }
 body[data-famille="agenda"] .view-header-actions,
 body[data-famille="file"] .view-header-actions { align-self: center; }
@@ -4394,3 +4392,67 @@ body[data-famille="file"] .view-header-actions { align-self: center; }
   text-overflow: ellipsis;
 }
 .planning-filters select { flex: 0 1 auto; min-width: 0; }
+
+/* =====================================================================
+   GESTION ET REPUTATION
+   ---------------------------------------------------------------------
+   Deux ecrans ou l'on vient regler quelque chose, pas travailler. Ils
+   gardent leur phrase de presentation : elle explique ce qu'on peut faire
+   la, et on n'y passe pas assez souvent pour la connaitre par coeur. Le
+   titre, lui, revient a l'echelle du reste - il n'a pas a annoncer une
+   page de reglages comme un chapitre.
+   ===================================================================== */
+body[data-famille="gestion"] .view-header h2,
+body[data-famille="reputation"] .view-header h2 {
+  font-size: var(--sa-text-xl);
+  font-weight: var(--sa-weight-semibold);
+  line-height: 1.2;
+}
+body[data-famille="gestion"] .view-header-desc,
+body[data-famille="reputation"] .view-header-desc { max-width: 74ch; }
+body[data-famille="gestion"] .view-header-actions,
+body[data-famille="reputation"] .view-header-actions { align-self: center; }
+
+/* =====================================================================
+   L'ENTREE DANS LE PRODUIT
+   ---------------------------------------------------------------------
+   L'ecran de connexion portait sa propre feuille de style de 307 lignes :
+   fond quasi noir, photographies d'atelier, laiton sur les onglets, et un
+   jeu de variables independant pour ne dependre de rien. C'etait un
+   produit different a l'entree du produit - et exactement l'identite que
+   le brief ecarte.
+
+   Il suit desormais le systeme commun. Le vert de marque tient le panneau
+   de gauche, parce que c'est la que le produit se PRESENTE ; a droite,
+   les memes champs, les memes boutons, la meme encre qu'a l'interieur.
+   Rien n'y est appris qu'il faudra desapprendre en entrant.
+   ===================================================================== */
+.auth-brand-panel { align-items: center; }
+.auth-brand-content { max-width: 360px; }
+.auth-brand-panel .auth-logo-on-brand {
+  padding-bottom: var(--sa-space-4);
+  border-bottom: 1px solid rgba(242, 245, 244, .18);
+  margin-bottom: var(--sa-space-6);
+}
+.auth-brand-tagline { font-size: 1.5rem; line-height: 1.32; }
+/* Le meme carre que la marque d'un etat : le point rond etait le seul du
+   produit. */
+.auth-brand-points li::before { border-radius: 1px; width: 5px; height: 5px; top: 8px; }
+
+/* Les onglets reprennent le geste employe partout ailleurs pour dire
+   « vous etes ici » : la feuille blanche qui ressort du plan inerte. Ils
+   portaient un aplat gris plus sombre, qui se lit comme un bouton
+   desactive plutot que comme l'onglet actif. */
+.auth-tab.active {
+  background: var(--sa-surface);
+  color: var(--sa-text);
+  box-shadow: var(--sa-shadow-feuille);
+}
+.auth-tab:not(.active):hover { color: var(--sa-text); }
+.auth-box { max-width: 400px; }
+/* Le nom du produit reste visible du cote du formulaire des que le
+   panneau de marque se retire, et pas seulement en mobile : sur un
+   portable etroit, l'ecran de connexion n'avait plus de nom. */
+@media (max-width: 1100px) {
+  .auth-logo-on-form { display: block; }
+}

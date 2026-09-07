@@ -11,11 +11,14 @@
      DIRECTION-ARTISTIQUE.md. Les deux feuilles superposees d'avant ont ete
      fondues ici, verification faite par comparaison des styles calcules
      sur les douze vues (voir outils/empreinte-styles.js). -->
-<link rel="stylesheet" href="style.css?v=20260907-ui18">
-<!-- Habillage de l'ecran connexion/inscription. Charge APRES style.css,
-     tous ses selecteurs sont ancres sous .auth-screen : rien ne fuit vers
-     le SaaS. Supprimer cette ligne rend l'ecran a son etat precedent. -->
-<link rel="stylesheet" href="auth.css?v=13">
+<link rel="stylesheet" href="style.css?v=20260907-ui20">
+<!-- L'ecran de connexion n'a plus de feuille propre. Il en portait une
+     (auth.css, 307 lignes) qui lui donnait un univers entier : fond
+     quasi noir, photographies d'atelier, laiton sur les onglets, et son
+     propre jeu de variables pour ne dependre de rien. C'etait un produit
+     different a l'entree du produit. Il suit maintenant le systeme
+     commun - le vert de marque a gauche, la meme encre, les memes
+     champs, les memes boutons qu'a l'interieur. -->
 <link rel="icon" type="image/png" href="assets/landing/logo-64.png">
 </head>
 <body>
@@ -369,7 +372,6 @@
     <section id="view-prospects" class="view" data-famille="registre" hidden>
       <div class="view-header">
         <div class="view-header-text">
-          <p class="view-header-eyebrow">Commercial</p>
           <h2>Prospects</h2>
           <p class="view-header-desc">Qui rappeler, qui qualifier, pour qui chiffrer — du premier contact au devis envoyé.</p>
         </div>
@@ -396,7 +398,6 @@
     <section id="view-clients" class="view" data-famille="registre" hidden>
       <div class="view-header">
         <div class="view-header-text">
-          <p class="view-header-eyebrow">Commercial</p>
           <h2>Clients</h2>
           <p class="view-header-desc">L'annuaire de vos affaires gagnées et leur historique.</p>
         </div>
@@ -446,7 +447,6 @@
            decoratifs sans fonction, et la navigation en double. -->
       <div class="view-header">
         <div class="view-header-text">
-          <p class="view-header-eyebrow">Commercial</p>
           <h2>Devis &amp; relances</h2>
           <p class="view-header-desc">Suivez vos devis envoyés et relancez-les au bon moment.</p>
         </div>
@@ -518,7 +518,6 @@
     <section id="view-factures" class="view" data-famille="registre" hidden>
       <div class="view-header">
         <div class="view-header-text">
-          <p class="view-header-eyebrow">Gestion</p>
           <h2>Factures</h2>
           <p class="view-header-desc">Émettez vos factures et suivez les encaissements.</p>
         </div>
@@ -593,7 +592,6 @@
     <section id="view-chantiers" class="view" data-famille="parc" hidden>
       <div class="view-header">
         <div class="view-header-text">
-          <p class="view-header-eyebrow">Gestion</p>
           <h2>Chantiers</h2>
           <p class="view-header-desc">Le suivi de vos chantiers en cours et à venir.</p>
         </div>
@@ -658,7 +656,6 @@
     <section id="view-planning" class="view" data-famille="agenda" hidden>
       <div class="view-header">
         <div class="view-header-text">
-          <p class="view-header-eyebrow">Gestion</p>
           <h2>Planning</h2>
           <p class="view-header-desc">Vos rendez-vous et interventions, par jour, semaine ou mois.</p>
         </div>
@@ -674,7 +671,6 @@
     <section id="view-taches" class="view" data-famille="file" hidden>
       <div class="view-header">
         <div class="view-header-text">
-          <p class="view-header-eyebrow">Organisation</p>
           <h2>Tâches</h2>
           <p class="view-header-desc">Priorisez vos actions et ne laissez rien passer.</p>
         </div>
@@ -726,7 +722,6 @@
     <section id="view-documents" class="view" data-famille="registre" hidden>
       <div class="view-header">
         <div class="view-header-text">
-          <p class="view-header-eyebrow">Organisation</p>
           <h2>Documents</h2>
           <p class="view-header-desc">Centralisez et retrouvez tous vos documents professionnels.</p>
         </div>
@@ -788,7 +783,6 @@
     <section id="view-statistiques" class="view" data-famille="rapport" hidden>
       <div class="view-header">
         <div class="view-header-text">
-          <p class="view-header-eyebrow">Organisation</p>
           <h2>Statistiques</h2>
           <p class="view-header-desc">Analysez les performances et l'évolution de votre activité.</p>
         </div>
@@ -806,7 +800,6 @@
     <section id="view-avis" class="view" data-famille="reputation" hidden>
       <div class="view-header">
         <div class="view-header-text">
-          <p class="view-header-eyebrow">Entreprise</p>
           <h2>Avis clients</h2>
           <p class="view-header-desc">Collectez, suivez et valorisez la satisfaction de vos clients.</p>
         </div>
@@ -848,7 +841,6 @@
     <section id="view-entreprise" class="view" data-famille="gestion" hidden>
       <div class="view-header">
         <div class="view-header-text">
-          <p class="view-header-eyebrow">Entreprise</p>
           <h2>Entreprise</h2>
           <p class="view-header-desc">Configurez l'identité, le fonctionnement et la conformité de votre entreprise.</p>
         </div>
@@ -1051,7 +1043,6 @@
     <section id="view-notifications" class="view" data-famille="file" hidden>
       <div class="view-header">
         <div class="view-header-text">
-          <p class="view-header-eyebrow">Entreprise</p>
           <h2>Notifications</h2>
           <p class="view-header-desc">Suivez les événements importants et les actions qui nécessitent votre attention.</p>
         </div>
@@ -1165,11 +1156,11 @@
      d'abord - formats, etats d'ecran, messages, confirmations, clavier des
      fenetres - puis la navigation et l'adressage. Scripts classiques charges dans l'ordre : les declarations de
      premier niveau restent partagees, comme lorsque tout tenait dans app.js. -->
-<script src="api.js?v=20260907-ui18"></script>
-<script src="socle.js?v=20260907-ui18"></script>
-<script src="navigation.js?v=20260907-ui18"></script>
-<script src="planning.js?v=20260907-ui18"></script>
-<script src="statistiques.js?v=20260907-ui18"></script>
-<script src="app.js?v=20260907-ui18"></script>
+<script src="api.js?v=20260907-ui20"></script>
+<script src="socle.js?v=20260907-ui20"></script>
+<script src="navigation.js?v=20260907-ui20"></script>
+<script src="planning.js?v=20260907-ui20"></script>
+<script src="statistiques.js?v=20260907-ui20"></script>
+<script src="app.js?v=20260907-ui20"></script>
 </body>
 </html>

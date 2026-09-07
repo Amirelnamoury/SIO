@@ -1,5 +1,22 @@
 # Assets — écran connexion / inscription
 
+> **Ces deux visuels ne sont plus utilisés par l'application.**
+>
+> Ils étaient posés en fond du panneau de marque par `frontend/auth.css`,
+> une feuille de 307 lignes qui donnait à l'écran de connexion un univers
+> entier — fond quasi noir, photographies d'atelier, laiton sur les
+> onglets — et son propre jeu de variables pour ne dépendre de rien.
+>
+> La refonte UI a supprimé cette feuille : la connexion doit être la
+> continuation naturelle du produit, pas un second produit posé devant.
+> L'écran suit maintenant le système commun (vert de marque à gauche,
+> mêmes champs et mêmes boutons qu'à l'intérieur).
+>
+> Les fichiers sont conservés parce qu'ils peuvent servir ailleurs — la
+> page publique, par exemple. Rien dans le code ne les référence.
+
+# Assets — écran connexion / inscription
+
 Deux visuels d'atelier propres à cet écran, **distincts des frames de la
 visite** de la landing : l'authentification a sa propre respiration, tout
 en gardant la même lumière dorée.
