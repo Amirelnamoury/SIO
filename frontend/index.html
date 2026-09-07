@@ -11,7 +11,7 @@
      DIRECTION-ARTISTIQUE.md. Les deux feuilles superposees d'avant ont ete
      fondues ici, verification faite par comparaison des styles calcules
      sur les douze vues (voir outils/empreinte-styles.js). -->
-<link rel="stylesheet" href="style.css?v=20260907-formulaires-restants2">
+<link rel="stylesheet" href="style.css?v=20260907-modales">
 <!-- Habillage de l'ecran connexion/inscription. Charge APRES style.css,
      tous ses selecteurs sont ancres sous .auth-screen : rien ne fuit vers
      le SaaS. Supprimer cette ligne rend l'ecran a son etat precedent. -->
@@ -336,7 +336,10 @@
     <div id="panel-archives" class="side-panel" hidden role="dialog" aria-modal="true" aria-labelledby="archives-titre">
       <div class="side-panel-box">
         <button type="button" class="side-panel-close" data-action="close-archives" aria-label="Fermer">&times;</button>
-        <h3 id="archives-titre">Archives</h3>
+        <!-- Le meme surtitre que les trois autres panneaux (« MON PROFIL »,
+             « DOSSIER CLIENT »). Celui-ci ouvrait sur un grand titre serif,
+             seul de son espece parmi ses freres. -->
+        <p class="side-panel-eyebrow" id="archives-titre">Archives</p>
         <p class="section-hint">Rien n'est jamais supprimé définitivement : restaurez un élément pour le remettre dans les listes actives.</p>
         <div id="archives-content"></div>
       </div>
@@ -1109,7 +1112,7 @@
 <script src="env.js"></script>
 <script src="config.js"></script>
 <script src="pricing.js"></script>
-<script src="api.js?v=20260907-formulaires-restants2"></script>
-<script src="app.js?v=20260907-formulaires-restants2"></script>
+<script src="api.js?v=20260907-modales"></script>
+<script src="app.js?v=20260907-modales"></script>
 </body>
 </html>

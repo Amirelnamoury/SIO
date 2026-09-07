@@ -164,6 +164,34 @@ Api.automationStatus = async () => ({
 });
 Api.listSiteMedia = async () => ({ photos: [], logo_url: null });
 
+// La recherche globale (Ctrl+K). SearchResult : type, id, label, sublabel.
+Api.search = async (q) => {
+  const tout = [
+    { type: "client", id: 1, label: "Bertrand", sublabel: "Bertrand & Fils · Villeurbanne" },
+    { type: "devis", id: 89, label: "DV-2026-089", sublabel: "Rénovation salle de bain complète · 1 466,93 €" },
+    { type: "facture", id: 14, label: "FA-2026-014", sublabel: "Bertrand · 1 840,00 € · en retard" },
+    { type: "chantier", id: 2, label: "Villa Ducros — extension côté jardin", sublabel: "Bertrand · Écully · en cours" },
+  ];
+  const t = String(q || "").toLowerCase();
+  return tout.filter((r) => (r.label + " " + r.sublabel).toLowerCase().includes(t));
+};
+
+// Les listes d'archives : les memes appels que les listes vivantes, avec le
+// drapeau `archive`. Sans eux, le panneau Archives s'ouvrait sur une erreur.
+const archivés = {
+  clients: [{ id: 9, nom: "Menuiserie Delcourt", societe: null, statut: "perdu", ville: "Lyon 7e", created_at: tg(300) }],
+  devis: [{ id: 41, numero: "DV-2025-041", titre: "Réfection de toiture", client_nom: "Menuiserie Delcourt", statut: "perdu", montant_ttc: 8400, created_at: tg(280) }],
+  factures: [{ id: 7, numero: "FA-2025-007", client_nom: "Menuiserie Delcourt", statut: "annulee", montant_ttc: 1200, created_at: tg(260) }],
+  chantiers: [{ id: 5, titre: "Cuisine Marchand", client_nom: "Marchand", statut: "termine", created_at: tg(400) }],
+  documents: [{ id: 4, nom: "Ancienne attestation décennale", type: "attestation", created_at: tg(500) }],
+};
+const listerOuArchives = (vivants, cle) => async (_id, archive) => (archive ? archivés[cle] : vivants());
+Api.listClients = listerOuArchives(Api.listClients, "clients");
+Api.listDevis = listerOuArchives(Api.listDevis, "devis");
+Api.listFactures = listerOuArchives(Api.listFactures, "factures");
+Api.listChantiers = listerOuArchives(Api.listChantiers, "chantiers");
+Api.listDocuments = listerOuArchives(Api.listDocuments, "documents");
+
 // ---------------------------------------------------------------------
 // LA FICHE CLIENT (panneau lateral). Sans ces trois entrees, le panneau
 // s'ouvrait sur « Impossible de contacter le serveur » : l'un des ecrans

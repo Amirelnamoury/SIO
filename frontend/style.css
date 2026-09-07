@@ -1425,11 +1425,15 @@ input[type="checkbox"], input[type="radio"] { width: 24px; height: 24px; flex-sh
 }
 
 /* ---------- Onboarding ---------- */
-.onboarding-box { background: var(--sa-surface); border-radius: var(--sa-radius-xl); width: 100%; max-width: 460px; box-shadow: var(--sa-shadow-lg); padding: var(--sa-space-8); text-align: center; border: 1px solid var(--sa-border-strong); }
+/* Cadre a gauche, comme tout le reste. C'etait le seul endroit du produit
+   ou du texte courant etait centre - et c'est le tout premier ecran qu'un
+   artisan voit, donc celui qui donne le ton. Le centrage n'y disait rien de
+   plus : il rompait juste avec la page qu'il ouvre. */
+.onboarding-box { background: var(--sa-surface); border-radius: var(--sa-radius-xl); width: 100%; max-width: 460px; box-shadow: var(--sa-shadow-lg); padding: var(--sa-space-8); text-align: left; border: 1px solid var(--sa-border-strong); }
 .onboarding-step-icon { display: none; }
-.onboarding-step h3 { font-size: 1.1rem; margin-bottom: var(--sa-space-2); }
+.onboarding-step h3 { font-family: var(--sa-font-display); font-size: 1.35rem; font-weight: 500; margin-bottom: var(--sa-space-3); }
 .onboarding-step p { color: var(--sa-text-muted); font-size: var(--sa-text-sm); line-height: 1.6; margin: 0; }
-.onboarding-step ul { text-align: left; margin: var(--sa-space-4) auto 0; padding: 0; list-style: none; max-width: 320px; }
+.onboarding-step ul { text-align: left; margin: var(--sa-space-4) 0 0; padding: 0; list-style: none; }
 .onboarding-step ul li { font-size: var(--sa-text-sm); padding: 6px 0; padding-left: 22px; position: relative; }
 .onboarding-step ul li::before { content: attr(data-num); position: absolute; left: 0; top: 6px; width: 15px; height: 15px; border-radius: 50%; background: var(--sa-accent); color: var(--sa-text-on-accent); font-size: 0.62rem; font-weight: var(--sa-weight-bold); display: flex; align-items: center; justify-content: center; }
 .onboarding-nav { margin-top: var(--sa-space-6); display: flex; align-items: center; justify-content: space-between; }
@@ -1505,6 +1509,9 @@ input[type="checkbox"], input[type="radio"] { width: 24px; height: 24px; flex-sh
 .search-result-group { font-size: var(--sa-text-2xs); font-weight: var(--sa-weight-bold); text-transform: uppercase; letter-spacing: 0.05em; color: var(--sa-text-muted); padding: 10px 10px 4px; }
 .search-result-item { display: block; width: 100%; text-align: left; padding: 9px 10px; border-radius: var(--sa-radius-sm); border: none; background: none; color: var(--sa-text); }
 .search-result-item:hover, .search-result-item.active { background: var(--sa-surface-2); }
+/* Le resultat que Entree ouvrira. Un aplat seul ne se distinguerait pas du
+   survol : le cran de laiton dit lequel des deux est le curseur clavier. */
+.search-result-item.est-marque { background: var(--sa-surface-2); box-shadow: inset 2px 0 0 var(--sa-laiton); }
 .search-result-item .title { font-weight: var(--sa-weight-semibold); font-size: var(--sa-text-sm); color: var(--sa-text); }
 .search-result-item .sub { font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
 .search-empty { padding: 24px 20px; text-align: center; color: var(--sa-text-muted); font-size: var(--sa-text-sm); }

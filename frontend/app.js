@@ -2304,6 +2304,40 @@ function setupGlobalSearch() {
     searchDebounceTimer = setTimeout(() => runSearch(q), 250);
   });
 
+  /* La palette s'ouvre au clavier (Ctrl+K) et se remplit au clavier - puis
+     il fallait prendre la souris pour choisir. Ni fleches, ni Entree : ce
+     n'etait pas une palette de commandes, c'etait un champ de recherche
+     avec un raccourci. Les fleches parcourent les resultats, Entree ouvre
+     le resultat marque (ou le premier), Echap referme. */
+  const resultats = () => [...document.querySelectorAll("#search-results .search-result-item")];
+  const marque = () => document.querySelector("#search-results .search-result-item.est-marque");
+  const marquer = (el) => {
+    resultats().forEach((r) => r.classList.remove("est-marque"));
+    if (!el) return;
+    el.classList.add("est-marque");
+    el.scrollIntoView({ block: "nearest" });
+  };
+  document.getElementById("search-input").addEventListener("keydown", (e) => {
+    const liste = resultats();
+    if (!liste.length) return;
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      const i = liste.indexOf(marque());
+      const suivant = e.key === "ArrowDown"
+        ? liste[i < 0 || i === liste.length - 1 ? 0 : i + 1]
+        : liste[i <= 0 ? liste.length - 1 : i - 1];
+      marquer(suivant);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      (marque() || liste[0]).click();
+    }
+  });
+  // Une frappe qui change la liste invalide la marque : on repart du haut.
+  document.getElementById("search-results").addEventListener("mousemove", (e) => {
+    const item = e.target.closest(".search-result-item");
+    if (item && !item.classList.contains("est-marque")) marquer(item);
+  });
+
   document.getElementById("search-results").addEventListener("click", (e) => {
     const actionItem = e.target.closest(".search-action-item");
     if (actionItem) {
@@ -3468,35 +3502,35 @@ function setupClientsView() {
 // restaurer, quelle que soit la vue depuis laquelle on l'ouvre.
 const ARCHIVE_ENTITES = {
   client: {
-    titre: "Clients archives",
+    titre: "Clients archivés",
     lister: () => Api.listClients(null, true),
     restaurer: (id) => Api.restaurerClient(id),
     ligne: (c) => `${escapeHtml(c.nom)}${c.societe ? " · " + escapeHtml(c.societe) : ""}`,
     recharger: () => { loadClients(); loadClientsDirectory(); },
   },
   devis: {
-    titre: "Devis archives",
+    titre: "Devis archivés",
     lister: () => Api.listDevis(null, true),
     restaurer: (id) => Api.restaurerDevis(id),
     ligne: (d) => `${escapeHtml(d.numero || "Devis #" + d.id)} · ${escapeHtml(d.client_nom || "")} · ${fmtEuro(d.montant_ttc)}`,
     recharger: () => loadDevis(),
   },
   facture: {
-    titre: "Factures archivees",
+    titre: "Factures archivées",
     lister: () => Api.listFactures(null, true),
     restaurer: (id) => Api.restaurerFacture(id),
     ligne: (f) => `${escapeHtml(f.numero || "Facture #" + f.id)} · ${escapeHtml(f.client_nom || "")} · ${fmtEuro(f.montant_ttc)}`,
     recharger: () => loadFactures(),
   },
   chantier: {
-    titre: "Chantiers archives",
+    titre: "Chantiers archivés",
     lister: () => Api.listChantiers(true),
     restaurer: (id) => Api.restaurerChantier(id),
     ligne: (c) => `${escapeHtml(c.titre)}${c.client_nom ? " · " + escapeHtml(c.client_nom) : ""}`,
     recharger: () => loadChantiers(),
   },
   document: {
-    titre: "Documents archives",
+    titre: "Documents archivés",
     lister: () => Api.listDocuments({ archive: true }),
     restaurer: (id) => Api.restaurerDocument(id),
     ligne: (d) => `${escapeHtml(d.nom)}${d.type ? " · " + escapeHtml(d.type) : ""}`,

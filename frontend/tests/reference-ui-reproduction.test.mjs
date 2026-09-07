@@ -342,4 +342,21 @@ assert.match(appSource, /function rentabiliteHtml[\s\S]{0,1500}?chantier-chiffre
 assert.doesNotMatch(styleSource, /input\[type="checkbox"\][^{]*\{[^}]*width: 1[0-9]px/,
   "aucune case a cocher ne descend sous 24 px");
 
+// ---------------------------------------------------------------------
+// LA PALETTE DE COMMANDES SE PILOTE AU CLAVIER
+// ---------------------------------------------------------------------
+// Elle s'ouvre au clavier (Ctrl+K) et se remplit au clavier - puis il
+// fallait prendre la souris pour choisir. Ni fleches, ni Entree : ce n'etait
+// pas une palette, c'etait un champ de recherche avec un raccourci.
+assert.match(appSource, /search-input[\s\S]{0,1200}?ArrowDown/,
+  "les fleches doivent parcourir les resultats de la recherche globale");
+assert.match(appSource, /est-marque/,
+  "le resultat qu'Entree ouvrira doit se voir");
+assert.match(styleSource, /\.search-result-item\.est-marque/);
+
+// L'onboarding est le tout premier ecran qu'un artisan voit : c'etait le
+// seul endroit du produit ou du texte courant etait centre.
+assert.doesNotMatch(styleSource, /\.onboarding-box \{[^}]*text-align: center/,
+  "l'onboarding se cadre a gauche comme le reste du produit");
+
 console.log("OK - reference-ui-reproduction.test.mjs");
