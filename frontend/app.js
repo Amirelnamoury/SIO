@@ -213,6 +213,9 @@ async function ensureClientsCache() {
 // chantier (ex: pre-remplir le formulaire de reception) sans reinterroger.
 let chantiersCache = [];
 let chantierFocusId = null;
+// Les rendez-vous du jour affiches sur l'accueil, pour ouvrir le bon au clic
+// sans redemander la liste au serveur.
+let dashboardEvenementsCache = [];
 
 function clientOptionsHtml(selectedId) {
   return clientsCache
@@ -545,6 +548,20 @@ document.addEventListener("keydown", (e) => {
       if (el && !el.hidden) el.hidden = true;
     });
   }
+});
+
+// Onze elements du produit portent role="button" tabindex="0" sans etre des
+// <button> : la ligne d'un rendez-vous sur l'accueil, une etape de mise en
+// route, un item du planning... Ils prennent donc le focus et s'annoncent
+// comme des boutons, mais seul le planning avait son propre gestionnaire :
+// partout ailleurs, Entree et Espace ne faisaient rien. Une promesse faite au
+// clavier et tenue seulement a la souris. Un seul relais delegue suffit.
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  const cible = e.target.closest?.('[role="button"][tabindex="0"]');
+  if (!cible || cible.tagName === "BUTTON") return;
+  e.preventDefault();
+  cible.click();
 });
 
 function switchView(view) {
@@ -2233,6 +2250,20 @@ function setupDashboardView() {
       ouvrirCible(voirBtn.dataset);
       return;
     }
+    // La journee de l'accueil ouvre le rendez-vous lui-meme - avec son lieu,
+    // son client et de quoi le modifier - au lieu de basculer sur le planning
+    // ou il faut le retrouver.
+    const rdvItem = e.target.closest('[data-action="ouvrir-evenement"]');
+    if (rdvItem) {
+      const ev = dashboardEvenementsCache.find((x) => x.id === parseInt(rdvItem.dataset.id, 10));
+      if (ev) {
+        ouvrirDetailEvenement({
+          date: ev.date_debut, date_fin: ev.date_fin, type: ev.type, titre: ev.titre,
+          reference_id: ev.id, client_id: ev.client_id, chantier_id: ev.chantier_id, lieu: ev.lieu,
+        });
+      }
+      return;
+    }
     const relanceDevisBtn = e.target.closest('[data-action="relancer-devis"]');
     if (relanceDevisBtn) {
       const id = parseInt(relanceDevisBtn.dataset.id, 10);
@@ -2964,12 +2995,20 @@ async function loadDashboard() {
     // La journee : une ligne de temps, pas une liste. L'heure est dans la
     // marge de la ligne et les evenements sont relies par un filet - on lit
     // la forme de la journee avant d'en lire le contenu.
+    // Meme heure qu'ailleurs dans le produit : planningHeureLocale() calcule
+    // en Europe/Paris. Un toLocaleTimeString() nu suivait le fuseau AMBIANT
+    // du navigateur, et l'accueil pouvait donc annoncer une heure differente
+    // de celle du planning pour le meme rendez-vous.
+    dashboardEvenementsCache = d.aujourdhui.evenements;
     const agenda = d.aujourdhui.evenements.length
-      ? `<ol class="dash-journee">${d.aujourdhui.evenements.map((e) => `
-          <li class="dash-journee-item" data-action="voir-notification" data-view="planning" role="button" tabindex="0">
-            <time class="dash-journee-heure">${new Date(e.date_debut).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</time>
+      ? `<ol class="dash-journee">${d.aujourdhui.evenements.map((e) => {
+          const duree = planningDureeMinutes({ date: e.date_debut, date_fin: e.date_fin });
+          return `
+          <li class="dash-journee-item" data-action="ouvrir-evenement" data-id="${e.id}" role="button" tabindex="0">
+            <time class="dash-journee-heure">${planningHeureLocale(e.date_debut)}${duree !== null ? `<span class="dash-journee-fin">–${planningHeureLocale(e.date_fin)}</span>` : ""}</time>
             <span class="dash-journee-titre">${escapeHtml(e.titre)}</span>
-          </li>`).join("")}</ol>`
+          </li>`;
+        }).join("")}</ol>`
       : `<p class="dash-vide">Journée dégagée — aucun rendez-vous prévu.
          <button type="button" class="lien-action" data-action="show-evenement-form">Planifier quelque chose</button></p>`;
 
@@ -6736,13 +6775,12 @@ function setupChantiersView() {
       switchView("documents").then(() => showDocumentForm(id));
     } else if (btn.dataset.action === "planifier-intervention") {
       const chantier = chantiersCache.find((c) => c.id === id);
-      switchView("planning");
-      setTimeout(() => window.showEvenementForm({
+      switchView("planning").then(() => window.showEvenementForm({
         titre: `Intervention - ${chantier ? chantier.titre : ""}`,
         type: "intervention",
         chantierId: id,
         clientId: chantier ? chantier.client_id : null,
-      }), 100);
+      }));
     } else if (btn.dataset.action === "toggle-reception-form") {
       const chantier = chantiersCache.find((c) => c.id === id);
       showReceptionForm(id, chantier);
@@ -7691,7 +7729,13 @@ function planningToolbarHtml(debut, fin) {
 }
 
 function planningItemChip(item, compact) {
-  const heure = item.type === "chantier_debut" ? "" : `<span class="planning-item-heure">${planningHeureLocale(item.date)}</span> `;
+  // Une echeance de tache affichait « 09:00 » en vue mois : c'est l'ancre de
+  // tri du serveur, pas une heure saisie. Les items sans heure n'en montrent
+  // donc aucune, ici comme sur la grille horaire.
+  const duree = planningDureeMinutes(item);
+  const heure = planningSansHeure(item)
+    ? ""
+    : `<span class="planning-item-heure">${planningHeureLocale(item.date)}${duree !== null ? `–${planningHeureLocale(item.date_fin)}` : ""}</span> `;
   const ouvreFiche = item.type === "chantier_debut" || PLANNING_TYPES_EVENEMENT.has(item.type);
   return `<div class="planning-item ${PLANNING_TYPE_CLASS[item.type] || ""} ${ouvreFiche ? "planning-item-clickable" : ""}" draggable="${item.type === "chantier_debut" ? "false" : "true"}" data-type="${item.type}" data-ref-id="${item.reference_id}" data-current-date="${item.date}" ${ouvreFiche ? 'role="button" tabindex="0"' : ""} title="${escapeHtml(item.titre)}">
     ${compact ? "" : heure}<span class="planning-item-titre">${escapeHtml(item.titre)}</span>
@@ -7701,13 +7745,75 @@ function planningItemChip(item, compact) {
 // Grille horaire (vues jour/semaine) : la vue "brief" precedente empilait les
 // evenements du haut vers le bas sans notion d'heure, ce qui laissait la
 // quasi-totalite de la colonne vide des qu'un jour avait 0-2 rendez-vous.
-// Ici chaque evenement est positionne a sa vraie heure sur un axe 7h-20h -
-// mêmes donnees (PlanningItem.date), seule la disposition change. Duree
-// d'affichage fixe (1h) : l'API de planning ne renvoie pas de duree de fin
-// pour les items agreges (evenements + taches + debut de chantier).
+// Ici chaque evenement est positionne a sa vraie heure sur un axe 7h-20h.
+//
+// TROIS ETATS, PARCE QU'IL Y A TROIS NIVEAUX DE CERTITUDE
+// La version precedente dessinait un bloc d'UNE HEURE pour tout : un
+// rendez-vous, une echeance de tache, un debut de chantier. La grille
+// affirmait donc une occupation que personne n'avait saisie - un artisan
+// pouvait y lire « mon mardi matin est pris » sur la foi d'une constante.
+//   1. Duree connue (PlanningItem.date_fin) : bloc a la hauteur reelle.
+//   2. Debut connu, fin inconnue : un marqueur fin, pose a l'heure exacte.
+//      Il dit « ca commence a 9h », pas « ca dure une heure ».
+//   3. Aucune heure (echeance de tache, debut de chantier) : hors de l'axe,
+//      dans une bande « Sans heure » en tete de journee. Le 9h00/8h00 que
+//      renvoie l'API pour ces items est une ancre de tri, pas un horaire.
 const PLANNING_HOUR_START = 7;
 const PLANNING_HOUR_END = 20; // 13h affichees ; les items hors plage restent visibles, ancres au bord.
 const PLANNING_ROW_H = 41; // px par heure - garder synchronise avec les hauteurs CSS.
+const PLANNING_MARQUEUR_H = 19; // hauteur du marqueur "debut sans fin connue"
+const PLANNING_BLOC_MIN_H = 20; // un bloc de 15 min doit rester lisible
+const PLANNING_BANDE_LIGNE_H = 22; // hauteur d'un chip dans la bande "Sans heure"
+const PLANNING_BANDE_MAX_LIGNES = 3;
+
+// Durees proposees au formulaire. « Non precisee » est la premiere valeur et
+// la valeur par defaut : le produit n'invente pas un creneau que l'artisan
+// n'a pas saisi. Une duree deja enregistree qui ne figure pas dans la liste
+// (rendez-vous cree ailleurs, ou liste modifiee depuis) est ajoutee telle
+// quelle, sinon la rouvrir en edition l'effacerait silencieusement.
+const PLANNING_DUREES = [
+  { minutes: "", label: "Non précisée" },
+  { minutes: "15", label: "15 min" },
+  { minutes: "30", label: "30 min" },
+  { minutes: "60", label: "1 h" },
+  { minutes: "90", label: "1 h 30" },
+  { minutes: "120", label: "2 h" },
+  { minutes: "180", label: "3 h" },
+  { minutes: "240", label: "Demi-journée (4 h)" },
+  { minutes: "480", label: "Journée (8 h)" },
+];
+
+function planningDureeLabel(minutes) {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (!h) return `${m} min`;
+  return m ? `${h} h ${String(m).padStart(2, "0")}` : `${h} h`;
+}
+
+function planningDureeOptionsHtml(dureeVal) {
+  const liste = PLANNING_DUREES.some((d) => d.minutes === dureeVal) || dureeVal === ""
+    ? PLANNING_DUREES
+    : [...PLANNING_DUREES, { minutes: dureeVal, label: planningDureeLabel(Number(dureeVal)) }];
+  return liste
+    .map((d) => `<option value="${d.minutes}"${d.minutes === dureeVal ? " selected" : ""}>${escapeHtml(d.label)}</option>`)
+    .join("");
+}
+
+// Ces deux types n'ont pas d'heure : une tache a une echeance (un jour), un
+// chantier a une date de debut (un jour). Voir routers/planning.py, qui leur
+// donne 9h00 et 8h00 uniquement pour pouvoir trier la liste.
+function planningSansHeure(item) {
+  return item.type === "tache" || item.type === "chantier_debut";
+}
+
+// Duree reelle en minutes, ou null si la fin n'est pas renseignee. Une fin
+// anterieure ou egale au debut est traitee comme inconnue plutot que comme
+// une duree nulle : c'est une donnee aberrante, pas une information.
+function planningDureeMinutes(item) {
+  if (!item.date_fin) return null;
+  const minutes = Math.round((new Date(item.date_fin) - new Date(item.date)) / 60000);
+  return minutes > 0 ? minutes : null;
+}
 
 function planningTimeMinutes(dateVal) {
   const { heure } = planningDateHeureLocale(dateVal);
@@ -7721,8 +7827,11 @@ function planningHourRowsHtml() {
   return html;
 }
 
-function planningHourGutterHtml() {
+function planningHourGutterHtml(bande = false) {
   let html = '<div class="planning-hour-gutter"><div class="planning-hour-gutter-spacer"></div>';
+  // La gouttiere doit reserver exactement la meme bande que les colonnes,
+  // sinon les reglures ne tombent plus en face des heures.
+  if (bande) html += '<div class="planning-jour-bande planning-jour-bande-libelle">Sans heure</div>';
   for (let h = PLANNING_HOUR_START; h < PLANNING_HOUR_END; h++) html += `<div class="planning-hour-label">${h}h</div>`;
   return html + "</div>";
 }
@@ -7740,32 +7849,62 @@ function planningNowLineHtml() {
 // largeur reduite avec un chevauchement plus tot dans la meme journee, cas
 // limite juge acceptable au vu de la frequence.
 function planningLayoutDay(dayItems) {
-  const DUREE = 60;
+  // Emprise du marqueur convertie en minutes : elle sert UNIQUEMENT a ne pas
+  // superposer deux marqueurs voisins. Ce n'est pas une duree supposee.
+  const empriseMarqueur = Math.ceil((PLANNING_MARQUEUR_H / PLANNING_ROW_H) * 60);
   const columns = [];
   const placed = dayItems.map((item) => {
     const start = planningTimeMinutes(item.date);
+    const duree = planningDureeMinutes(item);
+    const emprise = duree !== null ? duree : empriseMarqueur;
     let col = columns.findIndex((endTime) => endTime <= start);
-    if (col === -1) { col = columns.length; columns.push(start + DUREE); }
-    else columns[col] = start + DUREE;
-    return { item, start, col };
+    if (col === -1) { col = columns.length; columns.push(start + emprise); }
+    else columns[col] = start + emprise;
+    return { item, start, duree, col };
   });
   const totalCols = Math.max(1, columns.length);
   return placed.map((p) => ({ ...p, totalCols }));
 }
 
-function planningPositionedItemHtml({ item, start, col, totalCols }) {
-  const maxTop = (PLANNING_HOUR_END - PLANNING_HOUR_START) * PLANNING_ROW_H - PLANNING_ROW_H + 4;
-  const top = Math.min(Math.max(0, ((start - PLANNING_HOUR_START * 60) / 60) * PLANNING_ROW_H), maxTop);
+function planningPositionedItemHtml({ item, start, duree, col, totalCols }) {
+  const hauteurAxe = (PLANNING_HOUR_END - PLANNING_HOUR_START) * PLANNING_ROW_H;
+  const hauteur = duree !== null
+    ? Math.max(PLANNING_BLOC_MIN_H, (duree / 60) * PLANNING_ROW_H - 2)
+    : PLANNING_MARQUEUR_H;
+  const top = Math.min(Math.max(0, ((start - PLANNING_HOUR_START * 60) / 60) * PLANNING_ROW_H), hauteurAxe - hauteur);
   const widthPct = 100 / totalCols;
-  const ouvreFiche = item.type === "chantier_debut" || PLANNING_TYPES_EVENEMENT.has(item.type);
-  const heure = item.type === "chantier_debut" ? "" : `<span class="planning-item-heure">${planningHeureLocale(item.date)}</span> `;
-  return `<div class="planning-item planning-item-positioned ${PLANNING_TYPE_CLASS[item.type] || ""} ${ouvreFiche ? "planning-item-clickable" : ""}"
-    style="top:${top}px; height:${PLANNING_ROW_H - 4}px; left:calc(${col * widthPct}% + 2px); width:calc(${widthPct}% - 4px);"
-    draggable="${item.type === "chantier_debut" ? "false" : "true"}" data-type="${item.type}" data-ref-id="${item.reference_id}" data-current-date="${item.date}"
-    ${ouvreFiche ? 'role="button" tabindex="0"' : ""} title="${escapeHtml(item.titre)}">${heure}<span class="planning-item-titre">${escapeHtml(item.titre)}</span></div>`;
+  const ouvreFiche = PLANNING_TYPES_EVENEMENT.has(item.type);
+  // Un creneau borne s'annonce en toutes lettres ; un debut seul ne montre
+  // que son heure de debut, sans tiret qui laisserait croire a une fin.
+  const heure = duree !== null
+    ? `${planningHeureLocale(item.date)} – ${planningHeureLocale(item.date_fin)}`
+    : planningHeureLocale(item.date);
+  const infobulle = duree !== null
+    ? `${item.titre} · ${heure}`
+    : `${item.titre} · commence à ${heure}, fin non renseignée`;
+  // Sous ~30 px, deux lignes ne tiennent pas : l'heure et le titre passent
+  // cote a cote plutot que le titre soit rogne a l'invisible.
+  const forme = duree === null ? "est-marqueur" : hauteur < 30 ? "est-borne est-court" : "est-borne";
+  return `<div class="planning-item planning-item-positioned ${forme} ${PLANNING_TYPE_CLASS[item.type] || ""} ${ouvreFiche ? "planning-item-clickable" : ""}"
+    style="top:${top}px; height:${hauteur}px; left:calc(${col * widthPct}% + 2px); width:calc(${widthPct}% - 4px);"
+    draggable="true" data-type="${item.type}" data-ref-id="${item.reference_id}" data-current-date="${item.date}"
+    ${ouvreFiche ? 'role="button" tabindex="0"' : ""} title="${escapeHtml(infobulle)}"><span class="planning-item-heure">${escapeHtml(heure)}</span> <span class="planning-item-titre">${escapeHtml(item.titre)}</span></div>`;
 }
 
-function planningDayCellHtml(dateObj, items, { compact = false, showWeekday = true, extraClass = "", hourGrid = false } = {}) {
+// Hauteur reservee a la bande « Sans heure », identique pour toute la grille :
+// la gouttiere des heures et les colonnes de jour la lisent depuis la meme
+// variable CSS, sinon les reglures se decaleraient d'une colonne a l'autre.
+function planningBandeHauteur(jours, items) {
+  const maxParJour = jours.reduce((max, jour) => {
+    const iso = planningToIso(jour);
+    const n = items.filter((i) => planningSansHeure(i) && planningToIso(new Date(i.date)) === iso).length;
+    return Math.max(max, n);
+  }, 0);
+  if (maxParJour === 0) return 0;
+  return Math.min(maxParJour, PLANNING_BANDE_MAX_LIGNES) * PLANNING_BANDE_LIGNE_H + 6;
+}
+
+function planningDayCellHtml(dateObj, items, { compact = false, showWeekday = true, extraClass = "", hourGrid = false, bande = false } = {}) {
   const iso = planningToIso(dateObj);
   // Comparaison sur la cle "jour" calculee en Europe/Paris des deux cotes
   // (jamais un slice(0,10) direct de la chaine UTC renvoyee par l'API) :
@@ -7782,8 +7921,16 @@ function planningDayCellHtml(dateObj, items, { compact = false, showWeekday = tr
   const headerLabel = showWeekday
     ? dateObj.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" })
     : String(dateObj.getDate());
+  // Sur l'axe horaire, seuls les items qui ont VRAIMENT une heure. Les autres
+  // passent dans la bande du haut : les poser a 9h ferait dire a la grille
+  // quelque chose que personne n'a saisi.
+  const surAxe = hourGrid ? dayItems.filter((i) => !planningSansHeure(i)) : dayItems;
+  const horsAxe = hourGrid ? dayItems.filter(planningSansHeure) : [];
+  const bandeHtml = bande
+    ? `<div class="planning-jour-bande">${horsAxe.map((i) => planningItemChip(i, true)).join("")}</div>`
+    : "";
   const body = hourGrid
-    ? `<div class="planning-day-track">${planningHourRowsHtml()}${planningLayoutDay(dayItems).map(planningPositionedItemHtml).join("")}${isToday ? planningNowLineHtml() : ""}</div>`
+    ? `${bandeHtml}<div class="planning-day-track">${planningHourRowsHtml()}${planningLayoutDay(surAxe).map(planningPositionedItemHtml).join("")}${isToday ? planningNowLineHtml() : ""}</div>`
     : `<div class="planning-day-items">${dayItems.map((i) => planningItemChip(i, compact)).join("") || (compact ? "" : '<div class="planning-day-empty">Rien de prévu</div>')}</div>`;
   return `
     <div class="planning-day-cell ${isToday ? "is-today" : ""} ${isWeekend ? "is-weekend" : ""} ${hourGrid ? "has-hour-grid" : ""} ${extraClass}" data-date="${iso}">
@@ -7798,10 +7945,15 @@ function renderPlanning(debut, fin, items) {
   for (let d = new Date(debut); d <= fin; d.setDate(d.getDate() + 1)) jours.push(new Date(d));
 
   let gridHtml;
-  if (planningViewMode === "jour") {
-    gridHtml = `<div class="planning-day-view">${planningHourGutterHtml()}${planningDayCellHtml(debut, items, { compact: false, showWeekday: true, hourGrid: true })}</div>`;
-  } else if (planningViewMode === "semaine") {
-    gridHtml = `<div class="planning-week-grid">${planningHourGutterHtml()}${jours.map((j) => planningDayCellHtml(j, items, { compact: false, showWeekday: true, hourGrid: true })).join("")}</div>`;
+  if (planningViewMode === "jour" || planningViewMode === "semaine") {
+    const joursAxe = planningViewMode === "jour" ? [debut] : jours;
+    const hauteurBande = planningBandeHauteur(joursAxe, items);
+    const bande = hauteurBande > 0;
+    const style = ` style="--planning-bande-h:${hauteurBande}px;"`;
+    const classe = planningViewMode === "jour" ? "planning-day-view" : "planning-week-grid";
+    gridHtml = `<div class="${classe}"${style}>${planningHourGutterHtml(bande)}${joursAxe
+      .map((j) => planningDayCellHtml(j, items, { compact: false, showWeekday: true, hourGrid: true, bande }))
+      .join("")}</div>`;
   } else {
     const moisAnchor = planningAnchorDate.getMonth();
     gridHtml = `<div class="planning-month-grid">
@@ -7850,10 +8002,16 @@ function evenementDetailHtml(item) {
   const dateLabel = new Date(item.date).toLocaleDateString("fr-FR", {
     weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: PLANNING_TIMEZONE,
   });
+  const duree = planningDureeMinutes(item);
   return `
     <div class="profil-row"><div class="label">Type</div><div class="value">${escapeHtml(PLANNING_TYPE_LABELS[item.type] || item.type)}</div></div>
     <div class="profil-row"><div class="label">Date</div><div class="value">${escapeHtml(dateLabel)}</div></div>
-    <div class="profil-row"><div class="label">Heure</div><div class="value">${planningHeureLocale(item.date)}</div></div>
+    <div class="profil-row"><div class="label">Heure</div><div class="value">${planningHeureLocale(item.date)}${
+      duree !== null ? ` – ${planningHeureLocale(item.date_fin)}` : ""
+    }</div></div>
+    <div class="profil-row"><div class="label">Durée</div><div class="value">${
+      duree !== null ? escapeHtml(planningDureeLabel(duree)) : "Non précisée"
+    }</div></div>
     ${client ? `<div class="profil-row"><div class="label">Client</div><div class="value">${escapeHtml(client.nom)}</div></div>` : ""}
     ${item.lieu ? `<div class="profil-row"><div class="label">Lieu</div><div class="value">${escapeHtml(item.lieu)}</div></div>` : ""}
   `;
@@ -7880,11 +8038,10 @@ document.addEventListener("click", async (e) => {
     const item = planningEvenementDetailItem;
     if (!item) return;
     fermerDetailEvenement();
-    switchView("planning");
-    setTimeout(() => window.showEvenementForm({
+    switchView("planning").then(() => window.showEvenementForm({
       evenementId: item.reference_id, titre: item.titre, type: item.type,
-      date: item.date, lieu: item.lieu, clientId: item.client_id, chantierId: item.chantier_id,
-    }), 50);
+      date: item.date, dateFin: item.date_fin, lieu: item.lieu, clientId: item.client_id, chantierId: item.chantier_id,
+    }));
   } else if (e.target.closest('[data-action="supprimer-evenement"]')) {
     const item = planningEvenementDetailItem;
     if (!item) return;
@@ -7918,6 +8075,13 @@ function setupPlanningView() {
     // reouvrir un rendez-vous en edition doit remontrer exactement la date
     // et l'heure que l'artisan avait saisies, pas un decalage.
     const { date: dateVal, heure: heureVal } = prefill.date ? planningDateHeureLocale(prefill.date) : { date: "", heure: "09:00" };
+    // La duree n'a PAS de valeur par defaut : « non precisee » est un etat
+    // legitime, et c'est le seul honnete tant que l'artisan n'a rien dit. Une
+    // heure choisie d'office se retrouverait dessinee sur la grille comme un
+    // creneau reellement occupe.
+    const dureeVal = prefill.date && prefill.dateFin
+      ? String(Math.max(0, Math.round((new Date(prefill.dateFin) - new Date(prefill.date)) / 60000)))
+      : "";
     container.innerHTML = `
       <div class="form-box">
         <h3>${isEdit ? "Modifier le rendez-vous" : prefill.titre ? "Planifier une intervention" : "Nouveau rendez-vous"}</h3>
@@ -7935,9 +8099,14 @@ function setupPlanningView() {
             </div>
             <div><label for="ev-date">Date *</label><input type="date" id="ev-date" value="${escapeHtml(dateVal)}" required></div>
             <div><label for="ev-heure">Heure</label><input type="time" id="ev-heure" value="${escapeHtml(heureVal)}"></div>
+            <div>
+              <label for="ev-duree">Durée</label>
+              <select id="ev-duree">${planningDureeOptionsHtml(dureeVal)}</select>
+            </div>
             <div><label for="ev-client">Client (optionnel)</label><select id="ev-client"><option value="">Aucun</option>${clientOptionsHtml(prefill.clientId)}</select></div>
             <div><label for="ev-lieu">Lieu</label><input type="text" id="ev-lieu" value="${escapeHtml(prefill.lieu || "")}"></div>
           </div>
+          <p class="field-hint">Sans durée, le rendez-vous s'affiche comme un simple repère à son heure de début : le planning ne montre pas d'occupation qui n'a pas été saisie.</p>
           <p class="field-error" id="evenement-form-error" hidden></p>
           <div class="form-actions">
             <button type="submit" class="btn-sm btn-sm-primary">${isEdit ? "Enregistrer" : "Créer"}</button>
@@ -7955,10 +8124,17 @@ function setupPlanningView() {
       const dateVal = document.getElementById("ev-date").value;
       const heureVal = document.getElementById("ev-heure").value || "09:00";
       const clientVal = document.getElementById("ev-client").value;
+      const dureeMin = parseInt(document.getElementById("ev-duree").value, 10);
+      const debutIso = planningLocalToUtcIso(dateVal, heureVal);
       const payload = {
         titre: document.getElementById("ev-titre").value,
         type: document.getElementById("ev-type").value,
-        date_debut: planningLocalToUtcIso(dateVal, heureVal),
+        date_debut: debutIso,
+        // null quand la duree n'est pas precisee : c'est ce null qui fait
+        // afficher un repere plutot qu'un creneau plein sur la grille.
+        date_fin: Number.isFinite(dureeMin) && dureeMin > 0
+          ? new Date(new Date(debutIso).getTime() + dureeMin * 60000).toISOString()
+          : null,
         lieu: emptyToNull(document.getElementById("ev-lieu").value),
         client_id: clientVal ? parseInt(clientVal, 10) : null,
         chantier_id: prefill.chantierId || null,
@@ -8044,12 +8220,9 @@ function setupPlanningView() {
     renderPlanningFiltered();
   });
 
-  planningContent.addEventListener("keydown", (e) => {
-    if ((e.key === "Enter" || e.key === " ") && e.target.matches(".planning-item-clickable")) {
-      e.preventDefault();
-      e.target.click();
-    }
-  });
+  // (Entree/Espace sur un item du planning : plus de gestionnaire local, le
+  // relais delegue en tete de fichier couvre tous les role="button" du
+  // produit. En garder un ici declencherait deux clics sur la meme frappe.)
 
   planningContent.addEventListener("dragstart", (e) => {
     const chip = e.target.closest(".planning-item");
@@ -8095,11 +8268,21 @@ function setupPlanningView() {
       if (data.type === "tache") {
         await Api.updateTache(parseInt(data.refId, 10), { echeance: newDate });
       } else if (PLANNING_TYPES_EVENEMENT.has(data.type)) {
+        const refId = parseInt(data.refId, 10);
         const oldDate = new Date(data.currentDate);
         const [y, m, d] = newDate.split("-").map(Number);
         const combined = new Date(oldDate);
         combined.setFullYear(y, m - 1, d);
-        await Api.updateEvenement(parseInt(data.refId, 10), { date_debut: combined.toISOString() });
+        // La fin suit le debut du meme decalage. Sans ca, deplacer un
+        // rendez-vous d'une journee laissait sa fin sur l'ancien jour : la
+        // duree enregistree devenait celle de l'ecart entre les deux dates.
+        const source = planningItemsCache.find((i) => i.reference_id === refId && i.type === data.type);
+        const decalage = combined - oldDate;
+        const payload = { date_debut: combined.toISOString() };
+        if (source && source.date_fin) {
+          payload.date_fin = new Date(new Date(source.date_fin).getTime() + decalage).toISOString();
+        }
+        await Api.updateEvenement(refId, payload);
       } else {
         return;
       }

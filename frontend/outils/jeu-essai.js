@@ -50,6 +50,9 @@ const jg = (n) => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 const tg = (n) => new Date(Date.now() - n * 86400e3).toISOString();
+// Une heure d'AUJOURD'HUI, posee sur l'horloge locale puis convertie en UTC -
+// comme le fait le formulaire de rendez-vous (planningLocalToUtcIso).
+const hg = (h, m = 0) => { const d = new Date(); d.setHours(h, m, 0, 0); return d.toISOString(); };
 Api.listClients = async () => [
   { id: 1, nom: "Bertrand", societe: "Bertrand & Fils", statut: "gagne", source: "manuel", email: "contact@bertrand-fils.fr", telephone: "06 12 34 56 78", ville: "Villeurbanne", montant_estime: 31000, probabilite: 80, prochaine_action: "Relancer après la visite de mardi", updated_at: tg(2), created_at: tg(60) },
   { id: 2, nom: "Roussel", societe: null, statut: "nouveau", source: "site_vitrine", email: null, telephone: "07 88 12 45 66", ville: "Lyon 3e", montant_estime: null, probabilite: null, prochaine_action: null, updated_at: tg(22), created_at: tg(30) },
@@ -97,7 +100,25 @@ Api.listTaches = async () => [
 Api.listDocuments = async () => [
   { id: 1, nom: "Photo avant travaux", type: "photo", url: null, nom_original: "photo.jpg", taille_octets: 240000, client_id: null, chantier_id: 2, created_at: tg(3) },
 ];
-Api.planning = async () => [{ id: 1, date: new Date().toISOString(), type: "rdv", titre: "Métré chez Mme Roussel", reference_id: 1, client_id: null, chantier_id: null }];
+// PlanningItem porte desormais `date_fin` (routers/planning.py), qui reste
+// null quand l'artisan n'a pas precise de duree. Les trois etats de la grille
+// doivent etre representes, sinon on ne verifie qu'un tiers de la vue :
+//   - un creneau borne (date_fin renseignee) ;
+//   - un debut sans fin connue, dessine en repere ;
+//   - deux items sans heure du tout (echeance de tache, debut de chantier),
+//     que le serveur ancre a 9h00 et 8h00 pour les trier - ces heures ne
+//     doivent JAMAIS se retrouver sur l'axe horaire.
+Api.planning = async () => {
+  const a = (h, m = 0) => { const d = new Date(); d.setHours(h, m, 0, 0); return d.toISOString(); };
+  const demain = (h, m = 0) => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(h, m, 0, 0); return d.toISOString(); };
+  return [
+    { date: a(9), date_fin: a(10, 30), type: "rdv", titre: "Métré chez Mme Roussel", reference_id: 1, client_id: 2, chantier_id: null, lieu: "Lyon 3e" },
+    { date: a(14), date_fin: null, type: "visite", titre: "Visite de chantier Ducros", reference_id: 2, client_id: 1, chantier_id: 2, lieu: "Écully" },
+    { date: a(15, 30), date_fin: a(15, 45), type: "intervention", titre: "Reprise joint salle de bain", reference_id: 3, client_id: 1, chantier_id: null, lieu: null },
+    { date: a(9), date_fin: null, type: "tache", titre: "Commander le carrelage", reference_id: 1, client_id: null, chantier_id: 2, lieu: null },
+    { date: demain(8), date_fin: null, type: "chantier_debut", titre: "Début chantier : Villa Ducros", reference_id: 2, client_id: 1, chantier_id: 2, lieu: null },
+  ];
+};
 Api.analytics = async () => ({ ca_par_mois: [4200, 5100, 6400, 8100, 9200, 11650].map((ca, i) => { const d = new Date(); d.setMonth(d.getMonth() - (5 - i)); return { mois: d.toISOString().slice(0, 7), ca }; }), valeur_pipeline: 42100, montant_impayes: 13340, nb_devis_total: 48, nb_devis_signes: 21, nb_clients_acquis: 18, nb_clients_recurrents: 7, taux_acceptation: 58, panier_moyen: 6420, delai_moyen_paiement_jours: 34, sources_acquisition: [{ source: "site_vitrine", nb_clients: 15, nb_gagnes: 5, ca: 31200 }] });
 // AvisOut : la source est requise et porte un libelle (AVIS_SOURCE_LABELS),
 // l'etat de publication s'appelle `publie_site`. Le jeu d'essai disait
@@ -127,7 +148,13 @@ Api.listNotifications = async () => [
   { id: 2, type: "nouvelle_demande_devis", notification_id: 4, client_id: 2, titre: "Nouvelle demande depuis le site", sous_titre: "Roussel · remplacement de chauffe-eau", urgent: false, date: tg(1.3), view: "prospects", lu: true },
   { id: 5, type: "message_client", notification_id: 5, client_id: 1, titre: "Message de Bertrand", sous_titre: "« Peut-on décaler la visite de mardi ? »", urgent: false, date: tg(6), view: "prospects", lu: true },
 ];
-Api.dashboard = async () => ({ finances: { ca_mois: 18420, a_encaisser: 1840, paiements_recents: [{ date_paiement: jg(-2), moyen: "Virement", montant: 4200 }] }, commercial: { devis_en_attente: 7, valeur_pipeline: 42100 }, aujourdhui: { factures_en_retard: [{ id: 14, numero: "FA-2026-014", client_nom: "Bertrand", montant_restant: 1840 }], devis_a_relancer: [{ id: 89, numero: "DV-2026-089", client_nom: "Bertrand", relance_manuelle_possible: true }], taches: [{ id: 1, titre: "Commander le carrelage" }], chantiers_a_venir: [{ id: 2, titre: "Villa Ducros — extension côté jardin", date_debut: jg(4) }], evenements: [{ id: 1, titre: "Métré chez Mme Roussel", date_debut: new Date().toISOString() }] }, alertes_conformite: [], presence_site: { statut: "livre", url: "https://exemple.fr", nb_demandes_total: 9, nb_demandes_30j: 3, nb_clients_gagnes: 2, ca_genere: 12400, taux_conversion: 22.2 } });
+Api.dashboard = async () => ({ finances: { ca_mois: 18420, a_encaisser: 1840, paiements_recents: [{ date_paiement: jg(-2), moyen: "Virement", montant: 4200 }] }, commercial: { devis_en_attente: 7, valeur_pipeline: 42100 }, aujourdhui: { factures_en_retard: [{ id: 14, numero: "FA-2026-014", client_nom: "Bertrand", montant_restant: 1840 }], devis_a_relancer: [{ id: 89, numero: "DV-2026-089", client_nom: "Bertrand", relance_manuelle_possible: true }], taches: [{ id: 1, titre: "Commander le carrelage" }], chantiers_a_venir: [{ id: 2, titre: "Villa Ducros — extension côté jardin", date_debut: jg(4) }], evenements: [
+  // EvenementOut complet : l'accueil ouvre desormais le rendez-vous lui-meme,
+  // il lui faut donc type, client et lieu. Un avec duree, un sans : les deux
+  // rendus de l'heure doivent etre visibles sur l'ecran d'accueil.
+  { id: 1, artisan_id: 1, client_id: 2, chantier_id: null, titre: "Métré chez Mme Roussel", type: "rdv", date_debut: hg(9), date_fin: hg(10, 30), lieu: "Lyon 3e", notes: null },
+  { id: 2, artisan_id: 1, client_id: 1, chantier_id: 2, titre: "Visite de chantier Ducros", type: "visite", date_debut: hg(14), date_fin: null, lieu: "Écully", notes: null },
+] }, alertes_conformite: [], presence_site: { statut: "livre", url: "https://exemple.fr", nb_demandes_total: 9, nb_demandes_30j: 3, nb_clients_gagnes: 2, ca_genere: 12400, taux_conversion: 22.2 } });
 // RecommandationOut porte toujours une `view`, et parfois un `reference_id`
 // quand la phrase designe une piece precise (routers/dashboard.py). Les deux
 // cas doivent etre representes : l'un ouvre la liste, l'autre le chantier.

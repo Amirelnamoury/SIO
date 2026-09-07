@@ -1294,6 +1294,9 @@ input[type="checkbox"], input[type="radio"] { width: 24px; height: 24px; flex-sh
 .ligne-row .btn-sm { padding: 6px 10px; flex-shrink: 0; }
 .lignes-total { text-align: right; font-weight: var(--sa-weight-bold); margin-top: var(--sa-space-2); color: var(--sa-text); font-size: var(--sa-text-md); }
 .field-error { margin-top: var(--sa-space-3); font-weight: var(--sa-weight-medium); }
+/* Une precision sur ce que le formulaire fera de la saisie - pas une alerte.
+   Elle se lit sous la grille des champs, au meme retrait que les libelles. */
+.field-hint { margin-top: var(--sa-space-3); max-width: 62ch; }
 
 /* ---------- Notes de chantier ---------- */
 .notes-list { margin-top: var(--sa-space-4); display: flex; flex-direction: column; gap: 8px; }
@@ -1375,6 +1378,32 @@ input[type="checkbox"], input[type="radio"] { width: 24px; height: 24px; flex-sh
 .planning-item-positioned { position: absolute; border-radius: 4px; padding: 2px 6px; overflow: hidden; line-height: 1.3; background: var(--sa-surface-3); border-left: 2px solid var(--sa-text-faint); font-size: var(--sa-text-2xs); z-index: 1; }
 .planning-item-positioned .planning-item-heure { display: block; font-size: 0.62rem; }
 .planning-item-positioned .planning-item-titre { display: block; font-weight: var(--sa-weight-semibold); white-space: nowrap; }
+/* Fin non renseignee : le rendez-vous ne peut pas etre dessine comme une
+   plage occupee. Il devient un marqueur d'une seule ligne, pose a son heure -
+   l'heure et le titre passent cote a cote, et le fond s'efface pour que rien
+   dans le dessin ne suggere une duree. */
+.planning-item-positioned.est-marqueur { display: flex; align-items: center; gap: 5px; padding-top: 0; padding-bottom: 0; background: transparent; border-radius: 0; border-top: 1px solid var(--sa-border-strong); }
+.planning-item-positioned.est-marqueur .planning-item-heure,
+.planning-item-positioned.est-marqueur .planning-item-titre { display: inline; font-size: 0.62rem; }
+.planning-item-positioned.est-marqueur .planning-item-titre { overflow: hidden; text-overflow: ellipsis; }
+.planning-item-positioned.est-borne { display: flex; flex-direction: column; justify-content: flex-start; }
+/* Un creneau court (15-30 min) n'a pas la hauteur de deux lignes : l'heure et
+   le titre se rangent cote a cote, sinon le titre disparaissait sous le bord. */
+.planning-item-positioned.est-court { flex-direction: row; align-items: center; gap: 5px; padding-top: 0; padding-bottom: 0; }
+.planning-item-positioned.est-court .planning-item-heure,
+.planning-item-positioned.est-court .planning-item-titre { display: inline; font-size: 0.62rem; }
+.planning-item-positioned.est-court .planning-item-titre { overflow: hidden; text-overflow: ellipsis; }
+
+/* La bande « Sans heure » : une echeance de tache ou un debut de chantier
+   porte un JOUR, pas une heure. Les poser sur l'axe a 9h00 - l'ancre de tri
+   du serveur - faisait dire a la grille que la matinee etait prise. Ils
+   vivent donc au-dessus de l'axe, comme dans n'importe quel agenda.
+   Sa hauteur est fixee une fois pour toute la grille (--planning-bande-h,
+   calculee dans app.js) et lue a la fois par la gouttiere et par les
+   colonnes : c'est ce qui garde les reglures en face des heures. */
+.planning-jour-bande { height: var(--planning-bande-h, 0px); box-sizing: border-box; display: flex; flex-direction: column; gap: 2px; padding: 3px 4px; overflow-y: auto; border-bottom: 1px solid var(--sa-border); }
+.planning-jour-bande .planning-item { font-size: var(--sa-text-2xs); padding: 2px 5px; line-height: 1.4; flex-shrink: 0; }
+.planning-jour-bande-libelle { justify-content: center; align-items: flex-end; text-align: right; padding: 0 8px 0 2px; font-size: 0.58rem; line-height: 1.15; text-transform: uppercase; overflow: hidden; }
 
 /* ---------- Carte d'abonnement requis ---------- */
 .upgrade-card { border: 1px dashed var(--sa-border-strong); border-radius: var(--sa-radius-lg); padding: 44px 28px; text-align: center; max-width: 440px; margin: var(--sa-space-6) auto; }
@@ -2105,6 +2134,10 @@ label { color: var(--sa-text-muted); }
   font-size: var(--sa-text-sm); font-weight: 600;
   color: var(--sa-text); font-variant-numeric: tabular-nums;
 }
+/* La fin passe sous le debut : la colonne fait 62 px, et « 09:00 – 10:30 »
+   sur une ligne la ferait deborder. Elle recule d'un ton - c'est le debut
+   qu'on lit en balayant la journee. */
+.dash-journee-fin { display: block; font-size: var(--sa-text-xs); font-weight: 400; color: var(--sa-text-faint); }
 .dash-journee-titre { font-size: var(--sa-text-sm); color: var(--sa-text-muted); }
 
 /* ---------- Les chiffres du mois ----------
@@ -2988,6 +3021,14 @@ label { color: var(--sa-text-muted); }
 .planning-now-line { border-top-color: var(--sa-danger); }
 .planning-now-dot { background: var(--sa-danger); }
 .planning-day-empty { color: var(--sa-text-faint); }
+/* Le marqueur n'a pas de fond : c'est son filet gauche, deja colore par le
+   type, qui le rattache a la grille. Au survol, un fond discret revient pour
+   confirmer qu'il est bien saisissable. */
+.planning-item-positioned.est-marqueur { background: transparent; }
+.planning-item-positioned.est-marqueur:hover { background: var(--sa-surface-2); }
+.planning-item-positioned.est-marqueur .planning-item-heure { color: var(--sa-text-muted); }
+.planning-jour-bande { background: var(--sa-surface-2); border-bottom-color: var(--sa-border-strong); }
+.planning-jour-bande-libelle { color: var(--sa-text-faint); background: var(--sa-surface-2); }
 
 /* Le selecteur Jour / Semaine / Mois : meme grammaire que les segments
    d'etat ailleurs dans le produit. */
@@ -3320,6 +3361,7 @@ label { color: var(--sa-text-muted); }
 .section-hint { font-size: var(--sa-text-xs); color: var(--sa-text-muted); }
 .form-section + .form-section { margin-top: var(--sa-space-8); }
 .field-error { color: var(--sa-danger); font-size: var(--sa-text-xs); }
+.field-hint { color: var(--sa-text-muted); font-size: var(--sa-text-xs); }
 .moment-banner {
   padding: 11px 14px;
   border-left: 2px solid var(--sa-laiton);

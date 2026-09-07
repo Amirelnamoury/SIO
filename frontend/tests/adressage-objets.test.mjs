@@ -131,4 +131,19 @@ assert.match(appSource, /const facture = await Api\.factureDepuisDevis\([\s\S]*?
 assert.match(appSource, /await ouvrirObjet\("chantier", res\.chantier\.id\)/,
   "preparer un chantier doit ouvrir le chantier cree");
 
+// ---------------------------------------------------------------------
+// 5. Atteindre un objet au clavier autant qu'a la souris.
+// ---------------------------------------------------------------------
+// Onze elements portent role="button" tabindex="0" sans etre des <button> :
+// ils prennent le focus et s'annoncent comme des boutons. Seul le planning
+// gerait Entree/Espace ; ailleurs, la touche ne faisait rien. Un relais
+// delegue unique - deux relais produiraient deux clics sur une seule frappe.
+assert.match(
+  appSource,
+  /if \(e\.key !== "Enter" && e\.key !== " "\) return;[\s\S]*?\[role="button"\]\[tabindex="0"\][\s\S]*?cible\.click\(\)/,
+  "Entree et Espace doivent activer les elements qui se presentent comme des boutons",
+);
+const relais = appSource.match(/e\.key === "Enter" \|\| e\.key === " "/g) || [];
+assert.equal(relais.length, 0, "aucun relais clavier local ne doit doubler le relais delegue");
+
 console.log("OK - adressage-objets.test.mjs");
