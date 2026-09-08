@@ -43,14 +43,18 @@
     Array.prototype.forEach.call(panels, function (b) { io.observe(b); });
   }
 
-  // Le chapitre 7 ne fait pas partie de la timeline des scenes : c'est
-  // lui qui allume la 7e pastille de l'indicateur.
-  if ("IntersectionObserver" in window && chapitreFinal && progressLinks) {
+  // Le contenu d'apres la visite ne fait pas partie de la timeline des
+  // plans : il garde le DERNIER repere allume. Ce numero etait ecrit en
+  // dur a "7" quand la visite comptait sept chapitres ; il en compte
+  // quatre depuis la reduction a huit plans, et le repere ne s'allumait
+  // donc plus jamais. Il est desormais lu sur la liste elle-meme.
+  if ("IntersectionObserver" in window && chapitreFinal && progressLinks && progressLinks.length) {
+    var dernierChap = progressLinks[progressLinks.length - 1].dataset.chap;
     new IntersectionObserver(function (entries) {
       entries.forEach(function (e) {
         if (!e.isIntersecting) return;
         Array.prototype.forEach.call(progressLinks, function (a) {
-          a.parentNode.classList.toggle("is-on", a.dataset.chap === "7");
+          a.parentNode.classList.toggle("is-on", a.dataset.chap === dernierChap);
         });
       });
     }, { threshold: 0.01, rootMargin: "-45% 0px -45% 0px" }).observe(chapitreFinal);
@@ -141,9 +145,13 @@
       +       '</div>'
       +     '</div>'
       +     '<p class="lc-offer-note"><strong>La gestion et la maintenance sont facultatives.</strong> Si vous la prenez, elle couvre : ' + o.resumeInclus.charAt(0).toLowerCase() + o.resumeInclus.slice(1).replace(/\s*inclus\s*\.?\s*$/i, '') + '.' + '</p>'
+      // Un seul bouton. Le second pointait sur la FAQ, retiree avec le
+      // raccourcissement du contenu d'apres-visite - et il y menait pour
+      // lire ce qui est compris, alors que la liste `carteInclus` est
+      // affichee juste a cote. Il renvoyait donc ailleurs pour une
+      // reponse deja sous les yeux.
       +     '<div class="lc-actions">'
       +       '<a href="index.html?tab=register" class="lc-btn lc-btn-primary lc-btn-lg">Créer mon compte</a>'
-      +       '<a href="#faq" class="lc-btn lc-btn-ghost lc-btn-lg">Ce qui est compris</a>'
       +     '</div>'
       +     '<p class="lc-note">Prestation facultative, facturée séparément de l’abonnement'
       +       (avecTous ? ' et disponible avec tous les plans, y compris le plan gratuit.' : '.') + '</p>'

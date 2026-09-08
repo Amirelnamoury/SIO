@@ -20,14 +20,22 @@
      landing.html?debug=1   (le canevas doit conserver son tampon)
      const c = await mesurerContrasteVisite(3);
 
-   TROIS FOIS CET OUTIL M'A MENTI AVANT D'ÊTRE JUSTE, ET C'EST NOTÉ ICI
+   QUATRE FOIS CET OUTIL M'A MENTI AVANT D'ÊTRE JUSTE, ET C'EST NOTÉ ICI
    POUR QU'ON NE REFASSE PAS LE CHEMIN :
      - il mesurait pendant le chargement d'une texture, donc l'image
        précédente : d'où `indexA`, qui dit quelle scène est réellement
        liée, et non « une scène est prête » ;
      - il itérait positionnellement sur un sous-tableau de scènes et
        comparait la boîte de texte de la scène 0 au canevas d'une autre ;
-     - il lisait la moyenne de la zone au lieu de son point le plus clair.
+     - il lisait la moyenne de la zone au lieu de son point le plus clair ;
+     - il jetait l'alpha de la COULEUR DU TEXTE et jugeait l'encre
+       atténuée comme si elle était pleine.
+
+   Le dernier défaut ne s'est trahi que par un symptôme indirect : on
+   change l'opacité du texte, et la mesure ne bouge pas d'un centième.
+   Une valeur qui refuse de changer quand sa cause change est un signe
+   plus fiable qu'une valeur qui paraît fausse.
+
    Une sonde fausse ne mesure rien : elle déplace le défaut dans l'outil,
    où il est bien plus difficile à voir.
    ===================================================================== */
@@ -36,6 +44,16 @@
   const lum = ([r, g, b]) => 0.2126 * lin(r / 255) + 0.7152 * lin(g / 255) + 0.0722 * lin(b / 255);
   const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
   const rgb = (s) => (s.match(/[\d.]+/g) || []).slice(0, 3).map(Number);
+  /* L'ALPHA DU TEXTE, qui manquait.
+     `rgb()` ci-dessus jette le quatrieme canal. Or l'encre attenuee de la
+     visite est declaree `rgba(242, 245, 244, .84)` : la sonde la traitait
+     comme une encre PLEINE, et rapportait donc un contraste que personne
+     ne voit. Symptome : on change l'opacite du texte, et la mesure ne
+     bouge pas d'un centieme - c'est ce qui a trahi le defaut.
+     Un texte semi-transparent se compose sur son fond comme n'importe
+     quelle couche : c'est la couleur COMPOSEE qu'il faut comparer. */
+  const alphaDe = (s) => { const m = (s.match(/[\d.]+/g) || []); return m.length > 3 ? Number(m[3]) : 1; };
+  const composer = (couleur, alpha, fond) => couleur.map((c, j) => c * alpha + fond[j] * (1 - alpha));
 
   function lireDegrade(el) {
     const bg = getComputedStyle(el).backgroundImage;
@@ -170,17 +188,43 @@
        WCAG : 3:1 a partir de 24 px, ou 18,7 px en gras. En dessous,
        4,5:1. Juger un titre de 3,5 rem au seuil du texte courant
        conduirait a noircir la photographie pour rien. */
+    /* TROISIEME VOILE : le fond propre de la carte chiffree.
+       Elle est translucide (rgba) et floutee. Son fond s'ajoute aux deux
+       autres, et l'ignorer sous-estimerait son contraste - on ferait
+       alors assombrir toute la photographie pour un texte qui, lui, est
+       deja pose sur un aplat. Le flou n'entre pas dans le calcul : il
+       moyenne les pixels sous la carte sans changer leur luminance
+       d'ensemble, et on retient de toute facon le point le plus clair. */
+    function fondPropre(el) {
+      let n = el;
+      while (n && n !== vue) {
+        const cs = getComputedStyle(n);
+        const m = (cs.backgroundColor || "").match(/rgba?\(([^)]+)\)/);
+        if (m) {
+          const p = m[1].split(",").map(Number);
+          const a = p.length > 3 ? p[3] : 1;
+          if (a > 0.01) return { c: p.slice(0, 3), a };
+        }
+        n = n.parentElement;
+      }
+      return null;
+    }
+
     function juger(el, nom) {
       if (!el) return null;
       const cs = getComputedStyle(el);
       const px = parseFloat(cs.fontSize);
       const gras = (parseInt(cs.fontWeight, 10) || 400) >= 700;
       const grand = px >= 24 || (gras && px >= 18.66);
-      const fond = fondSous(el);
+      let fond = fondSous(el);
       if (!fond) return null;
-      const r = +ratio(rgb(cs.color), fond).toFixed(2);
+      const propre = fondPropre(el);
+      if (propre) fond = fond.map((c, j) => c * (1 - propre.a) + propre.c[j] * propre.a);
+      const at = alphaDe(cs.color);
+      const encre = composer(rgb(cs.color), at, fond);
+      const r = +ratio(encre, fond).toFixed(2);
       const seuil = grand ? 3 : 4.5;
-      return { nom, px: +px.toFixed(1), grand, ratio: r, seuil, ok: r >= seuil };
+      return { nom, px: +px.toFixed(1), grand, alpha: at, ratio: r, seuil, ok: r >= seuil, surAplat: !!propre };
     }
 
     const elements = [
@@ -188,6 +232,8 @@
       juger(vue.querySelector(".lc-lead"), "lead"),
       juger(vue.querySelector(".lc-eyebrow"), "eyebrow"),
       juger(vue.querySelector(".lc-note"), "note"),
+      juger(vue.querySelector(".lc-kpi-chiffre"), "kpi-chiffre"),
+      juger(vue.querySelector(".lc-kpi-libelle"), "kpi-libelle"),
     ].filter(Boolean);
 
     return {

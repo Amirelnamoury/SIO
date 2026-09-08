@@ -9,21 +9,21 @@
 <meta property="og:title" content="Suite Artisan — Votre entreprise, du terrain au bureau">
 <meta property="og:description" content="Clients, devis, factures, chantiers et planning au même endroit. Le logiciel de gestion pensé pour les artisans du bâtiment.">
 <meta property="og:type" content="website">
-<meta name="theme-color" content="#F6F7F8">
+<meta name="theme-color" content="#F1EADF">
 <link rel="icon" type="image/png" href="assets/landing/logo-64.png">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
-<!-- Seule la facade est prechargee. Les treize autres pieces sont
-     demandees par landing-piste.js a mesure que le visiteur avance, et
-     les textures WebGL sont liberees des qu'une piece est derriere. -->
+<!-- Seule la facade est prechargee. Les sept autres pieces sont demandees
+     par landing-piste.js a mesure que le visiteur avance, et les textures
+     WebGL sont liberees des qu'une piece est derriere. -->
 <link rel="preload" as="image" href="assets/landing/villa/00_villa-master-facade.webp"
       imagesrcset="assets/landing/villa/00_villa-master-facade-sm.webp 1100w, assets/landing/villa/00_villa-master-facade.webp 1920w"
       imagesizes="100vw" fetchpriority="high">
 
-<link rel="stylesheet" href="landing.css?v=42-beige">
+<link rel="stylesheet" href="landing.css?v=58-visite8">
 </head>
 <body class="lc">
 
@@ -39,10 +39,9 @@
       Suite&nbsp;Artisan
     </a>
     <nav class="lc-nav-links" aria-label="Navigation principale">
-      <a href="#chap-6">Produit</a>
-      <a href="#metiers">Métiers</a>
+      <a href="#apres-visite">Produit</a>
       <a href="#tarifs">Tarifs</a>
-      <a href="#faq">FAQ</a>
+      <a href="#site-vitrine">Site Vitrine</a>
     </nav>
     <div class="lc-nav-cta">
       <a href="index.html" class="lc-link">Connexion</a>
@@ -56,10 +55,10 @@
 <!-- ===================================================================
      LA VISITE
      ---------------------------------------------------------------------
-     Quatorze photographies d'une meme villa livree, traversees piece par
+     Huit photographies d'une meme villa livree, traversees piece par
      piece. Un seul plateau (.lc-stage) reste colle en haut pendant toute
      la sequence ; la hauteur de defilement vient des .lc-spacer, et une
-     unique timeline pilote a la fois la camera et les textes.
+     unique timeline pilote a la fois l'image et les textes.
 
      POURQUOI LES TEXTES VIVENT DANS LE PLATEAU
      Avec un `sticky` par chapitre, le contenu n'est epingle que sur
@@ -71,12 +70,12 @@
 
      TROIS COUCHES SUPERPOSEES
        1. <canvas>  la visite en WebGL (Three.js), quand elle est possible
-       2. .lc-plans les memes photographies en HTML - c'est le repli, et
+       2. .lc-tirages les memes photographies en HTML - c'est le repli, et
                     c'est aussi ce qui porte le texte alternatif
        3. .lc-vue   les textes, poses par-dessus, un par piece
 
      La couche 2 n'est JAMAIS chargee en meme temps que la 1 : si le
-     WebGL demarre, les <img> sont retirees avant leur telechargement.
+     WebGL demarre, les <img> restent sans `src`.
      =================================================================== -->
 <div class="lc-visite" id="lc-visite">
 
@@ -88,27 +87,27 @@
 
     <!-- 2. Le repli. Presentes en <img> et non en fond CSS : une
             photographie de piece merite un texte alternatif, et un fond
-            CSS n'en a pas. `data-focal` deplace le cadrage par piece -
-            aucune n'est cadree au centre par defaut. -->
+            CSS n'en a pas. -->
     <div class="lc-tirages" id="lc-tirages">
-      <!-- Les quatorze figures sont posees par landing-visite.js depuis la
-           table des scenes : l'ordre narratif, le point focal et le texte
+      <!-- Les huit figures sont posees par landing-piste.js depuis la table
+           des scenes : l'ordre narratif, le point focal et le texte
            alternatif vivent a un seul endroit. -->
     </div>
 
-    <!-- Un grain tres leger, commun aux quatorze images : il les lie
-         entre elles et casse le banding des degrades sombres. -->
+    <!-- Un grain tres leger, commun aux huit images : il les lie entre
+         elles et casse le banding des degrades sombres. -->
     <div class="lc-grain" aria-hidden="true"></div>
 
-    <!-- Le degrade local, ancre du cote du texte. Pas un rectangle
-         opaque : une ombre portee qui suit la composition de la piece. -->
+    <!-- Le degrade local, ancre du cote du texte. Pas un panneau opaque :
+         une ombre portee qui suit la composition de la piece. -->
     <div class="lc-ombre" id="lc-ombre" aria-hidden="true"></div>
 
     <!-- 3. Les textes. Un seul est actif a la fois ; les autres restent
             dans le DOM, masques a l'oeil et au clavier. -->
     <div class="lc-vues" id="lc-vues">
 
-      <section class="lc-vue is-on" data-vue="0" data-cote="bas-gauche" aria-label="Suite Artisan">
+      <!-- 01 — LA FACADE ................................. l'arrivee -->
+      <section class="lc-vue is-on" data-vue="0" data-cote="gauche" aria-label="Suite Artisan">
         <div class="lc-vue-in">
           <div class="lc-bloc">
             <p class="lc-eyebrow">Suite Artisan</p>
@@ -122,28 +121,30 @@
             </p>
             <div class="lc-actions">
               <a href="index.html?tab=register" class="lc-btn lc-btn-primary lc-btn-lg">Essayer gratuitement</a>
-              <a href="#chap-final" class="lc-btn lc-btn-ghost lc-btn-lg">Découvrir Suite Artisan</a>
+              <a href="#apres-visite" class="lc-btn lc-btn-ghost lc-btn-lg">Découvrir Suite Artisan</a>
             </div>
             <p class="lc-note">Gratuit pour démarrer · Sans carte bancaire · Sans engagement</p>
           </div>
           <p class="lc-scrollcue"><span class="lc-scrollcue-line" aria-hidden="true"></span> Faire défiler pour visiter</p>
-        
-          <noscript><img class="lc-planche-statique" src="assets/landing/villa/00_villa-master-facade-sm.webp" alt="Façade d'une villa en pierre au crépuscule, entrée voûtée éclairée et jardin taillé." width="1100" height="614" style="object-position:50% 46%"></noscript>
+
+          <noscript><img class="lc-planche-statique" src="assets/landing/villa/00_villa-master-facade-sm.webp" alt="Façade d'une villa en pierre au crépuscule, entrée voûtée éclairée et jardin taillé." width="1100" height="614" style="object-position:50% 47%"></noscript>
         </div>
       </section>
 
+      <!-- 02 — LE HALL ...................................... le devis -->
       <section class="lc-vue" data-vue="1" data-cote="droite" aria-label="Le devis">
         <div class="lc-vue-in">
           <div class="lc-bloc">
             <p class="lc-eyebrow">Le devis</p>
-            <h2 class="lc-h2">Un chantier commence par un devis.<br>Et par sa relance.</h2>
-            <p class="lc-lead">Le devis part, vous voyez s'il a été ouvert, et trois relances se déclenchent seules — à trois, sept et quinze jours.</p>
+            <h2 class="lc-h2">Un chantier commence<br>par un devis.</h2>
+            <p class="lc-lead">Il part signé d'un lien, se lit sur un téléphone, et vous savez s'il a été ouvert.</p>
           </div>
-        
-          <noscript><img class="lc-planche-statique" src="assets/landing/villa/01_hall-entree-sm.webp" alt="Hall d'entrée, escalier tournant et lustre en fer forgé, tapis sur un sol de pierre claire." width="1100" height="614" style="object-position:62% 44%"></noscript>
+
+          <noscript><img class="lc-planche-statique" src="assets/landing/villa/01_hall-entree-sm.webp" alt="Hall d'entrée, escalier tournant et lustre en fer forgé, tapis sur un sol de pierre claire." width="1100" height="614" style="object-position:56% 48%"></noscript>
         </div>
       </section>
 
+      <!-- 03 — LE SALON .................................. le chantier -->
       <section class="lc-vue" data-vue="2" data-cote="gauche" aria-label="Le chantier">
         <div class="lc-vue-in">
           <div class="lc-bloc">
@@ -151,123 +152,81 @@
             <h2 class="lc-h2">Il garde sa forme,<br>du premier jour au dernier.</h2>
             <p class="lc-lead">Avancement, budget, dépenses et marge se tiennent à jour à mesure que le travail avance.</p>
           </div>
-        
-          <noscript><img class="lc-planche-statique" src="assets/landing/villa/02_salon-principal-sm.webp" alt="Salon avec cheminée en pierre, larges baies vitrées et vue sur la piscine." width="1100" height="614" style="object-position:48% 52%"></noscript>
+
+          <noscript><img class="lc-planche-statique" src="assets/landing/villa/02_salon-principal-sm.webp" alt="Salon avec cheminée en pierre, larges baies vitrées et vue sur la piscine." width="1100" height="614" style="object-position:48% 51%"></noscript>
         </div>
       </section>
 
-      <!-- ============ PALIER 1 — une respiration, pas un arrêt ============
-           Trois faits verifiables, pas trois promesses : les relances a
-           J+3/J+7/J+15 existent dans le moteur de devis, la conversion
-           devis -> facture reprend les lignes telles quelles, et le plan
-           gratuit est a 0 € dans pricing.js. Aucun taux de conversion
-           invente : le produit n'en publie pas, et en fabriquer un serait
+      <!-- 04 — LA CUISINE ............................. la facturation
+           PREMIER MOMENT CHIFFRE. Une seule carte, et un fait verifiable :
+           la conversion devis -> facture reprend les lignes telles quelles
+           dans le produit. Aucun taux de conversion, aucun gain de temps
+           moyen : le produit n'en publie pas, et en fabriquer un serait
            une promesse commerciale que rien ne soutient. -->
-      <section class="lc-vue lc-palier" data-vue="3" data-cote="centre" aria-label="Ce que ça change">
+      <section class="lc-vue" data-vue="3" data-cote="droite" aria-label="La facturation">
         <div class="lc-vue-in">
           <div class="lc-bloc">
-            <p class="lc-eyebrow">Ce que ça change</p>
-            <ul class="lc-cartes">
-              <li class="lc-carte">
-                <span class="lc-carte-chiffre">3 relances</span>
-                <span class="lc-carte-titre">envoyées sans y penser</span>
-                <p class="lc-carte-texte">À trois, sept et quinze jours après l'envoi. Elles s'arrêtent dès que le client répond.</p>
-              </li>
-              <li class="lc-carte">
-                <span class="lc-carte-chiffre">1 clic</span>
-                <span class="lc-carte-titre">du devis à la facture</span>
-                <p class="lc-carte-texte">Les lignes, la TVA et l'acompte sont repris tels quels. Aucune ressaisie.</p>
-              </li>
-              <li class="lc-carte">
-                <span class="lc-carte-chiffre">0 €</span>
-                <span class="lc-carte-titre">pour commencer</span>
-                <p class="lc-carte-texte">Le plan gratuit n'a pas de limite de durée et ne demande pas de carte bancaire.</p>
-              </li>
-            </ul>
+            <p class="lc-eyebrow">La facturation</p>
+            <h2 class="lc-h2">Le devis signé<br>devient la facture.</h2>
+            <p class="lc-lead">Les lignes, la TVA et l'acompte sont repris tels quels. Aucune ressaisie, aucun écart entre les deux documents.</p>
+            <div class="lc-kpi">
+              <span class="lc-kpi-chiffre">1 clic</span>
+              <span class="lc-kpi-libelle">du devis à la facture</span>
+            </div>
           </div>
+
+          <noscript><img class="lc-planche-statique" src="assets/landing/villa/04_cuisine-sm.webp" alt="Cuisine avec îlot central en pierre, hotte en cuivre et rangements en bois clair." width="1100" height="614" style="object-position:51% 52%"></noscript>
         </div>
       </section>
 
-      <section class="lc-vue" data-vue="4" data-cote="droite" aria-label="La marge">
-        <div class="lc-vue-in">
-          <div class="lc-bloc">
-            <p class="lc-eyebrow">La marge, en direct</p>
-            <h2 class="lc-h2">Ce que ça coûte,<br>pendant que ça se construit.</h2>
-            <p class="lc-lead">Chaque dépense et chaque heure passée remontent dans la marge réelle du chantier.</p>
-          </div>
-        
-          <noscript><img class="lc-planche-statique" src="assets/landing/villa/04_cuisine-sm.webp" alt="Cuisine avec îlot central en pierre, hotte en cuivre et rangements en bois clair." width="1100" height="614" style="object-position:52% 56%"></noscript>
-        </div>
-      </section>
-
-      <section class="lc-vue" data-vue="5" data-cote="gauche" aria-label="Le bureau">
+      <!-- 05 — LE BUREAU ................................... le soir -->
+      <section class="lc-vue" data-vue="4" data-cote="gauche" aria-label="Le bureau">
         <div class="lc-vue-in">
           <div class="lc-bloc">
             <p class="lc-eyebrow">Le soir, au bureau</p>
             <h2 class="lc-h2">L'administratif ne devrait pas<br>prendre la soirée.</h2>
-            <p class="lc-lead">Documents, tâches, planning et relances sont déjà rangés à leur place quand vous vous asseyez.</p>
+            <p class="lc-lead">Documents, tâches, planning et impayés sont déjà rangés à leur place quand vous vous asseyez.</p>
           </div>
-        
-          <noscript><img class="lc-planche-statique" src="assets/landing/villa/06_bureau-bibliotheque-sm.webp" alt="Bureau avec plans dépliés sur une table en bois, fauteuil de cuir et bibliothèque murale." width="1100" height="614" style="object-position:44% 52%"></noscript>
+
+          <noscript><img class="lc-planche-statique" src="assets/landing/villa/06_bureau-bibliotheque-sm.webp" alt="Bureau avec plans dépliés sur une table en bois, fauteuil de cuir et bibliothèque murale." width="1100" height="614" style="object-position:52% 49%"></noscript>
         </div>
       </section>
 
-      <section class="lc-vue" data-vue="6" data-cote="droite" aria-label="Tout reste relié">
+      <!-- 06 — LA GALERIE ............................ tout reste relie -->
+      <section class="lc-vue" data-vue="5" data-cote="droite" aria-label="Tout reste relié">
         <div class="lc-vue-in">
           <div class="lc-bloc">
             <p class="lc-eyebrow">Tout reste relié</p>
             <h2 class="lc-h2">D'une pièce à l'autre,<br>rien ne se perd.</h2>
             <p class="lc-lead">Le client, son devis, son chantier et sa facture restent attachés les uns aux autres.</p>
           </div>
-        
+
           <noscript><img class="lc-planche-statique" src="assets/landing/villa/09_galerie-couloir-sm.webp" alt="Galerie voûtée bordée de tableaux, perspective vers le fond de la maison." width="1100" height="614" style="object-position:50% 50%"></noscript>
         </div>
       </section>
 
-      <!-- ============ PALIER 2 — ce que le client voit, lui ============ -->
-      <section class="lc-vue lc-palier" data-vue="7" data-cote="centre" aria-label="Ce que votre client voit">
+      <!-- 07 — LA SUITE ......................... ce que le client voit
+           SECOND MOMENT CHIFFRE. Les trois relances a J+3, J+7 et J+15
+           existent dans le moteur de devis, et elles s'arretent bien des
+           que le client repond. -->
+      <section class="lc-vue" data-vue="6" data-cote="gauche" aria-label="Ce que votre client voit">
         <div class="lc-vue-in">
           <div class="lc-bloc">
             <p class="lc-eyebrow">Ce que votre client voit</p>
-            <ul class="lc-cartes lc-cartes-deux">
-              <li class="lc-carte">
-                <span class="lc-carte-titre">Un devis qui se lit</span>
-                <p class="lc-carte-texte">Il l'ouvre depuis un lien, sur son téléphone, et le signe en ligne. Rien à imprimer, rien à scanner.</p>
-              </li>
-              <li class="lc-carte">
-                <span class="lc-carte-titre">Vous savez quand il l'a ouvert</span>
-                <p class="lc-carte-texte">Le suivi indique si le devis a été consulté, et depuis combien de temps il attend une réponse.</p>
-              </li>
-            </ul>
+            <h2 class="lc-h2">Relancer sans<br>avoir à y penser.</h2>
+            <p class="lc-lead">Les relances partent seules après l'envoi du devis, et s'arrêtent dès qu'il répond.</p>
+            <div class="lc-kpi">
+              <span class="lc-kpi-chiffre">3 relances</span>
+              <span class="lc-kpi-libelle">à J+3, J+7 et J+15</span>
+            </div>
           </div>
+
+          <noscript><img class="lc-planche-statique" src="assets/landing/villa/07_suite-parentale-sm.webp" alt="Suite parentale, lit bas, cheminée et coin salon devant de larges fenêtres." width="1100" height="614" style="object-position:52% 51%"></noscript>
         </div>
       </section>
 
-      <section class="lc-vue" data-vue="8" data-cote="gauche" aria-label="Depuis le chantier">
-        <div class="lc-vue-in">
-          <div class="lc-bloc">
-            <p class="lc-eyebrow">Depuis le chantier</p>
-            <h2 class="lc-h2">Le dossier tient<br>dans une poche.</h2>
-            <p class="lc-lead">Photos, notes et documents se rattachent à la bonne intervention, depuis le terrain.</p>
-          </div>
-        
-          <noscript><img class="lc-planche-statique" src="assets/landing/villa/11_balcon-suite-sm.webp" alt="Balcon de la suite, fauteuils en osier, oliviers en pot et vue plongeante sur la piscine." width="1100" height="614" style="object-position:56% 52%"></noscript>
-        </div>
-      </section>
-
-      <section class="lc-vue" data-vue="9" data-cote="droite" aria-label="Les impayés">
-        <div class="lc-vue-in">
-          <div class="lc-bloc">
-            <p class="lc-eyebrow">Les impayés</p>
-            <h2 class="lc-h2">Ce qui reste à encaisser<br>ne s'oublie pas.</h2>
-            <p class="lc-lead">Les factures en retard remontent d'elles-mêmes, avec le montant dû et le nombre de jours.</p>
-          </div>
-        
-          <noscript><img class="lc-planche-statique" src="assets/landing/villa/12_cour-interieure-bassin-sm.webp" alt="Cour intérieure, arche de pierre, olivier et bassin rectangulaire." width="1100" height="614" style="object-position:54% 52%"></noscript>
-        </div>
-      </section>
-
-      <section class="lc-vue" data-vue="10" data-cote="gauche" aria-label="Une vue d'ensemble">
+      <!-- 08 — LA TERRASSE ................................ la sortie -->
+      <section class="lc-vue" data-vue="7" data-cote="droite" aria-label="Une vue d'ensemble">
         <div class="lc-vue-in">
           <div class="lc-bloc">
             <p class="lc-eyebrow">Une vue d'ensemble</p>
@@ -277,31 +236,31 @@
               <a href="index.html?tab=register" class="lc-btn lc-btn-primary lc-btn-lg">Ouvrir mon espace gratuitement</a>
             </div>
           </div>
-        
-          <noscript><img class="lc-planche-statique" src="assets/landing/villa/13_terrasse-piscine-sm.webp" alt="Terrasse au crépuscule, salon d'extérieur, piscine éclairée et jardin méditerranéen." width="1100" height="614" style="object-position:50% 50%"></noscript>
+
+          <noscript><img class="lc-planche-statique" src="assets/landing/villa/13_terrasse-piscine-sm.webp" alt="Terrasse au crépuscule, salon d'extérieur, piscine éclairée et jardin méditerranéen." width="1100" height="614" style="object-position:50% 49%"></noscript>
         </div>
       </section>
 
     </div>
   </div>
 
-  <!-- Indicateur de progression : cinq reperes pour onze etapes, masque
-       sous 1100 px. Une pastille par etape serait du mobilier, pas un
+  <!-- Indicateur de progression : quatre reperes pour huit plans, masque
+       sous 1100 px. Une pastille par plan serait du mobilier, pas un
        reperage - le brief demande tres peu de chrome. -->
   <nav class="lc-progress" id="lc-progress" aria-label="Progression de la visite">
     <ol>
       <li><a href="#chap-1" data-chap="1"><span>01</span><i>Arrivée</i></a></li>
       <li><a href="#chap-3" data-chap="2"><span>02</span><i>Le chantier</i></a></li>
       <li><a href="#chap-5" data-chap="3"><span>03</span><i>Le suivi</i></a></li>
-      <li><a href="#chap-7" data-chap="4"><span>04</span><i>Le lien</i></a></li>
-      <li><a href="#chap-9" data-chap="5"><span>05</span><i>Dehors</i></a></li>
+      <li><a href="#chap-7" data-chap="4"><span>04</span><i>Dehors</i></a></li>
     </ol>
   </nav>
 
   <div class="lc-chapters" id="lc-chapters">
-    <!-- Une hauteur de defilement par etape - neuf pieces et deux paliers.
-         Elle est posee par landing-piste.js d'apres le poids de chaque
-         scene : un couloir en fuite merite plus de course qu'un palier. -->
+    <!-- Une hauteur de defilement par plan. Elle est posee par
+         landing-piste.js d'apres le poids de chaque scene : la terrasse,
+         qui porte le dernier appel a l'action, merite plus de course
+         qu'un couloir de passage. -->
     <div class="lc-spacer" id="chap-1" data-spacer="0"></div>
     <div class="lc-spacer" id="chap-2" data-spacer="1"></div>
     <div class="lc-spacer" id="chap-3" data-spacer="2"></div>
@@ -310,34 +269,43 @@
     <div class="lc-spacer" id="chap-6" data-spacer="5"></div>
     <div class="lc-spacer" id="chap-7" data-spacer="6"></div>
     <div class="lc-spacer" id="chap-8" data-spacer="7"></div>
-    <div class="lc-spacer" id="chap-9" data-spacer="8"></div>
-    <div class="lc-spacer" id="chap-10" data-spacer="9"></div>
-    <div class="lc-spacer" id="chap-11" data-spacer="10"></div>
 
-    <!-- ============ 07 — LE SALON / CONCLUSION (frames S T) ============
-         Ici le contenu est long : il defile normalement par-dessus la
-         derniere photo, qui reste en fond. -->
+    <!-- LA SORTIE. Une demi-hauteur d'ecran pendant laquelle la derniere
+         photographie se decolore vers le papier et les textes s'effacent.
+         Sans elle, la visite etait COUPEE : l'image cedait la place au
+         contenu en une seule image, et l'enregistrement montrait un
+         a-coup net a cet endroit precis. -->
+    <div class="lc-spacer lc-spacer-sortie" id="lc-sortie"></div>
+
+    <!-- ================= APRES LA VISITE =================
+         Le contenu arrive sur le MEME beige que la sortie : il n'y a plus
+         de frontiere a franchir, seulement une page qui reprend. -->
     <section class="lc-chapter-final" id="chap-final">
       <div class="lc-final">
 
-        <div class="lc-panel">
-          <p class="lc-eyebrow">Bénéfices</p>
-          <h2 class="lc-h2">Tout votre métier.<br>Enfin au même endroit.</h2>
-          <ul class="lc-benefits">
-            <li><h3>Gagnez du temps</h3><p>Moins de ressaisie, moins d'allers-retours entre les outils.</p></li>
-            <li><h3>Centralisez vos informations</h3><p>Clients, documents et historique au même endroit.</p></li>
-            <li><h3>Suivez votre rentabilité</h3><p>La marge de chaque chantier se calcule toute seule.</p></li>
-            <li><h3>Gardez vos équipes alignées</h3><p>Planning et tâches partagés, à jour pour tout le monde.</p></li>
-          </ul>
-        </div>
-
-        <div class="lc-panel">
+        <div class="lc-panel" id="apres-visite">
           <a id="metiers" class="lc-anchor"></a>
-          <p class="lc-eyebrow">Métiers</p>
-          <h2 class="lc-h2">Conçu pour ceux qui font.</h2>
-          <ul class="lc-trades">
-            <li>Plombiers</li><li>Électriciens</li><li>Chauffagistes</li><li>Climaticiens</li>
-            <li>Entreprises de rénovation</li><li>Artisans du bâtiment</li><li>Maintenance</li><li>Multi-services</li>
+          <p class="lc-eyebrow">Suite Artisan</p>
+          <h2 class="lc-h2 lc-h2-xl">Tout votre métier.<br>Enfin au même endroit.</h2>
+          <p class="lc-lead lc-lead-large">
+            Un seul espace pour les plombiers, électriciens, chauffagistes,
+            climaticiens, entreprises de rénovation et de maintenance : celui
+            où le client, le devis, le chantier et la facture restent attachés
+            les uns aux autres.
+          </p>
+          <ul class="lc-benefits">
+            <li>
+              <h3>Une seule saisie</h3>
+              <p>Le devis devient la facture, le client garde son historique, et rien n'est retapé d'un document à l'autre.</p>
+            </li>
+            <li>
+              <h3>La rentabilité, pendant le chantier</h3>
+              <p>Dépenses et heures remontent dans la marge réelle. Vous ne la découvrez pas à la fin.</p>
+            </li>
+            <li>
+              <h3>Le dossier sur le terrain</h3>
+              <p>Photos, notes et documents se rattachent à la bonne intervention, depuis le téléphone.</p>
+            </li>
           </ul>
         </div>
 
@@ -352,42 +320,6 @@
         <div class="lc-panel">
           <a id="site-vitrine" class="lc-anchor"></a>
           <div id="lc-site-offer"></div>
-        </div>
-
-        <div class="lc-panel">
-          <a id="faq" class="lc-anchor"></a>
-          <p class="lc-eyebrow">FAQ</p>
-          <h2 class="lc-h2">Ce qu'on nous demande le plus.</h2>
-          <div class="lc-faq">
-            <details>
-              <summary>Suite Artisan remplace-t-il plusieurs logiciels ?</summary>
-              <p>Oui. Devis, factures, clients, chantiers, planning, tâches et documents sont réunis dans un seul espace, au lieu d'être répartis entre un tableur, une boîte mail et un carnet.</p>
-            </details>
-            <details>
-              <summary>Puis-je l'utiliser sur mobile, sur mes chantiers ?</summary>
-              <p>Oui. L'interface s'adapte au téléphone : vous pouvez consulter un chantier, ajouter une photo ou retrouver un document depuis le terrain.</p>
-            </details>
-            <details>
-              <summary>Puis-je gérer devis, factures et chantiers au même endroit ?</summary>
-              <p>Oui, et surtout ils restent liés : un devis signé devient une facture en un clic, et le chantier correspondant garde son budget, ses dépenses et sa marge à jour.</p>
-            </details>
-            <details>
-              <summary>Est-ce adapté à une petite entreprise artisanale ?</summary>
-              <p>C'est même le cas de départ. Le plan gratuit permet de travailler seul sans carte bancaire, et les plans supérieurs n'ajoutent que ce dont vous avez besoin.</p>
-            </details>
-            <details>
-              <summary>Puis-je importer mes clients et documents existants ?</summary>
-              <p>Oui. Vos clients peuvent être importés, et vos documents rattachés aux bons chantiers ou aux bonnes fiches clients.</p>
-            </details>
-            <details>
-              <summary>Combien de temps faut-il pour commencer ?</summary>
-              <p>Quelques minutes. La création du compte est gratuite et vous pouvez émettre votre premier devis dans la foulée.</p>
-            </details>
-            <details>
-              <summary>Le Site Vitrine est-il inclus dans l'abonnement ?</summary>
-              <p>Non, c'est une <strong>prestation optionnelle</strong>, distincte de l'abonnement et disponible avec tous les plans, y compris le plan gratuit. <span id="lc-faq-site-price"></span></p>
-            </details>
-          </div>
         </div>
 
         <div class="lc-panel lc-panel-cta">
@@ -424,10 +356,9 @@
     <div class="lc-footer-col">
       <h3>Produit</h3>
       <ul>
-        <li><a href="#chap-6">Fonctionnalités</a></li>
+        <li><a href="#apres-visite">Fonctionnalités</a></li>
         <li><a href="#tarifs">Tarifs</a></li>
-        <li><a href="#metiers">Métiers</a></li>
-        <li><a href="#faq">FAQ</a></li>
+        <li><a href="#site-vitrine">Site Vitrine</a></li>
       </ul>
     </div>
 
@@ -461,10 +392,10 @@
 </footer>
 
 <script src="pricing.js"></script>
-<script src="landing.js?v=23"></script>
+<script src="landing.js?v=24"></script>
 <!-- La visite est un module : elle importe Three.js, qui est servi
      depuis le depot et non depuis un CDN tiers. Differee par nature,
      elle ne retarde donc pas la premiere peinture. -->
-<script type="module" src="landing-piste.js?v=12"></script>
+<script type="module" src="landing-piste.js?v=16"></script>
 </body>
 </html>
