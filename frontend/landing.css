@@ -175,190 +175,293 @@
 @media (max-width: 900px) { .lc-nav-links { display: none; } }
 @media (max-width: 560px) { .lc-nav-in { padding: 14px 18px; } .lc-link { display: none; } }
 
-/* ====================== LE FILM / LE PLATEAU ======================
-   .lc-stage reste colle en haut pendant toute la visite ; .lc-chapters
-   est remonte de 100vh pour defiler PAR-DESSUS lui.
-   ================================================================= */
-.lc-film { position: relative; }
+/* =====================================================================
+   LA VISITE — le plateau, les images, les textes
+   ---------------------------------------------------------------------
+   Un seul plateau reste colle en haut de l'ecran pendant les quatorze
+   pieces. Les .lc-spacer, qui vivent dessous, ne servent qu'a creer la
+   hauteur de defilement ; leur hauteur est posee par landing-piste.js
+   d'apres le poids narratif de chaque piece.
+
+   `svh` plutot que `vh` : sur un telephone, `vh` compte la barre
+   d'adresse qui n'est pas la, et le plateau depasse de l'ecran a chaque
+   fois qu'elle se retracte. `vh` reste declare d'abord, comme repli.
+
+   PLEIN CADRE, SANS EXCEPTION
+   Aucune marge laterale, aucune largeur maximale, aucune carte : la
+   photographie va d'un bord a l'autre du navigateur. Tout ce qui n'est
+   pas l'image est pose PAR-DESSUS.
+   ===================================================================== */
+.lc-visite { position: relative; }
+
 .lc-stage {
-  position: sticky; top: 0; height: 100vh; overflow: hidden; z-index: 1;
-  background: var(--lc-papier);
-  /* La page est une double page : le texte a gauche, la planche a droite.
-     C'est la grille de tout le film, hero compris. */
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  overflow: clip;
+  background: var(--lc-ink);
+  /* Une seule cellule de grille : les couches s'empilent exactement, sans
+     position absolue ni z-index a tenir a jour. */
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.02fr);
-  /* `stretch` et non `center` : les deux colonnes doivent OCCUPER la
-     hauteur du plateau, sinon la rangee se dimensionne sur son contenu et
-     le `height: 100%` du calque de texte devient indefini - le texte
-     tombait alors sous la planche au lieu de se poser a cote. Le centrage
-     se fait a l'interieur de chaque colonne. */
-  align-items: stretch;
-  gap: clamp(28px, 4vw, 76px);
-  padding: 104px clamp(24px, 5vw, 76px) clamp(48px, 7vh, 92px);
+  isolation: isolate;
 }
-.lc-chapters { position: relative; z-index: 2; margin-top: -100vh; }
+.lc-stage > * { grid-area: 1 / 1; min-width: 0; }
 
-/* Sous 900 px, deux colonnes ne tiennent pas : la planche passe au-dessus
-   du texte, en bandeau. L'ordre compte - on voit d'abord de quoi on parle,
-   on lit ensuite - et c'est aussi celui de la version sans mouvement. */
-@media (max-width: 900px) {
-  .lc-stage {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(0, 1fr);
-    align-content: center;
-    gap: clamp(20px, 4vh, 40px);
-    padding: 88px clamp(20px, 5vw, 40px) clamp(32px, 5vh, 56px);
-  }
-  .lc-layers { grid-column: 1; grid-row: 1; height: min(34vh, 260px); }
-  .lc-overlay { grid-column: 1; grid-row: 2; }
-}
-
-/* ---------- LA PLANCHE ----------
-   La photographie n'est plus le fond de l'ecran : c'est un objet pose sur
-   le papier. Filet fin, ombre a peine marquee - la direction artistique
-   n'admet d'ombre que pour ce qui flotte reellement au-dessus de la page,
-   et une planche photographique en fait partie. Elle occupe la colonne de
-   droite ; le texte, la gauche. Plus aucun mot ne tombe sur une image, et
-   le voile de lisibilite disparait avec le probleme qu'il resolvait. */
-.lc-layers {
-  position: relative; grid-column: 2; grid-row: 1; z-index: 1; isolation: isolate;
-  align-self: center;
-  height: min(72vh, 620px);
-  border: 1px solid var(--lc-line-fort);
-  background: var(--lc-creux);
-  overflow: hidden;
-  box-shadow: 0 18px 44px -28px rgba(28, 30, 26, .45);
-}
-.lc-frame {
-  position: absolute; inset: 0; width: 100%; height: 100%;
-  object-fit: cover; opacity: 0;
-  /* Les frames hors fenetre de compositing sont retirees du rendu : sans
-     cela, 20 images plein ecran resteraient composees sur le GPU. */
-  visibility: hidden;
-  transform-origin: 50% 50%;
-}
-.lc-frame.is-live { visibility: visible; will-change: opacity, transform; }
-
-/* Grain : il casse le banding des degrades. Il vit maintenant DANS la
-   planche, avec la photographie, et pas sur le papier. */
-.lc-grain {
-  position: absolute; inset: 0; z-index: 3; pointer-events: none; opacity: .22; mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
-}
-
-/* Le voile n'a plus d'objet : aucun texte ne se lit sur une photographie.
-   L'element reste dans le DOM - landing.js lui pose encore un
-   `data-chapter` - mais il ne peint plus rien. */
-.lc-scrim { display: none; }
-
-/* Le trait qui marque le front de transformation avant/apres */
-.lc-reveal-edge {
-  position: absolute; top: 0; bottom: 0; width: 1px; z-index: 6; opacity: 0; pointer-events: none;
-  background: linear-gradient(180deg, transparent, rgba(28, 30, 26, .85) 22%, rgba(28, 30, 26, .85) 78%, transparent);
-  box-shadow: 0 0 22px rgba(28, 30, 26, .45);
-  transition: opacity .3s;
-}
-
-/* Emplacement pour une capture produit dans l'ecran du bureau (frame R).
-   Vide tant qu'aucune capture validee n'existe : voir PRODUCT_SCREEN. */
-/* La marque affichee sur le moniteur du bureau (frame R).
-   z-index 2 : au-dessus des photos mais SOUS le grain et le voile, pour
-   qu'elle recoive le meme traitement que le reste de l'image et paraisse
-   reellement allumee dans la piece. Son opacite suit celle de la frame R
-   (posee par landing.js), sinon elle flotterait sur les autres plans. */
-/* Meme boite et meme origine que les photos : ce conteneur rejoue le zoom
-   Ken Burns de la frame R pour que la marque reste collee au moniteur. */
-.lc-screen-wrap { position: absolute; inset: 0; z-index: 90; transform-origin: 50% 50%; }
-
-.lc-screen {
-  /* transform-origin 0 0 : l'homographie posee par landing.js part du
-     coin haut-gauche de l'element. */
-  position: absolute; opacity: 0; transform-origin: 0 0;
-  display: grid; place-content: center; justify-items: center; gap: .34em;
-  /* Fond quasi uniforme. Le degrade precedent (#23211c -> #0d0c0a) double
-     par un reflet blanc a 10 % depuis le coin haut-gauche faisait passer la
-     luminance de 34 a gauche a 16 a droite : sur un panneau de cette taille
-     ca ne se lit pas comme un reflet mais comme une salissure grise d'un
-     seul cote. */
-  background: linear-gradient(158deg, #16150f 0%, #100f0a 100%);
-  box-shadow: inset 0 0 2.4em rgba(0, 0, 0, .5), inset 0 .08em 0 rgba(28, 30, 26, .06);
-  overflow: hidden;
-}
-/* 2.2em (et non 2.5) : la dalle mesure 13,6 % de hauteur d'image, le bloc
-   doit y respirer sans toucher les bords. */
-.lc-screen-logo { width: 2.2em; height: 2.2em; }
-.lc-screen-rule { width: 1.5em; height: 1px; background: rgba(138, 96, 36, .55); margin: .14em 0 .08em; }
-/* Capitales tres espacees en serif : la signature "artisan haut de gamme",
-   plutot qu'un logotype de start-up. */
-.lc-screen-word {
-  font-family: var(--lc-display); font-weight: 500; font-size: .58em;
-  text-transform: uppercase; letter-spacing: .34em; text-indent: .34em;
-  color: var(--lc-ink); white-space: nowrap;
-  /* line-height: 1 — le libelle est tout en capitales : l'interligne par
-     defaut ajoute sous les lettres un vide qui n'existe pas au-dessus, et
-     le bloc parait alors remonte dans la dalle. */
-  line-height: 1;
-}
-
-/* ================= CALQUE DE CONTENU — SCENES 1 A 6 =================
-   Les textes vivent DANS le plateau colle : ils sont donc toujours
-   parfaitement centres a l'ecran, et leur apparition est pilotee par la
-   meme timeline que les photos (voir le commentaire de landing.html).
-   ==================================================================== */
-/* Le calque de contenu occupe la colonne de GAUCHE de la double page. Il
-   n'est plus etendu sur tout le plateau : les scenes s'empilent dans cette
-   colonne, la planche occupe la droite, et les deux avancent sur la meme
-   timeline. */
-.lc-overlay { position: relative; grid-column: 1; grid-row: 1; height: 100%; z-index: 5; }
-.lc-scene {
-  position: absolute; inset: 0;
-  opacity: 0; pointer-events: none;
-  transition: opacity .7s var(--lc-ease);
-}
-.lc-scene.is-on { opacity: 1; pointer-events: auto; }
-.lc-scene-in {
-  height: 100%;
-  display: grid; align-content: center;
-}
-/* Hero : le bloc reste centre, l'indice de scroll descend en bas. */
-.lc-scene-hero .lc-scene-in { align-content: stretch; grid-template-rows: 1fr auto; }
-.lc-scene-hero .lc-block { align-self: center; }
-/* Chantier : le libelle de phase se cale en haut, les chiffres au centre. */
-.lc-scene-site .lc-scene-in { align-content: stretch; grid-template-rows: auto 1fr; }
-.lc-scene-site .lc-block-late { align-self: center; }
-
-/* 700px (et non 620) : en dessous, un titre comme "Chaque intervention
-   reste reliee" passe sur deux lignes et le H2 en occupe quatre. */
-.lc-block { max-width: 700px; }
-/* Revelation en cascade : chaque element du bloc monte l'un apres
-   l'autre. Un bloc entier qui apparait d'un coup fait "diapositive" ;
-   decale, ca se lit comme un plan qui se compose. */
-@media (prefers-reduced-motion: no-preference) {
-  .lc-block > *, .lc-scrollcue {
-    opacity: 0; transform: translateY(20px);
-    transition: opacity .85s var(--lc-ease), transform .85s var(--lc-ease);
-  }
-  .lc-scene.is-on .lc-block > *, .lc-scene.is-on .lc-scrollcue { opacity: 1; transform: none; }
-  .lc-scene.is-on .lc-block > *:nth-child(1) { transition-delay: .06s; }
-  .lc-scene.is-on .lc-block > *:nth-child(2) { transition-delay: .14s; }
-  .lc-scene.is-on .lc-block > *:nth-child(3) { transition-delay: .22s; }
-  .lc-scene.is-on .lc-block > *:nth-child(4) { transition-delay: .30s; }
-  .lc-scene.is-on .lc-block > *:nth-child(5) { transition-delay: .38s; }
-  .lc-scene.is-on .lc-block > *:nth-child(6) { transition-delay: .46s; }
-  .lc-scene.is-on .lc-scrollcue { transition-delay: .55s; }
-}
-/* Le texte est desormais cadre a gauche dans sa colonne, partout. Les
-   variantes centree et alignee a droite servaient a esquiver le sujet de
-   la photographie derriere ; il n'y a plus rien derriere. */
-.lc-block-center, .lc-block-right { max-width: none; margin: 0; text-align: left; }
-/* Le bloc marge n'entre qu'une fois la piece terminee revelee par le
-   volet (is-ready est pose par landing.js quand la frame O prend la main). */
-.lc-block-late { opacity: 0; transition: opacity .6s var(--lc-ease); }
-.lc-block-late.is-ready { opacity: 1; }
-
-/* Les spacers ne portent aucun contenu : ils ne creent que la hauteur de
-   scroll des scenes 1 a 6. */
+/* Les .lc-spacer defilent SOUS le plateau : c'est ce decalage negatif qui
+   fait que la page avance pendant que l'image reste. */
+.lc-chapters { position: relative; z-index: 2; margin-top: -100vh; margin-top: -100svh; }
 .lc-spacer { position: relative; }
+
+/* ---------- 1. La visite en WebGL ---------- */
+.lc-canvas { display: block; width: 100%; height: 100%; }
+
+/* ---------- 2. Le repli ----------
+   Les memes photographies, en HTML. Quand le WebGL demarre, ce bloc est
+   retire de l'affichage : les <img> n'ayant alors aucun `src`, elles ne
+   declenchent aucune requete. Les photographies sont de l'atmosphere -
+   tout ce qu'elles racontent est ecrit dans les textes poses dessus -
+   donc les retirer de l'arbre d'accessibilite dans ce mode ne prive
+   personne d'une information. */
+.lc-tirages { position: relative; }
+.lc-visite[data-mode="visite"] .lc-tirages { display: none; }
+
+.lc-tirage {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  transition: opacity .5s var(--lc-ease);
+  will-change: opacity;
+}
+.lc-tirage img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* LE POINT FOCAL. Chaque piece a le sien : une baignoire en bas a
+     gauche, un couloir en fuite au centre, une piscine a droite. Un
+     `center center` par defaut couperait le sujet sur la moitie d'entre
+     elles, et ce serait pire encore en portrait. */
+  object-position: var(--focal-x, 50%) var(--focal-y, 50%);
+  transform-origin: var(--focal-x, 50%) var(--focal-y, 50%);
+  transform: scale(1.04);
+  transition: transform 1.1s linear;
+}
+.lc-visite[data-mode="fixe"] .lc-tirage img { transform: none; transition: none; }
+.lc-visite[data-mode="fixe"] .lc-tirage { transition: opacity .01s; }
+
+/* ---------- Le grain ----------
+   Le meme sur les quatorze images : c'est lui qui les lie entre elles, et
+   il casse le banding des degrades sombres poses par-dessus. En mode
+   WebGL il est deja dans le shader ; ici il ne sert qu'au repli. */
+.lc-grain {
+  pointer-events: none;
+  z-index: 3;
+  opacity: .05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.lc-visite[data-mode="visite"] .lc-grain { display: none; }
+
+/* ---------- 3. L'ombre locale ----------
+   Le brief est explicite : un degrade local, pas un gros rectangle
+   opaque. L'ombre est donc orientee du cote ou le texte se pose, et
+   s'eteint avant le milieu de l'image - le sujet architectural reste
+   visible. Elle change d'orientation a chaque piece, en suivant l'espace
+   negatif de la photographie. */
+.lc-ombre {
+  pointer-events: none;
+  z-index: 4;
+  transition: background-image .7s var(--lc-ease), opacity .7s var(--lc-ease);
+  background-image: linear-gradient(180deg, rgba(14, 18, 17, .55) 0%, rgba(14, 18, 17, 0) 42%);
+}
+.lc-ombre[data-cote="gauche"] {
+  background-image: linear-gradient(96deg, rgba(14, 18, 17, .88) 0%, rgba(14, 18, 17, .62) 26%, rgba(14, 18, 17, .10) 58%, rgba(14, 18, 17, 0) 78%);
+}
+.lc-ombre[data-cote="droite"] {
+  background-image: linear-gradient(264deg, rgba(14, 18, 17, .88) 0%, rgba(14, 18, 17, .62) 26%, rgba(14, 18, 17, .10) 58%, rgba(14, 18, 17, 0) 78%);
+}
+/* Mesure a l'appui : le titre du hero tombait a 3,22:1 EN FIN de son
+   travelling avant - la camera s'approche, et une fenetre eclairee arrive
+   sous le texte. Un contraste valide au debut d'un mouvement ne l'est pas
+   forcement a son terme ; c'est le genre de defaut qu'une capture d'ecran
+   prise au bon moment ne montre jamais. */
+.lc-ombre[data-cote="bas-gauche"] {
+  background-image: linear-gradient(28deg, rgba(14, 18, 17, .94) 0%, rgba(14, 18, 17, .68) 34%, rgba(14, 18, 17, .10) 66%, rgba(14, 18, 17, 0) 86%);
+}
+.lc-ombre[data-cote="bas-droite"] {
+  background-image: linear-gradient(332deg, rgba(14, 18, 17, .90) 0%, rgba(14, 18, 17, .55) 34%, rgba(14, 18, 17, .06) 66%, rgba(14, 18, 17, 0) 84%);
+}
+.lc-ombre[data-cote="haut-gauche"] {
+  background-image: linear-gradient(152deg, rgba(14, 18, 17, .88) 0%, rgba(14, 18, 17, .56) 32%, rgba(14, 18, 17, .06) 64%, rgba(14, 18, 17, 0) 82%);
+}
+.lc-ombre[data-cote="haut-droite"] {
+  background-image: linear-gradient(208deg, rgba(14, 18, 17, .88) 0%, rgba(14, 18, 17, .56) 32%, rgba(14, 18, 17, .06) 64%, rgba(14, 18, 17, 0) 82%);
+}
+
+/* =====================================================================
+   LES TEXTES
+   ---------------------------------------------------------------------
+   Un seul est visible a la fois. Ils alternent de cote selon l'espace
+   negatif de la piece : sur la facade il y a du ciel en haut et de la
+   pelouse en bas a gauche, dans le bureau la bibliotheque sombre tient
+   la droite, dans le couloir la fuite centrale ne doit rien avoir devant
+   elle. Aucune piece ne recoit son texte au meme endroit que la
+   precedente.
+   ===================================================================== */
+.lc-vues { position: relative; z-index: 5; height: 100%; }
+
+.lc-vue {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .55s var(--lc-ease);
+}
+.lc-vue.is-on { opacity: 1; pointer-events: auto; }
+.lc-vue[hidden] { display: none; }
+
+.lc-vue-in {
+  display: grid;
+  height: 100%;
+  padding: clamp(26px, 4.4vw, 78px);
+  padding-top: max(clamp(26px, 4.4vw, 78px), 96px);
+  color: var(--lc-sur-sombre);
+}
+.lc-vue[data-cote="gauche"] .lc-vue-in { align-content: center; justify-items: start; }
+.lc-vue[data-cote="droite"] .lc-vue-in { align-content: center; justify-items: end; text-align: right; }
+.lc-vue[data-cote="bas-gauche"] .lc-vue-in { align-content: end; justify-items: start; }
+.lc-vue[data-cote="bas-droite"] .lc-vue-in { align-content: end; justify-items: end; text-align: right; }
+.lc-vue[data-cote="haut-gauche"] .lc-vue-in { align-content: start; justify-items: start; }
+.lc-vue[data-cote="haut-droite"] .lc-vue-in { align-content: start; justify-items: end; text-align: right; }
+
+/* La scene d'ouverture porte a la fois son bloc et l'indice de
+   defilement : elle est la seule a etre construite en deux rangees. */
+.lc-vue[data-vue="0"] .lc-vue-in { grid-template-rows: 1fr auto; align-content: stretch; }
+.lc-vue[data-vue="0"] .lc-bloc { align-self: end; padding-bottom: clamp(18px, 4vh, 46px); }
+
+.lc-bloc { max-width: 40ch; }
+.lc-vue[data-vue="0"] .lc-bloc { max-width: 46ch; }
+
+/* L'entree du texte : opacite, une translation courte, et un flou tres
+   leger qui se dissipe. Rien qui rebondisse. */
+.lc-bloc > * {
+  opacity: 0;
+  transform: translateY(18px);
+  filter: blur(6px);
+  transition: opacity .62s var(--lc-ease), transform .62s var(--lc-ease), filter .62s var(--lc-ease);
+}
+.lc-vue.is-on .lc-bloc > * { opacity: 1; transform: none; filter: none; }
+.lc-vue.is-on .lc-bloc > *:nth-child(1) { transition-delay: .05s; }
+.lc-vue.is-on .lc-bloc > *:nth-child(2) { transition-delay: .13s; }
+.lc-vue.is-on .lc-bloc > *:nth-child(3) { transition-delay: .21s; }
+.lc-vue.is-on .lc-bloc > *:nth-child(4) { transition-delay: .29s; }
+.lc-vue.is-on .lc-bloc > *:nth-child(5) { transition-delay: .37s; }
+
+/* Sur l'image, l'encre du produit ne convient plus : c'est l'encre
+   claire des fonds sombres qui prend le relais. */
+/* Mesure a l'appui : le vert pale tombait a 1,65:1 sur la chambre
+   d'amis et a 1,82:1 sur le hall. L'encre claire tient partout. */
+.lc-vue .lc-eyebrow { color: var(--lc-sur-sombre); opacity: .92; }
+.lc-vue .lc-h1,
+.lc-vue .lc-h2 { color: var(--lc-sur-sombre); text-wrap: balance; }
+.lc-vue .lc-accent { color: var(--lc-laiton-sur-sombre); font-style: normal; }
+.lc-vue .lc-lead { color: var(--lc-sur-sombre-muted); }
+.lc-vue .lc-note { color: var(--lc-sur-sombre-muted); }
+.lc-vue .lc-btn-ghost {
+  border-color: rgba(242, 245, 244, .40);
+  color: var(--lc-sur-sombre);
+  background: rgba(242, 245, 244, .06);
+}
+.lc-vue .lc-btn-ghost:hover { border-color: var(--lc-sur-sombre); background: rgba(242, 245, 244, .14); }
+
+.lc-scrollcue { color: var(--lc-sur-sombre-muted); justify-self: start; }
+.lc-scrollcue-line { background: var(--lc-sur-sombre-muted); }
+
+/* ---------------------------------------------------------------------
+   MOBILE — une strategie propre, pas un bureau retreci
+   ---------------------------------------------------------------------
+   Sous 760 px, l'espace negatif d'une photographie de piece n'existe
+   plus : le cadrage vertical mange les cotes. Tous les textes passent
+   donc EN BAS, sur un degrade qui monte du bas de l'ecran - le seul
+   endroit ou l'on est certain de ne masquer aucun point d'architecture.
+   --------------------------------------------------------------------- */
+@media (max-width: 760px) {
+  .lc-vue .lc-vue-in,
+  .lc-vue[data-cote] .lc-vue-in {
+    align-content: end;
+    justify-items: start;
+    text-align: left;
+    padding: clamp(20px, 5vw, 30px);
+    padding-bottom: clamp(34px, 9vh, 76px);
+  }
+  .lc-vue[data-vue="0"] .lc-vue-in { grid-template-rows: 1fr auto; }
+  .lc-bloc, .lc-vue[data-vue="0"] .lc-bloc { max-width: none; }
+  /* Le degre monte plus haut et plus fort qu'en version bureau. Mesure a
+     l'appui : sur la facade, le sur-titre tombait a 1,79:1 et le
+     paragraphe a 2,42:1 - le bloc de texte est bien plus haut sur un
+     telephone (titre sur trois lignes, deux boutons, une mention), et il
+     depassait la zone que le degre couvrait. */
+  .lc-ombre,
+  .lc-ombre[data-cote] {
+    background-image: linear-gradient(0deg, rgba(14, 18, 17, .95) 0%, rgba(14, 18, 17, .88) 22%, rgba(14, 18, 17, .66) 44%, rgba(14, 18, 17, .38) 62%, rgba(14, 18, 17, .14) 80%, rgba(14, 18, 17, 0) 100%);
+  }
+  /* L'OMBRE SUIT LE TEXTE, PAS L'ECRAN.
+     Assombrir tout l'ecran assez pour tenir le contraste sur une salle a
+     manger pleine de baies vitrees revient a noircir la photographie.
+     L'ombre se pose donc DERRIERE LE BLOC, et seulement la : elle
+     s'etend d'un bord a l'autre pour n'avoir aucune arete laterale, et
+     s'eteint au-dessus du texte. C'est le degrade local que demande le
+     brief, plutot qu'un rectangle opaque. */
+  .lc-vue .lc-bloc { position: relative; z-index: 0; }
+  .lc-vue .lc-bloc::before {
+    content: "";
+    position: absolute;
+    top: -42px; bottom: -46px; left: -50vw; right: -50vw;
+    z-index: -1;
+    /* L'ombre tient jusqu'en HAUT du bloc, et ne se dissipe que dans les
+       derniers pour-cent. Avec une extinction plus precoce, le sur-titre
+       du hero - qui est la premiere ligne du bloc - tombait a 3,81:1. */
+    background: linear-gradient(0deg,
+      rgba(14, 18, 17, .90) 0%,
+      rgba(14, 18, 17, .88) 62%,
+      rgba(14, 18, 17, .78) 84%,
+      rgba(14, 18, 17, .40) 94%,
+      rgba(14, 18, 17, 0) 100%);
+  }
+  .lc-vue .lc-actions { width: 100%; gap: 10px; }
+  .lc-vue .lc-btn-primary { flex: 1 1 100%; justify-content: center; }
+  /* Deux boutons pleine largeur l'un sous l'autre, c'est le « bouton
+     enorme » que le brief proscrit - et cela allonge le bloc de texte
+     jusqu'a le faire sortir de la zone lisible. L'action secondaire
+     redevient un lien : elle reste atteignable, elle cesse de peser
+     autant que l'action principale. */
+  .lc-vue .lc-btn-ghost {
+    flex: 0 0 auto;
+    border: 0;
+    background: none;
+    padding: 6px 0;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+/* ---------------------------------------------------------------------
+   MOUVEMENT REDUIT
+   ---------------------------------------------------------------------
+   Pas de camera, pas d'agrandissement, pas d'entree en translation : les
+   textes sont simplement la. La visite reste lisible de bout en bout -
+   c'est une visite plus calme, pas une page amputee.
+   --------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .lc-tirage,
+  .lc-vue,
+  .lc-ombre { transition-duration: .01ms; }
+  .lc-bloc > * { opacity: 1; transform: none; filter: none; transition: none; }
+  .lc-tirage img { transform: none; transition: none; }
+}
 
 /* ========================== TYPOGRAPHIE ========================== */
 .lc-eyebrow {
@@ -443,18 +546,6 @@
   border: 1px solid var(--lc-champagne); padding: 6px 13px; border-radius: 4px;
 }
 
-/* ---------- Avant / pendant / apres ---------- */
-.lc-phase {
-  justify-self: start; align-self: start; margin-top: 108px;
-  font-family: var(--lc-display); font-size: clamp(1.5rem, 2.6vw, 2.2rem);
-  min-height: 1.4em; position: relative;
-}
-.lc-phase span {
-  position: absolute; left: 0; top: 0; white-space: nowrap;
-  opacity: 0; transform: translateY(10px);
-  transition: opacity .5s var(--lc-ease), transform .5s var(--lc-ease);
-}
-.lc-phase span.is-on { opacity: 1; transform: none; }
 
 /* ---------- Chiffres de marge ---------- */
 .lc-figures { margin-top: 30px; display: grid; grid-template-columns: repeat(2, minmax(0, 190px)); gap: 12px; }
@@ -700,7 +791,6 @@
   .lc-h2 { text-wrap: balance; }
   .lc-figures { grid-template-columns: 1fr 1fr; }
   .lc-modules { grid-template-columns: 1fr; gap: 22px; }
-  .lc-phase { margin-top: 84px; }
 }
 @media (max-width: 560px) {
   .lc-plans, .lc-trades { grid-template-columns: 1fr; }
@@ -710,38 +800,65 @@
 }
 
 /* ======================= MOUVEMENT REDUIT =======================
-   Aucune camera, aucun zoom, aucun volet : chaque chapitre montre une
-   image fixe et tout le contenu est immediatement lisible.
+   Aucune camera, aucun plateau collant : la visite redevient une page.
+   Chaque piece est une section normale - la photographie posee, son
+   texte dessous - et tout est lisible d'un trait.
+
+   Garder le plateau collant en supprimant seulement les animations
+   obligerait a faire defiler quatorze hauteurs d'ecran pour lire
+   quatorze phrases courtes. Ce serait plus penible, pas plus calme.
    =============================================================== */
-.lc-static .lc-block,
+.lc-static .lc-bloc,
 .lc-static .lc-panel,
-.lc-static .lc-scene { opacity: 1 !important; transform: none !important; transition: none !important; }
-/* Le plateau ne colle plus, les images empilees disparaissent : chaque
-   scene devient une section normale avec sa photo en fond. */
-.lc-static .lc-stage { position: relative; height: auto; overflow: visible; }
-.lc-static .lc-layers, .lc-static .lc-scrim, .lc-static .lc-spacer, .lc-static .lc-progress { display: none; }
-.lc-static .lc-overlay { position: relative; inset: auto; }
+.lc-static .lc-vue { opacity: 1 !important; transform: none !important; transition: none !important; }
+.lc-static .lc-bloc > * { opacity: 1; transform: none; filter: none; transition: none; }
+
+/* Le plateau porte le fond ENCRE tant qu'il sert de cadre a des
+   photographies plein ecran. Ici il n'y en a plus : la visite est
+   redevenue une page, et son texte est repasse en encre foncee. Sans ce
+   retour au papier, le titre s'ecrivait en sombre sur du sombre - il
+   disparaissait purement et simplement, et seulement sur ce chemin. */
+.lc-static .lc-stage {
+  position: relative; height: auto; overflow: visible; display: block; padding: 0;
+  background: var(--lc-papier);
+}
 .lc-static .lc-chapters { margin-top: 0; }
-.lc-static .lc-scene { position: relative; inset: auto; pointer-events: auto; }
-/* Plus de voile : la photographie n'est plus derriere le texte, elle est
-   posee sous lui, dans le meme fil de lecture. C'est la meme planche que
-   dans la version animee, simplement en flux. */
-.lc-static .lc-scene::before { content: none; }
-.lc-static .lc-scene-in {
+.lc-static .lc-progress { display: none; }
+.lc-static .lc-vues { position: relative; height: auto; }
+.lc-static .lc-vue { position: relative; inset: auto; pointer-events: auto; }
+
+/* L'encre claire n'a plus lieu d'etre : le texte n'est plus pose sur une
+   photographie, il est sur le papier de la page. */
+.lc-static .lc-vue .lc-eyebrow { color: var(--lc-accent); }
+.lc-static .lc-vue .lc-h1,
+.lc-static .lc-vue .lc-h2 { color: var(--lc-ink); }
+.lc-static .lc-vue .lc-accent { color: var(--lc-accent); }
+.lc-static .lc-vue .lc-lead,
+.lc-static .lc-vue .lc-note { color: var(--lc-muted); }
+.lc-static .lc-vue .lc-btn-ghost { border-color: var(--lc-line-fort); color: var(--lc-ink); background: transparent; }
+.lc-static .lc-scrollcue { display: none; }
+
+.lc-static .lc-vue-in,
+.lc-static .lc-vue[data-cote] .lc-vue-in {
   position: relative; z-index: 1; height: auto;
-  max-width: var(--lc-max); margin: 0 auto; padding: 12vh 32px;
-  display: grid; align-content: start; gap: 44px;
+  max-width: var(--lc-max); margin: 0 auto; padding: 9vh 32px;
+  display: grid; align-content: start; justify-items: start;
+  text-align: left; color: var(--lc-ink); gap: 40px;
+  grid-template-rows: none;
 }
+.lc-static .lc-bloc, .lc-static .lc-vue[data-vue="0"] .lc-bloc { max-width: 44ch; align-self: auto; padding-bottom: 0; }
+
+/* La photographie est POSEE dans la section, pas mise en fond derriere le
+   texte. En fond, il faudrait un voile sombre pour lire par-dessus - et
+   ce voile ramenerait l'identite sombre que le produit vient de quitter,
+   sur le seul chemin emprunte par ceux qui ont demande moins de
+   mouvement. */
 .lc-planche-statique {
+  width: 100%;
   border: 1px solid var(--lc-line-fort); background: var(--lc-creux); overflow: hidden;
-  box-shadow: 0 18px 44px -28px rgba(28, 30, 26, .45);
+  box-shadow: 0 18px 44px -28px rgba(32, 40, 44, .45);
 }
-.lc-planche-statique img { width: 100%; height: min(52vh, 460px); object-fit: cover; }
-.lc-static .lc-stage { padding: 0; display: block; }
+.lc-planche-statique img { display: block; width: 100%; height: min(52vh, 460px); object-fit: cover; }
 .lc-static .lc-chapter-final.lc-sans-photo { background-image: none; }
-/* Le voile de la version sans mouvement n'a plus de photographie a
-   assombrir : le chapitre final est sur papier comme le reste. */
 .lc-static .lc-chapter-final::before { content: none; }
 .lc-static .lc-final { position: relative; z-index: 1; }
-.lc-static .lc-phase span { position: static; opacity: 1; transform: none; display: inline; margin-right: .5em; }
-.lc-static .lc-phase { min-height: 0; margin-bottom: 20px; }
