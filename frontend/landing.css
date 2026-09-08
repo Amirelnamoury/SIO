@@ -167,11 +167,8 @@
 
 /* ========================== NAVIGATION ========================== */
 .lc-nav { position: fixed; inset: 0 0 auto 0; z-index: 100; transition: background-color .4s, backdrop-filter .4s; }
-/* Le degrade sombre qui vivait ici garantissait la lisibilite du logo sur
-   n'importe quelle photographie. Plus aucune photographie ne passe sous la
-   barre : elle repose sur le papier, et un simple filet suffit a la poser.
-   Il n'apparait qu'une fois la page defilee, quand la barre commence a
-   flotter au-dessus du contenu. */
+/* La facade passe aussi sous la barre au tout premier affichage. Le meme
+   papier translucide qu'au defilement garde le nom et les liens lisibles. */
 .lc-nav::before { content: none; }
 .lc-nav {
   border-bottom: 1px solid transparent;
@@ -181,7 +178,7 @@
    flotte au-dessus d'une photographie, et un aplat plein y ferait un
    bandeau. Le flou est ce qui garde le logo lisible sur une image claire
    comme sur une image sombre. */
-.lc-nav.is-stuck {
+.lc-nav {
   background: rgba(243, 237, 228, .82);
   backdrop-filter: blur(16px) saturate(1.4);
   -webkit-backdrop-filter: blur(16px) saturate(1.4);
@@ -190,7 +187,7 @@
 /* Sans `backdrop-filter`, 82 % de translucidite laisserait passer une
    photographie derriere le nom du produit. On repasse a un aplat. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .lc-nav.is-stuck { background: var(--lc-papier); }
+  .lc-nav { background: var(--lc-papier); }
 }
 .lc-nav-in {
   position: relative; max-width: var(--lc-max); margin: 0 auto; padding: 18px 32px;
@@ -220,7 +217,13 @@
 .lc-link { font-size: .9rem; color: var(--lc-muted); transition: color .25s; }
 .lc-link:hover { color: var(--lc-ink); }
 @media (max-width: 900px) { .lc-nav-links { display: none; } }
-@media (max-width: 560px) { .lc-nav-in { padding: 14px 18px; } .lc-link { display: none; } }
+@media (max-width: 560px) {
+  .lc-nav-in { padding: 14px 18px; gap: 12px; }
+  .lc-nav .lc-logo { gap: 8px; font-size: .95rem; }
+  .lc-nav .lc-logo-mark { width: 28px; height: 28px; }
+  .lc-nav .lc-btn-sm { padding-inline: 10px; font-size: .76rem; }
+  .lc-link { display: none; }
+}
 
 /* =====================================================================
    LA VISITE — le plateau, les images, les textes
@@ -381,7 +384,7 @@
   inset: 0;
   opacity: 0;
   pointer-events: none;
-  transition: opacity .55s var(--lc-ease);
+  transition: opacity .18s var(--lc-ease);
 }
 .lc-vue.is-on { opacity: 1; pointer-events: auto; }
 .lc-vue[hidden] { display: none; }
@@ -461,18 +464,15 @@
    portable, cinq elements flous qui se resolvent en cascade a chaque
    changement de plan coutent une recomposition complete par image, et le
    defilement s'en ressentait. Le brief demande des apparitions simples -
-   c'est aussi la version la moins chere. */
+   c'est aussi la version la moins chere. La cascade de .5 s + .28 s de
+   delai laissait encore le texte de la suite sur la galerie en remontant
+   vite. Une entree courte et simultanee suit le changement de photo. */
 .lc-bloc > * {
   opacity: 0;
-  transform: translateY(14px);
-  transition: opacity .5s var(--lc-ease), transform .5s var(--lc-ease);
+  transform: translateY(8px);
+  transition: opacity .18s var(--lc-ease), transform .18s var(--lc-ease);
 }
 .lc-vue.is-on .lc-bloc > * { opacity: 1; transform: none; }
-.lc-vue.is-on .lc-bloc > *:nth-child(1) { transition-delay: .04s; }
-.lc-vue.is-on .lc-bloc > *:nth-child(2) { transition-delay: .10s; }
-.lc-vue.is-on .lc-bloc > *:nth-child(3) { transition-delay: .16s; }
-.lc-vue.is-on .lc-bloc > *:nth-child(4) { transition-delay: .22s; }
-.lc-vue.is-on .lc-bloc > *:nth-child(5) { transition-delay: .28s; }
 
 /* Sur l'image, l'encre du produit ne convient plus : c'est l'encre
    claire des fonds sombres qui prend le relais. */
@@ -605,6 +605,8 @@
 /* --lc-faint est calibre sur le papier ; cette note vit aussi sur le lavis
    de laiton de l'offre optionnelle, ou elle tombait a 4.27:1. */
 .lc-note { margin-top: 22px; font-size: .84rem; color: var(--lc-muted); }
+/* Le reset `.lc p` ne doit pas annuler l'espace sous les boutons. */
+.lc-final .lc-note { margin-top: 22px; }
 .lc-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 34px; }
 .lc-actions-center { justify-content: center; }
 
@@ -629,6 +631,8 @@
   width: 46px; height: 1px; overflow: hidden;
   background: linear-gradient(90deg, var(--lc-champagne), transparent);
 }
+.lc-vue .lc-scrollcue { color: var(--lc-sur-sombre-muted); }
+.lc-vue .lc-scrollcue-line { background: var(--lc-sur-sombre-muted); }
 @media (prefers-reduced-motion: no-preference) {
   /* Un point de lumiere descend le long du trait : invite a scroller
      sans agiter une fleche. */
@@ -698,6 +702,12 @@
    lui, la planche photographique restait visible derriere les tarifs -
    invisible tant que les deux etaient sombres, criant sur du papier. */
 .lc-chapter-final { position: relative; background: var(--lc-papier); }
+/* Le contenu entre par le bas avant la fin du fondu. Un fond opaque y
+   coupait la terrasse ; le repousser d'un ecran creait un grand vide.
+   En WebGL, le plateau fournit deja le papier : la conclusion reste
+   transparente et son opacite suit LA MEME sortie dans landing-piste.js. */
+.lc-visite[data-mode="visite"] .lc-chapter-final { background: transparent; opacity: 0; }
+html:not(.lc-static) .lc-visite:not([data-mode]) .lc-chapter-final { opacity: 0; }
 /* Le retrait haut est tombe de 34 vh a 14 vh : la sortie de la visite
    occupe deja une demi-hauteur d'ecran de fondu vers ce meme beige, et
    un tiers d'ecran vide par-dessus se lisait comme un trou. L'ecart
@@ -725,8 +735,8 @@
    Il y en avait quatre sur deux rangees : la quatrieme - « gardez vos
    equipes alignees » - redisait le planning partage deja annonce dans la
    visite, et une grille 2x2 laissait un blanc au milieu du panneau. */
+.lc .lc-benefits { margin-top: 52px; }
 .lc-benefits {
-  margin-top: 52px;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 34px 40px;
@@ -756,7 +766,7 @@
 .lc-plan-hook { margin-top: 6px; font-size: .85rem; color: var(--lc-muted); min-height: 2.6em; }
 .lc-plan-price { margin: 16px 0 22px; font-family: var(--lc-display); font-size: 2.1rem; }
 .lc-plan-price span { font-family: var(--lc-sans); font-size: .82rem; color: var(--lc-muted); }
-.lc-plan-feats { display: grid; gap: 9px; margin-bottom: 26px; flex: 1; }
+.lc .lc-plan-feats { display: grid; gap: 9px; margin-bottom: 26px; flex: 1; }
 .lc-plan-feats li { position: relative; padding-left: 19px; font-size: .87rem; color: var(--lc-muted); }
 .lc-plan-feats li::before { content: ""; position: absolute; left: 0; top: .6em; width: 6px; height: 1px; background: var(--lc-champagne); }
 .lc-plan .lc-btn { width: 100%; }
@@ -816,18 +826,19 @@
   opacity: 0; pointer-events: none; transition: opacity .5s;
 }
 .lc-progress.is-on { opacity: 1; pointer-events: auto; }
+.lc-visite.is-sortie .lc-progress { opacity: 0; pointer-events: none; }
 .lc-progress ol { display: grid; gap: 15px; }
 .lc-progress a { display: flex; align-items: center; justify-content: flex-end; gap: 11px; }
 .lc-progress span {
-  font-size: .66rem; letter-spacing: .1em; color: var(--lc-faint);
+  font-size: .66rem; letter-spacing: .1em; color: var(--lc-sur-sombre-muted);
   font-variant-numeric: tabular-nums; transition: color .3s;
 }
 .lc-progress i {
-  font-style: normal; font-size: .72rem; color: var(--lc-ink);
+  font-style: normal; font-size: .72rem; color: var(--lc-sur-sombre);
   max-width: 0; overflow: hidden; white-space: nowrap; opacity: 0;
   transition: max-width .45s var(--lc-ease), opacity .35s;
 }
-.lc-progress li.is-on span { color: var(--lc-champagne); }
+.lc-progress li.is-on span { color: var(--lc-laiton-sur-sombre); }
 .lc-progress li.is-on i, .lc-progress a:hover i { max-width: 110px; opacity: 1; }
 @media (max-width: 1100px) { .lc-progress { display: none; } }
 
@@ -966,6 +977,7 @@
 .lc-static .lc-vue .lc-note { color: var(--lc-muted); }
 .lc-static .lc-vue .lc-btn-ghost { border-color: var(--lc-line-fort); color: var(--lc-ink); background: transparent; }
 .lc-static .lc-scrollcue { display: none; }
+.lc-static .lc-logo-mark { animation: none; transition: none; }
 
 .lc-static .lc-vue-in,
 .lc-static .lc-vue[data-cote] .lc-vue-in {

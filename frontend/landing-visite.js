@@ -300,7 +300,7 @@ const DEBUG = typeof location !== "undefined" && /(?:^|[?&])debug(?:=|&|$)/.test
    elle. Avec, les deux images bougent pendant tout le fondu. */
 const PREROLL = 0.22;
 
-export function creerVisite({ canvas, scenes, petit, papier }) {
+export function creerVisite({ canvas, scenes, petit, papier, surChargement = () => {} }) {
   const renderer = new THREE.WebGLRenderer({
     canvas,
     antialias: false,       // une photographie n'a pas d'arêtes à lisser
@@ -377,15 +377,18 @@ export function creerVisite({ canvas, scenes, petit, papier }) {
   const enCours = new Map();
   const ratios = new Map();
   let indexA = -1, indexB = -1;
+  let demande = -1, dernierePeinture = null, prechargement = null, detruit = false;
 
   const url = (i) => BASE + scenes[i].f + (petit ? "-sm" : "") + ".webp";
 
   function charger(i) {
-    if (i < 0 || i >= scenes.length) return Promise.resolve(null);
+    if (detruit || i < 0 || i >= scenes.length) return Promise.resolve(null);
     if (textures.has(i)) return Promise.resolve(textures.get(i));
     if (enCours.has(i)) return enCours.get(i);
     const p = new Promise((ok) => {
       chargeur.load(url(i), (t) => {
+        enCours.delete(i);
+        if (detruit) { t.dispose(); ok(null); return; }
         t.colorSpace = THREE.SRGBColorSpace;
         t.minFilter = t.magFilter = THREE.LinearFilter;   // on ne réduit jamais
         t.generateMipmaps = false;
@@ -395,8 +398,13 @@ export function creerVisite({ canvas, scenes, petit, papier }) {
         // qui fait le cadrage cover : une photographie livrée dans un
         // format différent des autres serait sinon étirée.
         ratios.set(i, t.image.width / t.image.height);
-        enCours.delete(i);
-        ok(t);
+        // Une requête ancienne peut finir après un aller-retour rapide.
+        // Elle alimente seulement le cache : elle ne change jamais ce
+        // qui est lié au shader, ni l'index annoncé comme déjà peint.
+        liberer();
+        const retenue = textures.has(i);
+        ok(retenue ? t : null);
+        if (retenue && (i === demande || i === demande + 1)) surChargement();
       }, undefined, () => { enCours.delete(i); ok(null); });
     });
     enCours.set(i, p);
@@ -408,11 +416,18 @@ export function creerVisite({ canvas, scenes, petit, papier }) {
   // Une première version détachait la texture avant de la libérer, ce
   // qui revient à effacer l'image affichée : en descendant vite, l'écran
   // passait au gris uni avant que la suivante ne soit décodée. Une
-  // texture encore liée reste, et redevient libérable au passage suivant.
-  function liberer(courant) {
+  // texture encore liée reste. Pendant un chargement, ces deux textures
+  // et les deux demandées sont prioritaires ; les voisines occupent les
+  // places restantes. La fenêtre reste bornée à quatre, même si une
+  // ancienne requête termine après que le visiteur a arrêté de défiler.
+  function liberer() {
+    const valide = (i) => i >= 0 && i < scenes.length;
+    const garder = new Set([indexA, indexB, demande, demande + 1].filter(valide));
+    for (const i of [demande - 1, demande + 2]) {
+      if (garder.size < 4 && valide(i)) garder.add(i);
+    }
     for (const [i, t] of textures) {
-      if (i >= courant - 1 && i <= courant + 2) continue;
-      if (u.uA.value === t || u.uB.value === t) continue;
+      if (garder.has(i)) continue;
       t.dispose();
       textures.delete(i);
       ratios.delete(i);
@@ -437,18 +452,43 @@ export function creerVisite({ canvas, scenes, petit, papier }) {
     );
   }
 
-  let dernier = -1;
-
   /**
    * @param i      l'index de la scène courante
    * @param p      sa progression, 0 → 1
    * @param t      la transition vers la suivante, 0 → 1
    * @param sortie le fondu final vers le papier, 0 → 1
+   * @returns la frame réellement peinte, ou null avant la première image
    */
   function rendre(i, p, t, sortie) {
+    if (detruit) return dernierePeinture;
     const s = scenes[i];
     const suivante = scenes[i + 1];
 
+    if (i !== demande) {
+      demande = i;
+      clearTimeout(prechargement);
+      prechargement = null;
+      liberer();
+    }
+    charger(i);
+    charger(i + 1);
+    const a = textures.get(i), b = textures.get(i + 1);
+
+    // Le défilement peut aller plus vite que le décodage. Garder alors
+    // la composition entière, y compris son texte via la valeur retournée.
+    // Appliquer le cadrage de i à l'ancienne texture faisait sauter la
+    // façade sous le texte du bureau ; les promesses mettaient ensuite
+    // indexA à jour sans repeindre, jusqu'au prochain geste de l'utilisateur.
+    if (!a || (suivante && t > 0 && !b)) {
+      renderer.render(scene, camera);
+      return dernierePeinture;
+    }
+
+    // Les textures en cache sont liées dans cette même peinture, sans
+    // détour par Promise.then : cadrage et photographie restent associés.
+    u.uA.value = a;
+    u.uB.value = b || vide;
+    u.uHasB.value = b ? 1 : 0;
     transformer(s, p, u.uTrA.value);
     u.uFocA.value.set(s.focal[0], s.focal[1]);
     u.uRatioA.value = ratios.get(i) || 1.79;
@@ -466,28 +506,30 @@ export function creerVisite({ canvas, scenes, petit, papier }) {
     u.uSortie.value = sortie || 0;
     u.uTemps.value = i * 7.13;       // le grain est figé par scène
 
-    if (i !== dernier) {
-      dernier = i;
-      charger(i).then((tex) => { if (tex && dernier === i) { u.uA.value = tex; indexA = i; } });
-      charger(i + 1).then((tex) => {
-        if (tex && dernier === i) { u.uB.value = tex; u.uHasB.value = 1; indexB = i + 1; }
-      });
-      // La suivante encore n'est demandée qu'une fois la visite
-      // commencée : à l'ouverture, on ne télécharge que la façade et le
-      // hall, conformément au « hero + prochaine scène » du brief.
-      if (i > 0) setTimeout(() => charger(i + 2), 400);
-      liberer(i);
-    }
-    if (!textures.has(i + 1)) u.uHasB.value = 0;
-
     renderer.render(scene, camera);
+    indexA = i;
+    indexB = b ? i + 1 : -1;
+    dernierePeinture = { i, p, t, sortie: sortie || 0 };
+    liberer();
+
+    // À l'ouverture : façade + hall seulement. Plus loin, précharger
+    // une voisine après la peinture ; annuler ce délai si la demande
+    // change évite de remplir le cache avec des étapes déjà dépassées.
+    if (i > 0 && i + 2 < scenes.length && prechargement === null
+      && !textures.has(i + 2) && !enCours.has(i + 2)) {
+      prechargement = setTimeout(() => {
+        prechargement = null;
+        if (!detruit && demande === i) charger(i + 2);
+      }, 400);
+    }
+    return dernierePeinture;
   }
 
   dimensionner();
   return {
     dimensionner,
     rendre,
-    amorcer: () => charger(0).then((t) => { if (t) { u.uA.value = t; indexA = 0; } }),
+    amorcer: () => charger(0),
     // Ouvert au diagnostic seulement. Une visite en WebGL ne se vérifie
     // pas à la capture d'écran : le canevas n'expose rien au DOM. C'est
     // ce qui permet de constater qu'un mouvement est bien MONOTONE, au
@@ -505,8 +547,11 @@ export function creerVisite({ canvas, scenes, petit, papier }) {
       dpr,
     }),
     detruire() {
+      detruit = true;
+      clearTimeout(prechargement);
       for (const [, t] of textures) t.dispose();
       textures.clear();
+      vide.dispose();
       quad.geometry.dispose();
       quad.material.dispose();
       renderer.dispose();

@@ -69,7 +69,8 @@
     navTick = false;
     var y = window.scrollY;
     if (nav) nav.classList.toggle("is-stuck", y > 24);
-    if (progress) progress.classList.toggle("is-on", y > window.innerHeight * 0.6);
+    if (progress) progress.classList.toggle("is-on", y > window.innerHeight * 0.6
+      && (!chapitreFinal || chapitreFinal.getBoundingClientRect().top > window.innerHeight));
     if (barFill) {
       var max = document.documentElement.scrollHeight - window.innerHeight;
       barFill.style.transform = "scaleX(" + (max > 0 ? Math.min(1, y / max) : 0).toFixed(4) + ")";
@@ -129,7 +130,7 @@
 
     host.innerHTML = ''
       + '<p class="lc-eyebrow">Option · hors abonnement</p>'
-      + '<h2 class="lc-h2">' + o.nom + ',<br>relié à votre Suite Artisan.</h2>'
+      + '<h2 class="lc-h2">' + o.nom + ',<br> relié à votre Suite Artisan.</h2>'
       + '<div class="lc-offer">'
       +   '<div class="lc-offer-main">'
       +     '<p class="lc-lead">' + o.description + '</p>'

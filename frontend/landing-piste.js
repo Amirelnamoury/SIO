@@ -26,7 +26,7 @@
    ensuite sur le même beige — il n'y a plus de frontière à franchir.
    ===================================================================== */
 
-import { SCENES, creerVisite } from "./landing-visite.js?v=16";
+import { SCENES, creerVisite } from "./landing-visite.js?v=17";
 
 const BASE = "assets/landing/villa/";
 const PAPIER = "#F1EADF";
@@ -49,6 +49,7 @@ function demarrer() {
   const vues = Array.prototype.slice.call(hoteVues.querySelectorAll(".lc-vue"));
   const spacers = Array.prototype.slice.call(chapitres.querySelectorAll(".lc-spacer"));
   const sortieSpacer = doc.getElementById("lc-sortie");
+  const conclusion = doc.getElementById("chap-final");
 
   // Quelle définition charger ? Ce qui compte n'est ni la largeur CSS ni
   // la densité prise isolément, mais le nombre de pixels RÉELS à
@@ -141,7 +142,7 @@ function demarrer() {
 
   if (mode === "visite") {
     try {
-      moteur = creerVisite({ canvas, scenes: SCENES, petit, papier: PAPIER });
+      moteur = creerVisite({ canvas, scenes: SCENES, petit, papier: PAPIER, surChargement: surDefilement });
       moteur.amorcer();
     } catch (e) {
       // Une carte graphique qui refuse le contexte, un shader qui ne
@@ -238,7 +239,17 @@ function demarrer() {
     }
 
     if (moteur) {
-      moteur.rendre(i, p, t, sortie);
+      const peinte = moteur.rendre(i, p, t, sortie);
+      // Une photographie en cours de décodage ne doit pas laisser son
+      // texte prendre de l'avance. Le moteur garde la dernière frame
+      // complète ; son chargement redemande cette même peinture par rAF,
+      // à la position réelle du défilement, même si l'utilisateur s'arrête.
+      if (!peinte) return;
+      ({ i, p, t, sortie } = peinte);
+      // La page entre pendant que la terrasse devient papier. Son fond
+      // transparent evite un front opaque ; suivre la sortie evite aussi
+      // d'ajouter une hauteur d'ecran vide apres la photographie.
+      if (conclusion) conclusion.style.opacity = String(Math.max(0, (sortie - 0.25) / 0.75));
     } else {
       // Repli : un fondu, et un agrandissement très lent pour que
       // l'image ne soit pas parfaitement inerte. Même plafond que le
