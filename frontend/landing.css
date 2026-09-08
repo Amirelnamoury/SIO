@@ -32,9 +32,14 @@
 
 :root {
   /* Palette du produit — voir DIRECTION-ARTISTIQUE.md. */
-  --lc-papier: #F6F7F8;     /* le plan de travail */
-  --lc-feuille: #FFFFFF;    /* la planche, posee sur le plan */
-  --lc-creux: #EEF1F2;      /* le retrait */
+  /* Un ecru chaud, pas un blanc. Le blanc precedent (#F6F7F8, gris
+     froid) fatiguait l'oeil entre deux photographies sombres, et il
+     jurait avec la pierre et le bois de la villa. Celui-ci a du rouge
+     sous le vert et le bleu - il est chaud sans virer au jaune, et
+     assez clair pour que l'encre y garde 13:1. */
+  --lc-papier: #F4F0E8;
+  --lc-feuille: #FBF9F4;    /* la planche, posee sur le plan */
+  --lc-creux: #EBE5DA;      /* le retrait */
   --lc-ink: #20282C;        /* l'encre */
   --lc-muted: #536168;
   --lc-faint: #5B6A71;
@@ -45,8 +50,8 @@
      renommer melangerait deux changements dans le meme commit. */
   --lc-champagne: #245548;
   --lc-champagne-soft: rgba(36, 85, 72, .12);
-  --lc-line: #DFE4E6;
-  --lc-line-fort: #7B888F;
+  --lc-line: #E2DACC;
+  --lc-line-fort: #8B8172;
   /* Le meme fond de marque que l'ecran de connexion : c'est ce qui fait
      que la vitrine, la connexion et l'application se lisent comme un
      seul produit. */
@@ -142,7 +147,7 @@
   transition: background .3s var(--lc-ease), border-color .3s var(--lc-ease);
 }
 .lc-nav.is-stuck {
-  background: rgba(246, 247, 248, .92); backdrop-filter: blur(14px);
+  background: rgba(244, 240, 232, .93); backdrop-filter: blur(14px);
   border-bottom-color: var(--lc-line);
 }
 .lc-nav-in {
@@ -275,27 +280,28 @@
   background-image: linear-gradient(180deg, rgba(14, 18, 17, .55) 0%, rgba(14, 18, 17, 0) 42%);
 }
 .lc-ombre[data-cote="gauche"] {
-  background-image: linear-gradient(96deg, rgba(14, 18, 17, .88) 0%, rgba(14, 18, 17, .62) 26%, rgba(14, 18, 17, .10) 58%, rgba(14, 18, 17, 0) 78%);
+  background-image: linear-gradient(96deg, rgba(14, 18, 17, .58) 0%, rgba(14, 18, 17, .34) 30%, rgba(14, 18, 17, .06) 62%, rgba(14, 18, 17, 0) 82%);
 }
 .lc-ombre[data-cote="droite"] {
-  background-image: linear-gradient(264deg, rgba(14, 18, 17, .88) 0%, rgba(14, 18, 17, .62) 26%, rgba(14, 18, 17, .10) 58%, rgba(14, 18, 17, 0) 78%);
+  background-image: linear-gradient(264deg, rgba(14, 18, 17, .58) 0%, rgba(14, 18, 17, .34) 30%, rgba(14, 18, 17, .06) 62%, rgba(14, 18, 17, 0) 82%);
 }
-/* Mesure a l'appui : le titre du hero tombait a 3,22:1 EN FIN de son
-   travelling avant - la camera s'approche, et une fenetre eclairee arrive
-   sous le texte. Un contraste valide au debut d'un mouvement ne l'est pas
-   forcement a son terme ; c'est le genre de defaut qu'une capture d'ecran
-   prise au bon moment ne montre jamais. */
 .lc-ombre[data-cote="bas-gauche"] {
-  background-image: linear-gradient(28deg, rgba(14, 18, 17, .94) 0%, rgba(14, 18, 17, .68) 34%, rgba(14, 18, 17, .10) 66%, rgba(14, 18, 17, 0) 86%);
+  background-image: linear-gradient(28deg, rgba(14, 18, 17, .62) 0%, rgba(14, 18, 17, .34) 36%, rgba(14, 18, 17, .06) 68%, rgba(14, 18, 17, 0) 86%);
 }
 .lc-ombre[data-cote="bas-droite"] {
-  background-image: linear-gradient(332deg, rgba(14, 18, 17, .90) 0%, rgba(14, 18, 17, .55) 34%, rgba(14, 18, 17, .06) 66%, rgba(14, 18, 17, 0) 84%);
+  background-image: linear-gradient(332deg, rgba(14, 18, 17, .62) 0%, rgba(14, 18, 17, .34) 36%, rgba(14, 18, 17, .06) 68%, rgba(14, 18, 17, 0) 86%);
 }
 .lc-ombre[data-cote="haut-gauche"] {
-  background-image: linear-gradient(152deg, rgba(14, 18, 17, .88) 0%, rgba(14, 18, 17, .56) 32%, rgba(14, 18, 17, .06) 64%, rgba(14, 18, 17, 0) 82%);
+  background-image: linear-gradient(152deg, rgba(14, 18, 17, .58) 0%, rgba(14, 18, 17, .34) 34%, rgba(14, 18, 17, .06) 66%, rgba(14, 18, 17, 0) 84%);
 }
 .lc-ombre[data-cote="haut-droite"] {
-  background-image: linear-gradient(208deg, rgba(14, 18, 17, .88) 0%, rgba(14, 18, 17, .56) 32%, rgba(14, 18, 17, .06) 64%, rgba(14, 18, 17, 0) 82%);
+  background-image: linear-gradient(208deg, rgba(14, 18, 17, .58) 0%, rgba(14, 18, 17, .34) 34%, rgba(14, 18, 17, .06) 66%, rgba(14, 18, 17, 0) 84%);
+}
+/* Les paliers : l'image passe au second plan pour laisser lire trois
+   chiffres. C'est le seul moment de la visite ou la photographie est
+   volontairement mise en retrait, et il dure une demi-hauteur d'ecran. */
+.lc-ombre[data-cote="centre"] {
+  background-image: linear-gradient(180deg, rgba(14, 18, 17, .74) 0%, rgba(14, 18, 17, .80) 50%, rgba(14, 18, 17, .74) 100%);
 }
 
 /* =====================================================================
@@ -320,15 +326,23 @@
 .lc-vue.is-on { opacity: 1; pointer-events: auto; }
 .lc-vue[hidden] { display: none; }
 
+/* La zone de securite. Un texte colle a 26 px du bord superieur passe
+   sous la barre de navigation ; colle en bas, il touche l'indice de
+   defilement. Les marges hautes et basses sont donc plus genereuses que
+   les laterales, et elles ne descendent jamais sous 96 px. */
 .lc-vue-in {
   display: grid;
   height: 100%;
-  padding: clamp(26px, 4.4vw, 78px);
-  padding-top: max(clamp(26px, 4.4vw, 78px), 96px);
+  padding: clamp(96px, 12vh, 132px) clamp(26px, 5vw, 92px);
   color: var(--lc-sur-sombre);
 }
 .lc-vue[data-cote="gauche"] .lc-vue-in { align-content: center; justify-items: start; }
 .lc-vue[data-cote="droite"] .lc-vue-in { align-content: center; justify-items: end; text-align: right; }
+.lc-vue[data-cote="centre"] .lc-vue-in { align-content: center; justify-items: center; text-align: center; }
+/* Conservees pour les pieces qui en auraient besoin, mais la sequence
+   actuelle n'emploie que gauche, droite, centre et le bas de l'ouverture :
+   un texte doit se trouver la ou l'oeil l'attend, pas ailleurs a chaque
+   piece. */
 .lc-vue[data-cote="bas-gauche"] .lc-vue-in { align-content: end; justify-items: start; }
 .lc-vue[data-cote="bas-droite"] .lc-vue-in { align-content: end; justify-items: end; text-align: right; }
 .lc-vue[data-cote="haut-gauche"] .lc-vue-in { align-content: start; justify-items: start; }
@@ -339,7 +353,28 @@
 .lc-vue[data-vue="0"] .lc-vue-in { grid-template-rows: 1fr auto; align-content: stretch; }
 .lc-vue[data-vue="0"] .lc-bloc { align-self: end; padding-bottom: clamp(18px, 4vh, 46px); }
 
-.lc-bloc { max-width: 40ch; }
+.lc-bloc {
+  max-width: 40ch;
+  position: relative;
+  z-index: 0;
+}
+/* L'ellipse s'arretait a 76 % de la hauteur du bloc, centree a 52 % : le
+   paragraphe, qui vit en bas, tombait dans son extinction. Mesure sur le
+   salon et sur le bureau - 3,51:1 et 3,44:1 pour un seuil de 4,5. Elle
+   descend plus bas et s'eteint plus tard, ce qui coute quelques pixels de
+   voile SOUS le texte, la ou il n'y a rien a voir de toute facon - plutot
+   que d'assombrir la photographie entiere. */
+.lc-bloc::before {
+  content: "";
+  position: absolute;
+  inset: -40px -72px -56px -72px;
+  z-index: -1;
+  background: radial-gradient(ellipse 80% 92% at 50% 54%,
+    rgba(14, 18, 17, .86) 0%,
+    rgba(14, 18, 17, .79) 54%,
+    rgba(14, 18, 17, .46) 82%,
+    rgba(14, 18, 17, 0) 100%);
+}
 .lc-vue[data-vue="0"] .lc-bloc { max-width: 46ch; }
 
 /* L'entree du texte : opacite, une translation courte, et un flou tres
@@ -405,27 +440,15 @@
   .lc-ombre[data-cote] {
     background-image: linear-gradient(0deg, rgba(14, 18, 17, .95) 0%, rgba(14, 18, 17, .88) 22%, rgba(14, 18, 17, .66) 44%, rgba(14, 18, 17, .38) 62%, rgba(14, 18, 17, .14) 80%, rgba(14, 18, 17, 0) 100%);
   }
-  /* L'OMBRE SUIT LE TEXTE, PAS L'ECRAN.
-     Assombrir tout l'ecran assez pour tenir le contraste sur une salle a
-     manger pleine de baies vitrees revient a noircir la photographie.
-     L'ombre se pose donc DERRIERE LE BLOC, et seulement la : elle
-     s'etend d'un bord a l'autre pour n'avoir aucune arete laterale, et
-     s'eteint au-dessus du texte. C'est le degrade local que demande le
-     brief, plutot qu'un rectangle opaque. */
-  .lc-vue .lc-bloc { position: relative; z-index: 0; }
+  /* Le halo derriere le bloc existe sur tous les ecrans ; sur telephone
+     il est seulement plus serre et plus dense, parce que le bloc y
+     occupe presque toute la largeur. */
   .lc-vue .lc-bloc::before {
-    content: "";
-    position: absolute;
-    top: -42px; bottom: -46px; left: -50vw; right: -50vw;
-    z-index: -1;
-    /* L'ombre tient jusqu'en HAUT du bloc, et ne se dissipe que dans les
-       derniers pour-cent. Avec une extinction plus precoce, le sur-titre
-       du hero - qui est la premiere ligne du bloc - tombait a 3,81:1. */
-    background: linear-gradient(0deg,
-      rgba(14, 18, 17, .90) 0%,
-      rgba(14, 18, 17, .88) 62%,
-      rgba(14, 18, 17, .78) 84%,
-      rgba(14, 18, 17, .40) 94%,
+    inset: -32px -34px -38px -34px;
+    background: radial-gradient(ellipse 88% 82% at 50% 54%,
+      rgba(14, 18, 17, .82) 0%,
+      rgba(14, 18, 17, .70) 46%,
+      rgba(14, 18, 17, .30) 76%,
       rgba(14, 18, 17, 0) 100%);
   }
   .lc-vue .lc-actions { width: 100%; gap: 10px; }
@@ -492,7 +515,7 @@
 .lc-cta-inline {
   display: inline-flex; align-items: center; gap: 10px; margin-top: 30px;
   font-size: .92rem; font-weight: 600; color: var(--lc-ink);
-  padding-bottom: 6px; border-bottom: 1px solid rgba(138, 96, 36, .5);
+  padding-bottom: 6px; border-bottom: 1px solid rgba(36, 85, 72, .5);
   transition: border-color .3s, gap .3s var(--lc-ease);
 }
 .lc-cta-inline::after { content: "→"; color: var(--lc-champagne); transition: transform .3s var(--lc-ease); }
@@ -555,7 +578,7 @@
 }
 .lc-figures dt { font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--lc-faint); }
 .lc-figures dd { margin: 5px 0 0; font-family: var(--lc-display); font-size: 1.5rem; font-variant-numeric: tabular-nums; }
-.lc-figure-hero { border-color: rgba(138, 96, 36, .42) !important; }
+.lc-figure-hero { border-color: rgba(36, 85, 72, .42) !important; }
 .lc-figure-hero dd { color: var(--lc-champagne); }
 .lc-figures-note { margin-top: 14px; font-size: .78rem; color: var(--lc-faint); font-style: italic; }
 
@@ -643,8 +666,8 @@
   background: var(--lc-feuille);
 }
 .lc-offer-price.is-option {
-  border-style: dashed; border-color: rgba(138, 96, 36, .5);
-  background: rgba(138, 96, 36, .06);
+  border-style: dashed; border-color: rgba(36, 85, 72, .5);
+  background: rgba(36, 85, 72, .06);
 }
 .lc-offer-flag {
   display: inline-block; margin-bottom: 8px;
@@ -765,8 +788,8 @@
 /* Marqueur visible pour tout ce qui doit encore etre renseigne par
    l'editeur du site : impossible de le laisser passer en production. */
 .lc-todo {
-  display: inline-block; background: rgba(138, 96, 36, .16); color: var(--lc-champagne);
-  border: 1px dashed rgba(138, 96, 36, .5); border-radius: 4px;
+  display: inline-block; background: rgba(36, 85, 72, .16); color: var(--lc-champagne);
+  border: 1px dashed rgba(36, 85, 72, .5); border-radius: 4px;
   padding: 1px 8px; font-size: .86em; font-weight: 600;
 }
 .lc-legal-back { display: inline-flex; align-items: center; gap: 9px; margin-top: 56px; font-size: .9rem; }
@@ -862,3 +885,105 @@
 .lc-static .lc-chapter-final.lc-sans-photo { background-image: none; }
 .lc-static .lc-chapter-final::before { content: none; }
 .lc-static .lc-final { position: relative; z-index: 1; }
+
+
+/* =====================================================================
+   LES PALIERS — deux respirations
+   ---------------------------------------------------------------------
+   Deux moments, apres le chantier et apres la galerie, ou la visite
+   s'arrete de decrire des pieces pour dire ce que l'outil change. Ils ne
+   chargent aucune image : ils reprennent la photographie precedente,
+   mise en retrait, pendant que la camera continue son mouvement. Une
+   respiration, pas une coupure - et zero octet de plus.
+
+   Ce ne sont pas des cartes de SaaS : pas d'ombre portee, pas de coin
+   arrondi genereux, pas d'aplat colore. Un filet, un chiffre compose, un
+   titre court, une phrase. La meme grammaire que le reste du produit.
+   ===================================================================== */
+.lc-palier .lc-bloc { max-width: 62rem; }
+/* Le halo d'un palier couvre trois cartes, pas un paragraphe : il est
+   plus large et plus regulier. */
+.lc-palier .lc-bloc::before {
+  inset: -44px -56px -48px -56px;
+  background: radial-gradient(ellipse 82% 84% at 50% 50%,
+    rgba(14, 18, 17, .60) 0%,
+    rgba(14, 18, 17, .46) 58%,
+    rgba(14, 18, 17, 0) 100%);
+}
+.lc-palier .lc-eyebrow { margin-bottom: 26px; }
+
+.lc-cartes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(18px, 2.4vw, 40px);
+  text-align: left;
+  width: 100%;
+}
+.lc-cartes-deux { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 46rem; margin-inline: auto; }
+
+.lc-carte {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding-top: 18px;
+  /* Un filet en tete, pas un cadre : la carte est une colonne de texte
+     tenue par une ligne, comme une entree de tableau. */
+  border-top: 1px solid rgba(242, 245, 244, .32);
+}
+.lc-carte-chiffre {
+  font-family: var(--lc-display);
+  font-size: clamp(1.6rem, 2.5vw, 2.15rem);
+  font-weight: 500;
+  line-height: 1.05;
+  color: var(--lc-sur-sombre);
+  font-variant-numeric: tabular-nums;
+}
+.lc-carte-titre {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--lc-sur-sombre);
+  line-height: 1.3;
+}
+.lc-carte-texte {
+  font-size: .92rem;
+  line-height: 1.55;
+  color: var(--lc-sur-sombre-muted);
+  max-width: 34ch;
+}
+
+@media (max-width: 900px) {
+  .lc-cartes, .lc-cartes-deux { grid-template-columns: 1fr; gap: 20px; }
+  .lc-palier .lc-bloc { max-width: none; }
+  .lc-carte { padding-top: 14px; }
+  .lc-carte-texte { max-width: none; }
+}
+
+/* En mouvement reduit la visite redevient une page : les paliers y sont
+   des sections normales sur le papier, et leurs filets repassent en
+   encre. */
+/* Le halo n'a de sens que POSE SUR UNE PHOTOGRAPHIE. En mode sans
+   mouvement la visite est redevenue une page sur papier : le halo y
+   dessinait un rectangle sombre derriere chaque texte, et l'encre
+   foncee repassee dessus devenait illisible. */
+.lc-static .lc-bloc::before,
+.lc-static .lc-palier .lc-bloc::before { content: none; }
+.lc-static .lc-carte { border-top-color: var(--lc-line-fort); }
+.lc-static .lc-carte-chiffre,
+.lc-static .lc-carte-titre { color: var(--lc-ink); }
+.lc-static .lc-carte-texte { color: var(--lc-muted); }
+.lc-static .lc-cartes { text-align: left; }
+
+/* Sur telephone, les trois cartes d'un palier s'empilent : le bloc
+   devient haut et etroit, et son halo - regle plus large et plus douce
+   que celle des pieces - laissait le sur-titre a 3,4:1. Il se resserre et
+   se densifie, comme celui des pieces au meme endroit. */
+@media (max-width: 900px) {
+  .lc-palier .lc-bloc::before {
+    inset: -34px -34px -40px -34px;
+    background: radial-gradient(ellipse 90% 92% at 50% 52%,
+      rgba(14, 18, 17, .84) 0%,
+      rgba(14, 18, 17, .74) 54%,
+      rgba(14, 18, 17, .34) 82%,
+      rgba(14, 18, 17, 0) 100%);
+  }
+}

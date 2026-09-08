@@ -16,7 +16,7 @@
    est la façon de peindre l'image, jamais la lecture.
    ===================================================================== */
 
-import { SCENES, creerVisite } from "./landing-visite.js?v=8";
+import { SCENES, creerVisite } from "./landing-visite.js?v=9";
 
 const BASE = "assets/landing/villa/";
 const doc = document;
@@ -227,7 +227,11 @@ function demarrer() {
     if (i !== dernierIndex) {
       dernierIndex = i;
       if (ombre) ombre.dataset.cote = SCENES[i].cote;
-      const chap = Math.floor(i / 2) + 1;
+      // Cinq reperes pour onze etapes : deux etapes par repere, et les
+      // trois dernieres pieces partagent le cinquieme. Sans le plafond,
+      // la sequence produisait un sixieme numero qui nexiste pas dans la
+      // liste, et le dernier repere ne sallumait jamais.
+      const chap = Math.min(5, Math.floor(i / 2) + 1);
       if (chap !== dernierChapitre) {
         dernierChapitre = chap;
         Array.prototype.forEach.call(progressLiens, (a) => {

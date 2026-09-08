@@ -1,5 +1,5 @@
 /* =====================================================================
-   LA VISITE — quatorze pièces, une seule caméra
+   LA VISITE — neuf pièces, deux paliers, une seule caméra
    ---------------------------------------------------------------------
    Le visiteur traverse une villa livrée. Chaque pièce est une
    photographie ; le passage de l'une à l'autre doit donner l'impression
@@ -39,93 +39,93 @@ import * as THREE from "./vendor/three.module.min.js?v=160";
 const BASE = "assets/landing/villa/";
 
 /* ---------------------------------------------------------------------
-   LES QUATORZE PIÈCES
+   LA SÉQUENCE — neuf pièces et deux paliers
    ---------------------------------------------------------------------
-   `focal` : le point de l'image qui doit rester visible, en fraction de
-   largeur et de hauteur. Aucune n'est à 0.5/0.5 : chaque cadrage est
-   différent, et un recadrage centré par défaut couperait le sujet sur
-   la moitié d'entre elles - une baignoire en bas à gauche, un couloir
-   en fuite au centre, une piscine à droite.
+   CE QUI A ÉTÉ COUPÉ, ET POURQUOI
+   La première version traversait les quatorze photographies. Chronométré
+   sur un enregistrement réel : 79 secondes de défilement, dont plusieurs
+   passages où la même pièce restait à l'écran douze à quatorze secondes
+   sans que rien ne change. Cinq pièces disaient visuellement ce qu'une
+   autre avait déjà dit — un deuxième salon, une deuxième chambre, une
+   salle de bain — et leur texte a été fondu dans la pièce qui reste :
 
-   `cam` : le mouvement, en unités normalisées. z = 1 est la distance de
-   référence ; x et y sont des fractions de la largeur du tirage ; yaw et
-   pitch sont en degrés. Le vocabulaire de caméra vient du brief, pièce
-   par pièce.
+     salle à manger  → son propos rejoint le hall (du devis à la facture)
+     salon TV        → le planning rejoint le bureau
+     suite parentale → « sur le terrain » rejoint le balcon
+     salle de bain   → « la réception » rejoint la terrasse
+     chambre d'amis  → coupée : l'équipe se dit dans la page produit
 
-   `poids` : la course de défilement accordée à la pièce, en multiples de
-   la hauteur d'écran. Un couloir en fuite mérite plus de course qu'une
-   salle de bain.
+   Neuf pièces au lieu de quatorze, et une course de 10,4 hauteurs
+   d'écran au lieu de 16,9 — la visite dure a peu pres moitie moins. La visite reste une visite ; elle cesse d'être longue.
+
+   LES DEUX PALIERS
+   Ils ne chargent AUCUNE image : ils reprennent la photographie de la
+   pièce qu'ils suivent, assombrie, pendant que la caméra continue son
+   mouvement. Une respiration, pas un arrêt — et zéro octet de plus.
+
+   LES CHAMPS
+   `focal` : le point de l'image à préserver, en fraction de largeur et de
+   hauteur. Aucune n'est à 0.5/0.5 : un cadrage centré par défaut
+   couperait le sujet sur la moitié d'entre elles.
+   `cam`   : le mouvement. z = 1 est la distance de référence ; x et y des
+   fractions du tirage ; yaw et pitch en degrés.
+   `poids` : la course accordée, en hauteurs d'écran.
    --------------------------------------------------------------------- */
 export const SCENES = [
-  { f: "00_villa-master-facade", poids: 1.5, focal: [0.50, 0.46], cote: "bas-gauche",
+  { f: "00_villa-master-facade", poids: 1.15, focal: [0.50, 0.46], cote: "bas-gauche",
     alt: "Façade d'une villa en pierre au crépuscule, entrée voûtée éclairée et jardin taillé.",
     // Façade : lent push-in vers l'entrée.
-    cam: { z: [1.14, 0.94], x: [0, 0], y: [0.02, -0.01], yaw: [0, 0], pitch: [0, 0] } },
+    cam: { z: [1.12, 0.96], x: [0, 0], y: [0.02, -0.01], yaw: [0, 0], pitch: [0, 0] } },
 
-  { f: "01_hall-entree", poids: 1.15, focal: [0.62, 0.44], cote: "bas-gauche",
+  { f: "01_hall-entree", poids: 0.95, focal: [0.62, 0.44], cote: "droite",
     alt: "Hall d'entrée, escalier tournant et lustre en fer forgé, tapis sur un sol de pierre claire.",
-    // Hall : légère rotation vers la droite et montée douce.
-    cam: { z: [1.02, 0.97], x: [-0.03, 0.03], y: [-0.03, 0.04], yaw: [-1.1, 1.4], pitch: [0.4, -0.3] } },
+    // Hall : rotation vers la droite et montée douce.
+    cam: { z: [1.03, 0.96], x: [-0.03, 0.03], y: [-0.03, 0.04], yaw: [-1.2, 1.5], pitch: [0.4, -0.3] } },
 
-  { f: "02_salon-principal", poids: 1.25, focal: [0.48, 0.52], cote: "droite",
+  { f: "02_salon-principal", poids: 1.0, focal: [0.48, 0.52], cote: "gauche",
     alt: "Salon avec cheminée en pierre, larges baies vitrées et vue sur la piscine.",
     // Salon : travelling latéral, de la gauche vers la droite.
-    cam: { z: [1.0, 0.98], x: [-0.055, 0.055], y: [0, 0], yaw: [0.5, -0.5], pitch: [0, 0] } },
+    cam: { z: [1.0, 0.97], x: [-0.06, 0.06], y: [0, 0], yaw: [0.6, -0.6], pitch: [0, 0] } },
 
-  { f: "03_salle-a-manger", poids: 1.1, focal: [0.46, 0.50], cote: "gauche",
-    alt: "Salle à manger, longue table en bois sous un lustre, portes-fenêtres ouvertes sur la terrasse.",
-    // Salle à manger : rotation douce vers les baies.
-    cam: { z: [1.0, 0.95], x: [-0.02, 0.035], y: [0, 0], yaw: [-0.6, 1.6], pitch: [0, 0] } },
+  // ---- Premier palier : ce que la méthode change, en trois chiffres ----
+  { f: "02_salon-principal", poids: 0.62, focal: [0.48, 0.52], cote: "centre", palier: true,
+    alt: "",
+    cam: { z: [0.97, 0.93], x: [0.06, 0.02], y: [0, 0.01], yaw: [-0.6, -0.2], pitch: [0, 0] } },
 
-  { f: "04_cuisine", poids: 1.15, focal: [0.52, 0.56], cote: "haut-gauche",
+  { f: "04_cuisine", poids: 0.95, focal: [0.52, 0.56], cote: "droite",
     alt: "Cuisine avec îlot central en pierre, hotte en cuivre et rangements en bois clair.",
     // Cuisine : dolly plus proche de l'îlot.
-    cam: { z: [1.08, 0.88], x: [0.01, -0.01], y: [-0.02, -0.05], yaw: [0, 0], pitch: [0, 0.4] } },
+    cam: { z: [1.08, 0.90], x: [0.01, -0.01], y: [-0.02, -0.05], yaw: [0, 0], pitch: [0, 0.4] } },
 
-  { f: "05_salon-tv-detente", poids: 1.0, focal: [0.54, 0.54], cote: "haut-gauche",
-    alt: "Salon télévision, grand canapé d'angle et bibliothèque intégrée en bois sombre.",
-    // Salon TV : plus intime, plus lent, presque immobile.
-    cam: { z: [1.0, 0.94], x: [0.02, -0.02], y: [0, 0.01], yaw: [0.3, -0.3], pitch: [0, 0] } },
-
-  { f: "06_bureau-bibliotheque", poids: 1.2, focal: [0.44, 0.52], cote: "droite",
+  { f: "06_bureau-bibliotheque", poids: 1.0, focal: [0.44, 0.52], cote: "gauche",
     alt: "Bureau avec plans dépliés sur une table en bois, fauteuil de cuir et bibliothèque murale.",
     // Bureau : travelling diagonal vers la bibliothèque.
-    cam: { z: [1.05, 0.93], x: [-0.045, 0.04], y: [0.03, -0.02], yaw: [-0.8, 1.0], pitch: [0.3, 0] } },
+    cam: { z: [1.06, 0.92], x: [-0.05, 0.045], y: [0.03, -0.02], yaw: [-0.9, 1.1], pitch: [0.3, 0] } },
 
-  { f: "07_suite-parentale", poids: 1.1, focal: [0.56, 0.52], cote: "gauche",
-    alt: "Suite parentale, lit à baldaquin bas, cheminée et coin salon devant de larges fenêtres.",
-    // Suite : légère ouverture, la caméra recule pour révéler l'espace.
-    cam: { z: [0.90, 1.06], x: [0.02, -0.01], y: [0, 0], yaw: [0.6, -0.4], pitch: [0, 0] } },
-
-  { f: "08_salle-bain-parentale", poids: 1.05, focal: [0.38, 0.58], cote: "droite",
-    alt: "Salle de bain en pierre, baignoire îlot et douche à l'italienne sous une voûte.",
-    // Salle de bain : translation latérale vers la baignoire.
-    cam: { z: [0.99, 0.96], x: [0.05, -0.05], y: [0, 0.01], yaw: [-0.4, 0.6], pitch: [0, 0] } },
-
-  { f: "09_galerie-couloir", poids: 1.45, focal: [0.50, 0.50], cote: "bas-gauche",
+  { f: "09_galerie-couloir", poids: 1.1, focal: [0.50, 0.50], cote: "droite",
     alt: "Galerie voûtée bordée de tableaux, perspective vers le fond de la maison.",
     // Galerie : mouvement longitudinal, la sensation d'avancer.
-    cam: { z: [1.16, 0.82], x: [0, 0], y: [0.01, 0], yaw: [0, 0], pitch: [0, 0] } },
+    cam: { z: [1.18, 0.84], x: [0, 0], y: [0.01, 0], yaw: [0, 0], pitch: [0, 0] } },
 
-  { f: "10_chambre-invites", poids: 1.0, focal: [0.44, 0.54], cote: "bas-gauche",
-    alt: "Chambre d'amis claire, lit habillé de vert d'eau et porte-fenêtre cintrée sur le jardin.",
-    // Chambre d'amis : petite rotation vers la fenêtre.
-    cam: { z: [1.0, 0.96], x: [-0.02, 0.025], y: [0, 0], yaw: [-1.0, 0.9], pitch: [0, 0] } },
+  // ---- Second palier : ce que le client voit, lui ----
+  { f: "09_galerie-couloir", poids: 0.62, focal: [0.50, 0.50], cote: "centre", palier: true,
+    alt: "",
+    cam: { z: [0.84, 0.80], x: [0, 0.01], y: [0, 0], yaw: [0, 0.3], pitch: [0, 0] } },
 
-  { f: "11_balcon-suite", poids: 1.15, focal: [0.56, 0.52], cote: "bas-gauche",
+  { f: "11_balcon-suite", poids: 0.95, focal: [0.56, 0.52], cote: "gauche",
     alt: "Balcon de la suite, fauteuils en osier, oliviers en pot et vue plongeante sur la piscine.",
     // Balcon : travelling vers l'extérieur.
-    cam: { z: [1.03, 0.92], x: [-0.035, 0.03], y: [-0.01, 0.02], yaw: [-0.5, 0.8], pitch: [0, 0] } },
+    cam: { z: [1.04, 0.92], x: [-0.04, 0.035], y: [-0.01, 0.02], yaw: [-0.6, 0.9], pitch: [0, 0] } },
 
-  { f: "12_cour-interieure-bassin", poids: 1.2, focal: [0.54, 0.52], cote: "gauche",
+  { f: "12_cour-interieure-bassin", poids: 0.95, focal: [0.54, 0.52], cote: "droite",
     alt: "Cour intérieure, arche de pierre, olivier et bassin rectangulaire.",
     // Cour : descente et push-in vers le bassin.
-    cam: { z: [1.10, 0.90], x: [0, 0], y: [0.045, -0.02], yaw: [0, 0], pitch: [-0.6, 0.5] } },
+    cam: { z: [1.10, 0.92], x: [0, 0], y: [0.045, -0.02], yaw: [0, 0], pitch: [-0.6, 0.5] } },
 
-  { f: "13_terrasse-piscine", poids: 1.6, focal: [0.50, 0.50], cote: "haut-droite",
+  { f: "13_terrasse-piscine", poids: 1.1, focal: [0.50, 0.50], cote: "gauche",
     alt: "Terrasse au crépuscule, salon d'extérieur, piscine éclairée et jardin méditerranéen.",
     // Terrasse : ouverture large, finale.
-    cam: { z: [0.88, 1.12], x: [0.02, -0.02], y: [-0.02, 0.02], yaw: [0.4, -0.4], pitch: [0, 0] } },
+    cam: { z: [0.90, 1.10], x: [0.02, -0.02], y: [-0.02, 0.02], yaw: [0.4, -0.4], pitch: [0, 0] } },
 ];
 
 /* =====================================================================
@@ -231,7 +231,7 @@ export function creerVisite({ canvas, scenes, petit }) {
     uDir: { value: new THREE.Vector2(1, 0) },
     uParaA: { value: new THREE.Vector2(0, 0) },
     uParaB: { value: new THREE.Vector2(0, 0) },
-    uVignette: { value: 0.34 }, uGrain: { value: 0.028 }, uTime: { value: 0 },
+    uVignette: { value: 0.16 }, uGrain: { value: 0.022 }, uTime: { value: 0 },
   };
 
   const tirage = new THREE.Mesh(
